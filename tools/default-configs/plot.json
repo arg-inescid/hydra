@@ -1,0 +1,28 @@
+{
+	"plot": "plot1",
+	"plots":
+	[
+		{
+			"type": "latency",
+			"show_image": true,
+            "output": "/home/xrx/Downloads/virt-bench/results/hello/probe_latency.png",
+			"data":
+			[
+              ["Hotspot w agent", "/home/xrx/Downloads/virt-bench/results/hello/probe_hello_1.dat"],
+              ["Hotspot", "/home/xrx/Downloads/virt-bench/results/hello/probe_hello_2.dat"],
+              ["Qemu", "/home/xrx/Downloads/virt-bench/results/hello/probe_hello_3.dat"]
+			]
+		},
+		{
+			"type": "transfer-rate",
+			"show_image": true,
+            "output": "/home/xrx/Downloads/virt-bench/results/hello/probe_transfer_rate.png",
+			"data":
+			[
+              ["Hotspot w agent", "/home/xrx/Downloads/virt-bench/results/hello/probe_hello_1.dat"],
+              ["Hotspot", "/home/xrx/Downloads/virt-bench/results/hello/probe_hello_2.dat"],
+              ["Qemu", "/home/xrx/Downloads/virt-bench/results/hello/probe_hello_3.dat"]
+			]
+		}
+	]
+}

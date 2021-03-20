@@ -1,0 +1,26 @@
+{
+	"test": "test1",
+	"manager": "http://localhost:9000",
+	"config_path": "conf.json",
+	"users":
+	[
+		{
+			"username": "user1",
+			"commands":
+			[
+				["upload", 3, "hello", "/home/xrx/Downloads/virt-bench/res/hello-world.jar"],
+				[ "send",
+					[1, 10, 10, "hello", ["10", "100", "1000"], "/home/xrx/Downloads/virt-bench/results/hello/probe_hello.dat"]
+				],
+				["pause", 1],
+				[ "send",
+					[1, 10, 10, "hello", [], "/home/xrx/Downloads/virt-bench/results/hello/probe_hello.dat"]
+				],
+				["pause", 1],
+				[ "send",
+					[1, 10, 10, "hello", ["1000"], "/home/xrx/Downloads/virt-bench/results/hello/probe_hello.dat"]
+				]
+			]
+		}
+	]
+}
