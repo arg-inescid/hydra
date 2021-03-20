@@ -22,7 +22,7 @@ public class DefaultCodeWriter implements CodeWriter {
         Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda = new Tuple<>(lambdaInstancesInfo, lambdaInstanceInfo);
 
         File newSrcDir = new File("src/lambdas/" + encodedName);
-        if(newSrcDir.mkdir()) {
+        if(newSrcDir.mkdirs()) {
             File lambdaCodeFile = new File("src/lambdas/" + encodedName + "/" + encodedName + ".jar");
             if(lambdaCodeFile.createNewFile()) {
                 FileOutputStream fileOutputStream = new FileOutputStream(lambdaCodeFile);
@@ -32,7 +32,7 @@ public class DefaultCodeWriter implements CodeWriter {
                 throw new ErrorUploadingNewLambda("Error during uploading new lambda [ " + lambda.list.getName() + " ]!");
             }
             File newConfigDir = new File("src/lambdas/" + encodedName + "/config");
-            if(!newConfigDir.mkdir()) {
+            if(!newConfigDir.mkdirs()) {
                 throw new ErrorUploadingNewLambda("Error during uploading new lambda [ " + lambda.list.getName() + " ]!");
             }
         }
