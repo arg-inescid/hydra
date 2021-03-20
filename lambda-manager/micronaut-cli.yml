@@ -1,5 +1,5 @@
 applicationType: default
-defaultPackage: com.serverless_demo
+defaultPackage: com.lambda_manager
 testFramework: junit
 sourceLanguage: java
 buildTool: gradle

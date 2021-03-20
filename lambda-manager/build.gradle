@@ -4,7 +4,7 @@ plugins {
 }
 
 version = "1.0"
-group = "com.serverless_demo"
+group = "com.lambda_manager"
 
 repositories {
     mavenCentral()
@@ -16,7 +16,7 @@ micronaut {
     testRuntime("junit5")
     processing {
         incremental(true)
-        annotations("com.serverless_demo.*")
+        annotations("com.lambda_manager.*")
     }
 }
 
@@ -30,7 +30,7 @@ dependencies {
 
 
 application {
-    mainClass.set("com.serverless_demo.EntryPoint")
+    mainClass.set("com.lambda_manager.EntryPoint")
 }
 
 java {
