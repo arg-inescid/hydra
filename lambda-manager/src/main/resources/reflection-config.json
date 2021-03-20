@@ -1,83 +1,83 @@
 [
   {
-    "name" : "com.serverless_demo.utils.parser.ManagerArguments",
+    "name" : "com.lambda_manager.utils.parser.ManagerArguments",
     "allDeclaredConstructors" : true,
     "allPublicConstructors" : true,
     "allDeclaredMethods" : true,
     "allPublicMethods" : true
   },
   {
-    "name" : "com.serverless_demo.utils.parser.ManagerState",
+    "name" : "com.lambda_manager.utils.parser.ManagerState",
     "allDeclaredConstructors" : true,
     "allPublicConstructors" : true,
     "allDeclaredMethods" : true,
     "allPublicMethods" : true
   },
     {
-    "name" : "com.serverless_demo.utils.parser.LambdaInfo",
+    "name" : "com.lambda_manager.utils.parser.LambdaInfo",
     "allDeclaredConstructors" : true,
     "allPublicConstructors" : true,
     "allDeclaredMethods" : true,
     "allPublicMethods" : true
   },
   {
-    "name" : "com.serverless_demo.schedulers.impl.RoundedRobinScheduler",
+    "name" : "com.lambda_manager.schedulers.impl.RoundedRobinScheduler",
     "allDeclaredConstructors" : true,
     "allPublicConstructors" : true,
     "allDeclaredMethods" : true,
     "allPublicMethods" : true
   },
   {
-    "name" : "com.serverless_demo.optimizers.impl.DefaultOptimizer",
+    "name" : "com.lambda_manager.optimizers.impl.DefaultOptimizer",
     "allDeclaredConstructors" : true,
     "allPublicConstructors" : true,
     "allDeclaredMethods" : true,
     "allPublicMethods" : true
   },
   {
-    "name" : "com.serverless_demo.encoders.impl.DefaultEncoder",
+    "name" : "com.lambda_manager.encoders.impl.DefaultEncoder",
     "allDeclaredConstructors" : true,
     "allPublicConstructors" : true,
     "allDeclaredMethods" : true,
     "allPublicMethods" : true
   },
   {
-    "name" : "com.serverless_demo.collectors.lambda_storage.impl.DefaultLambdaStorage",
+    "name" : "com.lambda_manager.collectors.lambda_storage.impl.DefaultLambdaStorage",
     "allDeclaredConstructors" : true,
     "allPublicConstructors" : true,
     "allDeclaredMethods" : true,
     "allPublicMethods" : true
   },
   {
-    "name" : "com.serverless_demo.connectivity.client.impl.DefaultLambdaManagerClient",
+    "name" : "com.lambda_manager.connectivity.client.impl.DefaultLambdaManagerClient",
     "allDeclaredConstructors" : true,
     "allPublicConstructors" : true,
     "allDeclaredMethods" : true,
     "allPublicMethods" : true
   },
   {
-    "name" : "com.serverless_demo.code_writer.impl.DefaultCodeWriter",
+    "name" : "com.lambda_manager.code_writer.impl.DefaultCodeWriter",
     "allDeclaredConstructors" : true,
     "allPublicConstructors" : true,
     "allDeclaredMethods" : true,
     "allPublicMethods" : true
   },
   {
-    "name" : "com.serverless_demo.collectors.lambda_info.impl.DefaultLambdaInfo",
+    "name" : "com.lambda_manager.collectors.lambda_info.impl.DefaultLambdaInfo",
     "allDeclaredConstructors" : true,
     "allPublicConstructors" : true,
     "allDeclaredMethods" : true,
     "allPublicMethods" : true
   },
   {
-    "name" : "com.serverless_demo.collectors.lambda_info.impl.DefaultLambdaInstancesInfo",
+    "name" : "com.lambda_manager.collectors.lambda_info.impl.DefaultLambdaInstancesInfo",
     "allDeclaredConstructors" : true,
     "allPublicConstructors" : true,
     "allDeclaredMethods" : true,
     "allPublicMethods" : true
   },
   {
-    "name" : "com.serverless_demo.utils.parser.ManagerArguments",
+    "name" : "com.lambda_manager.utils.parser.ManagerArguments",
     "fields" : [
       { "name" : "virtualizeConfig" },
       { "name" : "bridgeName" },
@@ -90,7 +90,7 @@
     ]
   },
   {
-    "name" : "com.serverless_demo.utils.parser.ManagerState",
+    "name" : "com.lambda_manager.utils.parser.ManagerState",
     "fields" : [
       { "name" : "scheduler" },
       { "name" : "optimizer" },
@@ -102,44 +102,44 @@
     ]
   },
   {
-    "name" : "com.serverless_demo.utils.parser.LambdaInfo",
+    "name" : "com.lambda_manager.utils.parser.LambdaInfo",
     "fields" : [
       { "name" : "instance" },
       { "name" : "list" }
     ]
   },
   {
-    "name" : "com.serverless_demo.schedulers.impl.RoundedRobinScheduler",
+    "name" : "com.lambda_manager.schedulers.impl.RoundedRobinScheduler",
     "fields" : []
   },
   {
-    "name" : "com.serverless_demo.optimizers.impl.DefaultOptimizer",
+    "name" : "com.lambda_manager.optimizers.impl.DefaultOptimizer",
     "fields" : []
   },
   {
-    "name" : "com.serverless_demo.encoders.impl.DefaultEncoder",
+    "name" : "com.lambda_manager.encoders.impl.DefaultEncoder",
     "fields" : []
   },
   {
-    "name" : "com.serverless_demo.collectors.lambda_storage.impl.DefaultLambdaStorage",
+    "name" : "com.lambda_manager.collectors.lambda_storage.impl.DefaultLambdaStorage",
     "fields" : [
       { "name": "lambdas" }
     ]
   },
   {
-    "name" : "com.serverless_demo.connectivity.client.impl.DefaultLambdaManagerClient",
+    "name" : "com.lambda_manager.connectivity.client.impl.DefaultLambdaManagerClient",
     "fields" : []
   },
   {
-    "name" : "com.serverless_demo.code_writer.impl.DefaultCodeWriter",
+    "name" : "com.lambda_manager.code_writer.impl.DefaultCodeWriter",
     "fields" : []
   },
   {
-    "name" : "com.serverless_demo.collectors.lambda_info.impl.DefaultLambdaInfo",
+    "name" : "com.lambda_manager.collectors.lambda_info.impl.DefaultLambdaInfo",
     "fields" : []
   },
   {
-    "name" : "com.serverless_demo.collectors.lambda_info.impl.DefaultLambdaInstancesInfo",
+    "name" : "com.lambda_manager.collectors.lambda_info.impl.DefaultLambdaInstancesInfo",
     "fields" : []
   }
 ]

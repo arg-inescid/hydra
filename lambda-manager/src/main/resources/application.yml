@@ -1,6 +1,6 @@
 micronaut:
   application:
-    name: server-manager
+    name: lambda-manager
   server:
     port: 9000
     maxRequestSize: 100MB

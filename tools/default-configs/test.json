@@ -1,24 +1,24 @@
 {
 	"test": "test1",
 	"manager": "http://localhost:9000",
-	"config_path": "conf.json",
+	"config_path": "default-configs/config.json",
 	"users":
 	[
 		{
 			"username": "user1",
 			"commands":
 			[
-				["upload", 3, "hello", "/home/xrx/Downloads/virt-bench/res/hello-world.jar"],
+				["upload", 3, "hello", "../benchmarks/hello_world/build/libs/hello_world-0.1-all.jar"],
 				[ "send",
-					[1, 10, 10, "hello", ["10", "100", "1000"], "/home/xrx/Downloads/virt-bench/results/hello/probe_hello.dat"]
+					[1, 10, 10, "hello", ["10", "100", "1000"], "../benchmarks/hello_world/build/libs/hello_world-0.1-all.jar"]
 				],
 				["pause", 1],
 				[ "send",
-					[1, 10, 10, "hello", [], "/home/xrx/Downloads/virt-bench/results/hello/probe_hello.dat"]
+					[1, 10, 10, "hello", [], "../benchmarks/hello_world/build/libs/hello_world-0.1-all.jar"]
 				],
 				["pause", 1],
 				[ "send",
-					[1, 10, 10, "hello", ["1000"], "/home/xrx/Downloads/virt-bench/results/hello/probe_hello.dat"]
+					[1, 10, 10, "hello", ["1000"], "../benchmarks/hello_world/build/libs/hello_world-0.1-all.jar"]
 				]
 			]
 		}

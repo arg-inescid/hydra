@@ -1,23 +1,23 @@
 {
+   "virtualizeConfig": "/home/xrx/work/graalStuff/virtualize/virtualize.json",
    "bridgeName":     "br0",
-   "bridgeAddress":  "169.254.6.91",
-   "tapName":        "t100",
+   "bridgeAddress":  "169.254.9.144",
    "healthCheck":     50,
-   "timeout":        10000,
    "memory":         "512M",
    "lambdaPort":     8080,
-   "console":        true,
+   "console":        false,
    "managerState":
    {
-      "scheduler":   "com.serverless_demo.schedulers.impl.RoundedRobinScheduler",
-      "optimizer":   "com.serverless_demo.optimizers.impl.DefaultOptimizer",
-      "encoder":     "com.serverless_demo.encoders.impl.DefaultEncoder",
-      "storage":     "com.serverless_demo.collectors.lambda_storage.impl.DefaultLambdaStorage",
-      "client":      "com.serverless_demo.connectivity.impl.DefaultLambdaManagerClient",
+      "scheduler":   "com.lambda_manager.schedulers.impl.RoundedRobinScheduler",
+      "optimizer":   "com.lambda_manager.optimizers.impl.DefaultOptimizer",
+      "encoder":     "com.lambda_manager.encoders.impl.DefaultEncoder",
+      "storage":     "com.lambda_manager.collectors.lambda_storage.impl.DefaultLambdaStorage",
+      "client":      "com.lambda_manager.connectivity.client.impl.DefaultLambdaManagerClient",
+      "codeWriter":  "com.lambda_manager.code_writer.impl.DefaultCodeWriter",
       "lambdaInfo":
       {
-         "instance": "com.serverless_demo.collectors.lambda_info.impl.LambdaInstanceInfo",
-         "list":     "com.serverless_demo.collectors.lambda_info.impl.LambdaInstancesInfo"
+         "instance": "com.lambda_manager.collectors.lambda_info.impl.DefaultLambdaInfo",
+         "list":     "com.lambda_manager.collectors.lambda_info.impl.DefaultLambdaInstancesInfo"
       }
    }
 }

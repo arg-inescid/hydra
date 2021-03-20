@@ -4,7 +4,6 @@
 	[
 		{
 			"type": "latency",
-			"show_image": true,
             "output": "/home/xrx/Downloads/virt-bench/results/hello/probe_latency.png",
 			"data":
 			[
@@ -15,7 +14,6 @@
 		},
 		{
 			"type": "transfer-rate",
-			"show_image": true,
             "output": "/home/xrx/Downloads/virt-bench/results/hello/probe_transfer_rate.png",
 			"data":
 			[

@@ -4,10 +4,12 @@ Thumbs.db
 build/
 target/
 out/
+src/lambdas
 .idea
 *.iml
 *.ipr
 *.iws
+lambda-manager-*
 .project
 .settings
 .classpath
