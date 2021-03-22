@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 import enum
 import json
 import os
@@ -107,8 +107,9 @@ def send(username, manager, command):
         os.remove(command['output_file'])
 
     args_len = len(command['lambda_args'])
-    print_message(username, "Iterating from 1 to {}...".format(command['iterations']), MessageType.INFO)
     for i in range(command['iterations']):
+        print_message(username, "Iteration {} of {}...".format(i + 1, command['iterations']), MessageType.INFO)
+
         args = "?args=" + command['lambda_args'][random.randint(0, args_len - 1)] if args_len > 0 else ""
         output = "ITERATION({})...\n".format(i)
         output += run(username, "ab -n {num_requests} -c {num_clients} {manager}/{username}/{lambda_name}{args}"
@@ -117,7 +118,8 @@ def send(username, manager, command):
                               args=args))
         output += "ITERATION({})...done\n\n".format(i)
         write_file(username, command['output_file'], output)
-    print_message(username, "Iterating from 1 to {}...done".format(command['iterations']), MessageType.INFO)
+
+        print_message(username, "Iteration {} of {}...done".format(i + 1, command['iterations']), MessageType.INFO)
 
 
 def star_sending(username, manager, sending_info):

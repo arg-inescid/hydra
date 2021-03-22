@@ -4,22 +4,24 @@
 	[
 		{
 			"type": "latency",
-            "output": "/home/xrx/Downloads/virt-bench/results/hello/probe_latency.png",
+            "output": "../benchmarks/results/hello-world/hello-world-latency.png",
+			"show_image": false,
 			"data":
 			[
-              ["Hotspot w agent", "/home/xrx/Downloads/virt-bench/results/hello/probe_hello_1.dat"],
-              ["Hotspot", "/home/xrx/Downloads/virt-bench/results/hello/probe_hello_2.dat"],
-              ["Qemu", "/home/xrx/Downloads/virt-bench/results/hello/probe_hello_3.dat"]
+              ["Hotspot w agent", "../benchmarks/results/hello-world/hello-world-1.dat"],
+              ["Hotspot", "../benchmarks/results/hello-world/hello-world-2.dat"],
+              ["Qemu", "../benchmarks/results/hello-world/hello-world-3.dat"]
 			]
 		},
 		{
 			"type": "transfer-rate",
-            "output": "/home/xrx/Downloads/virt-bench/results/hello/probe_transfer_rate.png",
+            "output": "../benchmarks/results/hello-world/hello-world-throughput.png",
+			"show_image": false,
 			"data":
 			[
-              ["Hotspot w agent", "/home/xrx/Downloads/virt-bench/results/hello/probe_hello_1.dat"],
-              ["Hotspot", "/home/xrx/Downloads/virt-bench/results/hello/probe_hello_2.dat"],
-              ["Qemu", "/home/xrx/Downloads/virt-bench/results/hello/probe_hello_3.dat"]
+              ["Hotspot w agent", "../benchmarks/results/hello-world/hello-world-1.dat"],
+              ["Hotspot", "../benchmarks/results/hello-world/hello-world-2.dat"],
+              ["Qemu", "../benchmarks/results/hello-world/hello-world-3.dat"]
 			]
 		}
 	]

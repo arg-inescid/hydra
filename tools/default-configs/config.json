@@ -1,11 +1,11 @@
 {
    "virtualizeConfig": "/home/xrx/work/graalStuff/virtualize/virtualize.json",
    "bridgeName":     "br0",
-   "bridgeAddress":  "169.254.9.144",
+   "bridgeAddress":  "169.254.4.198",
    "healthCheck":     50,
    "memory":         "512M",
    "lambdaPort":     8080,
-   "console":        false,
+   "console":        true,
    "managerState":
    {
       "scheduler":   "com.lambda_manager.schedulers.impl.RoundedRobinScheduler",

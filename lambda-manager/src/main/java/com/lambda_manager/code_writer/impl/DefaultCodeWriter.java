@@ -10,7 +10,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+@SuppressWarnings("unused")
 public class DefaultCodeWriter implements CodeWriter {
+
     @Override
     public Tuple<LambdaInstancesInfo, LambdaInstanceInfo> upload(LambdaInstancesInfo lambdaInstancesInfo,
                                                                  String encodedName, byte[] lambdaCode)
@@ -42,7 +44,10 @@ public class DefaultCodeWriter implements CodeWriter {
 
     @Override
     public void remove(String encodedName) {
-        purgeDirectory(new File("src/lambdas/" + encodedName));
+        File dir = new File("src/lambdas/" + encodedName);
+        if(dir.exists()) {
+            purgeDirectory(dir);
+        }
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")

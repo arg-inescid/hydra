@@ -8,17 +8,18 @@
 			"username": "user1",
 			"commands":
 			[
-				["upload", 3, "hello", "../benchmarks/hello_world/build/libs/hello_world-0.1-all.jar"],
+				["remove", "hello"],
+				["upload", 3, "hello", "../benchmarks/hello-world/build/libs/hello-world-0.1-all.jar"],
 				[ "send",
-					[1, 10, 10, "hello", ["10", "100", "1000"], "../benchmarks/hello_world/build/libs/hello_world-0.1-all.jar"]
+					[3, 1000, 10, "hello", ["10", "100", "1000"], "../benchmarks/results/hello-world/hello-world-1.dat"]
 				],
-				["pause", 1],
+				["pause", 12],
 				[ "send",
-					[1, 10, 10, "hello", [], "../benchmarks/hello_world/build/libs/hello_world-0.1-all.jar"]
+					[3, 1000, 10, "hello", [], "../benchmarks/results/hello-world/hello-world-2.dat"]
 				],
-				["pause", 1],
+				["pause", 110],
 				[ "send",
-					[1, 10, 10, "hello", ["1000"], "../benchmarks/hello_world/build/libs/hello_world-0.1-all.jar"]
+					[3, 1000, 10, "hello", ["1000"], "../benchmarks/results/hello-world/hello-world-3.dat"]
 				]
 			]
 		}
