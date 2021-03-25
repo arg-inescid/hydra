@@ -4,6 +4,7 @@ import com.lambda_manager.callbacks.OnProcessFinishCallback;
 import com.lambda_manager.callbacks.impl.DefaultCallback;
 import com.lambda_manager.collectors.lambda_info.LambdaInstanceInfo;
 import com.lambda_manager.collectors.lambda_info.LambdaInstancesInfo;
+import com.lambda_manager.connectivity.client.impl.DefaultLambdaManagerClient;
 import com.lambda_manager.core.LambdaManagerConfiguration;
 import com.lambda_manager.processes.start_lambda.StartLambda;
 import com.lambda_manager.utils.Tuple;
@@ -17,6 +18,9 @@ public class StartNativeImage extends StartLambda {
     @Override
     public List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         command = new ArrayList<>();
+        int port = configuration.argumentStorage.getLambdaListeningPort();
+        lambda.instance.setPort(-1);
+        lambda.instance.setHttpClient(DefaultLambdaManagerClient.newClient(lambda.instance.getIp(), port, false));
         String lambdaName = lambda.list.getName();
         int lambdaId = lambda.instance.getId();
 
@@ -25,12 +29,13 @@ public class StartNativeImage extends StartLambda {
         command.add("--memory");
         command.add(configuration.argumentStorage.getMemorySpace());
         command.add("--ip");
-        command.add(configuration.argumentStorage.getInstanceAddress(lambdaName, lambdaId));
+        command.add(lambda.instance.getIp());
         command.add("--tap");
-        command.add(configuration.argumentStorage.getTapName(lambdaName, lambdaId));
+        command.add(lambda.instance.getTap());
         if(configuration.argumentStorage.isConsoleActive()) {
             command.add("--console");
         }
+        command.add(String.valueOf(port));
         if(lambda.instance.getArgs() != null) {
             Collections.addAll(command, lambda.instance.getArgs().split(","));
         }

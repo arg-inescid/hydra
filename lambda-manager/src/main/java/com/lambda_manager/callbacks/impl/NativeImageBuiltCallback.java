@@ -20,11 +20,12 @@ public class NativeImageBuiltCallback implements OnProcessFinishCallback {
 
     @Override
     public void finish() {
-        try {
-            configuration.client.createNewClient(lambda, configuration,false);
-            lambda.list.setStatus(LambdaStatusType.BUILT);
-        } catch (ErrorUploadingNewLambda errorUploadingNewLambda) {
-            errorUploadingNewLambda.printStackTrace();
-        }
+//        try {
+//            configuration.client.createNewClient(lambda, configuration,false);
+//            lambda.list.setStatus(LambdaStatusType.BUILT);
+//        } catch (ErrorUploadingNewLambda errorUploadingNewLambda) {
+//            errorUploadingNewLambda.printStackTrace();
+//        }
+        lambda.list.setStatus(LambdaStatusType.BUILT);
     }
 }

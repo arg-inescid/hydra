@@ -15,11 +15,14 @@ public class RemoveTaps extends AbstractProcess {
         command = new ArrayList<>();
         command.add("bash");
         command.add("src/scripts/remove_taps.sh");
-        for(String lambdaName : configuration.storage.getAll().keySet()) {
-            int numberOfInstances = configuration.argumentStorage.getNumberOfInstances(lambdaName);
-            for (int i = 0; i < numberOfInstances; i++) {
-                command.add(configuration.argumentStorage.getTapName(lambdaName, i));
-            }
+//        for(String lambdaName : configuration.storage.getAll().keySet()) {
+//            int numberOfInstances = configuration.argumentStorage.getNumberOfInstances(lambdaName);
+//            for (int i = 0; i < numberOfInstances; i++) {
+//                command.add(configuration.argumentStorage.getTapName(lambdaName, i));
+//            }
+//        }
+        for(Tuple<String, String> tapIp: configuration.argumentStorage.getTapIfPool()) {
+            command.add(tapIp.list);
         }
         return command;
     }

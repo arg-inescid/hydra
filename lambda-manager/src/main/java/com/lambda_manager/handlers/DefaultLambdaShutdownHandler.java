@@ -2,6 +2,7 @@ package com.lambda_manager.handlers;
 
 import com.lambda_manager.collectors.lambda_info.LambdaInstanceInfo;
 import com.lambda_manager.collectors.lambda_info.LambdaInstancesInfo;
+import com.lambda_manager.core.LambdaManager;
 import com.lambda_manager.utils.Tuple;
 
 import java.util.TimerTask;
@@ -17,6 +18,12 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
     @Override
     public void run() {
         lambda.instance.getTimer().cancel();
+        LambdaManager.getLambdaManager().getConfiguration().argumentStorage.returnTapIp(
+                new Tuple<>(lambda.instance.getTap(), lambda.instance.getIp()));
+
+        if(lambda.instance.getPort() != -1) {
+            LambdaManager.getLambdaManager().getConfiguration().argumentStorage.returnPort(lambda.instance.getPort());
+        }
 
         synchronized (lambda.list) {
             lambda.list.getCurrentlyActiveWorkers().remove(lambda.instance.getId()).shutdownInstance();

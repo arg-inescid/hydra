@@ -54,8 +54,8 @@ public class LambdaManager {
             String encodedName = configuration.encoder.encode(username, lambdaName);
             LambdaInstancesInfo lambdaInstancesInfo = configuration.storage.register(encodedName);
             Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda = configuration.codeWriter.upload(lambdaInstancesInfo, encodedName, lambdaCode);
-            Processes.CREATE_TAP.build(lambda, configuration).start();
-            configuration.client.createNewClient(lambda, configuration, true);
+//            Processes.CREATE_TAP.build(lambda, configuration).start();
+//            configuration.client.createNewClient(lambda, configuration, true);
             return Single.just("Successfully uploaded lambda [ " + lambdaName + " ]!");
         } catch (IOException | ErrorUploadingNewLambda e) {
             e.printStackTrace(System.err);

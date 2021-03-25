@@ -20,12 +20,12 @@ public class CheckClientStatus implements OnProcessFinishCallback {
 
     @Override
     public void finish() {
-        try {
-            if(lambda.list.getStatus() == LambdaStatusType.BUILT) {
-                configuration.client.createNewClient(lambda, configuration,false);
-            }
-        } catch (ErrorUploadingNewLambda errorUploadingNewLambda) {
-            errorUploadingNewLambda.printStackTrace();
-        }
+//        try {
+//            if(lambda.list.getStatus() == LambdaStatusType.BUILT) {
+//                configuration.client.createNewClient(lambda, configuration,false);
+//            }
+//        } catch (ErrorUploadingNewLambda errorUploadingNewLambda) {
+//            errorUploadingNewLambda.printStackTrace();
+//        }
     }
 }

@@ -54,6 +54,10 @@ public class RoundedRobinScheduler implements Scheduler {
 
     @Override
     public void spawnNewLambda(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+        Tuple<String, String> tapIp = configuration.argumentStorage.getTapIp();
+        lambda.instance.setTap(tapIp.list);
+        lambda.instance.setIp(tapIp.instance);
+
         lambda.instance.setTimer(new Timer());
         ProcessBuilder processBuilder = Processes.START_LAMBDA.build(lambda, configuration);
         lambda.list.getCurrentlyActiveWorkers().put(lambda.instance.getId(), processBuilder);

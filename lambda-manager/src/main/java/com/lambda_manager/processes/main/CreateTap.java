@@ -13,10 +13,12 @@ public class CreateTap extends AbstractProcess {
     @Override
     public List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         command = new ArrayList<>();
+        Tuple<String, String> tapIp = configuration.argumentStorage.getTapIp();
         command.add("bash");
         command.add("src/scripts/create_taps.sh");
-        command.add(configuration.argumentStorage.getBridgeName());
-        command.add(configuration.argumentStorage.getTapName(lambda.list.getName(), lambda.instance.getId()));
+        command.add(tapIp.list);
+        command.add(tapIp.instance);
+        configuration.argumentStorage.returnTapIp(tapIp);
         return command;
     }
 }

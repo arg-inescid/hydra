@@ -7,6 +7,8 @@ import com.lambda_manager.core.LambdaManagerConfiguration;
 import com.lambda_manager.encoders.Encoder;
 import com.lambda_manager.exceptions.argument_parser.ErrorDuringReflectiveClassCreation;
 import com.lambda_manager.optimizers.Optimizer;
+import com.lambda_manager.processes.ProcessBuilder;
+import com.lambda_manager.processes.Processes;
 import com.lambda_manager.schedulers.Scheduler;
 import com.lambda_manager.utils.parser.ManagerArguments;
 import com.lambda_manager.utils.parser.ManagerState;
@@ -15,6 +17,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 
 public class LambdaManagerArgumentStorage {
@@ -83,6 +86,10 @@ public class LambdaManagerArgumentStorage {
         return lambdaAddresses.get(lambdaName).get(id);
     }
 
+    public int getLambdaListeningPort() {
+        return lambdaListeningPort;
+    }
+
     public int getInstancePort(String lambdaName, int id) {
         ArrayList<Integer> ports = portPool.computeIfAbsent(lambdaName, k -> new ArrayList<>());
         if (id < ports.size()) {
@@ -101,11 +108,65 @@ public class LambdaManagerArgumentStorage {
         return tapNames.get(lambdaName).size();
     }
 
+    public List<Tuple<String, String>> getTapIfPool() {
+        return tapIpPool;
+    }
+
+    List<Tuple<String, String>> tapIpPool = new ArrayList<>();
+    List<Integer> listeningPortPool = new ArrayList<>();
+
+    public Tuple<String, String> getTapIp() {
+        return tapIpPool.remove(0);
+    }
+
+    public void returnTapIp(Tuple<String, String> tapIp) {
+        tapIpPool.add(tapIp);
+    }
+
+    public int getNextPort() {
+        return listeningPortPool.remove(0);
+    }
+
+    public void returnPort(int port) {
+        listeningPortPool.add(port);
+    }
+
+    private int generateNextPort() {
+        return nextListeningPort++;
+    }
+
+    private String generateNewLambdaAddress() {
+        String[] tmp = nextAddress.split("\\.");
+        nextAddress =  tmp[0] + "." + tmp[1] + "." + (Integer.parseInt(tmp[2]) + 1) + "." + tmp[3];
+        return nextAddress;
+    }
+
     private String generateNewTapName() {
         return new Random().ints('a', 'z' + 1)
                 .limit(10)
                 .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
                 .toString();
+    }
+
+    private void generateConnections(LambdaManagerConfiguration configuration) {
+        ProcessBuilder[] processBuilders = new ProcessBuilder[10];
+        for(int i = 0; i < 10; i++) {
+            tapIpPool.add(new Tuple<>(generateNewTapName(), generateNewLambdaAddress()));
+            listeningPortPool.add(generateNextPort());
+        }
+
+        for (int i = 0; i < 10; i++) {
+            processBuilders[i] = Processes.CREATE_TAP.build(null, configuration);
+            processBuilders[i].start();
+        }
+
+        for (ProcessBuilder processBuilder: processBuilders) {
+            try {
+                processBuilder.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private Object createObject(String className) throws ErrorDuringReflectiveClassCreation {
@@ -138,7 +199,11 @@ public class LambdaManagerArgumentStorage {
         LambdaStorage storage = (LambdaStorage) createObject(managerState.getStorage());
         LambdaManagerClient client = (LambdaManagerClient) createObject(managerState.getClient());
         CodeWriter codeWriter = (CodeWriter) createObject(managerState.getCodeWriter());
-        return new LambdaManagerConfiguration(scheduler, optimizer, encoder, storage, client, codeWriter, this);
+        LambdaManagerConfiguration configuration = new LambdaManagerConfiguration(scheduler,
+                optimizer, encoder, storage, client, codeWriter, this);
+
+        generateConnections(configuration);
+        return configuration;
     }
 
     public String getVirtualizationConfig() {

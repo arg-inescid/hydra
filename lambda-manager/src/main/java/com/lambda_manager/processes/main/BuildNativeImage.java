@@ -17,7 +17,7 @@ public class BuildNativeImage extends AbstractProcess {
         command = new ArrayList<>();
         String lambdaName = lambda.list.getName();
         command.add("bash");
-        command.add("src/scripts/build_lambda.sh");
+        command.add("src/scripts/build_vmm.sh");
         command.add("src/lambdas/" + lambdaName);
         command.add(lambdaName + ".jar");
         command.add(configuration.argumentStorage.getVirtualizationConfig());
