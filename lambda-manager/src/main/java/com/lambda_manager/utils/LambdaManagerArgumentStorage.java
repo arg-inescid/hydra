@@ -1,5 +1,7 @@
 package com.lambda_manager.utils;
 
+import com.github.maltalex.ineter.base.IPv4Address;
+import com.github.maltalex.ineter.range.IPv4Subnet;
 import com.lambda_manager.code_writer.CodeWriter;
 import com.lambda_manager.collectors.lambda_storage.LambdaStorage;
 import com.lambda_manager.connectivity.client.LambdaManagerClient;
@@ -15,14 +17,11 @@ import com.lambda_manager.utils.parser.ManagerState;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 public class LambdaManagerArgumentStorage {
 
-    private String bridgeName;
+    private String execBinaries;
 
     private String nextTap = "t100";
     private final HashMap<String, ArrayList<String>> tapNames = new HashMap<>();
@@ -31,8 +30,10 @@ public class LambdaManagerArgumentStorage {
     private int healthCheck;
     private String memorySpace;
 
-    private String nextAddress;
     private final HashMap<String, ArrayList<String>> lambdaAddresses = new HashMap<>();
+    private String gateway;
+    private String mask;
+    private Iterator<IPv4Address> iPv4AddressIterator;
 
     private int lambdaListeningPort;
     private int nextListeningPort;
@@ -49,22 +50,6 @@ public class LambdaManagerArgumentStorage {
         return resultTap;
     }
 
-    private String getNextAvailableAddress(ArrayList<String> addresses) {
-        String[] tmp = nextAddress.split("\\.");
-        nextAddress =  tmp[0] + "." + tmp[1] + "." + tmp[2] + "." + (Integer.parseInt(tmp[3]) + 1);
-        addresses.add(nextAddress);
-        return nextAddress;
-    }
-
-    public String getBridgeName() {
-        return bridgeName;
-    }
-
-    public String getTapName(String lambdaName, int id) {
-        ArrayList<String> taps = tapNames.computeIfAbsent(lambdaName, k -> new ArrayList<>());
-        return id < taps.size() ? taps.get(id) : getNextAvailableTapName(taps);
-    }
-
     public int getTimeout() {
         return timeout;
     }
@@ -75,11 +60,6 @@ public class LambdaManagerArgumentStorage {
 
     public String getMemorySpace() {
         return memorySpace;
-    }
-
-    public String makeNewInstanceFullAddress(String lambdaName) {
-        ArrayList<String> addresses = lambdaAddresses.computeIfAbsent(lambdaName, k -> new ArrayList<>());
-        return "http://" + getNextAvailableAddress(addresses) + ":" + lambdaListeningPort;
     }
 
     public String getInstanceAddress(String lambdaName, int id) {
@@ -135,12 +115,6 @@ public class LambdaManagerArgumentStorage {
         return nextListeningPort++;
     }
 
-    private String generateNewLambdaAddress() {
-        String[] tmp = nextAddress.split("\\.");
-        nextAddress =  tmp[0] + "." + tmp[1] + "." + (Integer.parseInt(tmp[2]) + 1) + "." + tmp[3];
-        return nextAddress;
-    }
-
     private String generateNewTapName() {
         return new Random().ints('a', 'z' + 1)
                 .limit(10)
@@ -151,7 +125,7 @@ public class LambdaManagerArgumentStorage {
     private void generateConnections(LambdaManagerConfiguration configuration) {
         ProcessBuilder[] processBuilders = new ProcessBuilder[10];
         for(int i = 0; i < 10; i++) {
-            tapIpPool.add(new Tuple<>(generateNewTapName(), generateNewLambdaAddress()));
+            tapIpPool.add(new Tuple<>(generateNewTapName(), iPv4AddressIterator.next().toString()));
             listeningPortPool.add(generateNextPort());
         }
 
@@ -182,15 +156,21 @@ public class LambdaManagerArgumentStorage {
     }
 
     public LambdaManagerConfiguration initializeLambdaManager(ManagerArguments managerArguments) throws ErrorDuringReflectiveClassCreation {
-        this.bridgeName = managerArguments.getBridgeName();
-        this.nextAddress = managerArguments.getBridgeAddress();
+        this.virtualizationConfig = managerArguments.getVirtualizeConfig();
+        this.execBinaries = managerArguments.getExecBinaries();
+        this.timeout = managerArguments.getTimeout();
         this.healthCheck = managerArguments.getHealthCheck();
-        this.timeout = 5000;
         this.memorySpace = managerArguments.getMemory();
         this.lambdaListeningPort = managerArguments.getLambdaPort();
         this.nextListeningPort = this.lambdaListeningPort;
         this.isConsoleActive = managerArguments.isConsole();
-        this.virtualizationConfig = managerArguments.getVirtualizeConfig();
+
+        String gatewayString = managerArguments.getGateway();
+        this.gateway = gatewayString.split("/")[0];
+        IPv4Subnet gatewayWithMask = IPv4Subnet.of(gatewayString);
+        this.mask = gatewayWithMask.getNetworkMask().toString();
+        this.iPv4AddressIterator = gatewayWithMask.iterator();
+        this.iPv4AddressIterator.next();
 
         ManagerState managerState = managerArguments.getManagerState();
         Scheduler scheduler = (Scheduler) createObject(managerState.getScheduler());
@@ -208,5 +188,17 @@ public class LambdaManagerArgumentStorage {
 
     public String getVirtualizationConfig() {
         return virtualizationConfig;
+    }
+
+    public String getGateway() {
+        return gateway;
+    }
+
+    public String getMask() {
+        return mask;
+    }
+
+    public String getExecBinaries() {
+        return execBinaries;
     }
 }

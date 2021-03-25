@@ -32,6 +32,10 @@ public class StartNativeImage extends StartLambda {
         command.add(lambda.instance.getIp());
         command.add("--tap");
         command.add(lambda.instance.getTap());
+        command.add("--gateway");
+        command.add(configuration.argumentStorage.getGateway());
+        command.add("--mask");
+        command.add(configuration.argumentStorage.getMask());
         if(configuration.argumentStorage.isConsoleActive()) {
             command.add("--console");
         }
