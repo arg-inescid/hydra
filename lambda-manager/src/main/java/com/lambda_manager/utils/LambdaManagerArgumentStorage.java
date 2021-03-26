@@ -122,10 +122,19 @@ public class LambdaManagerArgumentStorage {
                 .toString();
     }
 
+    private String getNextIPAddress() {
+        String nextIPAddress = iPv4AddressIterator.next().toString();
+        if(nextIPAddress.equals(getGateway())) {
+            return iPv4AddressIterator.next().toString();
+        } else {
+            return nextIPAddress;
+        }
+    }
+
     private void generateConnections(LambdaManagerConfiguration configuration) {
         ProcessBuilder[] processBuilders = new ProcessBuilder[10];
         for(int i = 0; i < 10; i++) {
-            tapIpPool.add(new Tuple<>(generateNewTapName(), iPv4AddressIterator.next().toString()));
+            tapIpPool.add(new Tuple<>(generateNewTapName(), getNextIPAddress()));
             listeningPortPool.add(generateNextPort());
         }
 
@@ -170,7 +179,6 @@ public class LambdaManagerArgumentStorage {
         IPv4Subnet gatewayWithMask = IPv4Subnet.of(gatewayString);
         this.mask = gatewayWithMask.getNetworkMask().toString();
         this.iPv4AddressIterator = gatewayWithMask.iterator();
-        this.iPv4AddressIterator.next();
 
         ManagerState managerState = managerArguments.getManagerState();
         Scheduler scheduler = (Scheduler) createObject(managerState.getScheduler());
