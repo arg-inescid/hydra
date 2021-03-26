@@ -5,11 +5,13 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+@SuppressWarnings("unused")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
         "virtualizeConfig",
-        "bridgeName",
-        "bridgeAddress",
+        "execBinaries",
+        "gateway",
+        "timeout",
         "healthCheck",
         "memory",
         "lambdaPort",
@@ -20,10 +22,12 @@ public class ManagerArguments implements Serializable
 {
     @JsonProperty("virtualizeConfig")
     private String virtualizeConfig;
-    @JsonProperty("bridgeName")
-    private String bridgeName;
-    @JsonProperty("bridgeAddress")
-    private String bridgeAddress;
+    @JsonProperty("execBinaries")
+    private String execBinaries;
+    @JsonProperty("gateway")
+    private String gateway;
+    @JsonProperty("timeout")
+    private int timeout;
     @JsonProperty("healthCheck")
     private int healthCheck;
     @JsonProperty("memory")
@@ -51,14 +55,17 @@ public class ManagerArguments implements Serializable
      * @param lambdaPort - First port in lambda port space.
      * @param healthCheck - Stated instance health is checked in this time span. After first health response,
      *                    no more check are made.
-     * @param bridgeAddress - The Bridge address.
-     * @param bridgeName - The Bridge name.
+     * @param timeout - Timeout
+     * @param gateway - The Bridge address.
+     * @param execBinaries - The Bridge name.
      */
-    public ManagerArguments(String virtualizeConfig, String bridgeName, String bridgeAddress, int healthCheck, String memory, int lambdaPort, boolean console, ManagerState managerState) {
+    public ManagerArguments(String virtualizeConfig, String execBinaries, String gateway, int timeout,
+                            int healthCheck, String memory, int lambdaPort, boolean console, ManagerState managerState) {
         super();
         this.virtualizeConfig = virtualizeConfig;
-        this.bridgeName = bridgeName;
-        this.bridgeAddress = bridgeAddress;
+        this.execBinaries = execBinaries;
+        this.gateway = gateway;
+        this.timeout = timeout;
         this.healthCheck = healthCheck;
         this.memory = memory;
         this.lambdaPort = lambdaPort;
@@ -76,24 +83,34 @@ public class ManagerArguments implements Serializable
         this.virtualizeConfig = virtualizeConfig;
     }
 
-    @JsonProperty("bridgeName")
-    public String getBridgeName() {
-        return bridgeName;
+    @JsonProperty("execBinaries")
+    public String getExecBinaries() {
+        return execBinaries;
     }
 
-    @JsonProperty("bridgeName")
-    public void setBridgeName(String bridgeName) {
-        this.bridgeName = bridgeName;
+    @JsonProperty("execBinaries")
+    public void setExecBinaries(String execBinaries) {
+        this.execBinaries = execBinaries;
     }
 
-    @JsonProperty("bridgeAddress")
-    public String getBridgeAddress() {
-        return bridgeAddress;
+    @JsonProperty("gateway")
+    public String getGateway() {
+        return gateway;
     }
 
-    @JsonProperty("bridgeAddress")
-    public void setBridgeAddress(String bridgeAddress) {
-        this.bridgeAddress = bridgeAddress;
+    @JsonProperty("gateway")
+    public void setGateway(String gateway) {
+        this.gateway = gateway;
+    }
+
+    @JsonProperty("timeout")
+    public int getTimeout() {
+        return timeout;
+    }
+
+    @JsonProperty("timeout")
+    public void setTimeout(int timeout) {
+        this.timeout = timeout;
     }
 
     @JsonProperty("healthCheck")

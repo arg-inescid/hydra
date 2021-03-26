@@ -21,7 +21,7 @@ public class StartHotspotWithAgent extends StartLambda {
         lambda.instance.setPort(port);
         lambda.instance.setHttpClient(DefaultLambdaManagerClient.newClient(null, port, true));
         String lambdaName = lambda.list.getName();
-        command.add("java");
+        command.add(configuration.argumentStorage.getExecBinaries() + "/" + "java");
 //        command.add("-Dmicronaut.server.port=" + port);
         command.add("-agentlib:native-image-agent=config-output-dir=" + "src/lambdas/" + lambdaName + "/config"
                 + ",caller-filter-file=src/main/resources/caller-filter-config.json");

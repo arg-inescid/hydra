@@ -25,6 +25,7 @@ dependencies {
     implementation("io.micronaut:micronaut-runtime")
     implementation("javax.annotation:javax.annotation-api")
     implementation("io.micronaut:micronaut-http-client")
+    compile("com.github.maltalex:ineter:0.2.0")
     runtimeOnly("ch.qos.logback:logback-classic")
 }
 

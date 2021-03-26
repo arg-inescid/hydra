@@ -1,10 +1,9 @@
 #!/bin/bash
 
-# 1. argument - lambda code directory
-# 2. argument - lambda code jar filename
-# 3. argument - virtualization config file path
+# 1. argument - native image location
+# 2. argument - vmm code filename
+# 3. argument - virtualization config filepath
 
-cd "$1" || exit
-native-image -H:IncludeResources="logback.xml|application.yml" -jar "$2" \
+"$1"/native-image -H:IncludeResources="logback.xml|application.yml" -jar "$2" \
   -H:Virtualize="$3" -H:ConfigurationFileDirectories=./config \
   -H:ExcludeResources=".*/io.micronaut.*$|io.netty.*$"

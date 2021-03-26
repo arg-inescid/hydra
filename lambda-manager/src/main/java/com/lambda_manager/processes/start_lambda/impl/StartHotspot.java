@@ -21,7 +21,7 @@ public class StartHotspot extends StartLambda {
         lambda.instance.setPort(port);
         lambda.instance.setHttpClient(DefaultLambdaManagerClient.newClient(null, port, true));
         String lambdaName = lambda.list.getName();
-        command.add("java");
+        command.add(configuration.argumentStorage.getExecBinaries() + "/" + "java");
 //        command.add("-Dmicronaut.server.port=" + port);
         command.add("-jar");
         command.add("src/lambdas/" + lambdaName + "/" + lambdaName + ".jar");
