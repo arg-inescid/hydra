@@ -21,9 +21,14 @@ public class RemoveTaps extends AbstractProcess {
 //                command.add(configuration.argumentStorage.getTapName(lambdaName, i));
 //            }
 //        }
-        for(Tuple<String, String> tapIp: configuration.argumentStorage.getTapIfPool()) {
+        for(Tuple<String, String> tapIp: configuration.argumentStorage.getTapIPPool()) {
             command.add(tapIp.list);
         }
         return command;
+    }
+
+    @Override
+    public String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+        return "src/outputs/remove-taps_" + configuration.argumentStorage.generateRandomString() + ".dat";
     }
 }

@@ -10,7 +10,6 @@ import com.lambda_manager.processes.start_lambda.StartLambda;
 import com.lambda_manager.utils.Tuple;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -24,6 +23,10 @@ public class StartNativeImage extends StartLambda {
         String lambdaName = lambda.list.getName();
         int lambdaId = lambda.instance.getId();
 
+        command.add("/usr/bin/time");
+        command.add("--append");
+        command.add("--output=src/outputs/" + configuration.argumentStorage.getVmmmLogFile());
+        command.add("-v");
         command.add("bash");
         command.add("src/lambdas/" + lambdaName + "/" + lambdaName + "_unikernel.sh");
         command.add("--memory");
@@ -36,14 +39,13 @@ public class StartNativeImage extends StartLambda {
         command.add(configuration.argumentStorage.getGateway());
         command.add("--mask");
         command.add(configuration.argumentStorage.getMask());
-        if(configuration.argumentStorage.isConsoleActive()) {
+        if(configuration.argumentStorage.isVmmConsoleActive()) {
             command.add("--console");
         }
         command.add(String.valueOf(port));
         if(lambda.instance.getArgs() != null) {
             Collections.addAll(command, lambda.instance.getArgs().split(","));
         }
-        System.out.println("NativeImage " + Arrays.toString(command.toArray()));
         return command;
     }
 
@@ -55,5 +57,11 @@ public class StartNativeImage extends StartLambda {
     @Override
     public OnProcessFinishCallback callback(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         return new DefaultCallback();
+    }
+
+    @Override
+    public String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+        return"src/lambdas/" + lambda.list.getName() + "/outputs/start-native-image_" +
+                configuration.argumentStorage.generateRandomString() + ".dat";
     }
 }

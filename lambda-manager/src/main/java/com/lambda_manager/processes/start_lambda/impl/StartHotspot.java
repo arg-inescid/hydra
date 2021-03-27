@@ -21,7 +21,12 @@ public class StartHotspot extends StartLambda {
         lambda.instance.setPort(port);
         lambda.instance.setHttpClient(DefaultLambdaManagerClient.newClient(null, port, true));
         String lambdaName = lambda.list.getName();
-        command.add(configuration.argumentStorage.getExecBinaries() + "/" + "java");
+
+        command.add("/usr/bin/time");
+        command.add("--append");
+        command.add("--output=src/outputs/" + configuration.argumentStorage.getVmmmLogFile());
+        command.add("-v");
+        command.add(configuration.argumentStorage.getExecBinaries() + "/bin/java");
 //        command.add("-Dmicronaut.server.port=" + port);
         command.add("-jar");
         command.add("src/lambdas/" + lambdaName + "/" + lambdaName + ".jar");
@@ -41,5 +46,11 @@ public class StartHotspot extends StartLambda {
     @Override
     public OnProcessFinishCallback callback(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         return new CheckClientStatus(lambda, configuration);
+    }
+
+    @Override
+    public String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+        return "src/lambdas/" + lambda.list.getName() + "/outputs/start-hotspot_" +
+                configuration.argumentStorage.generateRandomString() + ".dat";
     }
 }

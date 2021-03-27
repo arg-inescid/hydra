@@ -21,7 +21,14 @@ public class StartHotspotWithAgent extends StartLambda {
         lambda.instance.setPort(port);
         lambda.instance.setHttpClient(DefaultLambdaManagerClient.newClient(null, port, true));
         String lambdaName = lambda.list.getName();
-        command.add(configuration.argumentStorage.getExecBinaries() + "/" + "java");
+        String execBinaries = configuration.argumentStorage.getExecBinaries();
+
+        command.add("/usr/bin/time");
+        command.add("--append");
+        command.add("--output=src/outputs/" + configuration.argumentStorage.getVmmmLogFile());
+        command.add("-v");
+        command.add(execBinaries + "/bin/java");
+        command.add("-Djava.library.path=" + execBinaries + "/lib");
 //        command.add("-Dmicronaut.server.port=" + port);
         command.add("-agentlib:native-image-agent=config-output-dir=" + "src/lambdas/" + lambdaName + "/config"
                 + ",caller-filter-file=src/main/resources/caller-filter-config.json");
@@ -42,5 +49,11 @@ public class StartHotspotWithAgent extends StartLambda {
     @Override
     public OnProcessFinishCallback callback(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         return new AgentConfigReadyCallback(lambda);
+    }
+
+    @Override
+    public String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+        return "src/lambdas/" + lambda.list.getName() + "/outputs/start-hotspot-agent_" +
+                configuration.argumentStorage.generateRandomString() + ".dat";
     }
 }

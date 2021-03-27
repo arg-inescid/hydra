@@ -27,4 +27,9 @@ public class StartLambda extends AbstractProcess {
     public OnProcessFinishCallback callback(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         return nextToSpawn.callback(lambda, configuration);
     }
+
+    @Override
+    public String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+        return nextToSpawn.processOutputFile(lambda, configuration);
+    }
 }

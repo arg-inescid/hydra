@@ -11,6 +11,7 @@ import java.net.InetSocketAddress;
 public class HelloWorld {
 
     public static void main(String[] args) throws Exception {
+        System.out.println("VMM boot time: " + (System.currentTimeMillis() - Long.parseLong(args[args.length - 1])));
         HttpServer server = HttpServer.create(new InetSocketAddress(Integer.parseInt(args[0])), 0);
         server.createContext("/", new MyHandler());
         server.setExecutor(null); // creates a default executor

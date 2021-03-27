@@ -33,8 +33,10 @@ public class DefaultCodeWriter implements CodeWriter {
             } else {
                 throw new ErrorUploadingNewLambda("Error during uploading new lambda [ " + lambda.list.getName() + " ]!");
             }
+
             File newConfigDir = new File("src/lambdas/" + encodedName + "/config");
-            if(!newConfigDir.mkdirs()) {
+            File newOutputsDir = new File("src/lambdas/" + encodedName + "/outputs");
+            if(!newConfigDir.mkdirs() || !newOutputsDir.mkdirs()) {
                 throw new ErrorUploadingNewLambda("Error during uploading new lambda [ " + lambda.list.getName() + " ]!");
             }
         }
@@ -46,18 +48,20 @@ public class DefaultCodeWriter implements CodeWriter {
     public void remove(String encodedName) {
         File dir = new File("src/lambdas/" + encodedName);
         if(dir.exists()) {
-            purgeDirectory(dir);
+            purgeDirectory(dir, true);
         }
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    private void purgeDirectory(File dir) {
+    private void purgeDirectory(File dir, boolean deleteDir) {
         //noinspection ConstantConditions
         for (File file: dir.listFiles()) {
             if (file.isDirectory())
-                purgeDirectory(file);
+                purgeDirectory(file, deleteDir);
             file.delete();
         }
-        dir.delete();
+        if(deleteDir) {
+            dir.delete();
+        }
     }
 }
