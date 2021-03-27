@@ -18,12 +18,13 @@ import com.lambda_manager.utils.parser.ManagerState;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class LambdaManagerArgumentStorage {
 
     private String execBinaries;
 
-    private String nextTap = "t100";
     private final HashMap<String, ArrayList<String>> tapNames = new HashMap<>();
 
     private int timeout;
@@ -39,16 +40,9 @@ public class LambdaManagerArgumentStorage {
     private int nextListeningPort;
     private final HashMap<String, ArrayList<Integer>> portPool = new HashMap<>();
 
-    private boolean isConsoleActive;
+    private boolean isVmmConsoleActive;
 
     private String virtualizationConfig;
-
-    private String getNextAvailableTapName(ArrayList<String> taps) {
-        String resultTap = nextTap;
-        nextTap = "t" + (Integer.parseInt(nextTap.split("t")[1]) + 1);
-        taps.add(resultTap);
-        return resultTap;
-    }
 
     public int getTimeout() {
         return timeout;
@@ -80,15 +74,15 @@ public class LambdaManagerArgumentStorage {
         }
     }
 
-    public boolean isConsoleActive() {
-        return isConsoleActive;
+    public boolean isVmmConsoleActive() {
+        return isVmmConsoleActive;
     }
 
     public int getNumberOfInstances(String lambdaName) {
         return tapNames.get(lambdaName).size();
     }
 
-    public List<Tuple<String, String>> getTapIfPool() {
+    public List<Tuple<String, String>> getTapIPPool() {
         return tapIpPool;
     }
 
@@ -115,7 +109,7 @@ public class LambdaManagerArgumentStorage {
         return nextListeningPort++;
     }
 
-    private String generateNewTapName() {
+    public String generateRandomString() {
         return new Random().ints('a', 'z' + 1)
                 .limit(10)
                 .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
@@ -134,7 +128,7 @@ public class LambdaManagerArgumentStorage {
     private void generateConnections(LambdaManagerConfiguration configuration) {
         ProcessBuilder[] processBuilders = new ProcessBuilder[10];
         for(int i = 0; i < 10; i++) {
-            tapIpPool.add(new Tuple<>(generateNewTapName(), getNextIPAddress()));
+            tapIpPool.add(new Tuple<>(generateRandomString(), getNextIPAddress()));
             listeningPortPool.add(generateNextPort());
         }
 
@@ -159,7 +153,6 @@ public class LambdaManagerArgumentStorage {
             return constructor.newInstance();
         } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException
                 | InstantiationException | InvocationTargetException e) {
-            e.printStackTrace(System.err);
             throw new ErrorDuringReflectiveClassCreation("Error during reflective class creation!", e);
         }
     }
@@ -172,7 +165,11 @@ public class LambdaManagerArgumentStorage {
         this.memorySpace = managerArguments.getMemory();
         this.lambdaListeningPort = managerArguments.getLambdaPort();
         this.nextListeningPort = this.lambdaListeningPort;
-        this.isConsoleActive = managerArguments.isConsole();
+        this.isVmmConsoleActive = managerArguments.isVmmConsole();
+
+        if (!managerArguments.isVmmmConsole()) {
+            Logger.getLogger(Logger.GLOBAL_LOGGER_NAME).setLevel(Level.OFF);
+        }
 
         String gatewayString = managerArguments.getGateway();
         this.gateway = gatewayString.split("/")[0];

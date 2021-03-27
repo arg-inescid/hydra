@@ -10,6 +10,9 @@ import com.lambda_manager.processes.Processes;
 import com.lambda_manager.processes.start_lambda.StartLambda;
 import com.lambda_manager.utils.Tuple;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 public class DefaultOptimizer implements Optimizer {
     @Override
     public void registerCall(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {

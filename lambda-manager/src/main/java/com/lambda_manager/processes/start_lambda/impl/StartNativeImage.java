@@ -10,7 +10,6 @@ import com.lambda_manager.processes.start_lambda.StartLambda;
 import com.lambda_manager.utils.Tuple;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -36,14 +35,13 @@ public class StartNativeImage extends StartLambda {
         command.add(configuration.argumentStorage.getGateway());
         command.add("--mask");
         command.add(configuration.argumentStorage.getMask());
-        if(configuration.argumentStorage.isConsoleActive()) {
+        if(configuration.argumentStorage.isVmmConsoleActive()) {
             command.add("--console");
         }
         command.add(String.valueOf(port));
         if(lambda.instance.getArgs() != null) {
             Collections.addAll(command, lambda.instance.getArgs().split(","));
         }
-        System.out.println("NativeImage " + Arrays.toString(command.toArray()));
         return command;
     }
 

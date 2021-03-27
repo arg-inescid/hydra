@@ -6,7 +6,8 @@
    "healthCheck":       50,
    "memory":            "512M",
    "lambdaPort":        8080,
-   "console":           true,
+   "vmmmConsole":       true,
+   "vmmConsole":        true,
    "managerState":
    {
       "scheduler":   "com.lambda_manager.schedulers.impl.RoundedRobinScheduler",

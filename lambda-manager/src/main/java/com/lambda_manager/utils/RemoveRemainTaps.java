@@ -8,6 +8,8 @@ import io.micronaut.context.event.ApplicationEventListener;
 import io.micronaut.runtime.event.ApplicationShutdownEvent;
 
 import javax.inject.Singleton;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @SuppressWarnings("unused")
 @Singleton
@@ -22,8 +24,9 @@ public class RemoveRemainTaps implements ApplicationEventListener<ApplicationShu
                 removeTapsWorker.start();
                 removeTapsWorker.join();
             }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        } catch (InterruptedException interruptedException) {
+            Logger.getLogger(Logger.GLOBAL_LOGGER_NAME).log(Level.WARNING, "Error during cleaning up taps!",
+                    interruptedException);
         }
     }
 }

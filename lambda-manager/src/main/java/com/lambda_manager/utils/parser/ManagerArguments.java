@@ -15,7 +15,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
         "healthCheck",
         "memory",
         "lambdaPort",
-        "console",
+        "vmmConsole",
+        "vmmmConsole",
         "managerState"
 })
 public class ManagerArguments implements Serializable
@@ -34,8 +35,10 @@ public class ManagerArguments implements Serializable
     private String memory;
     @JsonProperty("lambdaPort")
     private int lambdaPort;
-    @JsonProperty("console")
-    private boolean console;
+    @JsonProperty("vmmConsole")
+    private boolean vmmConsole;
+    @JsonProperty("vmmmConsole")
+    private boolean vmmmConsole;
     @JsonProperty("managerState")
     private ManagerState managerState;
     private final static long serialVersionUID = -6081673374812554207L;
@@ -49,7 +52,7 @@ public class ManagerArguments implements Serializable
 
     /**
      *
-     * @param console - Is console active during qemu's run.
+     * @param vmmConsole - Is console active during qemu's run.
      * @param managerState - The class that represent state of one manager's instance.
      * @param memory - How maximum memory will consume one active lambda.
      * @param lambdaPort - First port in lambda port space.
@@ -60,7 +63,7 @@ public class ManagerArguments implements Serializable
      * @param execBinaries - The Bridge name.
      */
     public ManagerArguments(String virtualizeConfig, String execBinaries, String gateway, int timeout,
-                            int healthCheck, String memory, int lambdaPort, boolean console, ManagerState managerState) {
+                            int healthCheck, String memory, int lambdaPort, boolean vmmConsole, ManagerState managerState) {
         super();
         this.virtualizeConfig = virtualizeConfig;
         this.execBinaries = execBinaries;
@@ -69,7 +72,7 @@ public class ManagerArguments implements Serializable
         this.healthCheck = healthCheck;
         this.memory = memory;
         this.lambdaPort = lambdaPort;
-        this.console = console;
+        this.vmmConsole = vmmConsole;
         this.managerState = managerState;
     }
 
@@ -143,14 +146,24 @@ public class ManagerArguments implements Serializable
         this.lambdaPort = lambdaPort;
     }
 
-    @JsonProperty("console")
-    public boolean isConsole() {
-        return console;
+    @JsonProperty("vmmConsole")
+    public boolean isVmmConsole() {
+        return vmmConsole;
     }
 
-    @JsonProperty("console")
-    public void setConsole(boolean console) {
-        this.console = console;
+    @JsonProperty("vmmConsole")
+    public void setVmmConsole(boolean vmmConsole) {
+        this.vmmConsole = vmmConsole;
+    }
+
+    @JsonProperty("vmmmConsole")
+    public boolean isVmmmConsole() {
+        return vmmmConsole;
+    }
+
+    @JsonProperty("vmmmConsole")
+    public void setVmmmConsole(boolean vmmmConsole) {
+        this.vmmmConsole = vmmmConsole;
     }
 
     @JsonProperty("managerState")

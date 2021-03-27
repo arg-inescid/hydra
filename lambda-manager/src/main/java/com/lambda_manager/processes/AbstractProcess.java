@@ -13,7 +13,8 @@ public abstract class AbstractProcess {
     protected List<String> command;
 
     public final ProcessBuilder build(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
-        return new ProcessBuilder(makeCommand(lambda, configuration), destroyForcibly(), callback(lambda, configuration));
+        return new ProcessBuilder(makeCommand(lambda, configuration), destroyForcibly(), callback(lambda, configuration),
+                processOutputFile(lambda, configuration));
     }
 
     public abstract List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration);
@@ -24,5 +25,14 @@ public abstract class AbstractProcess {
 
     public OnProcessFinishCallback callback(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         return new DefaultCallback();
+    }
+
+    public String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda,
+                                    LambdaManagerConfiguration configuration) {
+        if(lambda == null) {
+            return "dummy.dat";
+        }
+        return "src/lambdas/" + lambda.list.getName() + "/outputs/"
+                + configuration.argumentStorage.generateRandomString() + ".dat";
     }
 }

@@ -12,6 +12,7 @@ import com.lambda_manager.utils.Tuple;
 
 import java.util.Timer;
 
+@SuppressWarnings("unused")
 public class RoundedRobinScheduler implements Scheduler {
 
     @Override
