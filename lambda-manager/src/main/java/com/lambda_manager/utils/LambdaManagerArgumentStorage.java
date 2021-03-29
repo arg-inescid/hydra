@@ -43,6 +43,7 @@ public class LambdaManagerArgumentStorage {
     private boolean isVmmConsoleActive;
 
     private String virtualizationConfig;
+
     private String vmmmLogFile;
 
     public int getTimeout() {
