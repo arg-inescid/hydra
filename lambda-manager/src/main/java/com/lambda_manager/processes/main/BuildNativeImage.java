@@ -18,7 +18,7 @@ public class BuildNativeImage extends AbstractProcess {
         String lambdaName = lambda.list.getName();
         command.add("bash");
         command.add("src/scripts/build_vmm.sh");
-        command.add(configuration.argumentStorage.getExecBinaries());
+        command.add(configuration.argumentStorage.getExecBinaries() + "/bin");
         command.add("src/lambdas/" + lambdaName);
         command.add(lambdaName + ".jar");
         command.add(configuration.argumentStorage.getVirtualizationConfig());
@@ -28,5 +28,11 @@ public class BuildNativeImage extends AbstractProcess {
     @Override
     public OnProcessFinishCallback callback(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         return new NativeImageBuiltCallback(lambda, configuration);
+    }
+
+    @Override
+    public String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+        return "src/lambdas/" + lambda.list.getName() + "/outputs/build-native-image_" +
+                configuration.argumentStorage.generateRandomString() + ".dat";
     }
 }

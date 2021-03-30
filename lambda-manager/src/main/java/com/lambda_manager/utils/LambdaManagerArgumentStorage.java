@@ -44,6 +44,8 @@ public class LambdaManagerArgumentStorage {
 
     private String virtualizationConfig;
 
+    private String vmmmLogFile;
+
     public int getTimeout() {
         return timeout;
     }
@@ -171,6 +173,8 @@ public class LambdaManagerArgumentStorage {
             Logger.getLogger(Logger.GLOBAL_LOGGER_NAME).setLevel(Level.OFF);
         }
 
+        this.vmmmLogFile = "vmmm_" + generateRandomString() + ".log";
+
         String gatewayString = managerArguments.getGateway();
         this.gateway = gatewayString.split("/")[0];
         IPv4Subnet gatewayWithMask = IPv4Subnet.of(gatewayString);
@@ -205,5 +209,9 @@ public class LambdaManagerArgumentStorage {
 
     public String getExecBinaries() {
         return execBinaries;
+    }
+
+    public String getVmmmLogFile() {
+        return vmmmLogFile;
     }
 }

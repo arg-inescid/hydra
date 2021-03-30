@@ -32,7 +32,6 @@ public abstract class AbstractProcess {
         if(lambda == null) {
             return "dummy.dat";
         }
-        return "src/lambdas/" + lambda.list.getName() + "/outputs/"
-                + configuration.argumentStorage.generateRandomString() + ".dat";
+        return "src/lambdas/" + lambda.list.getName() + "/outputs";
     }
 }

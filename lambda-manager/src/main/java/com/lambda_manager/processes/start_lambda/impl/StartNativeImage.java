@@ -23,6 +23,10 @@ public class StartNativeImage extends StartLambda {
         String lambdaName = lambda.list.getName();
         int lambdaId = lambda.instance.getId();
 
+        command.add("/usr/bin/time");
+        command.add("--append");
+        command.add("--output=src/outputs/" + configuration.argumentStorage.getVmmmLogFile());
+        command.add("-v");
         command.add("bash");
         command.add("src/lambdas/" + lambdaName + "/" + lambdaName + "_unikernel.sh");
         command.add("--memory");
@@ -53,5 +57,11 @@ public class StartNativeImage extends StartLambda {
     @Override
     public OnProcessFinishCallback callback(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         return new DefaultCallback();
+    }
+
+    @Override
+    public String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+        return"src/lambdas/" + lambda.list.getName() + "/outputs/start-native-image_" +
+                configuration.argumentStorage.generateRandomString() + ".dat";
     }
 }

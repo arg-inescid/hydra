@@ -1,7 +1,7 @@
 {
    "virtualizeConfig": "/home/xrx/work/graalStuff/virtualize/virtualize.json",
-   "execBinaries":     "/home/xrx/work/graalStuff/graal/vm/latest_graalvm_home/bin",
-   "gateway":           "169.254.10.111/16",
+   "execBinaries":     "/home/xrx/work/graalStuff/graal/vm/latest_graalvm_home",
+   "gateway":           "169.254.8.80/16",
    "timeout":           10000,
    "healthCheck":       50,
    "memory":            "512M",

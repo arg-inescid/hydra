@@ -66,7 +66,7 @@ public class LambdaManager {
             // Processes.CREATE_TAP.build(lambda, configuration).start();
             // configuration.client.createNewClient(lambda, configuration, true);
 
-            logger.log(Level.WARNING, "Successfully uploaded lambda [ " + lambdaName + " ]!");
+            logger.log(Level.INFO, "Successfully uploaded lambda [ " + lambdaName + " ]!");
             return Single.just("Successfully uploaded lambda [ " + lambdaName + " ]!");
         } catch (IOException | ErrorUploadingNewLambda e) {
             logger.log(Level.SEVERE, "Error during uploading new lambda [ " + lambdaName + " ]!", e);
@@ -84,7 +84,7 @@ public class LambdaManager {
         configuration.storage.unregister(encodedName);
         configuration.codeWriter.remove(encodedName);
 
-        logger.log(Level.WARNING, "Successfully removed lambda [ " + lambdaName + " ]!");
+        logger.log(Level.INFO, "Successfully removed lambda [ " + lambdaName + " ]!");
         return Single.just("Successfully removed lambda [ " + lambdaName + " ]!");
     }
 

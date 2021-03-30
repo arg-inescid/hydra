@@ -31,6 +31,7 @@ public class ProcessBuilder extends Thread {
     @Override
     public void run() {
         File outputFile = new File(outputFilename);
+        command.add(String.valueOf(System.currentTimeMillis()));
         logger.log(Level.INFO, "Process -> " + Arrays.toString(command.toArray()) + ". Output/Error -> " + outputFilename);
         java.lang.ProcessBuilder processBuilder = new java.lang.ProcessBuilder();
         processBuilder.redirectOutput(outputFile).redirectError(outputFile);
@@ -39,17 +40,25 @@ public class ProcessBuilder extends Thread {
             this.process = processBuilder.start();
             int code = process.waitFor();
             callback.finish();
-            logger.log(Level.INFO, "Process -> " + Arrays.toString(command.toArray()) + ". End code -> " + code);
+            logger.log(Level.INFO, "Process -> " + Arrays.toString(command.toArray()) + ". Exit code -> " + code);
         } catch (IOException | InterruptedException e) {
             logger.log(Level.WARNING, "Process -> " + Arrays.toString(command.toArray()) + " raise exception!", e);
         }
     }
 
     public void shutdownInstance() {
-        Stream<ProcessHandle> descendants = process.descendants();
+        shutdownInstance(process.descendants());
+    }
+
+    private void shutdownInstance(Stream<ProcessHandle> descendants) {
+        if(descendants == null) {
+            return;
+        }
+
         descendants.forEach(new Stream.Builder<>() {
             @Override
             public void accept(ProcessHandle processHandle) {
+                shutdownInstance(processHandle.descendants());
                 if (destroyForcibly) {
                     processHandle.destroyForcibly();
                 } else {
@@ -62,10 +71,5 @@ public class ProcessBuilder extends Thread {
                 return null;
             }
         });
-        if (destroyForcibly) {
-            process.destroyForcibly();
-        } else {
-            process.destroy();
-        }
     }
 }
