@@ -16,7 +16,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
         "memory",
         "lambdaPort",
         "vmmConsole",
-        "vmmmConsole",
+        "managerConsole",
         "managerState"
 })
 public class ManagerArguments implements Serializable
@@ -37,8 +37,8 @@ public class ManagerArguments implements Serializable
     private int lambdaPort;
     @JsonProperty("vmmConsole")
     private boolean vmmConsole;
-    @JsonProperty("vmmmConsole")
-    private boolean vmmmConsole;
+    @JsonProperty("managerConsole")
+    private boolean managerConsole;
     @JsonProperty("managerState")
     private ManagerState managerState;
     private final static long serialVersionUID = -6081673374812554207L;
@@ -156,14 +156,14 @@ public class ManagerArguments implements Serializable
         this.vmmConsole = vmmConsole;
     }
 
-    @JsonProperty("vmmmConsole")
-    public boolean isVmmmConsole() {
-        return vmmmConsole;
+    @JsonProperty("managerConsole")
+    public boolean isManagerConsole() {
+        return managerConsole;
     }
 
-    @JsonProperty("vmmmConsole")
-    public void setVmmmConsole(boolean vmmmConsole) {
-        this.vmmmConsole = vmmmConsole;
+    @JsonProperty("managerConsole")
+    public void setManagerConsole(boolean managerConsole) {
+        this.managerConsole = managerConsole;
     }
 
     @JsonProperty("managerState")
