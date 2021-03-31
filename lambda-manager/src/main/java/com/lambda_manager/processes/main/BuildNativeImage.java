@@ -1,20 +1,20 @@
 package com.lambda_manager.processes.main;
 
-import com.lambda_manager.callbacks.impl.NativeImageBuiltCallback;
 import com.lambda_manager.callbacks.OnProcessFinishCallback;
+import com.lambda_manager.callbacks.impl.NativeImageBuiltCallback;
 import com.lambda_manager.collectors.lambda_info.LambdaInstanceInfo;
 import com.lambda_manager.collectors.lambda_info.LambdaInstancesInfo;
 import com.lambda_manager.core.LambdaManagerConfiguration;
 import com.lambda_manager.processes.AbstractProcess;
 import com.lambda_manager.utils.Tuple;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class BuildNativeImage extends AbstractProcess {
     @Override
     public List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
-        command = new ArrayList<>();
+        clearPreviousState();
+
         String lambdaName = lambda.list.getName();
         command.add("bash");
         command.add("src/scripts/build_vmm.sh");
@@ -32,7 +32,7 @@ public class BuildNativeImage extends AbstractProcess {
 
     @Override
     public String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
-        return "src/lambdas/" + lambda.list.getName() + "/outputs/build-native-image_" +
-                configuration.argumentStorage.generateRandomString() + ".dat";
+        return processOutputFile == null ? "src/lambdas/" + lambda.list.getName() + "/outputs/build-native-image_" +
+                configuration.argumentStorage.generateRandomString() + ".dat" : processOutputFile;
     }
 }

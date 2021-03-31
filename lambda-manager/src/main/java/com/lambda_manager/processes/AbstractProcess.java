@@ -7,10 +7,12 @@ import com.lambda_manager.collectors.lambda_info.LambdaInstancesInfo;
 import com.lambda_manager.core.LambdaManagerConfiguration;
 import com.lambda_manager.utils.Tuple;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public abstract class AbstractProcess {
     protected List<String> command;
+    protected String processOutputFile;
 
     public final ProcessBuilder build(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         return new ProcessBuilder(makeCommand(lambda, configuration), destroyForcibly(), callback(lambda, configuration),
@@ -29,9 +31,11 @@ public abstract class AbstractProcess {
 
     public String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda,
                                     LambdaManagerConfiguration configuration) {
-        if(lambda == null) {
-            return "dummy.dat";
-        }
-        return "src/lambdas/" + lambda.list.getName() + "/outputs";
+        return "dummy.dat";
+    }
+
+    protected void clearPreviousState() {
+        this.command = new ArrayList<>();
+        this.processOutputFile = null;
     }
 }

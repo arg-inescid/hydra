@@ -12,16 +12,23 @@ import com.lambda_manager.optimizers.Optimizer;
 import com.lambda_manager.processes.ProcessBuilder;
 import com.lambda_manager.processes.Processes;
 import com.lambda_manager.schedulers.Scheduler;
+import com.lambda_manager.utils.logger.AdvancedOutputFormatter;
+import com.lambda_manager.utils.logger.ElapseTimer;
 import com.lambda_manager.utils.parser.ManagerArguments;
 import com.lambda_manager.utils.parser.ManagerState;
 
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import java.util.logging.FileHandler;
+import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class LambdaManagerArgumentStorage {
+
+    public static final int RAND_STRING_LEN = 10;
 
     private String execBinaries;
 
@@ -112,7 +119,7 @@ public class LambdaManagerArgumentStorage {
 
     public String generateRandomString() {
         return new Random().ints('a', 'z' + 1)
-                .limit(10)
+                .limit(RAND_STRING_LEN)
                 .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
                 .toString();
     }
@@ -159,6 +166,25 @@ public class LambdaManagerArgumentStorage {
     }
 
     public LambdaManagerConfiguration initializeLambdaManager(ManagerArguments managerArguments) throws ErrorDuringReflectiveClassCreation {
+        AdvancedOutputFormatter formatter = new AdvancedOutputFormatter();
+        Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
+        if (!managerArguments.isManagerConsole()) {
+            logger.setUseParentHandlers(false);
+            try {
+                Handler handler = new FileHandler("src/outputs/lambda-manager.log");
+                logger.addHandler(handler);
+                handler.setFormatter(formatter);
+            } catch (IOException ioException) {
+                ioException.printStackTrace();
+            }
+        } else {
+            for (Handler handler : logger.getParent().getHandlers()) {
+                handler.setFormatter(formatter);
+            }
+        }
+
+        ElapseTimer.init();
+
         this.virtualizationConfig = managerArguments.getVirtualizeConfig();
         this.execBinaries = managerArguments.getExecBinaries();
         this.timeout = managerArguments.getTimeout();
@@ -167,10 +193,6 @@ public class LambdaManagerArgumentStorage {
         this.lambdaListeningPort = managerArguments.getLambdaPort();
         this.nextListeningPort = this.lambdaListeningPort;
         this.isVmmConsoleActive = managerArguments.isVmmConsole();
-
-        if (!managerArguments.isVmmmConsole()) {
-            Logger.getLogger(Logger.GLOBAL_LOGGER_NAME).setLevel(Level.OFF);
-        }
 
         this.vmmmLogFile = "vmmm_" + generateRandomString() + ".log";
 

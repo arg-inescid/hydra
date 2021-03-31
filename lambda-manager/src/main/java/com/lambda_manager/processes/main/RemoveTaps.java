@@ -6,13 +6,13 @@ import com.lambda_manager.core.LambdaManagerConfiguration;
 import com.lambda_manager.processes.AbstractProcess;
 import com.lambda_manager.utils.Tuple;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class RemoveTaps extends AbstractProcess {
     @Override
     public List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
-        command = new ArrayList<>();
+        clearPreviousState();
+
         command.add("bash");
         command.add("src/scripts/remove_taps.sh");
 //        for(String lambdaName : configuration.storage.getAll().keySet()) {
@@ -29,6 +29,7 @@ public class RemoveTaps extends AbstractProcess {
 
     @Override
     public String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
-        return "src/outputs/remove-taps_" + configuration.argumentStorage.generateRandomString() + ".dat";
+        return processOutputFile == null ? "src/outputs/remove-taps_"
+                + configuration.argumentStorage.generateRandomString() + ".dat" : processOutputFile;
     }
 }

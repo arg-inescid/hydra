@@ -1,27 +1,88 @@
 {
 	"plot": "plot1",
-	"plots":
-	[
+	"combine_files": [
+		{
+			"input_files": [
+				"../lambda-manager/src/lambdas/user1_simple/outputs/start*"
+			],
+			"result_file": "../benchmarks/results/hello-world-java/hello-world-data-1.dat"
+		}
+	],
+	"start_server": {
+		"port": 8080,
+		"img_width": 640,
+		"img_height": 360
+	},
+	"plots": [
 		{
 			"type": "latency",
             "output": "../benchmarks/results/hello-world/hello-world-latency.png",
-			"show_image": false,
-			"data":
-			[
-              ["Hotspot w agent", "../benchmarks/results/hello-world/hello-world-1.dat"],
-              ["Hotspot", "../benchmarks/results/hello-world/hello-world-2.dat"],
-              ["Qemu", "../benchmarks/results/hello-world/hello-world-3.dat"]
+			"show_image": true,
+			"data": [
+				{
+					"title": "Hotspot w agent",
+					"filepath": "../benchmarks/results/hello-world/hello-world-1.dat"
+				},
+				{
+					"title": "Hotspot",
+					"filepath": "../benchmarks/results/hello-world/hello-world-2.dat"
+				},
+				{
+					"title": "VMM",
+					"filepath": "../benchmarks/results/hello-world/hello-world-3.dat"
+				}
 			]
 		},
 		{
-			"type": "transfer-rate",
+			"type": "throughput",
             "output": "../benchmarks/results/hello-world/hello-world-throughput.png",
-			"show_image": false,
-			"data":
-			[
-              ["Hotspot w agent", "../benchmarks/results/hello-world/hello-world-1.dat"],
-              ["Hotspot", "../benchmarks/results/hello-world/hello-world-2.dat"],
-              ["Qemu", "../benchmarks/results/hello-world/hello-world-3.dat"]
+			"show_image": true,
+			"data": [
+				{
+					"title": "Hotspot w agent",
+					"filepath": "../benchmarks/results/hello-world/hello-world-1.dat"
+				},
+				{
+					"title": "Hotspot",
+					"filepath": "../benchmarks/results/hello-world/hello-world-2.dat"
+				},
+				{
+					"title": "VMM",
+					"filepath": "../benchmarks/results/hello-world/hello-world-3.dat"
+				}
+			]
+		},
+		{
+			"type": "footprint",
+            "output": "../benchmarks/results/hello-world-java/hello-world-footprint.png",
+			"show_image": true,
+			"data": [
+				{
+					"title": "VMM footprint",
+					"filepath": "../benchmarks/results/hello-world-java/hello-world-data-1.dat"
+				}
+			]
+		},
+		{
+			"type": "startup",
+            "output": "../benchmarks/results/hello-world-java/hello-world-startup.png",
+			"show_image": true,
+			"data": [
+				{
+					"title": "VMM startup",
+					"filepath": "../benchmarks/results/hello-world-java/hello-world-data-1.dat"
+				}
+			]
+		},
+		{
+			"type": "scalability",
+            "output": "../benchmarks/results/hello-world-java/hello-world-scalability.png",
+			"show_image": true,
+			"data": [
+				{
+					"title": "VMM scalability",
+					"filepath": "../lambda-manager/src/outputs/lambda-manager.log"
+				}
 			]
 		}
 	]

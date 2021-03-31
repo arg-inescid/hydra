@@ -9,22 +9,23 @@ import com.lambda_manager.core.LambdaManagerConfiguration;
 import com.lambda_manager.processes.start_lambda.StartLambda;
 import com.lambda_manager.utils.Tuple;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 public class StartHotspot extends StartLambda {
     @Override
     public List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
-        command = new ArrayList<>();
+        clearPreviousState();
+
         int port = configuration.argumentStorage.getNextPort();
         lambda.instance.setPort(port);
         lambda.instance.setHttpClient(DefaultLambdaManagerClient.newClient(null, port, true));
         String lambdaName = lambda.list.getName();
+        this.processOutputFile = processOutputFile(lambda, configuration);
 
         command.add("/usr/bin/time");
         command.add("--append");
-        command.add("--output=src/outputs/" + configuration.argumentStorage.getVmmmLogFile());
+        command.add("--output=" + this.processOutputFile);
         command.add("-v");
         command.add(configuration.argumentStorage.getExecBinaries() + "/bin/java");
 //        command.add("-Dmicronaut.server.port=" + port);
@@ -50,7 +51,7 @@ public class StartHotspot extends StartLambda {
 
     @Override
     public String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
-        return "src/lambdas/" + lambda.list.getName() + "/outputs/start-hotspot_" +
-                configuration.argumentStorage.generateRandomString() + ".dat";
+        return processOutputFile == null ? "src/lambdas/" + lambda.list.getName() + "/outputs/start-hotspot_" +
+                lambda.list.getId() + "_" + configuration.argumentStorage.generateRandomString() + ".dat" : processOutputFile;
     }
 }
