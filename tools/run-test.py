@@ -84,12 +84,12 @@ def run(username, command):
 
 
 def upload_lambdas(username, manager, command):
-    for _ in range(command['num_lambdas']):
-        print_message(username, "Response: " +
-                      requests.post("{manager}/upload_lambda?user={username}&name={lambda_name}"
-                                    .format(manager=manager, username=username, lambda_name=command['lambda_name']),
-                                    headers={'Content-type': 'application/octet-stream'},
-                                    data=read_file(username, command['res_path'])).text, MessageType.INFO)
+    print_message(username, "Response: " +
+                  requests.post("{manager}/upload_lambda?allocate={allocate}&user={username}&name={lambda_name}"
+                                .format(allocate=command['num_lambdas'], manager=manager, username=username,
+                                        lambda_name=command['lambda_name']),
+                                headers={'Content-type': 'application/octet-stream'},
+                                data=read_file(username, command['res_path'])).text, MessageType.INFO)
 
 
 def remove_lambdas(username, manager, lambda_name):

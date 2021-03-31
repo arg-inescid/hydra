@@ -7,6 +7,7 @@ import com.lambda_manager.exceptions.argument_parser.ErrorDuringReflectiveClassC
 import com.lambda_manager.exceptions.argument_parser.InvalidJSONFile;
 import com.lambda_manager.exceptions.user.ErrorUploadingNewLambda;
 import com.lambda_manager.exceptions.user.LambdaNotFound;
+import com.lambda_manager.processes.Processes;
 import com.lambda_manager.utils.LambdaManagerArgumentStorage;
 import com.lambda_manager.utils.Tuple;
 import com.lambda_manager.utils.parser.ArgumentParser;
@@ -53,7 +54,7 @@ public class LambdaManager {
         }
     }
 
-    public Single<String> uploadLambda(String username, String lambdaName, byte[] lambdaCode) {
+    public Single<String> uploadLambda(int allocate, String username, String lambdaName, byte[] lambdaCode) {
         try {
             if (configuration == null) {
                 logger.log(Level.WARNING, "No configuration has been uploaded!");
@@ -62,15 +63,18 @@ public class LambdaManager {
 
             String encodedName = configuration.encoder.encode(username, lambdaName);
             LambdaInstancesInfo lambdaInstancesInfo = configuration.storage.register(encodedName);
-            Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda = configuration.codeWriter.upload(lambdaInstancesInfo, encodedName, lambdaCode);
-            // Processes.CREATE_TAP.build(lambda, configuration).start();
-            // configuration.client.createNewClient(lambda, configuration, true);
+            for(int i = 0; i < allocate; i++) {
+                Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda = configuration.codeWriter.upload(
+                        lambdaInstancesInfo, encodedName, lambdaCode);
+                // Processes.CREATE_TAP.build(lambda, configuration).start();
+                // configuration.client.createNewClient(lambda, configuration, true);
+            }
 
-            logger.log(Level.INFO, "Successfully uploaded lambda [ " + lambdaName + " ]!");
-            return Single.just("Successfully uploaded lambda [ " + lambdaName + " ]!");
+            logger.log(Level.INFO, "Successfully uploaded lambda [" + lambdaName + "]!");
+            return Single.just("Successfully uploaded lambda [" + lambdaName + "]!");
         } catch (IOException | ErrorUploadingNewLambda e) {
-            logger.log(Level.SEVERE, "Error during uploading new lambda [ " + lambdaName + " ]!", e);
-            return Single.just("Error during uploading new lambda [ " + lambdaName + " ]!");
+            logger.log(Level.SEVERE, "Error during uploading new lambda [" + lambdaName + "]!", e);
+            return Single.just("Error during uploading new lambda [" + lambdaName + "]!");
         }
     }
 
@@ -84,8 +88,8 @@ public class LambdaManager {
         configuration.storage.unregister(encodedName);
         configuration.codeWriter.remove(encodedName);
 
-        logger.log(Level.INFO, "Successfully removed lambda [ " + lambdaName + " ]!");
-        return Single.just("Successfully removed lambda [ " + lambdaName + " ]!");
+        logger.log(Level.INFO, "Successfully removed lambda [" + lambdaName + "]!");
+        return Single.just("Successfully removed lambda [" + lambdaName + "]!");
     }
 
     public Single<String> startManager(String configData) {
