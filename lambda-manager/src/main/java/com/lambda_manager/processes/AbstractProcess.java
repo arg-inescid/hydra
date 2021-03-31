@@ -15,15 +15,11 @@ public abstract class AbstractProcess {
     protected String processOutputFile;
 
     public final ProcessBuilder build(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
-        return new ProcessBuilder(makeCommand(lambda, configuration), destroyForcibly(), callback(lambda, configuration),
+        return new ProcessBuilder(makeCommand(lambda, configuration), callback(lambda, configuration),
                 processOutputFile(lambda, configuration));
     }
 
     public abstract List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration);
-
-    public boolean destroyForcibly() {
-        return false;
-    }
 
     public OnProcessFinishCallback callback(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         return new DefaultCallback();

@@ -19,11 +19,6 @@ public class StartHotspotWithBuildNativeImage extends StartHotspot {
     }
 
     @Override
-    public boolean destroyForcibly() {
-        return false;
-    }
-
-    @Override
     public OnProcessFinishCallback callback(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         return new CheckClientStatus(lambda, configuration);
     }

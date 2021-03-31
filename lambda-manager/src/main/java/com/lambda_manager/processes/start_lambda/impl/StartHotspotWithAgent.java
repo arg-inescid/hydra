@@ -43,11 +43,6 @@ public class StartHotspotWithAgent extends StartLambda {
     }
 
     @Override
-    public boolean destroyForcibly() {
-        return false;
-    }
-
-    @Override
     public OnProcessFinishCallback callback(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         return new AgentConfigReadyCallback(lambda);
     }

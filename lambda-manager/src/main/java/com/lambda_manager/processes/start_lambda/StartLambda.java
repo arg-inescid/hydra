@@ -19,11 +19,6 @@ public class StartLambda extends AbstractProcess {
     }
 
     @Override
-    public boolean destroyForcibly() {
-        return nextToSpawn.destroyForcibly();
-    }
-
-    @Override
     public OnProcessFinishCallback callback(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         return nextToSpawn.callback(lambda, configuration);
     }

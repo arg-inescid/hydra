@@ -11,9 +11,9 @@ public class AdvancedOutputFormatter extends SimpleFormatter {
         if (message.contains("#")) {
             String[] split = message.split("#");
             record.setMessage(split[1]);
-            return "TIMESTAMP (" + split[0] + ") " + super.format(record);
+            return "Timestamp (" + split[0] + ") " + super.format(record);
         } else {
-            return "TIMESTAMP (" + ElapseTimer.elapsedTime() + ") " + super.format(record);
+            return "Timestamp (" + ElapseTimer.elapsedTime() + ") " + super.format(record);
         }
     }
 }

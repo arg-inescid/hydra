@@ -40,11 +40,6 @@ public class StartHotspot extends StartLambda {
     }
 
     @Override
-    public boolean destroyForcibly() {
-        return false;
-    }
-
-    @Override
     public OnProcessFinishCallback callback(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         return new CheckClientStatus(lambda, configuration);
     }

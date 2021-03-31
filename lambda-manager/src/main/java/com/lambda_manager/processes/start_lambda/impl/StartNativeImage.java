@@ -51,11 +51,6 @@ public class StartNativeImage extends StartLambda {
     }
 
     @Override
-    public boolean destroyForcibly() {
-        return true;
-    }
-
-    @Override
     public OnProcessFinishCallback callback(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         return new DefaultCallback();
     }
