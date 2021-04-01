@@ -18,6 +18,12 @@ public class RemoveTaps extends AbstractProcess {
         for (LambdaInstanceInfo instance : lambda.list.getAvailableInstances()) {
             command.add(instance.getTap());
         }
+        for (LambdaInstanceInfo instance : lambda.list.getStartedInstances()) {
+            command.add(instance.getTap());
+        }
+        for (LambdaInstanceInfo instance : lambda.list.getActiveInstances()) {
+            command.add(instance.getTap());
+        }
         return command;
     }
 

@@ -25,10 +25,8 @@ public abstract class AbstractProcess {
         return new DefaultCallback();
     }
 
-    public String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda,
-                                    LambdaManagerConfiguration configuration) {
-        return "dummy.dat";
-    }
+    public abstract String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda,
+                                    LambdaManagerConfiguration configuration);
 
     protected void clearPreviousState() {
         this.command = new ArrayList<>();

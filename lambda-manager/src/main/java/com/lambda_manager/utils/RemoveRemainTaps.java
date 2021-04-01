@@ -21,12 +21,12 @@ public class RemoveRemainTaps implements ApplicationEventListener<ApplicationShu
     @Override
     public void onApplicationEvent(ApplicationShutdownEvent event) {
         try {
-            LambdaManagerConfiguration configuration = LambdaManager.getLambdaManager().getConfiguration();
+            LambdaManagerConfiguration configuration = LambdaManager.getConfiguration();
             if (configuration != null) {
                 List<ProcessBuilder> removeTapsWorkers = new ArrayList<>();
                 ProcessBuilder removeTapsWorker;
                 for(LambdaInstancesInfo lambda : configuration.storage.getAll().values()) {
-                    removeTapsWorker = Processes.REMOVE_TAPS.build(new Tuple<>(lambda, null), null);
+                    removeTapsWorker = Processes.REMOVE_TAPS.build(new Tuple<>(lambda, null), configuration);
                     removeTapsWorker.start();
                     removeTapsWorkers.add(removeTapsWorker);
                 }

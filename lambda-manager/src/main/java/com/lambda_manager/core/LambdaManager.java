@@ -19,15 +19,21 @@ import java.util.logging.Logger;
 
 public class LambdaManager {
 
-    private static final LambdaManager LAMBDA_MANAGER = new LambdaManager();
+    private static LambdaManager lambdaManager;
+    private static LambdaManagerConfiguration configuration;
     private final Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
-    private LambdaManagerConfiguration configuration;
 
-    public static LambdaManager getLambdaManager() {
-        return LAMBDA_MANAGER;
+    private LambdaManager() {
     }
 
-    public LambdaManagerConfiguration getConfiguration() {
+    public static LambdaManager getLambdaManager() {
+        if(lambdaManager == null) {
+            lambdaManager = new LambdaManager();
+        }
+        return lambdaManager;
+    }
+
+    public static LambdaManagerConfiguration getConfiguration() {
         return configuration;
     }
 
@@ -66,8 +72,8 @@ public class LambdaManager {
             for(int i = 0; i < allocate; i++) {
                 Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda = configuration.codeWriter.upload(
                         lambdaInstancesInfo, encodedName, lambdaCode);
-                // Processes.CREATE_TAP.build(lambda, configuration).start();
-                // configuration.client.createNewClient(lambda, configuration, true);
+                 Processes.CREATE_TAP.build(lambda, configuration).start();
+                 configuration.client.createNewClient(lambda, configuration);
             }
 
             logger.log(Level.INFO, "Successfully uploaded lambda [" + lambdaName + "]!");

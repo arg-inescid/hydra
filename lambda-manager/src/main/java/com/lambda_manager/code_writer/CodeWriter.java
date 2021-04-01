@@ -8,8 +8,7 @@ import com.lambda_manager.utils.Tuple;
 import java.io.IOException;
 
 public interface CodeWriter {
-    Tuple<LambdaInstancesInfo, LambdaInstanceInfo> upload(
-            LambdaInstancesInfo lambdaInstancesInfo, String encodedName,
+    Tuple<LambdaInstancesInfo, LambdaInstanceInfo> upload(LambdaInstancesInfo lambdaInstancesInfo, String encodedName,
             byte[] lambdaCode) throws ErrorUploadingNewLambda, IOException;
     void remove(String encodedName);
 }

@@ -4,7 +4,6 @@ import com.lambda_manager.callbacks.OnProcessFinishCallback;
 import com.lambda_manager.callbacks.impl.DefaultCallback;
 import com.lambda_manager.collectors.lambda_info.LambdaInstanceInfo;
 import com.lambda_manager.collectors.lambda_info.LambdaInstancesInfo;
-import com.lambda_manager.connectivity.client.impl.DefaultLambdaManagerClient;
 import com.lambda_manager.core.LambdaManagerConfiguration;
 import com.lambda_manager.processes.start_lambda.StartLambda;
 import com.lambda_manager.utils.Tuple;
@@ -17,11 +16,7 @@ public class StartNativeImage extends StartLambda {
     public List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         clearPreviousState();
 
-        int port = configuration.argumentStorage.getLambdaListeningPort();
-        lambda.instance.setPort(-1);
-        lambda.instance.setHttpClient(DefaultLambdaManagerClient.newClient(lambda.instance.getIp(), port, false));
         String lambdaName = lambda.list.getName();
-        int lambdaId = lambda.instance.getId();
         this.processOutputFile = processOutputFile(lambda, configuration);
 
         command.add("/usr/bin/time");
@@ -43,7 +38,7 @@ public class StartNativeImage extends StartLambda {
         if(configuration.argumentStorage.isVmmConsoleActive()) {
             command.add("--console");
         }
-        command.add(String.valueOf(port));
+        command.add(String.valueOf(configuration.argumentStorage.getLambdaPort()));
         if(lambda.instance.getArgs() != null) {
             Collections.addAll(command, lambda.instance.getArgs().split(","));
         }

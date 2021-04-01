@@ -27,7 +27,7 @@ public class BuildNativeImage extends AbstractProcess {
 
     @Override
     public OnProcessFinishCallback callback(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
-        return new NativeImageBuiltCallback(lambda, configuration);
+        return new NativeImageBuiltCallback(lambda);
     }
 
     @Override

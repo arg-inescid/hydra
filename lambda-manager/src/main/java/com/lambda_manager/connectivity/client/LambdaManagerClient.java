@@ -7,8 +7,7 @@ import com.lambda_manager.exceptions.user.ErrorUploadingNewLambda;
 import com.lambda_manager.utils.Tuple;
 
 public interface LambdaManagerClient {
-
-    void createNewClient(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration,
-                                       boolean createLocalAddress) throws ErrorUploadingNewLambda;
+    void createNewClient(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration)
+            throws ErrorUploadingNewLambda;
     String sendRequest(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration);
 }

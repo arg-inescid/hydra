@@ -16,7 +16,6 @@ public class LambdaInstancesInfo {
     private final ArrayList<LambdaInstanceInfo> startedInstances = new ArrayList<>();
     private final ArrayList<LambdaInstanceInfo> activeInstances = new ArrayList<>();
     private final HashMap<Integer, ProcessBuilder> currentlyActiveWorkers = new HashMap<>();
-    private final ArrayList<RxHttpClient> httpClients = new ArrayList<>();
 
     public LambdaInstancesInfo(String name) {
         this.name = name;
@@ -57,9 +56,5 @@ public class LambdaInstancesInfo {
 
     public HashMap<Integer, ProcessBuilder> getCurrentlyActiveWorkers() {
         return currentlyActiveWorkers;
-    }
-
-    public ArrayList<RxHttpClient> getHttpClients() {
-        return httpClients;
     }
 }

@@ -13,7 +13,40 @@ public class LambdaInstanceInfo {
     private String tap;
     private String ip;
     private int port;
-    private RxHttpClient httpClient;
+    private RxHttpClient localClient;
+    private RxHttpClient publicClient;
+
+    public LambdaInstanceInfo(int id) {
+        this.id = id;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public int getOpenRequestCount() {
+        return openRequestCount;
+    }
+
+    public void setOpenRequestCount(int openRequestCount) {
+        this.openRequestCount = openRequestCount;
+    }
+
+    public String getArgs() {
+        return args;
+    }
+
+    public void setArgs(String args) {
+        this.args = args;
+    }
+
+    public Timer getTimer() {
+        return timer;
+    }
+
+    public void setTimer(Timer timer) {
+        this.timer = timer;
+    }
 
     public String getTap() {
         return tap;
@@ -39,43 +72,19 @@ public class LambdaInstanceInfo {
         this.port = port;
     }
 
-    public LambdaInstanceInfo(int id) {
-        this.id = id;
+    public RxHttpClient getLocalClient() {
+        return localClient;
     }
 
-    public int getId() {
-        return id;
+    public void setLocalClient(RxHttpClient localClient) {
+        this.localClient = localClient;
     }
 
-    public Timer getTimer() {
-        return timer;
+    public RxHttpClient getPublicClient() {
+        return publicClient;
     }
 
-    public void setTimer(Timer timer) {
-        this.timer = timer;
-    }
-
-    public int getOpenRequestCount() {
-        return openRequestCount;
-    }
-
-    public void setOpenRequestCount(int openRequestCount) {
-        this.openRequestCount = openRequestCount;
-    }
-
-    public String getArgs() {
-        return args;
-    }
-
-    public void setArgs(String args) {
-        this.args = args;
-    }
-
-    public RxHttpClient getHttpClient() {
-        return httpClient;
-    }
-
-    public void setHttpClient(RxHttpClient httpClient) {
-        this.httpClient = httpClient;
+    public void setPublicClient(RxHttpClient publicClient) {
+        this.publicClient = publicClient;
     }
 }
