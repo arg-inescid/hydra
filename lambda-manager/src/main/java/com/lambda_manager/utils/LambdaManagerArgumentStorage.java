@@ -44,7 +44,7 @@ public class LambdaManagerArgumentStorage {
     private int nextPort;
 
     private boolean isVmmConsoleActive;
-
+  
     private Object createObject(String className) throws ErrorDuringReflectiveClassCreation {
         try {
             Class<?> clazz = Class.forName(className);
