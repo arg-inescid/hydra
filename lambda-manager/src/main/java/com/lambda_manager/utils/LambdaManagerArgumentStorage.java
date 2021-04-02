@@ -81,14 +81,14 @@ public class LambdaManagerArgumentStorage {
         AdvancedOutputFormatter formatter = new AdvancedOutputFormatter();
         Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
         if (!managerArguments.isManagerConsole()) {
-            String managerLogDirname = "src/outputs/lambda-manager_" + generateRandomString() + ".log";
+            String managerLogDirname = "src/logs/lambda-manager_" + generateRandomString() + ".log";
             logger.log(Level.INFO, "Log is redirected to file -> " + managerLogDirname);
             logger.setUseParentHandlers(false);
             try {
                 File managerLogDir = new File(managerLogDirname);
                 //noinspection ResultOfMethodCallIgnored
                 managerLogDir.mkdirs();
-                Handler handler = new FileHandler("src/outputs/lambda-manager.log");
+                Handler handler = new FileHandler(managerLogDirname);
                 logger.addHandler(handler);
                 handler.setFormatter(formatter);
             } catch (IOException ioException) {
@@ -109,8 +109,7 @@ public class LambdaManagerArgumentStorage {
         LambdaStorage storage = (LambdaStorage) createObject(managerState.getStorage());
         LambdaManagerClient client = (LambdaManagerClient) createObject(managerState.getClient());
         CodeWriter codeWriter = (CodeWriter) createObject(managerState.getCodeWriter());
-        return new LambdaManagerConfiguration(scheduler,
-                optimizer, encoder, storage, client, codeWriter, this);
+        return new LambdaManagerConfiguration(scheduler, optimizer, encoder, storage, client, codeWriter, this);
     }
 
     public String getVirtualizationConfig() {

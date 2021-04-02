@@ -29,7 +29,7 @@ public class RemoveTaps extends AbstractProcess {
 
     @Override
     public String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
-        return processOutputFile == null ? "src/outputs/remove-taps_"
+        return processOutputFile == null ? "src/lambdas/" + lambda.list.getName() + "/logs/remove-taps_"
                 + configuration.argumentStorage.generateRandomString() + ".dat" : processOutputFile;
     }
 }

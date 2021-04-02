@@ -35,8 +35,8 @@ public class DefaultCodeWriter implements CodeWriter {
             }
 
             File newConfigDir = new File("src/lambdas/" + encodedName + "/config");
-            File newOutputsDir = new File("src/lambdas/" + encodedName + "/outputs");
-            if(!newConfigDir.mkdirs() || !newOutputsDir.mkdirs()) {
+            File newLogDir = new File("src/lambdas/" + encodedName + "/logs");
+            if(!newConfigDir.mkdirs() || !newLogDir.mkdirs()) {
                 throw new ErrorUploadingNewLambda("Error during uploading new lambda [ " + lambda.list.getName() + " ]!");
             }
             File newOutputsDir = new File("src/lambdas/" + encodedName + "/outputs");

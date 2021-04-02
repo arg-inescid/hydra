@@ -5,7 +5,7 @@ build/
 target/
 out/
 src/lambdas/*
-src/outputs/*
+src/logs/*
 .idea
 *.iml
 *.ipr

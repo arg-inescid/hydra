@@ -45,7 +45,8 @@ public class StartHotspotWithAgent extends StartLambda {
 
     @Override
     public String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
-        return processOutputFile == null ? "src/lambdas/" + lambda.list.getName() + "/outputs/start-hotspot-agent_" +
-                configuration.argumentStorage.generateRandomString() + ".dat" : processOutputFile;
+        return processOutputFile == null ? "src/lambdas/" + lambda.list.getName() + "/logs/start-hotspot-w-agent-id-"
+                + lambda.instance.getId() + "_" + configuration.argumentStorage.generateRandomString() + ".dat"
+                : processOutputFile;
     }
 }

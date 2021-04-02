@@ -28,7 +28,7 @@ public class CreateTap extends AbstractProcess {
 
     @Override
     public String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
-        return processOutputFile == null ? "src/lambdas/" + lambda.list.getName() + "/outputs/create_taps_" +
+        return processOutputFile == null ? "src/lambdas/" + lambda.list.getName() + "/logs/create-taps_" +
                 configuration.argumentStorage.generateRandomString() + ".dat" : processOutputFile;
     }
 }
