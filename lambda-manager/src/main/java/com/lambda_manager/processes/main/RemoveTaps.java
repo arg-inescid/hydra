@@ -9,20 +9,20 @@ import com.lambda_manager.utils.Tuple;
 import java.util.List;
 
 public class RemoveTaps extends AbstractProcess {
+
     @Override
     public List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         clearPreviousState();
-
         command.add("bash");
         command.add("src/scripts/remove_taps.sh");
-//        for(String lambdaName : configuration.storage.getAll().keySet()) {
-//            int numberOfInstances = configuration.argumentStorage.getNumberOfInstances(lambdaName);
-//            for (int i = 0; i < numberOfInstances; i++) {
-//                command.add(configuration.argumentStorage.getTapName(lambdaName, i));
-//            }
-//        }
-        for(Tuple<String, String> tapIp: configuration.argumentStorage.getTapIPPool()) {
-            command.add(tapIp.list);
+        for (LambdaInstanceInfo instance : lambda.list.getAvailableInstances()) {
+            command.add(instance.getTap());
+        }
+        for (LambdaInstanceInfo instance : lambda.list.getStartedInstances()) {
+            command.add(instance.getTap());
+        }
+        for (LambdaInstanceInfo instance : lambda.list.getActiveInstances()) {
+            command.add(instance.getTap());
         }
         return command;
     }

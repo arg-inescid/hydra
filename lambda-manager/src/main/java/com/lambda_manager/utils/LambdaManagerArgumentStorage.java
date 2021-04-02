@@ -9,14 +9,13 @@ import com.lambda_manager.core.LambdaManagerConfiguration;
 import com.lambda_manager.encoders.Encoder;
 import com.lambda_manager.exceptions.argument_parser.ErrorDuringReflectiveClassCreation;
 import com.lambda_manager.optimizers.Optimizer;
-import com.lambda_manager.processes.ProcessBuilder;
-import com.lambda_manager.processes.Processes;
 import com.lambda_manager.schedulers.Scheduler;
 import com.lambda_manager.utils.logger.AdvancedOutputFormatter;
 import com.lambda_manager.utils.logger.ElapseTimer;
 import com.lambda_manager.utils.parser.ManagerArguments;
 import com.lambda_manager.utils.parser.ManagerState;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -30,131 +29,22 @@ public class LambdaManagerArgumentStorage {
 
     public static final int RAND_STRING_LEN = 10;
 
+    private String virtualizationConfig;
     private String execBinaries;
 
-    private final HashMap<String, ArrayList<String>> tapNames = new HashMap<>();
+    private String gateway;
+    private String mask;
+    private Iterator<IPv4Address> iPv4AddressIterator;
 
     private int timeout;
     private int healthCheck;
     private String memorySpace;
 
-    private final HashMap<String, ArrayList<String>> lambdaAddresses = new HashMap<>();
-    private String gateway;
-    private String mask;
-    private Iterator<IPv4Address> iPv4AddressIterator;
-
-    private int lambdaListeningPort;
-    private int nextListeningPort;
-    private final HashMap<String, ArrayList<Integer>> portPool = new HashMap<>();
+    private int lambdaPort;
+    private int nextPort;
 
     private boolean isVmmConsoleActive;
-
-    private String virtualizationConfig;
-
-    private String vmmmLogFile;
-
-    public int getTimeout() {
-        return timeout;
-    }
-
-    public int getHealthCheck() {
-        return healthCheck;
-    }
-
-    public String getMemorySpace() {
-        return memorySpace;
-    }
-
-    public String getInstanceAddress(String lambdaName, int id) {
-        return lambdaAddresses.get(lambdaName).get(id);
-    }
-
-    public int getLambdaListeningPort() {
-        return lambdaListeningPort;
-    }
-
-    public int getInstancePort(String lambdaName, int id) {
-        ArrayList<Integer> ports = portPool.computeIfAbsent(lambdaName, k -> new ArrayList<>());
-        if (id < ports.size()) {
-            return ports.get(id);
-        } else {
-            ports.add(nextListeningPort);
-            return nextListeningPort++;
-        }
-    }
-
-    public boolean isVmmConsoleActive() {
-        return isVmmConsoleActive;
-    }
-
-    public int getNumberOfInstances(String lambdaName) {
-        return tapNames.get(lambdaName).size();
-    }
-
-    public List<Tuple<String, String>> getTapIPPool() {
-        return tapIpPool;
-    }
-
-    List<Tuple<String, String>> tapIpPool = new ArrayList<>();
-    List<Integer> listeningPortPool = new ArrayList<>();
-
-    public Tuple<String, String> getTapIp() {
-        return tapIpPool.remove(0);
-    }
-
-    public void returnTapIp(Tuple<String, String> tapIp) {
-        tapIpPool.add(tapIp);
-    }
-
-    public int getNextPort() {
-        return listeningPortPool.remove(0);
-    }
-
-    public void returnPort(int port) {
-        listeningPortPool.add(port);
-    }
-
-    private int generateNextPort() {
-        return nextListeningPort++;
-    }
-
-    public String generateRandomString() {
-        return new Random().ints('a', 'z' + 1)
-                .limit(RAND_STRING_LEN)
-                .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
-                .toString();
-    }
-
-    private String getNextIPAddress() {
-        String nextIPAddress = iPv4AddressIterator.next().toString();
-        if(nextIPAddress.equals(getGateway())) {
-            return iPv4AddressIterator.next().toString();
-        } else {
-            return nextIPAddress;
-        }
-    }
-
-    private void generateConnections(LambdaManagerConfiguration configuration) {
-        ProcessBuilder[] processBuilders = new ProcessBuilder[10];
-        for(int i = 0; i < 10; i++) {
-            tapIpPool.add(new Tuple<>(generateRandomString(), getNextIPAddress()));
-            listeningPortPool.add(generateNextPort());
-        }
-
-        for (int i = 0; i < 10; i++) {
-            processBuilders[i] = Processes.CREATE_TAP.build(null, configuration);
-            processBuilders[i].start();
-        }
-
-        for (ProcessBuilder processBuilder: processBuilders) {
-            try {
-                processBuilder.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
+  
     private Object createObject(String className) throws ErrorDuringReflectiveClassCreation {
         try {
             Class<?> clazz = Class.forName(className);
@@ -166,12 +56,38 @@ public class LambdaManagerArgumentStorage {
         }
     }
 
-    public LambdaManagerConfiguration initializeLambdaManager(ManagerArguments managerArguments) throws ErrorDuringReflectiveClassCreation {
+    public LambdaManagerConfiguration initializeLambdaManager(ManagerArguments managerArguments)
+            throws ErrorDuringReflectiveClassCreation {
+
+        this.virtualizationConfig = managerArguments.getVirtualizeConfig();
+        this.execBinaries = managerArguments.getExecBinaries();
+
+        String gatewayString = managerArguments.getGateway();
+        this.gateway = gatewayString.split("/")[0];
+        IPv4Subnet gatewayWithMask = IPv4Subnet.of(gatewayString);
+        this.mask = gatewayWithMask.getNetworkMask().toString();
+        this.iPv4AddressIterator = gatewayWithMask.iterator();
+        this.iPv4AddressIterator.next();
+
+        this.timeout = managerArguments.getTimeout();
+        this.healthCheck = managerArguments.getHealthCheck();
+        this.memorySpace = managerArguments.getMemory();
+
+        this.lambdaPort = managerArguments.getLambdaPort();
+        this.nextPort = this.lambdaPort;
+
+        this.isVmmConsoleActive = managerArguments.isVmmConsole();
+
         AdvancedOutputFormatter formatter = new AdvancedOutputFormatter();
         Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
         if (!managerArguments.isManagerConsole()) {
+            String managerLogDirname = "src/outputs/lambda-manager_" + generateRandomString() + ".log";
+            logger.log(Level.INFO, "Log is redirected to file -> " + managerLogDirname);
             logger.setUseParentHandlers(false);
             try {
+                File managerLogDir = new File(managerLogDirname);
+                //noinspection ResultOfMethodCallIgnored
+                managerLogDir.mkdirs();
                 Handler handler = new FileHandler("src/outputs/lambda-manager.log");
                 logger.addHandler(handler);
                 handler.setFormatter(formatter);
@@ -186,23 +102,6 @@ public class LambdaManagerArgumentStorage {
 
         ElapseTimer.init();
 
-        this.virtualizationConfig = managerArguments.getVirtualizeConfig();
-        this.execBinaries = managerArguments.getExecBinaries();
-        this.timeout = managerArguments.getTimeout();
-        this.healthCheck = managerArguments.getHealthCheck();
-        this.memorySpace = managerArguments.getMemory();
-        this.lambdaListeningPort = managerArguments.getLambdaPort();
-        this.nextListeningPort = this.lambdaListeningPort;
-        this.isVmmConsoleActive = managerArguments.isVmmConsole();
-
-        this.vmmmLogFile = "vmmm_" + generateRandomString() + ".log";
-
-        String gatewayString = managerArguments.getGateway();
-        this.gateway = gatewayString.split("/")[0];
-        IPv4Subnet gatewayWithMask = IPv4Subnet.of(gatewayString);
-        this.mask = gatewayWithMask.getNetworkMask().toString();
-        this.iPv4AddressIterator = gatewayWithMask.iterator();
-
         ManagerState managerState = managerArguments.getManagerState();
         Scheduler scheduler = (Scheduler) createObject(managerState.getScheduler());
         Optimizer optimizer = (Optimizer) createObject(managerState.getOptimizer());
@@ -210,15 +109,25 @@ public class LambdaManagerArgumentStorage {
         LambdaStorage storage = (LambdaStorage) createObject(managerState.getStorage());
         LambdaManagerClient client = (LambdaManagerClient) createObject(managerState.getClient());
         CodeWriter codeWriter = (CodeWriter) createObject(managerState.getCodeWriter());
-        LambdaManagerConfiguration configuration = new LambdaManagerConfiguration(scheduler,
+        return new LambdaManagerConfiguration(scheduler,
                 optimizer, encoder, storage, client, codeWriter, this);
-
-        generateConnections(configuration);
-        return configuration;
     }
 
     public String getVirtualizationConfig() {
         return virtualizationConfig;
+    }
+
+    public String getExecBinaries() {
+        return execBinaries;
+    }
+
+    public String getNextIPAddress() {
+        String nextIPAddress = iPv4AddressIterator.next().toString();
+        if(nextIPAddress.equals(getGateway())) {
+            return iPv4AddressIterator.next().toString();
+        } else {
+            return nextIPAddress;
+        }
     }
 
     public String getGateway() {
@@ -229,11 +138,34 @@ public class LambdaManagerArgumentStorage {
         return mask;
     }
 
-    public String getExecBinaries() {
-        return execBinaries;
+    public int getTimeout() {
+        return timeout;
     }
 
-    public String getVmmmLogFile() {
-        return vmmmLogFile;
+    public int getHealthCheck() {
+        return healthCheck;
+    }
+
+    public String getMemorySpace() {
+        return memorySpace;
+    }
+
+    public int getLambdaPort() {
+        return lambdaPort;
+    }
+
+    public int getNextPort() {
+        return nextPort++;
+    }
+
+    public boolean isVmmConsoleActive() {
+        return isVmmConsoleActive;
+    }
+
+    public String generateRandomString() {
+        return new Random().ints('a', 'z' + 1)
+                .limit(RAND_STRING_LEN)
+                .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+                .toString();
     }
 }

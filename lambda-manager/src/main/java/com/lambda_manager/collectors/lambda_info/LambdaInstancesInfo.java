@@ -2,7 +2,6 @@ package com.lambda_manager.collectors.lambda_info;
 
 import com.lambda_manager.optimizers.LambdaStatusType;
 import com.lambda_manager.processes.ProcessBuilder;
-import io.micronaut.http.client.RxHttpClient;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -16,7 +15,6 @@ public class LambdaInstancesInfo {
     private final ArrayList<LambdaInstanceInfo> startedInstances = new ArrayList<>();
     private final ArrayList<LambdaInstanceInfo> activeInstances = new ArrayList<>();
     private final HashMap<Integer, ProcessBuilder> currentlyActiveWorkers = new HashMap<>();
-    private final ArrayList<RxHttpClient> httpClients = new ArrayList<>();
 
     public LambdaInstancesInfo(String name) {
         this.name = name;
@@ -57,9 +55,5 @@ public class LambdaInstancesInfo {
 
     public HashMap<Integer, ProcessBuilder> getCurrentlyActiveWorkers() {
         return currentlyActiveWorkers;
-    }
-
-    public ArrayList<RxHttpClient> getHttpClients() {
-        return httpClients;
     }
 }

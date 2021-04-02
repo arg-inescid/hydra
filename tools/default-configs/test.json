@@ -8,19 +8,63 @@
 			"username": "user1",
 			"commands":
 			[
-				["remove", "simple"],
-				["upload", 3, "simple", "../benchmarks/hello-world-java/build/libs/hello-world-java-0.1.jar"],
-				[ "send",
-					[3, 1000, 10, "simple", [], "../benchmarks/results/hello-world-java/hello-world-java-1.dat"]
-				],
-				["pause", 20],
-				[ "send",
-					[3, 1000, 10, "simple", [], "../benchmarks/results/hello-world-java/hello-world-java-2.dat"]
-				],
-				["pause", 50],
-				[ "send",
-					[3, 1000, 10, "simple", [], "../benchmarks/results/hello-world-java/hello-world-java-3.dat"]
-				]
+				{
+					"command": "remove",
+					"lambda_name": "hello"
+				},
+				{
+					"command": "upload",
+					"allocate": 3,
+					"lambda_name": "hello",
+					"source": "../benchmarks/hello-world-java/build/libs/hello-world-java-0.1.jar"
+				},
+				{
+					"command": "send",
+					"sending_info": [
+						{
+							"iterations": 3,
+							"num_requests": 1000,
+							"num_clients": 10,
+							"lambda_name": "hello",
+							"args_pool": [],
+							"output": "../benchmarks/results/hello-world-java/hello-world-java-1.dat"
+						}
+					]
+				},
+				{
+					"command": "pause",
+					"duration": 20
+				},
+				{
+					"command": "send",
+					"sending_info": [
+						{
+							"iterations": 3,
+							"num_requests": 1000,
+							"num_clients": 10,
+							"lambda_name": "hello",
+							"args_pool": [],
+							"output": "../benchmarks/results/hello-world-java/hello-world-java-2.dat"
+						}
+					]
+				},
+				{
+					"command": "pause",
+					"duration": 50
+				},
+				{
+					"command": "send",
+					"sending_info": [
+						{
+							"iterations": 3,
+							"num_requests": 1000,
+							"num_clients": 10,
+							"lambda_name": "hello",
+							"args_pool": [],
+							"output": "../benchmarks/results/hello-world-java/hello-world-java-3.dat"
+						}
+					]
+				}
 			]
 		}
 	]

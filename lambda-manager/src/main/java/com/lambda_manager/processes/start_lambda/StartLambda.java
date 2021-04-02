@@ -10,17 +10,13 @@ import com.lambda_manager.utils.Tuple;
 import java.util.List;
 
 public class StartLambda extends AbstractProcess {
+
     private StartLambda nextToSpawn;
 
     @Override
     public List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration state) {
         this.nextToSpawn = state.optimizer.whomToSpawn(lambda, state);
         return nextToSpawn.makeCommand(lambda, state);
-    }
-
-    @Override
-    public boolean destroyForcibly() {
-        return nextToSpawn.destroyForcibly();
     }
 
     @Override

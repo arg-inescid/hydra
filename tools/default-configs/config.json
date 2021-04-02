@@ -1,12 +1,12 @@
 {
    "virtualizeConfig": "/home/xrx/work/graalStuff/virtualize/virtualize.json",
    "execBinaries":     "/home/xrx/work/graalStuff/graal/vm/latest_graalvm_home",
-   "gateway":           "169.254.8.80/16",
+   "gateway":           "169.254.8.20/16",
    "timeout":           10000,
    "healthCheck":       50,
    "memory":            "512M",
    "lambdaPort":        8080,
-   "managerConsole":    false,
+   "managerConsole":    true,
    "vmmConsole":        true,
    "managerState":
    {

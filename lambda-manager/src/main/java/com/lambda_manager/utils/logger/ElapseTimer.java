@@ -1,6 +1,7 @@
 package com.lambda_manager.utils.logger;
 
 public class ElapseTimer {
+
     private static long INIT_TIME;
 
     public static void init() {

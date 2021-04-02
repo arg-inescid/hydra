@@ -16,16 +16,14 @@ public class ProcessBuilder extends Thread {
 
     private final List<String> command;
     private final OnProcessFinishCallback callback;
-    private final boolean destroyForcibly;
     private final String outputFilename;
     private Process process;
     private final Logger logger;
     private long timestamp;
 
-    public ProcessBuilder(List<String> command, boolean destroyForcibly, OnProcessFinishCallback callback,
+    public ProcessBuilder(List<String> command, OnProcessFinishCallback callback,
                           String outputFilename) {
         this.command = command;
-        this.destroyForcibly = destroyForcibly;
         this.callback = callback;
         this.outputFilename = outputFilename;
         this.logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
@@ -65,18 +63,7 @@ public class ProcessBuilder extends Thread {
 
     public void shutdownInstance() {
         writeTimestamp(timestamp);
-        destroyLeafProcess();
-    }
-
-    private void destroyLeafProcess() {
-        ProcessHandle current = process.toHandle();
-        while(current.descendants().count() > 0) {
-            if (current.descendants().count() > 1) {
-                logger.log(Level.WARNING, "More than one child!");
-            }
-            current = current.descendants().findFirst().get();
-        }
-        current.destroy();
+        shutdownInstance(process.descendants());
     }
 
     private void shutdownInstance(Stream<ProcessHandle> descendants) {
@@ -88,11 +75,7 @@ public class ProcessBuilder extends Thread {
             @Override
             public void accept(ProcessHandle processHandle) {
                 shutdownInstance(processHandle.descendants());
-                if (destroyForcibly) {
-                    processHandle.destroyForcibly();
-                } else {
-                    processHandle.destroy();
-                }
+                processHandle.destroy();
             }
 
             @Override

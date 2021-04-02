@@ -9,16 +9,26 @@ import com.lambda_manager.utils.Tuple;
 import java.util.List;
 
 public class CreateTap extends AbstractProcess {
+
     @Override
     public List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         clearPreviousState();
 
-        Tuple<String, String> tapIp = configuration.argumentStorage.getTapIp();
+        String tap = configuration.argumentStorage.generateRandomString();
+        String ip = configuration.argumentStorage.getNextIPAddress();
+        lambda.instance.setTap(tap);
+        lambda.instance.setIp(ip);
+
         command.add("bash");
         command.add("src/scripts/create_taps.sh");
-        command.add(tapIp.list);
-        command.add(tapIp.instance);
-        configuration.argumentStorage.returnTapIp(tapIp);
+        command.add(tap);
+        command.add(ip);
         return command;
+    }
+
+    @Override
+    public String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+        return processOutputFile == null ? "src/lambdas/" + lambda.list.getName() + "/outputs/create_taps_" +
+                configuration.argumentStorage.generateRandomString() + ".dat" : processOutputFile;
     }
 }
