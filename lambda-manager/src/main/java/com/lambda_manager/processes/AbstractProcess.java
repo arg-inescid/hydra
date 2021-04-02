@@ -20,13 +20,13 @@ public abstract class AbstractProcess {
                 processOutputFile(lambda, configuration));
     }
 
-    public abstract List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration);
+    protected abstract List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration);
 
-    public OnProcessFinishCallback callback(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+    protected OnProcessFinishCallback callback(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         return new DefaultCallback();
     }
 
-    public abstract String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda,
+    protected abstract String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda,
                                     LambdaManagerConfiguration configuration);
 
     protected void clearPreviousState() {

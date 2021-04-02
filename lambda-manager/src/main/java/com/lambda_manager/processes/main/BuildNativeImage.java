@@ -33,7 +33,7 @@ public class BuildNativeImage extends AbstractProcess {
 
     @Override
     public String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
-        return processOutputFile == null ? "src/lambdas/" + lambda.list.getName() + "/outputs/build-native-image_" +
-                configuration.argumentStorage.generateRandomString() + ".dat" : processOutputFile;
+        return processOutputFile == null ? "src/lambdas/" + lambda.list.getName() + "/logs/build-native-image_"
+                + configuration.argumentStorage.generateRandomString() + ".dat" : processOutputFile;
     }
 }
