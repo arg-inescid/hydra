@@ -11,6 +11,7 @@ import com.lambda_manager.utils.Tuple;
 import java.util.List;
 
 public class BuildNativeImage extends AbstractProcess {
+
     @Override
     public List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         clearPreviousState();

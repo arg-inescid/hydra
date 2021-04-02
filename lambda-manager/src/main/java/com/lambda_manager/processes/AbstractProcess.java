@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public abstract class AbstractProcess {
+
     protected List<String> command;
     protected String processOutputFile;
 

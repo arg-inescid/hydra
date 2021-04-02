@@ -12,6 +12,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class StartNativeImage extends StartLambda {
+
     @Override
     public List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         clearPreviousState();

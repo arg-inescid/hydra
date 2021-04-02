@@ -10,6 +10,7 @@ import com.lambda_manager.utils.Tuple;
 import java.util.List;
 
 public class StartLambda extends AbstractProcess {
+
     private StartLambda nextToSpawn;
 
     @Override

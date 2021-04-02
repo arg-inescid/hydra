@@ -2,7 +2,6 @@ package com.lambda_manager.collectors.lambda_info;
 
 import com.lambda_manager.optimizers.LambdaStatusType;
 import com.lambda_manager.processes.ProcessBuilder;
-import io.micronaut.http.client.RxHttpClient;
 
 import java.util.ArrayList;
 import java.util.HashMap;
