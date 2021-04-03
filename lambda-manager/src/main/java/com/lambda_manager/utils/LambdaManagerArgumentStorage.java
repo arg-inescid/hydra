@@ -81,14 +81,17 @@ public class LambdaManagerArgumentStorage {
         AdvancedOutputFormatter formatter = new AdvancedOutputFormatter();
         Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
         if (!managerArguments.isManagerConsole()) {
-            String managerLogDirname = "src/logs/lambda-manager_" + generateRandomString() + ".log";
-            logger.log(Level.INFO, "Log is redirected to file -> " + managerLogDirname);
+            File managerLogDir = new File("src/logs/");
+            //noinspection ResultOfMethodCallIgnored
+            managerLogDir.mkdirs();
+            String managerLogFilename = "src/logs/lambda-manager_" + generateRandomString() + ".log";
+            logger.log(Level.INFO, "Log is redirected to file -> " + managerLogFilename);
             logger.setUseParentHandlers(false);
             try {
-                File managerLogDir = new File(managerLogDirname);
+                File managerLogFile = new File(managerLogFilename);
                 //noinspection ResultOfMethodCallIgnored
-                managerLogDir.mkdirs();
-                Handler handler = new FileHandler(managerLogDirname);
+                managerLogFile.createNewFile();
+                Handler handler = new FileHandler(managerLogFilename);
                 logger.addHandler(handler);
                 handler.setFormatter(formatter);
             } catch (IOException ioException) {

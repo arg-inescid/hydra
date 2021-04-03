@@ -14,7 +14,7 @@
 				},
 				{
 					"command": "upload",
-					"allocate": 3,
+					"allocate": 53,
 					"lambda_name": "hello",
 					"source": "../benchmarks/hello-world-java/build/libs/hello-world-java-0.1.jar"
 				},

@@ -16,39 +16,39 @@
 	"plots": [
 		{
 			"type": "latency",
-            "output": "../benchmarks/results/hello-world/hello-world-latency.png",
+            "output": "../benchmarks/results/hello-world-java/hello-world-latency.png",
 			"show_image": true,
 			"data": [
 				{
 					"title": "Hotspot w agent",
-					"filepath": "../benchmarks/results/hello-world/hello-world-1.dat"
+					"filepath": "../benchmarks/results/hello-world-java/hello-world-1.dat"
 				},
 				{
 					"title": "Hotspot",
-					"filepath": "../benchmarks/results/hello-world/hello-world-2.dat"
+					"filepath": "../benchmarks/results/hello-world-java/hello-world-2.dat"
 				},
 				{
 					"title": "VMM",
-					"filepath": "../benchmarks/results/hello-world/hello-world-3.dat"
+					"filepath": "../benchmarks/results/hello-world-java/hello-world-3.dat"
 				}
 			]
 		},
 		{
 			"type": "throughput",
-            "output": "../benchmarks/results/hello-world/hello-world-throughput.png",
+            "output": "../benchmarks/results/hello-world-java/hello-world-throughput.png",
 			"show_image": true,
 			"data": [
 				{
 					"title": "Hotspot w agent",
-					"filepath": "../benchmarks/results/hello-world/hello-world-1.dat"
+					"filepath": "../benchmarks/results/hello-world-java/hello-world-1.dat"
 				},
 				{
 					"title": "Hotspot",
-					"filepath": "../benchmarks/results/hello-world/hello-world-2.dat"
+					"filepath": "../benchmarks/results/hello-world-java/hello-world-2.dat"
 				},
 				{
 					"title": "VMM",
-					"filepath": "../benchmarks/results/hello-world/hello-world-3.dat"
+					"filepath": "../benchmarks/results/hello-world-java/hello-world-3.dat"
 				}
 			]
 		},

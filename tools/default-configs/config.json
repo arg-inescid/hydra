@@ -6,7 +6,7 @@
    "healthCheck":       50,
    "memory":            "512M",
    "lambdaPort":        8080,
-   "managerConsole":    true,
+   "managerConsole":    false,
    "vmmConsole":        true,
    "managerState":
    {
