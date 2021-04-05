@@ -3,6 +3,8 @@ import shlex
 import subprocess
 import sys
 
+import requests
+
 
 # Message type.
 class MessageType(enum.Enum):
@@ -29,6 +31,10 @@ def print_message(message, t):
     print(message)
 
 
+def install_required_packages():
+    print_message(run(sys.executable + " -m pip install requests"), MessageType.WARN)
+
+
 # Core methods.
 def run(command):
     outs, errs = subprocess.Popen(shlex.split(command),
@@ -47,6 +53,10 @@ def install_world():
     print_message("Installing world...", MessageType.INFO)
     run("sudo aptitude install gcc libz-dev libguestfs-tools qemu qemu-kvm maven apache2-utils gnuplot")
     print_message("Installing the world...done", MessageType.INFO)
+
+
+def install_nginx():
+    pass
 
 
 def install_docker():
@@ -71,8 +81,10 @@ def setup_virtualization():
 
 # Main function.
 if __name__ == '__main__':
+    install_required_packages()
     make_kernel_writable()
     install_world()
+    install_nginx()
     install_docker()
     install_native_image()
     setup_virtualization()

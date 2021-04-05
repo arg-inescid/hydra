@@ -83,25 +83,34 @@ def run(username, command):
     return outs
 
 
-def configure_manager(manager, config_path):
-    print_message("general", "Response: " +
-                  requests.post("{manager}/configure_manager".format(manager=manager),
-                                headers={'Content-type': 'application/json'},
-                                data=read_file("general", config_path)).text, MessageType.INFO)
+def configure_managers(managers):
+    for manager in managers:
+        print_message("general", "Response: " +
+                      requests.post("{manager}/configure_manager".format(manager=manager['address']),
+                                    headers={'Content-type': 'application/json'},
+                                    data=read_file("general", manager['config_path'])).text, MessageType.INFO)
 
 
-def upload_lambdas(username, manager, command_info):
+def register_managers(load_balancer, managers):
+    for manager in managers:
+        print_message("general", "Response: " +
+                      requests.post("{load_balancer}/register_manager?upstream=manager_cluster&add=&server={manager}"
+                                    .format(load_balancer=load_balancer, manager=manager)).text, MessageType.INFO)
+
+
+def upload_lambdas(username, entry_point, command_info):
     print_message(username, "Response: " +
-                  requests.post("{manager}/upload_lambda?allocate={allocate}&user={username}&name={lambda_name}"
-                                .format(allocate=command_info['allocate'], manager=manager, username=username,
+                  requests.post("{entry_point}/upload_lambda?allocate={allocate}&user={username}&name={lambda_name}"
+                                .format(allocate=command_info['allocate'], entry_point=entry_point, username=username,
                                         lambda_name=command_info['lambda_name']),
                                 headers={'Content-type': 'application/octet-stream'},
                                 data=read_file(username, command_info['source'])).text, MessageType.INFO)
 
 
-def remove_lambdas(username, manager, command_info):
-    print_message(username, "Response: " + requests.post("{manager}/remove_lambda?user={username}&name={lambda_name}"
-                                                         .format(manager=manager, username=username,
+def remove_lambdas(username, entry_point, command_info):
+    print_message(username, "Response: " + requests.post("{entry_point}/remove_lambda?"
+                                                         "user={username}&name={lambda_name}"
+                                                         .format(entry_point=entry_point, username=username,
                                                                  lambda_name=command_info['lambda_name'])).text,
                   MessageType.INFO)
 
@@ -173,18 +182,29 @@ def create_user(user_info, manager):
     print_message(user_info['username'], "{} is running...done".format(user_info['username']), MessageType.INFO)
 
 
+def unregister_managers(load_balancer, managers):
+    for manager in managers:
+        print_message("general", "Response: " +
+                      requests.post("{load_balancer}/register_manager?upstream=manager_cluster&remove=&server={manager}"
+                                    .format(load_balancer=load_balancer, manager=manager)).text, MessageType.INFO)
+
+
 def test(data):
     print_message("general", "{} is running...".format(data['test']), MessageType.INFO)
-    configure_manager(data['manager'], data['config_path'])
+
+    # register_managers(data['entry_point'], data['managers'])
+    configure_managers(data['managers'])
 
     users = []
     for user_info in data['users']:
-        user = threading.Thread(target=create_user, args=(user_info, data['manager']))
+        user = threading.Thread(target=create_user, args=(user_info, data['entry_point']))
         user.start()
         users.append(user)
 
     for user in users:
         user.join()
+
+    # unregister_managers(data['entry_point'], data['managers'])
 
     print_message("general", "{} is running...done".format(data['test']), MessageType.INFO)
 

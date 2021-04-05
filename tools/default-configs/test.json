@@ -1,5 +1,12 @@
 {
 	"test": "test1",
+	"entry_point": "http://localhost:9000",
+	"managers": [
+		{
+			"address": "http://localhost:9000",
+			"config_path": "default-configs/config.json"
+		}
+	],
 	"manager": "http://localhost:9000",
 	"config_path": "default-configs/config.json",
 	"users":
@@ -20,7 +27,8 @@
 				},
 				{
 					"command": "send",
-					"sending_info": [
+					"sending_info":
+					[
 						{
 							"iterations": 3,
 							"num_requests": 1000,
@@ -37,7 +45,8 @@
 				},
 				{
 					"command": "send",
-					"sending_info": [
+					"sending_info":
+					[
 						{
 							"iterations": 3,
 							"num_requests": 1000,
@@ -54,7 +63,8 @@
 				},
 				{
 					"command": "send",
-					"sending_info": [
+					"sending_info":
+					[
 						{
 							"iterations": 3,
 							"num_requests": 1000,
