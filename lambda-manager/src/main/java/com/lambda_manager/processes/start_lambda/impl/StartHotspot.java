@@ -16,17 +16,15 @@ public class StartHotspot extends StartLambda {
     @Override
     public List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         clearPreviousState();
-
-        String lambdaName = lambda.list.getName();
         this.processOutputFile = processOutputFile(lambda, configuration);
 
         command.add("/usr/bin/time");
         command.add("--append");
         command.add("--output=" + this.processOutputFile);
         command.add("-v");
-        command.add(configuration.argumentStorage.getExecBinaries() + "/bin/java");
-        command.add("-jar");
-        command.add("src/lambdas/" + lambdaName + "/" + lambdaName + ".jar");
+        command.add("bash");
+        command.add("src/scripts/start_hotspot.sh");
+        command.add(lambda.list.getName());
         command.add(String.valueOf(lambda.instance.getPort()));
         if(lambda.instance.getArgs() != null) {
             Collections.addAll(command, lambda.instance.getArgs().split(","));

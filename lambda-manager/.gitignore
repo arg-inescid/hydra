@@ -15,3 +15,5 @@ lambda-manager-*
 .settings
 .classpath
 .factorypath
+*.log
+*.swp

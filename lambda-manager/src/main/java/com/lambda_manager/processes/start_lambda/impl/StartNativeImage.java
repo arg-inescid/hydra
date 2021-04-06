@@ -16,8 +16,6 @@ public class StartNativeImage extends StartLambda {
     @Override
     public List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         clearPreviousState();
-
-        String lambdaName = lambda.list.getName();
         this.processOutputFile = processOutputFile(lambda, configuration);
 
         command.add("/usr/bin/time");
@@ -25,16 +23,12 @@ public class StartNativeImage extends StartLambda {
         command.add("--output=" + this.processOutputFile);
         command.add("-v");
         command.add("bash");
-        command.add("src/lambdas/" + lambdaName + "/" + lambdaName + "_unikernel.sh");
-        command.add("--memory");
+        command.add("src/scripts/start_nativeimage.sh");
+        command.add(lambda.list.getName());
         command.add(configuration.argumentStorage.getMemorySpace());
-        command.add("--ip");
         command.add(lambda.instance.getIp());
-        command.add("--tap");
         command.add(lambda.instance.getTap());
-        command.add("--gateway");
         command.add(configuration.argumentStorage.getGateway());
-        command.add("--mask");
         command.add(configuration.argumentStorage.getMask());
         if(configuration.argumentStorage.isVmmConsoleActive()) {
             command.add("--console");

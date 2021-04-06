@@ -8,6 +8,7 @@ import java.util.HashMap;
 
 public class LambdaInstancesInfo {
 
+	// TODO - we don't need this ID! This is super misleading...
     private int id = 0;
     private final String name;
     private LambdaStatusType status;

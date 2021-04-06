@@ -12,8 +12,8 @@ import java.util.List;
 
 public abstract class AbstractProcess {
 
-    protected List<String> command;
-    protected String processOutputFile;
+    protected List<String> command; // TODO - delete this field. We don't need it.
+    protected String processOutputFile; // TODO - delete this field. We don't need it.
 
     public final ProcessBuilder build(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         return new ProcessBuilder(makeCommand(lambda, configuration), callback(lambda, configuration),
@@ -29,6 +29,7 @@ public abstract class AbstractProcess {
     protected abstract String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda,
                                     LambdaManagerConfiguration configuration);
 
+    // TODO - this method should be deleted once we delete the fields.
     protected void clearPreviousState() {
         this.command = new ArrayList<>();
         this.processOutputFile = null;

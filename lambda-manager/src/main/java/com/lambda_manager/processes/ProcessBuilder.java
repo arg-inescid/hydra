@@ -18,7 +18,7 @@ public class ProcessBuilder extends Thread {
     private final OnProcessFinishCallback callback;
     private final String outputFilename;
     private Process process;
-    private final Logger logger;
+    private final Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
     private long timestamp;
 
     public ProcessBuilder(List<String> command, OnProcessFinishCallback callback,
@@ -26,7 +26,6 @@ public class ProcessBuilder extends Thread {
         this.command = command;
         this.callback = callback;
         this.outputFilename = outputFilename;
-        this.logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
     }
 
     @Override
@@ -55,7 +54,7 @@ public class ProcessBuilder extends Thread {
         File outputFile = new File(outputFilename);
         try (FileWriter fileWriter = new FileWriter(outputFile, true)) {
             fileWriter.write("\n***** USAGE INFO *****\n");
-            fileWriter.write("Timestamp (" + timestamp + ")\n");
+            fileWriter.write("Timestamp (" + timestamp + ")\n"); // TODO - this needs a more descriptive header.
         } catch (IOException ioException) {
             ioException.printStackTrace();
         }
@@ -68,6 +67,7 @@ public class ProcessBuilder extends Thread {
 
     private void shutdownInstance(Stream<ProcessHandle> descendants) {
         if(descendants == null) {
+        	// TODO - isn't this an error? Didn't we agree that this needs proper handling??
             return;
         }
 
@@ -76,6 +76,13 @@ public class ProcessBuilder extends Thread {
             public void accept(ProcessHandle processHandle) {
                 shutdownInstance(processHandle.descendants());
                 processHandle.destroy();
+                while (processHandle.isAlive()) {
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace(); // TODO - properly handle this exception
+                    }
+                }
             }
 
             @Override

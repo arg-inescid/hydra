@@ -13,10 +13,6 @@ fi
 LAMBDA_HOME=$MANAGER_HOME/src/lambdas/$LAMBDA_NAME
 LAMBDA_JAR=$LAMBDA_HOME/$LAMBDA_NAME.jar
 
-cd $LAMBDA_HOME
-$JAVA_HOME/bin/native-image \
-	-H:IncludeResources="logback.xml|application.yml" \
+$JAVA_HOME/bin/java \
 	-jar $LAMBDA_JAR \
-	-H:Virtualize=$VIRTUALIZE_PATH \
-	-H:ConfigurationFileDirectories=$LAMBDA_HOME/config \
-	-H:ExcludeResources=".*/io.micronaut.*$|io.netty.*$"
+	${@:2}
