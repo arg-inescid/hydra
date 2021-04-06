@@ -1,9 +1,9 @@
 #!/bin/bash
-# This script was automatically generated.
-# The primary goal of this script is to allow users to locally test their machines and see if they work.
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+source $DIR/../env.sh
+
 FILE_FORMAT=raw
-KERNEL_PATH=/home/ubuntu/virtualize/vmlinux-4.14.35-1902.6.6.1.el7.container
-IMAGE_NAME=stretch.img
 print_and_die() {
     echo -e "$1" >&2
     exit 1
@@ -11,6 +11,7 @@ print_and_die() {
 USAGE=$(cat << USAGE_END
 Usage: --memory mem --ip ip --gateway gateway --mask mask --tap tapname [--console]
        --memory mem - VM RAM memory to pass to QEMU
+       --img imgage - VM image
        --ip ip - VM ip address
        --gateway gateway - VM gateway
        --mask mask - VM networm mask
@@ -38,6 +39,14 @@ while :; do
             shift
         else
             print_and_die "Flag --memory requires an additional argument\n$USAGE"
+        fi
+        ;;
+    -g | --img)
+        if [ "$2" ]; then
+            IMAGE_NAME=$2
+            shift
+        else
+            print_and_die "Flag --img requires an additional argument\n$USAGE"
         fi
         ;;
     -i | --ip)
@@ -91,7 +100,7 @@ while :; do
 
     shift
 done
-if [ -z $VMM_MEM ] || [ -z $VMM_GATEWAY ] || [ -z $VMM_MASK ] || [ -z $VMM_TAP_NAME ] || [ -z $SHARED_DIR ] || [ -z $VMM_IP ]; then
+if [ -z $VMM_MEM ] || [ -z $VMM_GATEWAY ] || [ -z $VMM_MASK ] || [ -z $VMM_TAP_NAME ] || [ -z $IMAGE_NAME ] || [ -z $SHARED_DIR ] || [ -z $VMM_IP ]; then
     print_and_die "$USAGE"
 fi
 NODEFAULT_ARGS=
@@ -104,7 +113,7 @@ if [ -z $VMM_CONSOLE ]; then
 fi
 KERNEL_PCI_SWITCH=
 NET_DEV_ARGS=
-if qemu-system-x86_64 --machine help | grep microvm &> /dev/null; then
+if $QEMU --machine help | grep microvm &> /dev/null; then
     MACHINE_ARGS='-machine microvm,accel=kvm,kernel_irqchip=on'
     if [ -z $VMM_CONSOLE ]; then
         MACHINE_ARGS='-machine microvm,accel=kvm,kernel_irqchip=on'
@@ -131,8 +140,7 @@ for arg in "$@"; do
     FINAL_ARGS="$FINAL_ARGS $arg"
 done
 
-PARENT_PATH=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
-sudo qemu-system-x86_64 \
+sudo $QEMU \
                 $NODEFAULT_ARGS \
                 $MACHINE_ARGS \
                 -cpu host,-vmx \
@@ -147,4 +155,4 @@ sudo qemu-system-x86_64 \
                 -no-hpet \
                 -fsdev local,id=fs1,path=$SHARED_DIR,security_model=none \
                 -device virtio-9p-device,fsdev=fs1,mount_tag=shared \
-                -blockdev driver=$FILE_FORMAT,node-name=drive,file.locking=off,file.driver=file,file.filename=$PARENT_PATH/$IMAGE_NAME \
+                -blockdev driver=$FILE_FORMAT,node-name=drive,file.locking=off,file.driver=file,file.filename=$IMAGE_NAME \
