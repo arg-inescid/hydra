@@ -1,8 +1,9 @@
 #!/bin/bash
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+source $DIR/../env.sh
 
-# sudo bash /home/ubuntu/fulltest/lambda-manager/src/scripts/create_taps.sh tap999 10.0.123.180
-./debian-vm_unikernel.sh --memory 512M --gateway 192.168.1.81 --ip 192.168.1.82 --mask 255.255.255.0 --img $DIR/stretch.img --shared $DIR/shared --tap tap999 --console
-# destroy tap
+# sudo ../create_taps.sh tap999 192.168.1.250
+./debian-vm_unikernel.sh --memory 512M --gateway 192.168.1.1 --ip 192.168.1.250 --mask 255.255.255.0 --kernel $KERNEL_PATH --img stretch.img --shared shared --tap tap999 --console
+# sudo ../remove_taps tap999
 # ssh -oStrictHostKeyChecking=no -i id_rsa root@10.0.123.180

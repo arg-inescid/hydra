@@ -13,6 +13,7 @@ public class StartHotspotWithBuildNativeImage extends StartHotspot {
     @Override
     public List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         clearPreviousState();
+        // TODO - this shouold be moved into the Optimizer. We may need to build images without re-running the JVM again.
         Processes.BUILD_NATIVE_IMAGE.build(lambda, configuration).start();
         return super.makeCommand(lambda, configuration);
     }

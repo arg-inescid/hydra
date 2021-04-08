@@ -1,12 +1,25 @@
 #!/bin/bash
 
-# 1. argument - native image location
-# 2. argument - vmm code directory
-# 3. argument - vmm code filename
-# 4. argument - virtualization config filepath
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+source $DIR/env.sh
 
+FUNCTION_NAME=$1
+if [ -z "$FUNCTION_NAME" ]
+then
+	echo "Function name is not present."
+	exit 1
+fi
 
-cd "$2" || { echo "**** Path ($2) is missing! ****"; exit 1; }
-"$1"/native-image -H:IncludeResources="logback.xml|application.yml" -jar "$3" \
-  -H:Virtualize="$4" -H:ConfigurationFileDirectories=./config \
-  -H:ExcludeResources=".*/io.micronaut.*$|io.netty.*$"
+FUNCTION_HOME=$MANAGER_HOME/src/lambdas/$FUNCTION_NAME
+FUNCTION_JAR=$FUNCTION_HOME/$FUNCTION_NAME.jar
+
+cd $FUNCTION_HOME
+if [[ ! -f $FUNCTION_HOME/$FUNCTION_NAME.img ]]
+then
+	$JAVA_HOME/bin/native-image \
+		-H:IncludeResources="logback.xml|application.yml" \
+		-jar $FUNCTION_JAR \
+		-H:Virtualize=$VIRTUALIZE_PATH \
+		-H:ConfigurationFileDirectories=$FUNCTION_HOME/config \
+		-H:ExcludeResources=".*/io.micronaut.*$|io.netty.*$"
+fi

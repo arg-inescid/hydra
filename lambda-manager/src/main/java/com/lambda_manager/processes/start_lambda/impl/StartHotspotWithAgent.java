@@ -16,21 +16,21 @@ public class StartHotspotWithAgent extends StartLambda {
     @Override
     public List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         clearPreviousState();
-
-        String lambdaName = lambda.list.getName();
-        String execBinaries = configuration.argumentStorage.getExecBinaries();
         this.processOutputFile = processOutputFile(lambda, configuration);
 
         command.add("/usr/bin/time");
         command.add("--append");
         command.add("--output=" + this.processOutputFile);
         command.add("-v");
-        command.add(execBinaries + "/bin/java");
-        command.add("-Djava.library.path=" + execBinaries + "/lib");
-        command.add("-agentlib:native-image-agent=config-output-dir=" + "src/lambdas/" + lambdaName + "/config"
-                + ",caller-filter-file=src/main/resources/caller-filter-config.json");
-        command.add("-jar");
-        command.add("src/lambdas/" + lambdaName + "/" + lambdaName + ".jar");
+        command.add("bash");
+        command.add("src/scripts/start_hotspot_agent.sh");
+        command.add(lambda.list.getName());
+        command.add(String.valueOf(lambda.instance.getId()));
+        command.add(configuration.argumentStorage.getMemorySpace());
+        command.add(lambda.instance.getIp());
+        command.add(lambda.instance.getTap());
+        command.add(configuration.argumentStorage.getGateway());
+        command.add(configuration.argumentStorage.getMask());
         command.add(String.valueOf(lambda.instance.getPort()));
         if(lambda.instance.getArgs() != null) {
             Collections.addAll(command, lambda.instance.getArgs().split(","));
@@ -45,8 +45,8 @@ public class StartHotspotWithAgent extends StartLambda {
 
     @Override
     public String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
-        return processOutputFile == null ? "src/lambdas/" + lambda.list.getName() + "/logs/start-hotspot-w-agent-id-"
-                + lambda.instance.getId() + "_" + configuration.argumentStorage.generateRandomString() + ".dat"
+        return processOutputFile == null ? "src/lambdas/" + lambda.list.getName() + "/logs/start-hotspot-w-agent-id-" +
+                lambda.instance.getId() + "_" + configuration.argumentStorage.generateRandomString() + ".dat"
                 : processOutputFile;
     }
 }

@@ -15,6 +15,7 @@ public class DefaultOptimizer implements Optimizer {
 
     @Override
     public void registerCall(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+    	// TODO - while we don't have use for it, delete it.
     }
 
     @Override

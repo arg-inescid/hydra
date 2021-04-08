@@ -13,7 +13,6 @@ public class LambdaInstanceInfo {
     private String tap;
     private String ip;
     private int port;
-    private RxHttpClient localClient;
     private RxHttpClient publicClient;
 
     public LambdaInstanceInfo(int id) {
@@ -70,14 +69,6 @@ public class LambdaInstanceInfo {
 
     public void setPort(int port) {
         this.port = port;
-    }
-
-    public RxHttpClient getLocalClient() {
-        return localClient;
-    }
-
-    public void setLocalClient(RxHttpClient localClient) {
-        this.localClient = localClient;
     }
 
     public RxHttpClient getPublicClient() {

@@ -15,14 +15,15 @@ public class BuildNativeImage extends AbstractProcess {
     @Override
     public List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         clearPreviousState();
+        this.processOutputFile = processOutputFile(lambda, configuration);
 
-        String lambdaName = lambda.list.getName();
+        command.add("/usr/bin/time");
+        command.add("--append");
+        command.add("--output=" + this.processOutputFile);
+        command.add("-v");
         command.add("bash");
         command.add("src/scripts/build_vmm.sh");
-        command.add(configuration.argumentStorage.getExecBinaries() + "/bin");
-        command.add("src/lambdas/" + lambdaName);
-        command.add(lambdaName + ".jar");
-        command.add(configuration.argumentStorage.getVirtualizationConfig());
+        command.add(lambda.list.getName());
         return command;
     }
 
