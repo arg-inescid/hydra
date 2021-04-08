@@ -1,8 +1,5 @@
 #!/bin/bash
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-source $DIR/../env.sh
-
 FILE_FORMAT=raw
 print_and_die() {
     echo -e "$1" >&2
@@ -17,6 +14,7 @@ Usage: --memory mem --ip ip --gateway gateway --mask mask --tap tapname [--conso
        --mask mask - VM networm mask
        --shared directory - Sets the shared directory path
        --tap tapname - Sets the name of the tap used for networking
+       --kernel kernel path - path to kernel image
        --console - Enable console output, disabled by default
 
 USAGE_END
@@ -57,6 +55,15 @@ while :; do
             print_and_die "Flag --ip requires an additional argument\n$USAGE"
         fi
         ;;
+    -k | --kernel)
+        if [ "$2" ]; then
+            KERNEL_PATH=$2
+            shift
+        else
+            print_and_die "Flag --kernel requires an additional argument\n$USAGE"
+        fi
+        ;;
+
     -g | --gateway)
         if [ "$2" ]; then
             VMM_GATEWAY=$2
@@ -113,7 +120,7 @@ if [ -z $VMM_CONSOLE ]; then
 fi
 KERNEL_PCI_SWITCH=
 NET_DEV_ARGS=
-if $QEMU --machine help | grep microvm &> /dev/null; then
+if qemu-system-x86_64 --machine help | grep microvm &> /dev/null; then
     MACHINE_ARGS='-machine microvm,accel=kvm,kernel_irqchip=on'
     if [ -z $VMM_CONSOLE ]; then
         MACHINE_ARGS='-machine microvm,accel=kvm,kernel_irqchip=on'
@@ -140,7 +147,7 @@ for arg in "$@"; do
     FINAL_ARGS="$FINAL_ARGS $arg"
 done
 
-sudo $QEMU \
+sudo qemu-system-x86_64 \
                 $NODEFAULT_ARGS \
                 $MACHINE_ARGS \
                 -cpu host,-vmx \

@@ -13,9 +13,14 @@ import io.micronaut.http.client.exceptions.HttpClientException;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @SuppressWarnings("unused")
 public class DefaultLambdaManagerClient implements LambdaManagerClient {
+
+	private final Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
+	private final int failThreshold = 5;
 
     public void createNewClient(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda,
                                 LambdaManagerConfiguration configuration) throws ErrorUploadingNewLambda {
@@ -25,7 +30,6 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
             int lambdaPort = configuration.argumentStorage.getLambdaPort();
 
             lambda.instance.setPort(port);
-            lambda.instance.setLocalClient(RxHttpClient.create(new URL("http://localhost:" + port)));
             lambda.instance.setPublicClient(RxHttpClient.create(new URL("http://" + ip + ":" + lambdaPort)));
         } catch (MalformedURLException malformedURLException) {
             throw new ErrorUploadingNewLambda("Error during uploading new lambda [" + lambda.list.getName() + "]!",
@@ -34,15 +38,9 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
     }
 
     public String sendRequest(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
-        String response;
-        while(true) {
+        for (int failures = 0; failures < failThreshold; failures++) {
             try {
-                if (lambda.list.getStatus() != LambdaStatusType.BUILT) {
-                    response = lambda.instance.getLocalClient().retrieve(HttpRequest.GET("/")).blockingFirst();
-                } else {
-                    response = lambda.instance.getPublicClient().retrieve(HttpRequest.GET("/")).blockingFirst();
-                }
-                break;
+                return lambda.instance.getPublicClient().retrieve(HttpRequest.GET("/")).blockingFirst();
             } catch (HttpClientException httpClientException) {
                 try {
                     //noinspection BusyWait
@@ -52,6 +50,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
                 }
             }
         }
-        return response;
+        logger.log(Level.WARNING, "HTTP Client Exception request timedout");
+        return "ERROR: request timedout.";
     }
 }

@@ -3,20 +3,23 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 source $DIR/env.sh
 
-LAMBDA_NAME=$1
-if [ -z "$LAMBDA_NAME" ]
+FUNCTION_NAME=$1
+if [ -z "$FUNCTION_NAME" ]
 then
-	echo "Lambda name is not present."
+	echo "Function name is not present."
 	exit 1
 fi
 
-LAMBDA_HOME=$MANAGER_HOME/src/lambdas/$LAMBDA_NAME
-LAMBDA_JAR=$LAMBDA_HOME/$LAMBDA_NAME.jar
+FUNCTION_HOME=$MANAGER_HOME/src/lambdas/$FUNCTION_NAME
+FUNCTION_JAR=$FUNCTION_HOME/$FUNCTION_NAME.jar
 
-cd $LAMBDA_HOME
-$JAVA_HOME/bin/native-image \
-	-H:IncludeResources="logback.xml|application.yml" \
-	-jar $LAMBDA_JAR \
-	-H:Virtualize=$VIRTUALIZE_PATH \
-	-H:ConfigurationFileDirectories=$LAMBDA_HOME/config \
-	-H:ExcludeResources=".*/io.micronaut.*$|io.netty.*$"
+cd $FUNCTION_HOME
+if [[ ! -f $FUNCTION_HOME/$FUNCTION_NAME.img ]]
+then
+	$JAVA_HOME/bin/native-image \
+		-H:IncludeResources="logback.xml|application.yml" \
+		-jar $FUNCTION_JAR \
+		-H:Virtualize=$VIRTUALIZE_PATH \
+		-H:ConfigurationFileDirectories=$FUNCTION_HOME/config \
+		-H:ExcludeResources=".*/io.micronaut.*$|io.netty.*$"
+fi

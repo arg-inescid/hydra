@@ -2,7 +2,8 @@
 
 # Note: adapted from https://blog.nelhage.com/2013/12/lightweight-linux-kernel-development-with-kvm/
 
-JVM=/home/ubuntu/graalvm-d219e07057-java11-21.1.0-dev
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+JVM=$DIR/../../../../res/graalvm-d219e07057-java11-21.1.0-dev
 
 # Build a Wheezy chroot. Install an sshd, since it will be handy
 # later.
@@ -20,7 +21,7 @@ sudo mkdir stretch/root/.ssh/
 cat id_rsa.pub | sudo tee stretch/root/.ssh/authorized_keys
 
 # Build a disk image
-dd if=/dev/zero of=stretch.img bs=1M seek=4095 count=1
+dd if=/dev/zero of=stretch.img bs=1M seek=1536 count=1
 mkfs.ext4 -F stretch.img
 sudo mkdir -p /mnt/stretch
 sudo mount -o loop stretch.img /mnt/stretch

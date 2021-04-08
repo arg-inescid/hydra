@@ -25,6 +25,12 @@ public class StartHotspot extends StartLambda {
         command.add("bash");
         command.add("src/scripts/start_hotspot.sh");
         command.add(lambda.list.getName());
+        command.add(String.valueOf(lambda.instance.getId()));
+        command.add(configuration.argumentStorage.getMemorySpace());
+        command.add(lambda.instance.getIp());
+        command.add(lambda.instance.getTap());
+        command.add(configuration.argumentStorage.getGateway());
+        command.add(configuration.argumentStorage.getMask());
         command.add(String.valueOf(lambda.instance.getPort()));
         if(lambda.instance.getArgs() != null) {
             Collections.addAll(command, lambda.instance.getArgs().split(","));

@@ -3,10 +3,10 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 source $DIR/env.sh
 
-LAMBDA_NAME=$1
-if [ -z "$LAMBDA_NAME" ]
+FUNCTION_NAME=$1
+if [ -z "$FUNCTION_NAME" ]
 then
-	echo "Lambda name is not present."
+	echo "FUNCTION name is not present."
 	exit 1
 fi
 
@@ -45,9 +45,9 @@ then
 	exit 1
 fi
 
-LAMBDA_HOME=$MANAGER_HOME/src/lambdas/$LAMBDA_NAME
+FUNCTION_HOME=$MANAGER_HOME/src/lambdas/$FUNCTION_NAME
 
-bash $LAMBDA_HOME/${LAMBDA_NAME}_unikernel.sh \
+bash $FUNCTION_HOME/${FUNCTION_NAME}_unikernel.sh \
 	--memory $LAMBDA_MEMORY \
 	--ip $LAMBDA_IP \
 	--tap $LAMBDA_TAP \

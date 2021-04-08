@@ -62,12 +62,12 @@ public class ProcessBuilder extends Thread {
 
     public void shutdownInstance() {
         writeTimestamp(timestamp);
+        // TODO - double check that we have descendants.
         shutdownInstance(process.descendants());
     }
 
     private void shutdownInstance(Stream<ProcessHandle> descendants) {
         if(descendants == null) {
-        	// TODO - isn't this an error? Didn't we agree that this needs proper handling??
             return;
         }
 
