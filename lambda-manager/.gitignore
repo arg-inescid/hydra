@@ -6,6 +6,8 @@ target/
 out/
 src/lambdas/*
 src/logs/*
+src/scripts/qemu-jvm/stretch/
+src/scripts/qemu-jvm/stretch.img
 .idea
 *.iml
 *.ipr
