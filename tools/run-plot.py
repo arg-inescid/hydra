@@ -31,7 +31,7 @@ filter = {
     "footprint": ["Timestamp \\((\\d+)\\)", "Maximum resident set size \\(kbytes\\):[\\n\\t\\s]*(\\d*)"],
     "latency": ["99%[\\n\\t\\s]*(\\d*)"],
     "throughput": ["Requests per second:[\\n\\t\\s]*(\\d*)"],
-    "scalability": ["TIMESTAMP \\((\\d+)\\)", "start.*(Output|Exit)"]
+    "scalability": ["Timestamp \\((\\d+)\\)", "start.*(Output|Exit)"]
 }
 xlabel = {
     "startup": "Timelapse (ms)",
@@ -197,19 +197,19 @@ def remove_tmp_files(files):
 
 
 def combine_files(combine_info):
-    file_list = []
     for combine in combine_info:
+        file_list = []
         for file in combine['input_files']:
             if file.find("*") > -1:
                 file_dir = os.path.dirname(file)
                 file_pattern = os.path.basename(file)[:-1]  # exclude asterisk
                 for entry in sorted(os.listdir(os.path.dirname(file))):
                     if entry.find(file_pattern) > -1:
+                        if entry.find("hotspot") > -1:
+                            file_list.append(file_dir + "/../" + entry[:entry.find("_")] + "/shared/run.log")
                         file_list.append(os.path.join(file_dir, entry))
             else:
                 file_list.append(file)
-
-    for combine in combine_info:
         write_file(combine['result_file'], '\n'.join([read_file(file) for file in file_list]))
 
 

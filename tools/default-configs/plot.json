@@ -3,9 +3,15 @@
 	"combine_files": [
 		{
 			"input_files": [
-				"../lambda-manager/src/lambdas/user1_simple/outputs/start*"
+				"../lambda-manager/src/lambdas/user1_hello/logs/start*"
 			],
 			"result_file": "../benchmarks/results/hello-world-java/hello-world-data-1.dat"
+		},
+		{
+			"input_files": [
+				"../lambda-manager/src/logs/lambda-manager*"
+			],
+			"result_file": "../lambda-manager/src/logs/lambda-manager.log"
 		}
 	],
 	"start_server": {
@@ -17,45 +23,45 @@
 		{
 			"type": "latency",
             "output": "../benchmarks/results/hello-world-java/hello-world-latency.png",
-			"show_image": true,
+			"show_image": false,
 			"data": [
 				{
 					"title": "Hotspot w agent",
-					"filepath": "../benchmarks/results/hello-world-java/hello-world-1.dat"
+					"filepath": "../benchmarks/results/hello-world-java/hello-world-java-1.dat"
 				},
 				{
 					"title": "Hotspot",
-					"filepath": "../benchmarks/results/hello-world-java/hello-world-2.dat"
+					"filepath": "../benchmarks/results/hello-world-java/hello-world-java-2.dat"
 				},
 				{
 					"title": "VMM",
-					"filepath": "../benchmarks/results/hello-world-java/hello-world-3.dat"
+					"filepath": "../benchmarks/results/hello-world-java/hello-world-java-3.dat"
 				}
 			]
 		},
 		{
 			"type": "throughput",
             "output": "../benchmarks/results/hello-world-java/hello-world-throughput.png",
-			"show_image": true,
+			"show_image": false,
 			"data": [
 				{
 					"title": "Hotspot w agent",
-					"filepath": "../benchmarks/results/hello-world-java/hello-world-1.dat"
+					"filepath": "../benchmarks/results/hello-world-java/hello-world-java-1.dat"
 				},
 				{
 					"title": "Hotspot",
-					"filepath": "../benchmarks/results/hello-world-java/hello-world-2.dat"
+					"filepath": "../benchmarks/results/hello-world-java/hello-world-java-2.dat"
 				},
 				{
 					"title": "VMM",
-					"filepath": "../benchmarks/results/hello-world-java/hello-world-3.dat"
+					"filepath": "../benchmarks/results/hello-world-java/hello-world-java-3.dat"
 				}
 			]
 		},
 		{
 			"type": "footprint",
             "output": "../benchmarks/results/hello-world-java/hello-world-footprint.png",
-			"show_image": true,
+			"show_image": false,
 			"data": [
 				{
 					"title": "VMM footprint",
@@ -66,7 +72,7 @@
 		{
 			"type": "startup",
             "output": "../benchmarks/results/hello-world-java/hello-world-startup.png",
-			"show_image": true,
+			"show_image": false,
 			"data": [
 				{
 					"title": "VMM startup",
@@ -81,7 +87,7 @@
 			"data": [
 				{
 					"title": "VMM scalability",
-					"filepath": "../lambda-manager/src/outputs/lambda-manager.log"
+					"filepath": "../lambda-manager/src/logs/lambda-manager.log"
 				}
 			]
 		}
