@@ -5,7 +5,6 @@ import com.lambda_manager.collectors.lambda_info.LambdaInstancesInfo;
 import com.lambda_manager.connectivity.client.LambdaManagerClient;
 import com.lambda_manager.core.LambdaManagerConfiguration;
 import com.lambda_manager.exceptions.user.ErrorUploadingNewLambda;
-import com.lambda_manager.optimizers.LambdaStatusType;
 import com.lambda_manager.utils.Tuple;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.client.RxHttpClient;
@@ -20,7 +19,7 @@ import java.util.logging.Logger;
 public class DefaultLambdaManagerClient implements LambdaManagerClient {
 
 	private final Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
-	private final int failThreshold = 5;
+	private final int failThreshold = 600;
 
     public void createNewClient(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda,
                                 LambdaManagerConfiguration configuration) throws ErrorUploadingNewLambda {
@@ -43,7 +42,6 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
                 return lambda.instance.getPublicClient().retrieve(HttpRequest.GET("/")).blockingFirst();
             } catch (HttpClientException httpClientException) {
                 try {
-                    //noinspection BusyWait
                     Thread.sleep(configuration.argumentStorage.getHealthCheck());
                 } catch (InterruptedException interruptedException) {
                     // Skipping raised exception.

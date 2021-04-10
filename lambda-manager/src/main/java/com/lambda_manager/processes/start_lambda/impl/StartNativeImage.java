@@ -37,6 +37,7 @@ public class StartNativeImage extends StartLambda {
         if(lambda.instance.getArgs() != null) {
             Collections.addAll(command, lambda.instance.getArgs().split(","));
         }
+        command.add(String.valueOf(System.currentTimeMillis()));
         return command;
     }
 

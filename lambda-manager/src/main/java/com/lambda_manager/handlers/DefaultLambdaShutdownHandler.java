@@ -2,6 +2,7 @@ package com.lambda_manager.handlers;
 
 import com.lambda_manager.collectors.lambda_info.LambdaInstanceInfo;
 import com.lambda_manager.collectors.lambda_info.LambdaInstancesInfo;
+import com.lambda_manager.processes.ProcessBuilder;
 import com.lambda_manager.utils.Tuple;
 
 import java.util.TimerTask;
@@ -16,16 +17,22 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
 
     @Override
     public void run() {
-        lambda.instance.getTimer().cancel();
+        ProcessBuilder processBuilder;
 
         synchronized (lambda.list) {
-            lambda.list.getCurrentlyActiveWorkers().remove(lambda.instance.getId()).shutdownInstance();
-            lambda.list.getStartedInstances().remove(lambda.instance);
+            if(!lambda.list.getStartedInstances().remove(lambda.instance)) {
+                return;
+            }
+            lambda.instance.getTimer().cancel();
+            processBuilder = lambda.list.getCurrentlyActiveWorkers().remove(lambda.instance.getId());
         }
+
+        processBuilder.shutdownInstance();
 
         // Cleanup is finished, add server back to list of all available servers.
         synchronized (lambda.list) {
             lambda.list.getAvailableInstances().add(lambda.instance);
+            lambda.list.notify();
         }
     }
 }

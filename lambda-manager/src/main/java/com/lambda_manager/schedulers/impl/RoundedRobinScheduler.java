@@ -16,40 +16,59 @@ import java.util.Timer;
 public class RoundedRobinScheduler implements Scheduler {
 
     @Override
-    public synchronized Tuple<LambdaInstancesInfo, LambdaInstanceInfo> schedule(String lambdaName, String args, LambdaManagerConfiguration configuration) throws LambdaNotFound {
+    public Tuple<LambdaInstancesInfo, LambdaInstanceInfo> schedule(String lambdaName, String args, LambdaManagerConfiguration configuration) throws LambdaNotFound {
         LambdaInstancesInfo lambdaInstancesInfo = configuration.storage.get(lambdaName);
         if(lambdaInstancesInfo == null) {
             throw new LambdaNotFound("Lambda [" + lambdaName + "] has not been uploaded!");
         }
         LambdaInstanceInfo lambdaInstanceInfo;
-
-        if(lambdaInstancesInfo.getStartedInstances().isEmpty()) {
-            if(lambdaInstancesInfo.getAvailableInstances().isEmpty()) {
-                lambdaInstanceInfo = lambdaInstancesInfo.getActiveInstances().remove(0);
+        long start = System.currentTimeMillis();
+        //noinspection SynchronizationOnLocalVariableOrMethodParameter
+        synchronized (lambdaInstancesInfo) {
+            if(lambdaInstancesInfo.getStartedInstances().isEmpty()) {
+                if(lambdaInstancesInfo.getAvailableInstances().isEmpty()) {
+                    if (lambdaInstancesInfo.getActiveInstances().isEmpty()) {
+                        try {
+                            lambdaInstancesInfo.wait();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        lambdaInstanceInfo = lambdaInstancesInfo.getAvailableInstances().remove(0);
+                        lambdaInstanceInfo.setArgs(args);
+                        spawnNewLambda(new Tuple<>(lambdaInstancesInfo, lambdaInstanceInfo), configuration);
+                    } else {
+                        lambdaInstanceInfo = lambdaInstancesInfo.getActiveInstances().remove(0);
+                    }
+                } else {
+                    lambdaInstanceInfo = lambdaInstancesInfo.getAvailableInstances().remove(0);
+                    lambdaInstanceInfo.setArgs(args);
+                    spawnNewLambda(new Tuple<>(lambdaInstancesInfo, lambdaInstanceInfo), configuration);
+                }
             } else {
-                lambdaInstanceInfo = lambdaInstancesInfo.getAvailableInstances().remove(0);
-                lambdaInstanceInfo.setArgs(args);
-                spawnNewLambda(new Tuple<>(lambdaInstancesInfo, lambdaInstanceInfo), configuration);
+                lambdaInstanceInfo = lambdaInstancesInfo.getStartedInstances().remove(0);
+                lambdaInstanceInfo.getTimer().cancel();
             }
-        } else {
-            lambdaInstanceInfo = lambdaInstancesInfo.getStartedInstances().remove(0);
-            lambdaInstanceInfo.getTimer().cancel();
-            lambdaInstanceInfo.setTimer(new Timer());
-        }
 
-        lambdaInstancesInfo.getActiveInstances().add(lambdaInstanceInfo);
-        lambdaInstanceInfo.setOpenRequestCount(lambdaInstanceInfo.getOpenRequestCount() + 1);
+            lambdaInstancesInfo.getActiveInstances().add(lambdaInstanceInfo);
+            lambdaInstanceInfo.setOpenRequestCount(lambdaInstanceInfo.getOpenRequestCount() + 1);
+        }
+        System.out.println("TIME(" + lambdaInstanceInfo.getId() + ") " + (System.currentTimeMillis() - start));
         return new Tuple<>(lambdaInstancesInfo, lambdaInstanceInfo);
     }
 
     @Override
-    public synchronized void reschedule(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
-        int openRequestCount = lambda.instance.getOpenRequestCount() - 1;
-        lambda.instance.setOpenRequestCount(openRequestCount);
-        if(openRequestCount == 0) {
-            lambda.list.getActiveInstances().remove(lambda.instance);
-            lambda.list.getStartedInstances().add(lambda.instance);
-            lambda.instance.getTimer().schedule(new DefaultLambdaShutdownHandler(lambda), configuration.argumentStorage.getTimeout());
+    public void reschedule(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+        synchronized (lambda.list) {
+            int openRequestCount = lambda.instance.getOpenRequestCount() - 1;
+            lambda.instance.setOpenRequestCount(openRequestCount);
+            if(openRequestCount == 0) {
+                lambda.list.getActiveInstances().remove(lambda.instance);
+                lambda.list.getStartedInstances().add(lambda.instance);
+
+                Timer timer = new Timer();
+                timer.schedule(new DefaultLambdaShutdownHandler(lambda), configuration.argumentStorage.getTimeout());
+                lambda.instance.setTimer(timer);
+            }
         }
     }
 

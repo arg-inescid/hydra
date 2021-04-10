@@ -32,7 +32,6 @@ public class ProcessBuilder extends Thread {
     public void run() {
         this.timestamp = ElapseTimer.elapsedTime();
         File outputFile = new File(outputFilename);
-        command.add(String.valueOf(System.currentTimeMillis()));
         logger.log(Level.INFO, timestamp + "#Process -> "
                 + Arrays.toString(command.toArray()) + ". Output/Error -> " + outputFilename);
 
@@ -78,7 +77,7 @@ public class ProcessBuilder extends Thread {
                 processHandle.destroy();
                 while (processHandle.isAlive()) {
                     try {
-                        Thread.sleep(100);
+                        Thread.sleep(50);
                     } catch (InterruptedException e) {
                         e.printStackTrace(); // TODO - properly handle this exception
                     }
