@@ -29,9 +29,6 @@ public class LambdaManagerArgumentStorage {
 
     public static final int RAND_STRING_LEN = 10;
 
-    private String virtualizationConfig;
-    private String execBinaries;
-
     private String gateway;
     private String mask;
     private Iterator<IPv4Address> iPv4AddressIterator;
@@ -41,7 +38,6 @@ public class LambdaManagerArgumentStorage {
     private String memorySpace;
 
     private int lambdaPort;
-    private int nextPort;
 
     private boolean isVmmConsoleActive;
   
@@ -59,9 +55,6 @@ public class LambdaManagerArgumentStorage {
     public LambdaManagerConfiguration initializeLambdaManager(ManagerArguments managerArguments)
             throws ErrorDuringReflectiveClassCreation {
 
-        this.virtualizationConfig = managerArguments.getVirtualizeConfig();
-        this.execBinaries = managerArguments.getExecBinaries();
-
         String gatewayString = managerArguments.getGateway();
         this.gateway = gatewayString.split("/")[0];
         IPv4Subnet gatewayWithMask = IPv4Subnet.of(gatewayString);
@@ -72,10 +65,7 @@ public class LambdaManagerArgumentStorage {
         this.timeout = managerArguments.getTimeout();
         this.healthCheck = managerArguments.getHealthCheck();
         this.memorySpace = managerArguments.getMemory();
-
         this.lambdaPort = managerArguments.getLambdaPort();
-        this.nextPort = this.lambdaPort;
-
         this.isVmmConsoleActive = managerArguments.isVmmConsole();
 
         AdvancedOutputFormatter formatter = new AdvancedOutputFormatter();
@@ -115,14 +105,6 @@ public class LambdaManagerArgumentStorage {
         return new LambdaManagerConfiguration(scheduler, optimizer, encoder, storage, client, codeWriter, this);
     }
 
-    public String getVirtualizationConfig() {
-        return virtualizationConfig;
-    }
-
-    public String getExecBinaries() {
-        return execBinaries;
-    }
-
     public String getNextIPAddress() {
         String nextIPAddress = iPv4AddressIterator.next().toString();
         if(nextIPAddress.equals(getGateway())) {
@@ -154,10 +136,6 @@ public class LambdaManagerArgumentStorage {
 
     public int getLambdaPort() {
         return lambdaPort;
-    }
-
-    public int getNextPort() {
-        return nextPort++;
     }
 
     public boolean isVmmConsoleActive() {

@@ -12,8 +12,7 @@ public class LambdaInstanceInfo {
     private Timer timer;
     private String tap;
     private String ip;
-    private int port;
-    private RxHttpClient publicClient;
+    private RxHttpClient client;
 
     public LambdaInstanceInfo(int id) {
         this.id = id;
@@ -63,19 +62,11 @@ public class LambdaInstanceInfo {
         this.ip = ip;
     }
 
-    public int getPort() {
-        return port;
+    public RxHttpClient getClient() {
+        return client;
     }
 
-    public void setPort(int port) {
-        this.port = port;
-    }
-
-    public RxHttpClient getPublicClient() {
-        return publicClient;
-    }
-
-    public void setPublicClient(RxHttpClient publicClient) {
-        this.publicClient = publicClient;
+    public void setClient(RxHttpClient client) {
+        this.client = client;
     }
 }

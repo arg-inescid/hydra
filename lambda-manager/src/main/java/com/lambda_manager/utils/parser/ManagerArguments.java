@@ -8,8 +8,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @SuppressWarnings("unused")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
-        "virtualizeConfig",
-        "execBinaries",
         "gateway",
         "timeout",
         "healthCheck",
@@ -21,10 +19,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 })
 public class ManagerArguments implements Serializable
 {
-    @JsonProperty("virtualizeConfig")
-    private String virtualizeConfig;
-    @JsonProperty("execBinaries")
-    private String execBinaries;
     @JsonProperty("gateway")
     private String gateway;
     @JsonProperty("timeout")
@@ -51,7 +45,6 @@ public class ManagerArguments implements Serializable
     }
 
     /**
-     *
      * @param vmmConsole - Is console active during qemu's run.
      * @param managerState - The class that represent state of one manager's instance.
      * @param memory - How maximum memory will consume one active lambda.
@@ -60,13 +53,10 @@ public class ManagerArguments implements Serializable
      *                    no more check are made.
      * @param timeout - Timeout
      * @param gateway - The Bridge address.
-     * @param execBinaries - The Bridge name.
      */
-    public ManagerArguments(String virtualizeConfig, String execBinaries, String gateway, int timeout,
+    public ManagerArguments(String gateway, int timeout,
                             int healthCheck, String memory, int lambdaPort, boolean vmmConsole, ManagerState managerState) {
         super();
-        this.virtualizeConfig = virtualizeConfig;
-        this.execBinaries = execBinaries;
         this.gateway = gateway;
         this.timeout = timeout;
         this.healthCheck = healthCheck;
@@ -74,26 +64,6 @@ public class ManagerArguments implements Serializable
         this.lambdaPort = lambdaPort;
         this.vmmConsole = vmmConsole;
         this.managerState = managerState;
-    }
-
-    @JsonProperty("virtualizeConfig")
-    public String getVirtualizeConfig() {
-        return virtualizeConfig;
-    }
-
-    @JsonProperty("virtualizeConfig")
-    public void setVirtualizeConfig(String virtualizeConfig) {
-        this.virtualizeConfig = virtualizeConfig;
-    }
-
-    @JsonProperty("execBinaries")
-    public String getExecBinaries() {
-        return execBinaries;
-    }
-
-    @JsonProperty("execBinaries")
-    public void setExecBinaries(String execBinaries) {
-        this.execBinaries = execBinaries;
     }
 
     @JsonProperty("gateway")

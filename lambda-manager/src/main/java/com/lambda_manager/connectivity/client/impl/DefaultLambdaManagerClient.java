@@ -9,6 +9,7 @@ import com.lambda_manager.utils.Tuple;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.client.RxHttpClient;
 import io.micronaut.http.client.exceptions.HttpClientException;
+import io.reactivex.Flowable;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -19,17 +20,14 @@ import java.util.logging.Logger;
 public class DefaultLambdaManagerClient implements LambdaManagerClient {
 
 	private final Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
-	private final int failThreshold = 600;
 
     public void createNewClient(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda,
                                 LambdaManagerConfiguration configuration) throws ErrorUploadingNewLambda {
         try {
             String ip = lambda.instance.getIp();
-            int port = configuration.argumentStorage.getNextPort();
             int lambdaPort = configuration.argumentStorage.getLambdaPort();
 
-            lambda.instance.setPort(port);
-            lambda.instance.setPublicClient(RxHttpClient.create(new URL("http://" + ip + ":" + lambdaPort)));
+            lambda.instance.setClient(RxHttpClient.create(new URL("http://" + ip + ":" + lambdaPort)));
         } catch (MalformedURLException malformedURLException) {
             throw new ErrorUploadingNewLambda("Error during uploading new lambda [" + lambda.list.getName() + "]!",
                     malformedURLException);
@@ -37,9 +35,10 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
     }
 
     public String sendRequest(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
-        for (int failures = 0; failures < failThreshold; failures++) {
+        Flowable<String> flowable = lambda.instance.getClient().retrieve(HttpRequest.GET("/"));
+        for (int failures = 0; failures < FAULT_TOLERANCE; failures++) {
             try {
-                return lambda.instance.getPublicClient().retrieve(HttpRequest.GET("/")).blockingFirst();
+                return flowable.blockingFirst();
             } catch (HttpClientException httpClientException) {
                 try {
                     Thread.sleep(configuration.argumentStorage.getHealthCheck());
@@ -48,7 +47,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
                 }
             }
         }
-        logger.log(Level.WARNING, "HTTP Client Exception request timedout");
-        return "ERROR: request timedout.";
+        logger.log(Level.WARNING, "HTTP request timeout!");
+        return "HTTP request timeout!";
     }
 }

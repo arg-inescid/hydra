@@ -23,7 +23,7 @@ public class StartNativeImage extends StartLambda {
         command.add("--output=" + this.processOutputFile);
         command.add("-v");
         command.add("bash");
-        command.add("src/scripts/start_nativeimage.sh");
+        command.add("src/scripts/start_native_image.sh");
         command.add(lambda.list.getName());
         command.add(configuration.argumentStorage.getMemorySpace());
         command.add(lambda.instance.getIp());

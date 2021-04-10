@@ -21,8 +21,8 @@ public class RoundedRobinScheduler implements Scheduler {
         if(lambdaInstancesInfo == null) {
             throw new LambdaNotFound("Lambda [" + lambdaName + "] has not been uploaded!");
         }
+
         LambdaInstanceInfo lambdaInstanceInfo;
-        long start = System.currentTimeMillis();
         //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (lambdaInstancesInfo) {
             if(lambdaInstancesInfo.getStartedInstances().isEmpty()) {
@@ -52,7 +52,7 @@ public class RoundedRobinScheduler implements Scheduler {
             lambdaInstancesInfo.getActiveInstances().add(lambdaInstanceInfo);
             lambdaInstanceInfo.setOpenRequestCount(lambdaInstanceInfo.getOpenRequestCount() + 1);
         }
-        System.out.println("TIME(" + lambdaInstanceInfo.getId() + ") " + (System.currentTimeMillis() - start));
+
         return new Tuple<>(lambdaInstancesInfo, lambdaInstanceInfo);
     }
 
