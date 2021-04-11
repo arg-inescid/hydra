@@ -7,7 +7,6 @@ import com.lambda_manager.exceptions.user.ErrorUploadingNewLambda;
 import com.lambda_manager.utils.Tuple;
 
 public interface LambdaManagerClient {
-    int FAULT_TOLERANCE = 300;
     void createNewClient(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration)
             throws ErrorUploadingNewLambda;
     String sendRequest(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration);

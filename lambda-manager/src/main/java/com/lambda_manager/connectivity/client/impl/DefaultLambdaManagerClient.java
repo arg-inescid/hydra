@@ -19,7 +19,9 @@ import java.util.logging.Logger;
 @SuppressWarnings("unused")
 public class DefaultLambdaManagerClient implements LambdaManagerClient {
 
-	private final Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
+    private static final int FAULT_TOLERANCE = 300;
+
+    private final Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 
     public void createNewClient(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda,
                                 LambdaManagerConfiguration configuration) throws ErrorUploadingNewLambda {

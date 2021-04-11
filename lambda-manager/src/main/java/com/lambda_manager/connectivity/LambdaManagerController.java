@@ -7,10 +7,6 @@ import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.reactivex.Single;
 
 import javax.annotation.Nullable;
-import javax.inject.Inject;
-import javax.inject.Named;
-
-import java.util.concurrent.ExecutorService;
 
 import static io.micronaut.http.MediaType.APPLICATION_JSON;
 import static io.micronaut.http.MediaType.APPLICATION_OCTET_STREAM;
