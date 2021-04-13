@@ -11,7 +11,7 @@ import java.util.List;
 public class RemoveTaps extends AbstractProcess {
 
     @Override
-    public List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+    protected List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         clearPreviousState();
         command.add("bash");
         command.add("src/scripts/remove_taps.sh");
@@ -28,7 +28,7 @@ public class RemoveTaps extends AbstractProcess {
     }
 
     @Override
-    public String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+    protected String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         return processOutputFile == null ? "src/lambdas/" + lambda.list.getName() + "/logs/remove-taps_"
                 + configuration.argumentStorage.generateRandomString() + ".dat" : processOutputFile;
     }

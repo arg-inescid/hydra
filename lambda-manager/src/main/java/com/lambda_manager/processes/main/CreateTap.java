@@ -11,7 +11,7 @@ import java.util.List;
 public class CreateTap extends AbstractProcess {
 
     @Override
-    public List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+    protected List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         clearPreviousState();
 
         String tap = configuration.argumentStorage.generateRandomString();
@@ -27,7 +27,7 @@ public class CreateTap extends AbstractProcess {
     }
 
     @Override
-    public String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+    protected String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         return processOutputFile == null ? "src/lambdas/" + lambda.list.getName() + "/logs/create-taps_" +
                 configuration.argumentStorage.generateRandomString() + ".dat" : processOutputFile;
     }

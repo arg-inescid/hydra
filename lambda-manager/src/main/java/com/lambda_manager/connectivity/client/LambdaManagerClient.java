@@ -5,9 +5,10 @@ import com.lambda_manager.collectors.lambda_info.LambdaInstancesInfo;
 import com.lambda_manager.core.LambdaManagerConfiguration;
 import com.lambda_manager.exceptions.user.ErrorUploadingNewLambda;
 import com.lambda_manager.utils.Tuple;
+import io.micronaut.context.BeanContext;
 
 public interface LambdaManagerClient {
-    void createNewClient(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration)
-            throws ErrorUploadingNewLambda;
+    void createNewClient(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration,
+                         BeanContext beanContext) throws ErrorUploadingNewLambda;
     String sendRequest(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration);
 }

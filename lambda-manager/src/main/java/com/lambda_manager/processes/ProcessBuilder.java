@@ -21,8 +21,7 @@ public class ProcessBuilder extends Thread {
     private final Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
     private long timestamp;
 
-    public ProcessBuilder(List<String> command, OnProcessFinishCallback callback,
-                          String outputFilename) {
+    public ProcessBuilder(List<String> command, OnProcessFinishCallback callback, String outputFilename) {
         this.command = command;
         this.callback = callback;
         this.outputFilename = outputFilename;
@@ -30,16 +29,8 @@ public class ProcessBuilder extends Thread {
 
     @Override
     public void run() {
-        this.timestamp = ElapseTimer.elapsedTime();
-        File outputFile = new File(outputFilename);
-        logger.log(Level.INFO, timestamp + "#Process -> "
-                + Arrays.toString(command.toArray()) + ". Output/Error -> " + outputFilename);
-
-        java.lang.ProcessBuilder processBuilder = new java.lang.ProcessBuilder();
-        processBuilder.redirectOutput(outputFile).redirectError(outputFile);
-        processBuilder.command(command);
-
         try {
+            java.lang.ProcessBuilder processBuilder = prepareStartup();
             this.process = processBuilder.start();
             int code = process.waitFor();
             callback.finish();
@@ -47,6 +38,19 @@ public class ProcessBuilder extends Thread {
         } catch (IOException | InterruptedException e) {
             logger.log(Level.WARNING, "Process -> " + Arrays.toString(command.toArray()) + " raise exception!", e);
         }
+    }
+
+    private java.lang.ProcessBuilder prepareStartup() throws InterruptedException {
+        this.timestamp = ElapseTimer.elapsedTime();
+        File outputFile = new File(outputFilename);
+
+        java.lang.ProcessBuilder processBuilder = new java.lang.ProcessBuilder();
+        processBuilder.redirectOutput(outputFile).redirectError(outputFile);
+        processBuilder.command(command);
+        logger.log(Level.INFO, timestamp + "#Process -> "
+                + Arrays.toString(command.toArray()) + ". Output/Error -> " + outputFilename);
+
+        return processBuilder;
     }
 
     private void writeTimestamp(long timestamp) {

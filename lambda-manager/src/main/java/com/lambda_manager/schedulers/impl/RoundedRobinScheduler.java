@@ -15,18 +15,22 @@ import java.util.Timer;
 @SuppressWarnings("unused")
 public class RoundedRobinScheduler implements Scheduler {
 
+    private static final int THRESHOLD = 200;
+
+    private long previousLambdaStartupTime;
+
     @Override
     public Tuple<LambdaInstancesInfo, LambdaInstanceInfo> schedule(String lambdaName, String args, LambdaManagerConfiguration configuration) throws LambdaNotFound {
         LambdaInstancesInfo lambdaInstancesInfo = configuration.storage.get(lambdaName);
-        if(lambdaInstancesInfo == null) {
+        if (lambdaInstancesInfo == null) {
             throw new LambdaNotFound("Lambda [" + lambdaName + "] has not been uploaded!");
         }
 
         LambdaInstanceInfo lambdaInstanceInfo;
         //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (lambdaInstancesInfo) {
-            if(lambdaInstancesInfo.getStartedInstances().isEmpty()) {
-                if(lambdaInstancesInfo.getAvailableInstances().isEmpty()) {
+            if (lambdaInstancesInfo.getStartedInstances().isEmpty()) {
+                if (lambdaInstancesInfo.getAvailableInstances().isEmpty()) {
                     if (lambdaInstancesInfo.getActiveInstances().isEmpty()) {
                         try {
                             lambdaInstancesInfo.wait();
@@ -61,22 +65,45 @@ public class RoundedRobinScheduler implements Scheduler {
         synchronized (lambda.list) {
             int openRequestCount = lambda.instance.getOpenRequestCount() - 1;
             lambda.instance.setOpenRequestCount(openRequestCount);
-            if(openRequestCount == 0) {
+            if (openRequestCount == 0) {
                 lambda.list.getActiveInstances().remove(lambda.instance);
                 lambda.list.getStartedInstances().add(lambda.instance);
 
-                Timer timer = new Timer();
-                timer.schedule(new DefaultLambdaShutdownHandler(lambda), configuration.argumentStorage.getTimeout());
-                lambda.instance.setTimer(timer);
+                Timer currentTimer = lambda.instance.getTimer();
+                if (currentTimer != null) {
+                    currentTimer.cancel();
+                }
+                Timer newTimer = new Timer();
+                newTimer.schedule(new DefaultLambdaShutdownHandler(lambda), configuration.argumentStorage.getTimeout());
+                lambda.instance.setTimer(newTimer);
             }
         }
     }
 
     @Override
     public void spawnNewLambda(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
-        lambda.instance.setTimer(new Timer());
+        long toWait = timeToWait();
+        if (toWait > 0) {
+            try {
+                lambda.list.wait(toWait);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
         ProcessBuilder processBuilder = Processes.START_LAMBDA.build(lambda, configuration);
         lambda.list.getCurrentlyActiveWorkers().put(lambda.instance.getId(), processBuilder);
         processBuilder.start();
+    }
+
+    protected long timeToWait() {
+        long currentTime = System.currentTimeMillis();
+        long timeSpan = currentTime - previousLambdaStartupTime;
+        if (timeSpan <= THRESHOLD) {
+            previousLambdaStartupTime += THRESHOLD;
+            return THRESHOLD - timeSpan;
+        } else {
+            previousLambdaStartupTime = currentTime;
+            return 0;
+        }
     }
 }

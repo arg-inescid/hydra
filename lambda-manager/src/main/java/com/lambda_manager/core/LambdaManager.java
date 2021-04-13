@@ -11,6 +11,7 @@ import com.lambda_manager.processes.Processes;
 import com.lambda_manager.utils.LambdaManagerArgumentStorage;
 import com.lambda_manager.utils.Tuple;
 import com.lambda_manager.utils.parser.ArgumentParser;
+import io.micronaut.context.BeanContext;
 import io.reactivex.Single;
 
 import java.io.IOException;
@@ -60,7 +61,7 @@ public class LambdaManager {
         }
     }
 
-    public Single<String> uploadLambda(int allocate, String username, String lambdaName, byte[] lambdaCode) {
+    public Single<String> uploadLambda(int allocate, String username, String lambdaName, byte[] lambdaCode, BeanContext beanContext) {
         try {
             if (configuration == null) {
                 logger.log(Level.WARNING, "No configuration has been uploaded!");
@@ -73,7 +74,7 @@ public class LambdaManager {
                 Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda = configuration.codeWriter.upload(
                         lambdaInstancesInfo, encodedName, lambdaCode);
                  Processes.CREATE_TAP.build(lambda, configuration).start();
-                 configuration.client.createNewClient(lambda, configuration);
+                 configuration.client.createNewClient(lambda, configuration, beanContext);
             }
 
             logger.log(Level.INFO, "Successfully uploaded lambda [" + lambdaName + "]!");

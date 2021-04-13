@@ -14,7 +14,7 @@ import java.util.List;
 public class StartHotspotWithAgent extends StartLambda {
 
     @Override
-    public List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+    protected List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         clearPreviousState();
         this.processOutputFile = processOutputFile(lambda, configuration);
 
@@ -40,12 +40,12 @@ public class StartHotspotWithAgent extends StartLambda {
     }
 
     @Override
-    public OnProcessFinishCallback callback(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+    protected OnProcessFinishCallback callback(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         return new AgentConfigReadyCallback(lambda);
     }
 
     @Override
-    public String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+    protected String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         return processOutputFile == null ? "src/lambdas/" + lambda.list.getName() + "/logs/start-hotspot-w-agent-id-" +
                 lambda.instance.getId() + "_" + configuration.argumentStorage.generateRandomString() + ".dat"
                 : processOutputFile;

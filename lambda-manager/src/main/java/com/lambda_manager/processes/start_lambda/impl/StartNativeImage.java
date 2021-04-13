@@ -14,7 +14,7 @@ import java.util.List;
 public class StartNativeImage extends StartLambda {
 
     @Override
-    public List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+    protected List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         clearPreviousState();
         this.processOutputFile = processOutputFile(lambda, configuration);
 
@@ -42,12 +42,12 @@ public class StartNativeImage extends StartLambda {
     }
 
     @Override
-    public OnProcessFinishCallback callback(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+    protected OnProcessFinishCallback callback(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         return new DefaultCallback();
     }
 
     @Override
-    public String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+    protected String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         return processOutputFile == null ? "src/lambdas/" + lambda.list.getName() + "/logs/start-native-image-id-"
                 + lambda.instance.getId() + "_" + configuration.argumentStorage.generateRandomString() + ".dat"
                 : processOutputFile;

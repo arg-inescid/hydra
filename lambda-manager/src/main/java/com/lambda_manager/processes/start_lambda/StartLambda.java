@@ -15,18 +15,18 @@ public class StartLambda extends AbstractProcess {
     private StartLambda nextToSpawn;
 
     @Override
-    public List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration state) {
+    protected List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration state) {
         this.nextToSpawn = state.optimizer.whomToSpawn(lambda, state);
         return nextToSpawn.makeCommand(lambda, state);
     }
 
     @Override
-    public OnProcessFinishCallback callback(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+    protected OnProcessFinishCallback callback(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         return nextToSpawn.callback(lambda, configuration);
     }
 
     @Override
-    public String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+    protected String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         return nextToSpawn.processOutputFile(lambda, configuration);
     }
 }
