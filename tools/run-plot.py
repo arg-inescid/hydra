@@ -56,6 +56,7 @@ set xlabel "{xlabel}"
 set ylabel "{ylabel}"
 set decimalsign locale
 set yrange [0:]
+set xrange [1:]
 '''
 html_header = '''<!DOCTYPE html>
 <html lang="en">
