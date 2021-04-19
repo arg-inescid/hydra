@@ -4,14 +4,14 @@ import com.lambda_manager.collectors.lambda_info.LambdaInstanceInfo;
 import com.lambda_manager.collectors.lambda_info.LambdaInstancesInfo;
 import com.lambda_manager.core.LambdaManagerConfiguration;
 import com.lambda_manager.processes.Processes;
-import com.lambda_manager.utils.Tuple;
+import com.lambda_manager.utils.LambdaTuple;
 
 import java.util.List;
 
 public class StartHotspotWithBuildNativeImage extends StartHotspot {
 
     @Override
-    protected List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+    protected List<String> makeCommand(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         clearPreviousState();
         // TODO - this should be moved into the Optimizer. We may need to build images without re-running the JVM again.
         Processes.BUILD_NATIVE_IMAGE.build(lambda, configuration).start();

@@ -6,14 +6,14 @@ import com.lambda_manager.collectors.lambda_info.LambdaInstanceInfo;
 import com.lambda_manager.collectors.lambda_info.LambdaInstancesInfo;
 import com.lambda_manager.core.LambdaManagerConfiguration;
 import com.lambda_manager.processes.AbstractProcess;
-import com.lambda_manager.utils.Tuple;
+import com.lambda_manager.utils.LambdaTuple;
 
 import java.util.List;
 
 public class BuildNativeImage extends AbstractProcess {
 
     @Override
-    protected List<String> makeCommand(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+    protected List<String> makeCommand(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         clearPreviousState();
         this.processOutputFile = processOutputFile(lambda, configuration);
 
@@ -28,12 +28,12 @@ public class BuildNativeImage extends AbstractProcess {
     }
 
     @Override
-    protected OnProcessFinishCallback callback(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+    protected OnProcessFinishCallback callback(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         return new NativeImageBuiltCallback(lambda);
     }
 
     @Override
-    protected String processOutputFile(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+    protected String processOutputFile(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         return processOutputFile == null ? "src/lambdas/" + lambda.list.getName() + "/logs/build-native-image_"
                 + configuration.argumentStorage.generateRandomString() + ".dat" : processOutputFile;
     }

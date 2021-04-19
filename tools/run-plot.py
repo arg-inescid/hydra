@@ -26,13 +26,6 @@ class MessageType(enum.Enum):
 # Global variable
 DEFAULT_PLOT_FILENAME = "tmp_plot_file.gplot"
 FILENAME_LENGTH = 10
-filter = {
-    "startup": ["VMM boot time:[\\n\\t\\s]*(\\d*)", "Timestamp \\((\\d+)\\)"],
-    "footprint": ["Timestamp \\((\\d+)\\)", "Maximum resident set size \\(kbytes\\):[\\n\\t\\s]*(\\d*)"],
-    "latency": ["99%[\\n\\t\\s]*(\\d*)"],
-    "throughput": ["Requests per second:[\\n\\t\\s]*(\\d*)"],
-    "scalability": ["Timestamp \\((\\d+)\\)", "start.*(Output|Exit)"]
-}
 xlabel = {
     "startup": "Timelapse (ms)",
     "footprint": "Timelapse (ms)",
@@ -143,9 +136,9 @@ def filter_file(filter_type, data):
     outputs = []
     titles = []
     regex = []
-    regex_len = len(filter[filter_type])
+    regex_len = len(data['regex'])
     for index in range(regex_len):
-        regex.append(re.compile(filter[filter_type][index]))
+        regex.append(re.compile(data['regex'][index]))
     for d in data:
         lines = read_file_by_lines(d['filepath'])
         if len(lines) == 0:

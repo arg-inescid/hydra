@@ -3,7 +3,7 @@
 # for i in {0..$#};
 # do
 #   i. argument   - tap name
-#   i+1. argument - vmm ip address
+#   i+1. argument - lambda ip address
 # done
 
 # Create taps.

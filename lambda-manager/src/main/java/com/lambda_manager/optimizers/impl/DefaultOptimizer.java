@@ -8,18 +8,18 @@ import com.lambda_manager.optimizers.Optimizer;
 import com.lambda_manager.processes.AbstractProcess;
 import com.lambda_manager.processes.Processes;
 import com.lambda_manager.processes.start_lambda.StartLambda;
-import com.lambda_manager.utils.Tuple;
+import com.lambda_manager.utils.LambdaTuple;
 
 @SuppressWarnings("unused")
 public class DefaultOptimizer implements Optimizer {
 
     @Override
-    public void registerCall(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+    public void registerCall(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
     	// TODO - while we don't have use for it, delete it.
     }
 
     @Override
-    public StartLambda whomToSpawn(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+    public StartLambda whomToSpawn(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         AbstractProcess process;
         switch (lambda.list.getStatus()) {
             case NOT_BUILT_NOT_CONFIGURED:

@@ -1,5 +1,6 @@
 package com.lambda_manager.collectors.lambda_info;
 
+import com.lambda_manager.utils.ConnectionTriplet;
 import io.micronaut.http.client.RxHttpClient;
 
 import java.util.Timer;
@@ -10,9 +11,7 @@ public class LambdaInstanceInfo {
     private int openRequestCount;
     private String args;
     private Timer timer;
-    private String tap;
-    private String ip;
-    private RxHttpClient client;
+    private ConnectionTriplet<String, String, RxHttpClient> connectionTriplet;
 
     public LambdaInstanceInfo(int id) {
         this.id = id;
@@ -46,27 +45,11 @@ public class LambdaInstanceInfo {
         this.timer = timer;
     }
 
-    public String getTap() {
-        return tap;
+    public ConnectionTriplet<String, String, RxHttpClient> getConnectionTriplet() {
+        return connectionTriplet;
     }
 
-    public void setTap(String tap) {
-        this.tap = tap;
-    }
-
-    public String getIp() {
-        return ip;
-    }
-
-    public void setIp(String ip) {
-        this.ip = ip;
-    }
-
-    public RxHttpClient getClient() {
-        return client;
-    }
-
-    public void setClient(RxHttpClient client) {
-        this.client = client;
+    public void setConnectionTriplet(ConnectionTriplet<String, String, RxHttpClient> connectionTriplet) {
+        this.connectionTriplet = connectionTriplet;
     }
 }

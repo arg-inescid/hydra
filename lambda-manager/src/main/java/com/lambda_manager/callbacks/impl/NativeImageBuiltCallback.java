@@ -4,13 +4,13 @@ import com.lambda_manager.callbacks.OnProcessFinishCallback;
 import com.lambda_manager.collectors.lambda_info.LambdaInstanceInfo;
 import com.lambda_manager.collectors.lambda_info.LambdaInstancesInfo;
 import com.lambda_manager.optimizers.LambdaStatusType;
-import com.lambda_manager.utils.Tuple;
+import com.lambda_manager.utils.LambdaTuple;
 
 public class NativeImageBuiltCallback implements OnProcessFinishCallback {
 
-    private final Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda;
+    private final LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda;
 
-    public NativeImageBuiltCallback(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda) {
+    public NativeImageBuiltCallback(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda) {
         this.lambda = lambda;
     }
 

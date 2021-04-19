@@ -8,7 +8,7 @@ import com.lambda_manager.handlers.DefaultLambdaShutdownHandler;
 import com.lambda_manager.processes.ProcessBuilder;
 import com.lambda_manager.processes.Processes;
 import com.lambda_manager.schedulers.Scheduler;
-import com.lambda_manager.utils.Tuple;
+import com.lambda_manager.utils.LambdaTuple;
 
 import java.util.Timer;
 
@@ -19,8 +19,55 @@ public class RoundedRobinScheduler implements Scheduler {
 
     private long previousLambdaStartupTime;
 
+    private void gate(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda) {
+        long toWait = timeToWait();
+        if (toWait > 0) {
+            try {
+                lambda.list.wait(toWait);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private long timeToWait() {
+        long currentTime = System.currentTimeMillis();
+        long timeSpan = currentTime - previousLambdaStartupTime;
+        if (timeSpan <= THRESHOLD) {
+            previousLambdaStartupTime += THRESHOLD;
+            return THRESHOLD - timeSpan;
+        } else {
+            previousLambdaStartupTime = currentTime;
+            return 0;
+        }
+    }
+
+    private void acquireConnection(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda,
+                                   LambdaManagerConfiguration configuration) {
+        lambda.instance.setConnectionTriplet(configuration.argumentStorage.getNextConnectionTriplet());
+    }
+
+    private void buildProcess(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda,
+                              LambdaManagerConfiguration configuration) {
+
+        ProcessBuilder processBuilder = Processes.START_LAMBDA.build(lambda, configuration);
+        lambda.list.getCurrentlyActiveWorkers().put(lambda.instance.getId(), processBuilder);
+        processBuilder.start();
+    }
+
     @Override
-    public Tuple<LambdaInstancesInfo, LambdaInstanceInfo> schedule(String lambdaName, String args, LambdaManagerConfiguration configuration) throws LambdaNotFound {
+    public void spawnNewLambda(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda,
+                               LambdaManagerConfiguration configuration) {
+        gate(lambda);
+        acquireConnection(lambda, configuration);
+        buildProcess(lambda, configuration);
+    }
+
+    @Override
+    public LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> schedule(String lambdaName, String args,
+                                                                         LambdaManagerConfiguration configuration)
+            throws LambdaNotFound {
+
         LambdaInstancesInfo lambdaInstancesInfo = configuration.storage.get(lambdaName);
         if (lambdaInstancesInfo == null) {
             throw new LambdaNotFound("Lambda [" + lambdaName + "] has not been uploaded!");
@@ -39,14 +86,14 @@ public class RoundedRobinScheduler implements Scheduler {
                         }
                         lambdaInstanceInfo = lambdaInstancesInfo.getAvailableInstances().remove(0);
                         lambdaInstanceInfo.setArgs(args);
-                        spawnNewLambda(new Tuple<>(lambdaInstancesInfo, lambdaInstanceInfo), configuration);
+                        spawnNewLambda(new LambdaTuple<>(lambdaInstancesInfo, lambdaInstanceInfo), configuration);
                     } else {
                         lambdaInstanceInfo = lambdaInstancesInfo.getActiveInstances().remove(0);
                     }
                 } else {
                     lambdaInstanceInfo = lambdaInstancesInfo.getAvailableInstances().remove(0);
                     lambdaInstanceInfo.setArgs(args);
-                    spawnNewLambda(new Tuple<>(lambdaInstancesInfo, lambdaInstanceInfo), configuration);
+                    spawnNewLambda(new LambdaTuple<>(lambdaInstancesInfo, lambdaInstanceInfo), configuration);
                 }
             } else {
                 lambdaInstanceInfo = lambdaInstancesInfo.getStartedInstances().remove(0);
@@ -57,15 +104,21 @@ public class RoundedRobinScheduler implements Scheduler {
             lambdaInstanceInfo.setOpenRequestCount(lambdaInstanceInfo.getOpenRequestCount() + 1);
         }
 
-        return new Tuple<>(lambdaInstancesInfo, lambdaInstanceInfo);
+        return new LambdaTuple<>(lambdaInstancesInfo, lambdaInstanceInfo);
+    }
+
+    private void releaseConnection(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda,
+                                   LambdaManagerConfiguration configuration) {
+        configuration.argumentStorage.returnConnectionTriplet(lambda.instance.getConnectionTriplet());
     }
 
     @Override
-    public void reschedule(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+    public void reschedule(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         synchronized (lambda.list) {
             int openRequestCount = lambda.instance.getOpenRequestCount() - 1;
             lambda.instance.setOpenRequestCount(openRequestCount);
             if (openRequestCount == 0) {
+                releaseConnection(lambda, configuration);
                 lambda.list.getActiveInstances().remove(lambda.instance);
                 lambda.list.getStartedInstances().add(lambda.instance);
 
@@ -77,33 +130,6 @@ public class RoundedRobinScheduler implements Scheduler {
                 newTimer.schedule(new DefaultLambdaShutdownHandler(lambda), configuration.argumentStorage.getTimeout());
                 lambda.instance.setTimer(newTimer);
             }
-        }
-    }
-
-    @Override
-    public void spawnNewLambda(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
-        long toWait = timeToWait();
-        if (toWait > 0) {
-            try {
-                lambda.list.wait(toWait);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        ProcessBuilder processBuilder = Processes.START_LAMBDA.build(lambda, configuration);
-        lambda.list.getCurrentlyActiveWorkers().put(lambda.instance.getId(), processBuilder);
-        processBuilder.start();
-    }
-
-    protected long timeToWait() {
-        long currentTime = System.currentTimeMillis();
-        long timeSpan = currentTime - previousLambdaStartupTime;
-        if (timeSpan <= THRESHOLD) {
-            previousLambdaStartupTime += THRESHOLD;
-            return THRESHOLD - timeSpan;
-        } else {
-            previousLambdaStartupTime = currentTime;
-            return 0;
         }
     }
 }

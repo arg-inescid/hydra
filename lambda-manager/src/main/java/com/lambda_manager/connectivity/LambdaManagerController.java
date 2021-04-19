@@ -36,7 +36,7 @@ public class LambdaManagerController {
     @Post(value = "/upload_lambda", consumes = APPLICATION_OCTET_STREAM)
     public Single<String> uploadLambda(@QueryValue("allocate") int allocate, @QueryValue("user") String username,
                                        @QueryValue("name") String lambdaName, @Body byte[] octetStreamData) {
-        return lambdaManager.uploadLambda(allocate, username, lambdaName, octetStreamData, beanContext);
+        return lambdaManager.uploadLambda(allocate, username, lambdaName, octetStreamData);
     }
 
     @Post("/remove_lambda")
@@ -45,7 +45,7 @@ public class LambdaManagerController {
     }
 
     @Post(value = "/configure_manager", consumes = APPLICATION_JSON)
-    public Single<String> startManager(@Body String configData) {
-        return lambdaManager.startManager(configData);
+    public Single<String> configureManager(@Body String configData) {
+        return lambdaManager.configureManager(configData, beanContext);
     }
 }

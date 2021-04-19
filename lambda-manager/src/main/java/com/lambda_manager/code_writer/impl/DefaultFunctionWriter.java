@@ -1,27 +1,27 @@
 package com.lambda_manager.code_writer.impl;
 
-import com.lambda_manager.code_writer.CodeWriter;
+import com.lambda_manager.code_writer.FunctionWriter;
 import com.lambda_manager.collectors.lambda_info.LambdaInstanceInfo;
 import com.lambda_manager.collectors.lambda_info.LambdaInstancesInfo;
 import com.lambda_manager.exceptions.user.ErrorUploadingNewLambda;
-import com.lambda_manager.utils.Tuple;
+import com.lambda_manager.utils.LambdaTuple;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
 @SuppressWarnings("unused")
-public class DefaultCodeWriter implements CodeWriter {
+public class DefaultFunctionWriter implements FunctionWriter {
 
     @Override
-    public Tuple<LambdaInstancesInfo, LambdaInstanceInfo> upload(LambdaInstancesInfo lambdaInstancesInfo,
-                                                                 String encodedName, byte[] lambdaCode)
+    public LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> upload(LambdaInstancesInfo lambdaInstancesInfo,
+                                                                       String encodedName, byte[] lambdaCode)
             throws ErrorUploadingNewLambda, IOException {
 
         int id = lambdaInstancesInfo.getId();
         LambdaInstanceInfo lambdaInstanceInfo = new LambdaInstanceInfo(id);
         lambdaInstancesInfo.setId(id + 1);
-        Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda = new Tuple<>(lambdaInstancesInfo, lambdaInstanceInfo);
+        LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda = new LambdaTuple<>(lambdaInstancesInfo, lambdaInstanceInfo);
 
         File newSrcDir = new File("src/lambdas/" + encodedName);
         if(newSrcDir.mkdirs()) {
@@ -56,8 +56,9 @@ public class DefaultCodeWriter implements CodeWriter {
     private void purgeDirectory(File dir, boolean deleteDir) {
         //noinspection ConstantConditions
         for (File file: dir.listFiles()) {
-            if (file.isDirectory())
+            if (file.isDirectory()) {
                 purgeDirectory(file, deleteDir);
+            }
             file.delete();
         }
         if(deleteDir) {

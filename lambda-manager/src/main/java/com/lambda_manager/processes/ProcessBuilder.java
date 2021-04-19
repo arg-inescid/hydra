@@ -36,6 +36,7 @@ public class ProcessBuilder extends Thread {
             callback.finish();
             logger.log(Level.INFO, "Process -> " + Arrays.toString(command.toArray()) + ". Exit code -> " + code);
         } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
             logger.log(Level.WARNING, "Process -> " + Arrays.toString(command.toArray()) + " raise exception!", e);
         }
     }

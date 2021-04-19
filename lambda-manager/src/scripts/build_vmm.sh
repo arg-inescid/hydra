@@ -16,10 +16,10 @@ FUNCTION_JAR=$FUNCTION_HOME/$FUNCTION_NAME.jar
 cd $FUNCTION_HOME
 if [[ ! -f $FUNCTION_HOME/$FUNCTION_NAME.img ]]
 then
-	$JAVA_HOME/bin/native-image \
+	"$JAVA_HOME"/bin/native-image \
 		-H:IncludeResources="logback.xml|application.yml" \
-		-jar $FUNCTION_JAR \
-		-H:Virtualize=$VIRTUALIZE_PATH \
-		-H:ConfigurationFileDirectories=$FUNCTION_HOME/config \
+		-jar "$FUNCTION_JAR" \
+		-H:Virtualize="$VIRTUALIZE_PATH" \
+		-H:ConfigurationFileDirectories="$FUNCTION_HOME"/config \
 		-H:ExcludeResources=".*/io.micronaut.*$|io.netty.*$"
 fi
