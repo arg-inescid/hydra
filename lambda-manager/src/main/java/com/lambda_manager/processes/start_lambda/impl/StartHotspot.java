@@ -34,6 +34,11 @@ public class StartHotspot extends StartLambda {
         command.add(connectionTriplet.tap);
         command.add(configuration.argumentStorage.getGateway());
         command.add(configuration.argumentStorage.getMask());
+        if(configuration.argumentStorage.isLambdaConsoleActive()) {
+            command.add("--console");
+        } else {
+            command.add("");    // Placeholder.
+        }
         command.add(String.valueOf(configuration.argumentStorage.getLambdaPort()));
         if(lambda.instance.getArgs() != null) {
             Collections.addAll(command, lambda.instance.getArgs().split(","));

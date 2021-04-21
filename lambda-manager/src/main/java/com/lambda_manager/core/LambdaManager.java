@@ -29,7 +29,7 @@ public class LambdaManager {
     }
 
     public static LambdaManager getLambdaManager() {
-        if(lambdaManager == null) {
+        if (lambdaManager == null) {
             lambdaManager = new LambdaManager();
         }
         return lambdaManager;
@@ -48,7 +48,9 @@ public class LambdaManager {
 
             long start = System.currentTimeMillis();
             String encodedName = configuration.encoder.encode(username, lambdaName);
-            LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda = configuration.scheduler.schedule(encodedName, args, configuration);
+            LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda = configuration.scheduler.schedule(encodedName,
+                    args, configuration);
+
             String response = configuration.client.sendRequest(lambda, configuration);
             configuration.optimizer.registerCall(lambda, configuration);
             configuration.scheduler.reschedule(lambda, configuration);
@@ -71,10 +73,8 @@ public class LambdaManager {
 
             String encodedName = configuration.encoder.encode(username, lambdaName);
             LambdaInstancesInfo lambdaInstancesInfo = configuration.storage.register(encodedName);
-            for(int i = 0; i < allocate; i++) {
-                LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda = configuration.functionWriter.upload(
-                        lambdaInstancesInfo, encodedName, lambdaCode);
-                 Processes.CREATE_TAPS.build(lambda, configuration).start();
+            for (int i = 0; i < allocate; i++) {
+                configuration.functionWriter.upload(lambdaInstancesInfo, encodedName, lambdaCode);
             }
 
             logger.log(Level.INFO, "Successfully uploaded lambda [" + lambdaName + "]!");

@@ -6,14 +6,14 @@ print_and_die() {
     exit 1
 }
 USAGE=$(cat << USAGE_END
-Usage: --memory mem --ip ip --gateway gateway --mask mask --tap tapname [--console]
+Usage: --memory mem --ip ip --gateway gateway --mask mask --tap tap_name [--console]
        --memory mem - VM RAM memory to pass to QEMU
-       --img imgage - VM image
+       --img image - VM image
        --ip ip - VM ip address
        --gateway gateway - VM gateway
-       --mask mask - VM networm mask
+       --mask mask - VM network mask
        --shared directory - Sets the shared directory path
-       --tap tapname - Sets the name of the tap used for networking
+       --tap tap_name - Sets the name of the tap used for networking
        --kernel kernel path - path to kernel image
        --console - Enable console output, disabled by default
 
@@ -25,7 +25,7 @@ VMM_CONSOLE=
 VMM_GATEWAY=
 VMM_MASK=
 VMM_TAP_NAME=
-VMM_MAC=`printf 'DE:AD:BE:EF:%02X:%02X\n' $((RANDOM%256)) $((RANDOM%256))`
+VMM_MAC=$(printf 'DE:AD:BE:EF:%02X:%02X\n' $((RANDOM%256)) $((RANDOM%256)))
 while :; do
     case $1 in
     -h | --help)
@@ -39,7 +39,7 @@ while :; do
             print_and_die "Flag --memory requires an additional argument\n$USAGE"
         fi
         ;;
-    -g | --img)
+    --img)
         if [ "$2" ]; then
             IMAGE_NAME=$2
             shift
@@ -72,7 +72,7 @@ while :; do
             print_and_die "Flag --gateway requires an additional argument\n$USAGE"
         fi
         ;;
-    -k | --mask)
+    --mask)
         if [ "$2" ]; then
             VMM_MASK=$2
             shift

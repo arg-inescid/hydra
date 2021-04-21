@@ -35,6 +35,8 @@ public class StartNativeImage extends StartLambda {
         command.add(configuration.argumentStorage.getMask());
         if(configuration.argumentStorage.isLambdaConsoleActive()) {
             command.add("--console");
+        } else {
+            command.add("");    // Placeholder.
         }
         command.add(String.valueOf(configuration.argumentStorage.getLambdaPort()));
         if(lambda.instance.getArgs() != null) {
