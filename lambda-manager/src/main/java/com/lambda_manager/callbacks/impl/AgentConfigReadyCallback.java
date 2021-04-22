@@ -9,13 +9,17 @@ import com.lambda_manager.utils.LambdaTuple;
 public class AgentConfigReadyCallback implements OnProcessFinishCallback {
 
     private final LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda;
+    private final OnProcessFinishCallback callback;
 
-    public AgentConfigReadyCallback(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda) {
+    public AgentConfigReadyCallback(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda,
+                                    OnProcessFinishCallback callback) {
         this.lambda = lambda;
+        this.callback = callback;
     }
 
     @Override
     public void finish() {
         lambda.list.setStatus(LambdaStatusType.NOT_BUILT_CONFIGURED);
+        callback.finish();
     }
 }

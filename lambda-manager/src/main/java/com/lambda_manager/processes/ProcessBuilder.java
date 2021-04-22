@@ -1,10 +1,8 @@
 package com.lambda_manager.processes;
 
 import com.lambda_manager.callbacks.OnProcessFinishCallback;
-import com.lambda_manager.utils.logger.ElapseTimer;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -12,19 +10,22 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
+import static com.lambda_manager.utils.Constants.IS_ALIVE_PAUSE;
+
 public class ProcessBuilder extends Thread {
 
     private final List<String> command;
     private final OnProcessFinishCallback callback;
     private final String outputFilename;
-    private Process process;
     private final Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
-    private long timestamp;
+    private final long pid;
+    private Process process;
 
-    public ProcessBuilder(List<String> command, OnProcessFinishCallback callback, String outputFilename) {
+    public ProcessBuilder(List<String> command, OnProcessFinishCallback callback, String outputFilename, long pid) {
         this.command = command;
         this.callback = callback;
         this.outputFilename = outputFilename;
+        this.pid = pid;
     }
 
     @Override
@@ -34,38 +35,26 @@ public class ProcessBuilder extends Thread {
             this.process = processBuilder.start();
             int code = process.waitFor();
             callback.finish();
-            logger.log(Level.INFO, "Process -> " + Arrays.toString(command.toArray()) + ". Exit code -> " + code);
+            logger.log(Level.INFO, String.format("PID -> %d | Command -> %s | Exit code -> %d",
+                    pid, Arrays.toString(command.toArray()), code));
         } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-            logger.log(Level.WARNING, "Process -> " + Arrays.toString(command.toArray()) + " raise exception!", e);
+            logger.log(Level.WARNING, String.format("PID -> %d | Command -> %s | Raised exception! ",
+                    pid, Arrays.toString(command.toArray())), e);
         }
     }
 
     private java.lang.ProcessBuilder prepareStartup() throws InterruptedException {
-        this.timestamp = ElapseTimer.elapsedTime();
         File outputFile = new File(outputFilename);
-
         java.lang.ProcessBuilder processBuilder = new java.lang.ProcessBuilder();
         processBuilder.redirectOutput(outputFile).redirectError(outputFile);
         processBuilder.command(command);
-        logger.log(Level.INFO, timestamp + "#Process -> "
-                + Arrays.toString(command.toArray()) + ". Output/Error -> " + outputFilename);
+        logger.log(Level.INFO, String.format("PID -> %d | Command -> %s | Output -> %s",
+                pid, Arrays.toString(command.toArray()), outputFilename));
 
         return processBuilder;
     }
 
-    private void writeTimestamp(long timestamp) {
-        File outputFile = new File(outputFilename);
-        try (FileWriter fileWriter = new FileWriter(outputFile, true)) {
-            fileWriter.write("\n***** USAGE INFO *****\n");
-            fileWriter.write("Timestamp (" + timestamp + ")\n"); // TODO - this needs a more descriptive header.
-        } catch (IOException ioException) {
-            ioException.printStackTrace();
-        }
-    }
-
     public void shutdownInstance() {
-        writeTimestamp(timestamp);
         // TODO - double check that we have descendants.
         shutdownInstance(process.descendants());
     }
@@ -82,7 +71,8 @@ public class ProcessBuilder extends Thread {
                 processHandle.destroy();
                 while (processHandle.isAlive()) {
                     try {
-                        Thread.sleep(50);
+                        //noinspection BusyWait
+                        Thread.sleep(IS_ALIVE_PAUSE);
                     } catch (InterruptedException e) {
                         e.printStackTrace(); // TODO - properly handle this exception
                     }

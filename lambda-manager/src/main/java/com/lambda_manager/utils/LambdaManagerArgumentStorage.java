@@ -8,6 +8,7 @@ import com.lambda_manager.connectivity.client.LambdaManagerClient;
 import com.lambda_manager.core.LambdaManagerConfiguration;
 import com.lambda_manager.encoders.Encoder;
 import com.lambda_manager.exceptions.argument_parser.ErrorDuringReflectiveClassCreation;
+import com.lambda_manager.exceptions.user.ErrorUploadingNewConfiguration;
 import com.lambda_manager.optimizers.Optimizer;
 import com.lambda_manager.processes.ProcessBuilder;
 import com.lambda_manager.processes.Processes;
@@ -34,9 +35,10 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class LambdaManagerArgumentStorage {
+import static com.lambda_manager.utils.Constants.MANAGER_LOG_FILENAME;
+import static com.lambda_manager.utils.Constants.RAND_STRING_LEN;
 
-    public static final int RAND_STRING_LEN = 10;
+public class LambdaManagerArgumentStorage {
 
     private String gateway;
     private String mask;
@@ -68,7 +70,9 @@ public class LambdaManagerArgumentStorage {
         this.isLambdaConsoleActive = managerArguments.isLambdaConsole();
     }
 
-    private void prepareConnectionPool(LambdaManagerConfiguration configuration, BeanContext beanContext) throws MalformedURLException {
+    private void prepareConnectionPool(LambdaManagerConfiguration configuration, BeanContext beanContext)
+            throws MalformedURLException, ErrorUploadingNewConfiguration {
+
         for (int i = 0; i < maxLambdas; i++) {
             String ip = getNextIPAddress();
             String tap = generateRandomString();
@@ -81,9 +85,9 @@ public class LambdaManagerArgumentStorage {
         createTaps.start();
         try {
             createTaps.join();
-        } catch (InterruptedException e) {
-            // TODO: Proper handling.
-            e.printStackTrace();
+        } catch (InterruptedException interruptedException) {
+            throw new ErrorUploadingNewConfiguration("Error during uploading new configuration!",
+                    interruptedException);
         }
     }
 
@@ -102,17 +106,13 @@ public class LambdaManagerArgumentStorage {
                 }
             }
             if (managerConsole.isRedirectToFile()) {
-                File managerLogDir = new File("src/logs/");
-                //noinspection ResultOfMethodCallIgnored
-                managerLogDir.mkdirs();
-                String managerLogFilename = "src/logs/managers/lambda-manager_" + generateRandomString() + ".log";
-                logger.log(Level.INFO, "Log is redirected to file -> " + managerLogFilename);
+                logger.log(Level.INFO, "Log is redirected to file -> " + MANAGER_LOG_FILENAME);
                 logger.setUseParentHandlers(false);
                 try {
-                    File managerLogFile = new File(managerLogFilename);
+                    File managerLogFile = new File(MANAGER_LOG_FILENAME);
                     //noinspection ResultOfMethodCallIgnored
                     managerLogFile.createNewFile();
-                    Handler handler = new FileHandler(managerLogFilename);
+                    Handler handler = new FileHandler(MANAGER_LOG_FILENAME, true);
                     logger.addHandler(handler);
                     handler.setFormatter(formatter);
                 } catch (IOException ioException) {
@@ -148,7 +148,7 @@ public class LambdaManagerArgumentStorage {
     }
 
     public LambdaManagerConfiguration initializeLambdaManager(ManagerArguments managerArguments, BeanContext beanContext)
-            throws ErrorDuringReflectiveClassCreation, MalformedURLException {
+            throws ErrorDuringReflectiveClassCreation, MalformedURLException, ErrorUploadingNewConfiguration {
 
         initClassFields(managerArguments);
         prepareLogger(managerArguments.getManagerConsole());

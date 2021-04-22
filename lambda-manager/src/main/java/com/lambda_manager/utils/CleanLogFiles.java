@@ -7,15 +7,17 @@ import javax.inject.Singleton;
 import java.io.File;
 import java.io.FilenameFilter;
 
+import static com.lambda_manager.utils.Constants.*;
+
 @SuppressWarnings("unused")
 @Singleton
 public class CleanLogFiles implements ApplicationEventListener<ApplicationStartupEvent> {
 
     @Override
     public void onApplicationEvent(ApplicationStartupEvent event) {
-        purgeDirectory(new File("src/lambdas"), false);
-        purgeDirectory(new File("src/logs/taps"), false);
-        purgeDirectory(new File("src/logs/managers"), false);
+        purgeDirectory(new File(CODEBASE), false);
+        purgeDirectory(new File(LAMBDA_LOGS), false);
+        purgeDirectory(new File(MANAGER_LOGS), false);
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")

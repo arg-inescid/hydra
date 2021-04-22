@@ -9,7 +9,6 @@ import com.lambda_manager.utils.LambdaTuple;
 
 import java.util.List;
 
-// TODO - shouldn't this be an abstract class?
 public class StartLambda extends AbstractProcess {
 
     private StartLambda nextToSpawn;
@@ -26,7 +25,17 @@ public class StartLambda extends AbstractProcess {
     }
 
     @Override
-    protected String processOutputFile(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
-        return nextToSpawn.processOutputFile(lambda, configuration);
+    protected String outputFilename(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+        return nextToSpawn.outputFilename(lambda, configuration);
+    }
+
+    @Override
+    protected String memoryFilename(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+        return nextToSpawn.memoryFilename(lambda, configuration);
+    }
+
+    @Override
+    protected long pid() {
+        return nextToSpawn.pid();
     }
 }

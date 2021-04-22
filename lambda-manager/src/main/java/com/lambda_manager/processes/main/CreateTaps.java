@@ -9,6 +9,7 @@ import com.lambda_manager.utils.LambdaTuple;
 import io.micronaut.http.client.RxHttpClient;
 
 import java.util.List;
+import static com.lambda_manager.utils.Constants.CREATE_TAPS_FILENAME;
 
 public class CreateTaps extends AbstractProcess {
 
@@ -26,8 +27,7 @@ public class CreateTaps extends AbstractProcess {
     }
 
     @Override
-    protected String processOutputFile(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
-        return processOutputFile == null ? "src/logs/taps/create-taps_" +
-                configuration.argumentStorage.generateRandomString() + ".dat" : processOutputFile;
+    protected String outputFilename(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+        return CREATE_TAPS_FILENAME;
     }
 }

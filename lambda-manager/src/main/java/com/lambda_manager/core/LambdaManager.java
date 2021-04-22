@@ -5,6 +5,7 @@ import com.lambda_manager.collectors.lambda_info.LambdaInstancesInfo;
 import com.lambda_manager.exceptions.argument_parser.ErrorDuringParsingJSONFile;
 import com.lambda_manager.exceptions.argument_parser.ErrorDuringReflectiveClassCreation;
 import com.lambda_manager.exceptions.argument_parser.InvalidJSONFile;
+import com.lambda_manager.exceptions.user.ErrorUploadingNewConfiguration;
 import com.lambda_manager.exceptions.user.ErrorUploadingNewLambda;
 import com.lambda_manager.exceptions.user.LambdaNotFound;
 import com.lambda_manager.processes.Processes;
@@ -109,12 +110,9 @@ public class LambdaManager {
         } catch (InvalidJSONFile invalidJSONFile) {
             logger.log(Level.SEVERE, "Invalid JSON syntax!", invalidJSONFile);
             return Single.just("Invalid JSON syntax!");
-        } catch (ErrorDuringParsingJSONFile errorDuringParsingJSONFile) {
-            logger.log(Level.SEVERE, "Error during parsing JSON config file!", errorDuringParsingJSONFile);
-            return Single.just("Error during parsing JSON config file!");
-        } catch (ErrorDuringReflectiveClassCreation errorDuringReflectiveClassCreation) {
-            logger.log(Level.SEVERE, errorDuringReflectiveClassCreation.getMessage(), errorDuringReflectiveClassCreation);
-            return Single.just(errorDuringReflectiveClassCreation.getMessage());
+        } catch (ErrorDuringParsingJSONFile | ErrorDuringReflectiveClassCreation | ErrorUploadingNewConfiguration e) {
+            logger.log(Level.SEVERE, e.getMessage(), e);
+            return Single.just(e.getMessage());
         } catch (MalformedURLException malformedURL) {
             logger.log(Level.SEVERE, "Malformed URL! Bad syntax!", malformedURL);
             return Single.just("Malformed URL! Bad syntax!");

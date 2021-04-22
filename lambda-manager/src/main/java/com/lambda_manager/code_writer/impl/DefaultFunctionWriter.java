@@ -23,20 +23,14 @@ public class DefaultFunctionWriter implements FunctionWriter {
         lambdaInstancesInfo.setId(id + 1);
         LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda = new LambdaTuple<>(lambdaInstancesInfo, lambdaInstanceInfo);
 
-        File newSrcDir = new File("src/lambdas/" + encodedName);
+        File newSrcDir = new File("src/codebase/" + encodedName);
         if(newSrcDir.mkdirs()) {
-            File lambdaCodeFile = new File("src/lambdas/" + encodedName + "/" + encodedName + ".jar");
+            File lambdaCodeFile = new File("src/codebase/" + encodedName + "/" + encodedName + ".jar");
             if(lambdaCodeFile.createNewFile()) {
                 FileOutputStream fileOutputStream = new FileOutputStream(lambdaCodeFile);
                 fileOutputStream.write(lambdaCode);
                 fileOutputStream.close();
             } else {
-                throw new ErrorUploadingNewLambda("Error during uploading new lambda [ " + lambda.list.getName() + " ]!");
-            }
-
-            File newConfigDir = new File("src/lambdas/" + encodedName + "/config");
-            File newLogDir = new File("src/lambdas/" + encodedName + "/logs");
-            if(!newConfigDir.mkdirs() || !newLogDir.mkdirs()) {
                 throw new ErrorUploadingNewLambda("Error during uploading new lambda [ " + lambda.list.getName() + " ]!");
             }
         }
@@ -46,7 +40,7 @@ public class DefaultFunctionWriter implements FunctionWriter {
 
     @Override
     public void remove(String encodedName) {
-        File dir = new File("src/lambdas/" + encodedName);
+        File dir = new File("src/codebase/" + encodedName);
         if(dir.exists()) {
             purgeDirectory(dir, true);
         }

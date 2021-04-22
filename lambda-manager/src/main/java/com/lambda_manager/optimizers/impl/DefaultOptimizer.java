@@ -27,9 +27,8 @@ public class DefaultOptimizer implements Optimizer {
                 lambda.list.setStatus(LambdaStatusType.CONFIGURING_OR_BUILDING);
                 break;
             case NOT_BUILT_CONFIGURED:
-                process = Processes.START_HOTSPOT_WITH_BUILD;
+                Processes.BUILD_NATIVE_IMAGE.build(lambda, configuration).start();
                 lambda.list.setStatus(LambdaStatusType.CONFIGURING_OR_BUILDING);
-                break;
             case CONFIGURING_OR_BUILDING:
                 process = Processes.START_HOTSPOT;
                 break;

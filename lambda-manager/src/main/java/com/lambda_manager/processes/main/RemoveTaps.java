@@ -10,6 +10,8 @@ import io.micronaut.http.client.RxHttpClient;
 
 import java.util.List;
 
+import static com.lambda_manager.utils.Constants.REMOVE_TAPS_FILENAME;
+
 public class RemoveTaps extends AbstractProcess {
 
     @Override
@@ -25,8 +27,7 @@ public class RemoveTaps extends AbstractProcess {
     }
 
     @Override
-    protected String processOutputFile(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
-        return processOutputFile == null ? "src/logs/taps/remove-taps_"
-                + configuration.argumentStorage.generateRandomString() + ".dat" : processOutputFile;
+    protected String outputFilename(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+        return REMOVE_TAPS_FILENAME;
     }
 }

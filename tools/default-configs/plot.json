@@ -1,22 +1,5 @@
 {
 	"plot": "plot1",
-	"combine_files":
-	[
-		{
-			"input_files":
-			[
-				"../lambda-manager/src/lambdas/user1_hello/logs/start*"
-			],
-			"result_file": "../benchmarks/results/hello-world-java/hello-world-data-1.dat"
-		},
-		{
-			"input_files":
-			[
-				"../lambda-manager/src/logs/lambda-manager*"
-			],
-			"result_file": "../lambda-manager/src/logs/lambda-manager.log"
-		}
-	],
 	"start_server":
 	{
 		"port": 8080,
@@ -33,17 +16,17 @@
 				{
 					"title": "Hotspot w agent",
 					"filepath": "../benchmarks/results/hello-world-java/hello-world-java-1.dat",
-					"regex": ["99%[\\n\\t\\s]*(\\d*)"]
+					"regex": "99%\\s*(\\d*)"
 				},
 				{
 					"title": "Hotspot",
 					"filepath": "../benchmarks/results/hello-world-java/hello-world-java-2.dat",
-					"regex": ["99%[\\n\\t\\s]*(\\d*)"]
+					"regex": "99%\\s*(\\d*)"
 				},
 				{
 					"title": "VMM",
 					"filepath": "../benchmarks/results/hello-world-java/hello-world-java-3.dat",
-					"regex": ["99%[\\n\\t\\s]*(\\d*)"]
+					"regex": "99%\\s*(\\d*)"
 				}
 			]
 		},
@@ -56,17 +39,17 @@
 				{
 					"title": "Hotspot w agent",
 					"filepath": "../benchmarks/results/hello-world-java/hello-world-java-1.dat",
-					"regex": ["Requests per second:[\\n\\t\\s]*(\\d*)"]
+					"regex": "Requests per second:\\s*(\\d*)"
 				},
 				{
 					"title": "Hotspot",
 					"filepath": "../benchmarks/results/hello-world-java/hello-world-java-2.dat",
-					"regex": ["Requests per second:[\\n\\t\\s]*(\\d*)"]
+					"regex": "Requests per second:\\s*(\\d*)"
 				},
 				{
 					"title": "VMM",
 					"filepath": "../benchmarks/results/hello-world-java/hello-world-java-3.dat",
-					"regex": ["Requests per second:[\\n\\t\\s]*(\\d*)"]
+					"regex": "Requests per second:\\s*(\\d*)"
 				}
 			]
 		},
@@ -78,8 +61,7 @@
 			[
 				{
 					"title": "VMM footprint",
-					"filepath": "../benchmarks/results/hello-world-java/hello-world-data-1.dat",
-					"regex": ["Timestamp \\((\\d+)\\)", "Maximum resident set size \\(kbytes\\):[\\n\\t\\s]*(\\d*)"]
+					"regex": "Maximum resident set size \\(kbytes\\):\\s*(\\d*)"
 				}
 			]
 		},
@@ -91,8 +73,7 @@
 			[
 				{
 					"title": "VMM startup",
-					"filepath": "../benchmarks/results/hello-world-java/hello-world-data-1.dat",
-					"regex": ["VMM boot time:[\\n\\t\\s]*(\\d*)", "Timestamp \\((\\d+)\\)"]
+					"regex": "VMM boot time:\\s*(\\d*)"
 				}
 			]
 		},
@@ -103,9 +84,19 @@
 			"data":
 			[
 				{
-					"title": "VMM scalability",
-					"filepath": "../lambda-manager/src/logs/lambda-manager.log",
-					"regex": ["Timestamp \\((\\d+)\\)", "start.*(Output|Exit)"]
+					"title": "System scalability"
+				}
+			]
+		},
+		{
+			"type": "total_memory",
+            "output": "../benchmarks/results/hello-world-java/hello-world-total-memory.png",
+			"show_image": false,
+			"data":
+			[
+				{
+					"title": "Total system memory",
+					"regex": "Maximum resident set size \\(kbytes\\):\\s*(\\d*)"
 				}
 			]
 		}
