@@ -4,16 +4,12 @@ import com.lambda_manager.collectors.lambda_info.LambdaInstanceInfo;
 import com.lambda_manager.collectors.lambda_info.LambdaInstancesInfo;
 import com.lambda_manager.connectivity.client.LambdaManagerClient;
 import com.lambda_manager.core.LambdaManagerConfiguration;
-import com.lambda_manager.exceptions.user.ErrorUploadingNewLambda;
-import com.lambda_manager.utils.Tuple;
-import io.micronaut.context.BeanContext;
+import com.lambda_manager.utils.LambdaTuple;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.client.RxHttpClient;
 import io.micronaut.http.client.exceptions.HttpClientException;
 import io.reactivex.Flowable;
 
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -24,20 +20,8 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
 
     private final Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 
-    public void createNewClient(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda,
-                                LambdaManagerConfiguration configuration, BeanContext beanContext) throws ErrorUploadingNewLambda {
-        try {
-            String ip = lambda.instance.getIp();
-            int lambdaPort = configuration.argumentStorage.getLambdaPort();
-            lambda.instance.setClient(beanContext.createBean(RxHttpClient.class, new URL("http://" + ip + ":" + lambdaPort)));
-        } catch (MalformedURLException malformedURLException) {
-            throw new ErrorUploadingNewLambda("Error during uploading new lambda [" + lambda.list.getName() + "]!",
-                    malformedURLException);
-        }
-    }
-
-    public String sendRequest(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
-        try (RxHttpClient client = lambda.instance.getClient()) {
+    public String sendRequest(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+        try (RxHttpClient client = lambda.instance.getConnectionTriplet().client) {
             Flowable<String> flowable = client.retrieve(HttpRequest.GET("/"));
             for (int failures = 0; failures < FAULT_TOLERANCE; failures++) {
                 try {

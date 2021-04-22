@@ -1,16 +1,14 @@
 {
 	"test": "test1",
 	"entry_point": "http://localhost:9000",
-	"managers": [
+	"managers":
+	[
 		{
 			"address": "http://localhost:9000",
 			"config_path": "default-configs/config.json"
 		}
 	],
-	"manager": "http://localhost:9000",
-	"config_path": "default-configs/config.json",
-	"users":
-	[
+	"users": [
 		{
 			"username": "user1",
 			"commands":
@@ -21,7 +19,7 @@
 				},
 				{
 					"command": "upload",
-					"allocate": 3,
+					"allocate": 100,
 					"lambda_name": "hello",
 					"source": "../benchmarks/hello-world-java/build/libs/hello-world-java-0.1.jar"
 				},
@@ -31,8 +29,8 @@
 					[
 						{
 							"iterations": 3,
-							"num_requests": 100,
-							"num_clients": 10,
+							"num_requests": 1000,
+							"num_clients": 100,
 							"lambda_name": "hello",
 							"args_pool": [],
 							"output": "../benchmarks/results/hello-world-java/hello-world-java-1.dat"
@@ -41,7 +39,7 @@
 				},
 				{
 					"command": "pause",
-					"duration": 20
+					"duration": 50
 				},
 				{
 					"command": "send",
@@ -49,8 +47,8 @@
 					[
 						{
 							"iterations": 3,
-							"num_requests": 100,
-							"num_clients": 10,
+							"num_requests": 1000,
+							"num_clients": 100,
 							"lambda_name": "hello",
 							"args_pool": [],
 							"output": "../benchmarks/results/hello-world-java/hello-world-java-2.dat"
@@ -67,8 +65,8 @@
 					[
 						{
 							"iterations": 3,
-							"num_requests": 100,
-							"num_clients": 10,
+							"num_requests": 1000,
+							"num_clients": 100,
 							"lambda_name": "hello",
 							"args_pool": [],
 							"output": "../benchmarks/results/hello-world-java/hello-world-java-3.dat"

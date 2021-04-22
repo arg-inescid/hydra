@@ -9,25 +9,25 @@ import com.lambda_manager.utils.LambdaTuple;
 import io.micronaut.http.client.RxHttpClient;
 
 import java.util.List;
+import static com.lambda_manager.utils.Constants.CREATE_TAPS_FILENAME;
 
-import static com.lambda_manager.utils.Constants.REMOVE_TAPS_FILENAME;
-
-public class RemoveTaps extends AbstractProcess {
+public class CreateTaps extends AbstractProcess {
 
     @Override
     protected List<String> makeCommand(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         clearPreviousState();
         command.add("bash");
-        command.add("src/scripts/remove_taps.sh");
+        command.add("src/scripts/create_taps.sh");
         for (ConnectionTriplet<String, String, RxHttpClient> connectionTriplet :
                 configuration.argumentStorage.getConnectionPool()) {
             command.add(connectionTriplet.tap);
+            command.add(connectionTriplet.ip);
         }
         return command;
     }
 
     @Override
     protected String outputFilename(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
-        return REMOVE_TAPS_FILENAME;
+        return CREATE_TAPS_FILENAME;
     }
 }

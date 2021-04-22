@@ -1,6 +1,5 @@
 package com.lambda_manager.utils;
 
-import com.lambda_manager.collectors.lambda_info.LambdaInstancesInfo;
 import com.lambda_manager.core.LambdaManager;
 import com.lambda_manager.core.LambdaManagerConfiguration;
 import com.lambda_manager.processes.ProcessBuilder;
@@ -9,8 +8,6 @@ import io.micronaut.context.event.ApplicationEventListener;
 import io.micronaut.runtime.event.ApplicationShutdownEvent;
 
 import javax.inject.Singleton;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -20,23 +17,18 @@ public class RemoveRemainTaps implements ApplicationEventListener<ApplicationShu
 
     @Override
     public void onApplicationEvent(ApplicationShutdownEvent event) {
+        Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
         try {
             LambdaManagerConfiguration configuration = LambdaManager.getConfiguration();
             if (configuration != null) {
-                List<ProcessBuilder> removeTapsWorkers = new ArrayList<>();
-                ProcessBuilder removeTapsWorker;
-                for(LambdaInstancesInfo lambda : configuration.storage.getAll().values()) {
-                    removeTapsWorker = Processes.REMOVE_TAPS.build(new Tuple<>(lambda, null), configuration);
-                    removeTapsWorker.start();
-                    removeTapsWorkers.add(removeTapsWorker);
-                }
-                for (ProcessBuilder worker : removeTapsWorkers) {
-                    worker.join();
-                }
+                ProcessBuilder removeTapsWorker = Processes.REMOVE_TAPS.build(null, configuration);
+                removeTapsWorker.start();
+                configuration.argumentStorage.cleanupStorage();
+                removeTapsWorker.join();
             }
+            logger.log(Level.INFO, "Execution finished successfully! :)");
         } catch (InterruptedException interruptedException) {
-            Logger.getLogger(Logger.GLOBAL_LOGGER_NAME).log(Level.WARNING, "Error during cleaning taps!",
-                    interruptedException);
+            logger.log(Level.WARNING, "Error during cleaning taps!", interruptedException);
         }
     }
 }

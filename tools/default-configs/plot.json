@@ -1,20 +1,7 @@
 {
 	"plot": "plot1",
-	"combine_files": [
-		{
-			"input_files": [
-				"../lambda-manager/src/lambdas/user1_hello/logs/start*"
-			],
-			"result_file": "../benchmarks/results/hello-world-java/hello-world-data-1.dat"
-		},
-		{
-			"input_files": [
-				"../lambda-manager/src/logs/lambda-manager*"
-			],
-			"result_file": "../lambda-manager/src/logs/lambda-manager.log"
-		}
-	],
-	"start_server": {
+	"start_server":
+	{
 		"port": 8080,
 		"img_width": 640,
 		"img_height": 360
@@ -24,18 +11,22 @@
 			"type": "latency",
             "output": "../benchmarks/results/hello-world-java/hello-world-latency.png",
 			"show_image": false,
-			"data": [
+			"data":
+			[
 				{
 					"title": "Hotspot w agent",
-					"filepath": "../benchmarks/results/hello-world-java/hello-world-java-1.dat"
+					"filepath": "../benchmarks/results/hello-world-java/hello-world-java-1.dat",
+					"regex": "99%\\s*(\\d*)"
 				},
 				{
 					"title": "Hotspot",
-					"filepath": "../benchmarks/results/hello-world-java/hello-world-java-2.dat"
+					"filepath": "../benchmarks/results/hello-world-java/hello-world-java-2.dat",
+					"regex": "99%\\s*(\\d*)"
 				},
 				{
 					"title": "VMM",
-					"filepath": "../benchmarks/results/hello-world-java/hello-world-java-3.dat"
+					"filepath": "../benchmarks/results/hello-world-java/hello-world-java-3.dat",
+					"regex": "99%\\s*(\\d*)"
 				}
 			]
 		},
@@ -43,18 +34,22 @@
 			"type": "throughput",
             "output": "../benchmarks/results/hello-world-java/hello-world-throughput.png",
 			"show_image": false,
-			"data": [
+			"data":
+			[
 				{
 					"title": "Hotspot w agent",
-					"filepath": "../benchmarks/results/hello-world-java/hello-world-java-1.dat"
+					"filepath": "../benchmarks/results/hello-world-java/hello-world-java-1.dat",
+					"regex": "Requests per second:\\s*(\\d*)"
 				},
 				{
 					"title": "Hotspot",
-					"filepath": "../benchmarks/results/hello-world-java/hello-world-java-2.dat"
+					"filepath": "../benchmarks/results/hello-world-java/hello-world-java-2.dat",
+					"regex": "Requests per second:\\s*(\\d*)"
 				},
 				{
 					"title": "VMM",
-					"filepath": "../benchmarks/results/hello-world-java/hello-world-java-3.dat"
+					"filepath": "../benchmarks/results/hello-world-java/hello-world-java-3.dat",
+					"regex": "Requests per second:\\s*(\\d*)"
 				}
 			]
 		},
@@ -62,10 +57,11 @@
 			"type": "footprint",
             "output": "../benchmarks/results/hello-world-java/hello-world-footprint.png",
 			"show_image": false,
-			"data": [
+			"data":
+			[
 				{
 					"title": "VMM footprint",
-					"filepath": "../benchmarks/results/hello-world-java/hello-world-data-1.dat"
+					"regex": "Maximum resident set size \\(kbytes\\):\\s*(\\d*)"
 				}
 			]
 		},
@@ -73,21 +69,34 @@
 			"type": "startup",
             "output": "../benchmarks/results/hello-world-java/hello-world-startup.png",
 			"show_image": false,
-			"data": [
+			"data":
+			[
 				{
 					"title": "VMM startup",
-					"filepath": "../benchmarks/results/hello-world-java/hello-world-data-1.dat"
+					"regex": "VMM boot time:\\s*(\\d*)"
 				}
 			]
 		},
 		{
 			"type": "scalability",
             "output": "../benchmarks/results/hello-world-java/hello-world-scalability.png",
-			"show_image": true,
-			"data": [
+			"show_image": false,
+			"data":
+			[
 				{
-					"title": "VMM scalability",
-					"filepath": "../lambda-manager/src/logs/lambda-manager.log"
+					"title": "System scalability"
+				}
+			]
+		},
+		{
+			"type": "total_memory",
+            "output": "../benchmarks/results/hello-world-java/hello-world-total-memory.png",
+			"show_image": false,
+			"data":
+			[
+				{
+					"title": "Total system memory",
+					"regex": "Maximum resident set size \\(kbytes\\):\\s*(\\d*)"
 				}
 			]
 		}

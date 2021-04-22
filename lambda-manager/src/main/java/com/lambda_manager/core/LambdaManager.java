@@ -5,16 +5,18 @@ import com.lambda_manager.collectors.lambda_info.LambdaInstancesInfo;
 import com.lambda_manager.exceptions.argument_parser.ErrorDuringParsingJSONFile;
 import com.lambda_manager.exceptions.argument_parser.ErrorDuringReflectiveClassCreation;
 import com.lambda_manager.exceptions.argument_parser.InvalidJSONFile;
+import com.lambda_manager.exceptions.user.ErrorUploadingNewConfiguration;
 import com.lambda_manager.exceptions.user.ErrorUploadingNewLambda;
 import com.lambda_manager.exceptions.user.LambdaNotFound;
 import com.lambda_manager.processes.Processes;
 import com.lambda_manager.utils.LambdaManagerArgumentStorage;
-import com.lambda_manager.utils.Tuple;
+import com.lambda_manager.utils.LambdaTuple;
 import com.lambda_manager.utils.parser.ArgumentParser;
 import io.micronaut.context.BeanContext;
 import io.reactivex.Single;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -28,7 +30,7 @@ public class LambdaManager {
     }
 
     public static LambdaManager getLambdaManager() {
-        if(lambdaManager == null) {
+        if (lambdaManager == null) {
             lambdaManager = new LambdaManager();
         }
         return lambdaManager;
@@ -47,12 +49,14 @@ public class LambdaManager {
 
             long start = System.currentTimeMillis();
             String encodedName = configuration.encoder.encode(username, lambdaName);
-            Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda = configuration.scheduler.schedule(encodedName, args, configuration);
+            LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda = configuration.scheduler.schedule(encodedName,
+                    args, configuration);
+
             String response = configuration.client.sendRequest(lambda, configuration);
             configuration.optimizer.registerCall(lambda, configuration);
             configuration.scheduler.reschedule(lambda, configuration);
 
-            logger.log(Level.INFO,
+            logger.log(Level.FINE,
                     "Time (vmm_id=" + lambda.instance.getId() + "): " + (System.currentTimeMillis() - start) + "\t[ms]");
             return Single.just(response);
         } catch (LambdaNotFound lambdaNotFound) {
@@ -61,7 +65,7 @@ public class LambdaManager {
         }
     }
 
-    public Single<String> uploadLambda(int allocate, String username, String lambdaName, byte[] lambdaCode, BeanContext beanContext) {
+    public Single<String> uploadLambda(int allocate, String username, String lambdaName, byte[] lambdaCode) {
         try {
             if (configuration == null) {
                 logger.log(Level.WARNING, "No configuration has been uploaded!");
@@ -70,11 +74,8 @@ public class LambdaManager {
 
             String encodedName = configuration.encoder.encode(username, lambdaName);
             LambdaInstancesInfo lambdaInstancesInfo = configuration.storage.register(encodedName);
-            for(int i = 0; i < allocate; i++) {
-                Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda = configuration.codeWriter.upload(
-                        lambdaInstancesInfo, encodedName, lambdaCode);
-                 Processes.CREATE_TAP.build(lambda, configuration).start();
-                 configuration.client.createNewClient(lambda, configuration, beanContext);
+            for (int i = 0; i < allocate; i++) {
+                configuration.functionWriter.upload(lambdaInstancesInfo, encodedName, lambdaCode);
             }
 
             logger.log(Level.INFO, "Successfully uploaded lambda [" + lambdaName + "]!");
@@ -93,26 +94,28 @@ public class LambdaManager {
 
         String encodedName = configuration.encoder.encode(username, lambdaName);
         configuration.storage.unregister(encodedName);
-        configuration.codeWriter.remove(encodedName);
+        configuration.functionWriter.remove(encodedName);
 
         logger.log(Level.INFO, "Successfully removed lambda [" + lambdaName + "]!");
         return Single.just("Successfully removed lambda [" + lambdaName + "]!");
     }
 
-    public Single<String> startManager(String configData) {
+    public Single<String> configureManager(String configData, BeanContext beanContext) {
         try {
-            configuration = new LambdaManagerArgumentStorage().initializeLambdaManager(ArgumentParser.parse(configData));
+            configuration = new LambdaManagerArgumentStorage().initializeLambdaManager(
+                    ArgumentParser.parse(configData), beanContext);
+
             logger.log(Level.INFO, "Successfully uploaded lambda manager configuration!");
             return Single.just("Successfully uploaded lambda manager configuration!");
         } catch (InvalidJSONFile invalidJSONFile) {
             logger.log(Level.SEVERE, "Invalid JSON syntax!", invalidJSONFile);
             return Single.just("Invalid JSON syntax!");
-        } catch (ErrorDuringParsingJSONFile errorDuringParsingJSONFile) {
-            logger.log(Level.SEVERE, "Error during parsing JSON config file!", errorDuringParsingJSONFile);
-            return Single.just("Error during parsing JSON config file!");
-        } catch (ErrorDuringReflectiveClassCreation errorDuringReflectiveClassCreation) {
-            logger.log(Level.SEVERE, errorDuringReflectiveClassCreation.getMessage(), errorDuringReflectiveClassCreation);
-            return Single.just(errorDuringReflectiveClassCreation.getMessage());
+        } catch (ErrorDuringParsingJSONFile | ErrorDuringReflectiveClassCreation | ErrorUploadingNewConfiguration e) {
+            logger.log(Level.SEVERE, e.getMessage(), e);
+            return Single.just(e.getMessage());
+        } catch (MalformedURLException malformedURL) {
+            logger.log(Level.SEVERE, "Malformed URL! Bad syntax!", malformedURL);
+            return Single.just("Malformed URL! Bad syntax!");
         }
     }
 }

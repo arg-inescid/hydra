@@ -3,15 +3,15 @@ package com.lambda_manager.handlers;
 import com.lambda_manager.collectors.lambda_info.LambdaInstanceInfo;
 import com.lambda_manager.collectors.lambda_info.LambdaInstancesInfo;
 import com.lambda_manager.processes.ProcessBuilder;
-import com.lambda_manager.utils.Tuple;
+import com.lambda_manager.utils.LambdaTuple;
 
 import java.util.TimerTask;
 
 public class DefaultLambdaShutdownHandler extends TimerTask {
 
-    private final Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda;
+    private final LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda;
 
-    public DefaultLambdaShutdownHandler(Tuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda) {
+    public DefaultLambdaShutdownHandler(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda) {
         this.lambda = lambda;
     }
 

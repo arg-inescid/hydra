@@ -1,11 +1,17 @@
 {
-   "gateway":           "169.254.8.251/16",
+   "gateway":           "169.254.10.9/16",
+   "maxLambdas":        50,
    "timeout":           10000,
    "healthCheck":       50,
    "memory":            "512M",
    "lambdaPort":        8080,
-   "managerConsole":    true,
-   "vmmConsole":        true,
+   "lambdaConsole":     true,
+   "managerConsole":
+   {
+      "turnOff":        false,
+      "redirectToFile": true,
+      "fineGrain":      true
+   },
    "managerState":
    {
       "scheduler":   "com.lambda_manager.schedulers.impl.RoundedRobinScheduler",
@@ -13,7 +19,7 @@
       "encoder":     "com.lambda_manager.encoders.impl.DefaultEncoder",
       "storage":     "com.lambda_manager.collectors.lambda_storage.impl.DefaultLambdaStorage",
       "client":      "com.lambda_manager.connectivity.client.impl.DefaultLambdaManagerClient",
-      "codeWriter":  "com.lambda_manager.code_writer.impl.DefaultCodeWriter",
+      "codeWriter":  "com.lambda_manager.code_writer.impl.DefaultFunctionWriter",
       "lambdaInfo":
       {
          "instance": "com.lambda_manager.collectors.lambda_info.impl.DefaultLambdaInfo",

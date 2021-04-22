@@ -9,11 +9,12 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
         "gateway",
+        "maxLambdas",
         "timeout",
         "healthCheck",
         "memory",
         "lambdaPort",
-        "vmmConsole",
+        "lambdaConsole",
         "managerConsole",
         "managerState"
 })
@@ -21,6 +22,8 @@ public class ManagerArguments implements Serializable
 {
     @JsonProperty("gateway")
     private String gateway;
+    @JsonProperty("maxLambdas")
+    private int maxLambdas;
     @JsonProperty("timeout")
     private int timeout;
     @JsonProperty("healthCheck")
@@ -29,10 +32,10 @@ public class ManagerArguments implements Serializable
     private String memory;
     @JsonProperty("lambdaPort")
     private int lambdaPort;
-    @JsonProperty("vmmConsole")
-    private boolean vmmConsole;
+    @JsonProperty("lambdaConsole")
+    private boolean lambdaConsole;
     @JsonProperty("managerConsole")
-    private boolean managerConsole;
+    private ManagerConsole managerConsole;
     @JsonProperty("managerState")
     private ManagerState managerState;
     private final static long serialVersionUID = -6081673374812554207L;
@@ -45,7 +48,7 @@ public class ManagerArguments implements Serializable
     }
 
     /**
-     * @param vmmConsole - Is console active during qemu's run.
+     * @param lambdaConsole - Is console active during qemu's run.
      * @param managerState - The class that represent state of one manager's instance.
      * @param memory - How maximum memory will consume one active lambda.
      * @param lambdaPort - First port in lambda port space.
@@ -54,15 +57,17 @@ public class ManagerArguments implements Serializable
      * @param timeout - Timeout
      * @param gateway - The Bridge address.
      */
-    public ManagerArguments(String gateway, int timeout,
-                            int healthCheck, String memory, int lambdaPort, boolean vmmConsole, ManagerState managerState) {
+    public ManagerArguments(String gateway, int maxLambdas, int timeout, int healthCheck, String memory, int lambdaPort,
+                            boolean lambdaConsole, ManagerConsole managerConsole, ManagerState managerState) {
         super();
         this.gateway = gateway;
+        this.maxLambdas = maxLambdas;
         this.timeout = timeout;
         this.healthCheck = healthCheck;
         this.memory = memory;
         this.lambdaPort = lambdaPort;
-        this.vmmConsole = vmmConsole;
+        this.lambdaConsole = lambdaConsole;
+        this.managerConsole = managerConsole;
         this.managerState = managerState;
     }
 
@@ -74,6 +79,16 @@ public class ManagerArguments implements Serializable
     @JsonProperty("gateway")
     public void setGateway(String gateway) {
         this.gateway = gateway;
+    }
+
+    @JsonProperty("maxLambdas")
+    public int getMaxLambdas() {
+        return maxLambdas;
+    }
+
+    @JsonProperty("maxLambdas")
+    public void setMaxLambdas(int maxLambdas) {
+        this.maxLambdas = maxLambdas;
     }
 
     @JsonProperty("timeout")
@@ -116,23 +131,23 @@ public class ManagerArguments implements Serializable
         this.lambdaPort = lambdaPort;
     }
 
-    @JsonProperty("vmmConsole")
-    public boolean isVmmConsole() {
-        return vmmConsole;
+    @JsonProperty("lambdaConsole")
+    public boolean isLambdaConsole() {
+        return lambdaConsole;
     }
 
-    @JsonProperty("vmmConsole")
-    public void setVmmConsole(boolean vmmConsole) {
-        this.vmmConsole = vmmConsole;
+    @JsonProperty("lambdaConsole")
+    public void setLambdaConsole(boolean lambdaConsole) {
+        this.lambdaConsole = lambdaConsole;
     }
 
     @JsonProperty("managerConsole")
-    public boolean isManagerConsole() {
+    public ManagerConsole getManagerConsole() {
         return managerConsole;
     }
 
     @JsonProperty("managerConsole")
-    public void setManagerConsole(boolean managerConsole) {
+    public void setManagerConsole(ManagerConsole managerConsole) {
         this.managerConsole = managerConsole;
     }
 
