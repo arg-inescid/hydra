@@ -2,6 +2,7 @@ package com.lambda_manager.handlers;
 
 import com.lambda_manager.collectors.lambda_info.LambdaInstanceInfo;
 import com.lambda_manager.collectors.lambda_info.LambdaInstancesInfo;
+import com.lambda_manager.core.LambdaManager;
 import com.lambda_manager.processes.ProcessBuilder;
 import com.lambda_manager.utils.LambdaTuple;
 
@@ -31,6 +32,7 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
 
         // Cleanup is finished, add server back to list of all available servers.
         synchronized (lambda.list) {
+            LambdaManager.getConfiguration().argumentStorage.returnConnectionTriplet(lambda.instance.getConnectionTriplet());
             lambda.list.getAvailableInstances().add(lambda.instance);
             lambda.list.notify();
         }

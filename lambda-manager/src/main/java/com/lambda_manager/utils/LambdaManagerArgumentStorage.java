@@ -185,7 +185,7 @@ public class LambdaManagerArgumentStorage {
         return connectionPool;
     }
 
-    public ConnectionTriplet<String, String, RxHttpClient> getNextConnectionTriplet() {
+    public ConnectionTriplet<String, String, RxHttpClient> nextConnectionTriplet() {
         return connectionPool.remove(0);
     }
 

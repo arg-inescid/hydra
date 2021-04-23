@@ -44,7 +44,7 @@ public class RoundedRobinScheduler implements Scheduler {
 
     private void acquireConnection(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda,
                                    LambdaManagerConfiguration configuration) {
-        lambda.instance.setConnectionTriplet(configuration.argumentStorage.getNextConnectionTriplet());
+        lambda.instance.setConnectionTriplet(configuration.argumentStorage.nextConnectionTriplet());
     }
 
     private void buildProcess(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda,
@@ -107,18 +107,12 @@ public class RoundedRobinScheduler implements Scheduler {
         return new LambdaTuple<>(lambdaInstancesInfo, lambdaInstanceInfo);
     }
 
-    private void releaseConnection(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda,
-                                   LambdaManagerConfiguration configuration) {
-        configuration.argumentStorage.returnConnectionTriplet(lambda.instance.getConnectionTriplet());
-    }
-
     @Override
     public void reschedule(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
         synchronized (lambda.list) {
             int openRequestCount = lambda.instance.getOpenRequestCount() - 1;
             lambda.instance.setOpenRequestCount(openRequestCount);
             if (openRequestCount == 0) {
-                releaseConnection(lambda, configuration);
                 lambda.list.getActiveInstances().remove(lambda.instance);
                 lambda.list.getStartedInstances().add(lambda.instance);
 

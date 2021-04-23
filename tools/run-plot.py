@@ -181,7 +181,12 @@ def footprint_startup(plot_type, plot_data):
     for entry in manager_log:
         key = get_key(plot_type, entry[1])
         if key in lambda_logs and entry[2] != "Exit":
-            output.append("{} {}".format(entry[0], regex.findall(lambda_logs[key])[0]))
+            find_results = regex.findall(lambda_logs[key])
+            if len(find_results) > 0:
+                output.append("{} {}".format(entry[0], find_results[0]))
+            else:
+                print_message("Regex and content are not matching! Regex: {}. Content: {}".format(
+                    plot_data['regex'], lambda_logs[key]), MessageType.WARN)
     return [output], [plot_data['title']]
 
 
@@ -197,12 +202,22 @@ def scalability_total_memory(plot_type, plot_data):
                 if plot_type == PlotType.SCALABILITY.value:
                     column += 1
                 else:
-                    column += int(regex.findall(lambda_logs[key])[0])
+                    find_results = regex.findall(lambda_logs[key])
+                    if len(find_results) > 0:
+                        column += int(find_results[0])
+                    else:
+                        print_message("Regex and content are not matching! Regex: {}. Content: {}".format(
+                            plot_data['regex'], lambda_logs[key]), MessageType.WARN)
             else:
                 if plot_type == PlotType.SCALABILITY.value:
                     column -= 1
                 else:
-                    column -= int(regex.findall(lambda_logs[key])[0])
+                    find_results = regex.findall(lambda_logs[key])
+                    if len(find_results) > 0:
+                        column -= int(find_results[0])
+                    else:
+                        print_message("Regex and content are not matching! Regex: {}. Content: {}".format(
+                            plot_data['regex'], lambda_logs[key]), MessageType.WARN)
             output.append("{} {}".format(entry[0], column))
     return [output], [plot_data['title']]
 
