@@ -12,6 +12,7 @@ public class LambdaInstancesInfo {
     private int id = 0;
     private final String name;
     private LambdaStatusType status;
+    private boolean updateID;
     private final ArrayList<LambdaInstanceInfo> availableInstances = new ArrayList<>();
     private final ArrayList<LambdaInstanceInfo> startedInstances = new ArrayList<>();
     private final ArrayList<LambdaInstanceInfo> activeInstances = new ArrayList<>();
@@ -23,11 +24,7 @@ public class LambdaInstancesInfo {
     }
 
     public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
+        return id++;
     }
 
     public String getName() {
@@ -40,6 +37,14 @@ public class LambdaInstancesInfo {
 
     public void setStatus(LambdaStatusType status) {
         this.status = status;
+    }
+
+    public boolean isUpdateID() {
+        return updateID;
+    }
+
+    public void setUpdateID(boolean updateID) {
+        this.updateID = updateID;
     }
 
     public ArrayList<LambdaInstanceInfo> getAvailableInstances() {

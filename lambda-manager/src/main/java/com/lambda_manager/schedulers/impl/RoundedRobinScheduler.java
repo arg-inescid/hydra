@@ -86,6 +86,7 @@ public class RoundedRobinScheduler implements Scheduler {
                         }
                         lambdaInstanceInfo = lambdaInstancesInfo.getAvailableInstances().remove(0);
                         lambdaInstanceInfo.setArgs(args);
+                        lambdaInstanceInfo.shouldUpdateID(lambdaInstancesInfo);
                         spawnNewLambda(new LambdaTuple<>(lambdaInstancesInfo, lambdaInstanceInfo), configuration);
                     } else {
                         lambdaInstanceInfo = lambdaInstancesInfo.getActiveInstances().remove(0);
@@ -93,6 +94,7 @@ public class RoundedRobinScheduler implements Scheduler {
                 } else {
                     lambdaInstanceInfo = lambdaInstancesInfo.getAvailableInstances().remove(0);
                     lambdaInstanceInfo.setArgs(args);
+                    lambdaInstanceInfo.shouldUpdateID(lambdaInstancesInfo);
                     spawnNewLambda(new LambdaTuple<>(lambdaInstancesInfo, lambdaInstanceInfo), configuration);
                 }
             } else {

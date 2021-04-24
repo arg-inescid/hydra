@@ -20,7 +20,6 @@ public class DefaultFunctionWriter implements FunctionWriter {
 
         int id = lambdaInstancesInfo.getId();
         LambdaInstanceInfo lambdaInstanceInfo = new LambdaInstanceInfo(id);
-        lambdaInstancesInfo.setId(id + 1);
         LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda = new LambdaTuple<>(lambdaInstancesInfo, lambdaInstanceInfo);
 
         File newSrcDir = new File("src/codebase/" + encodedName);

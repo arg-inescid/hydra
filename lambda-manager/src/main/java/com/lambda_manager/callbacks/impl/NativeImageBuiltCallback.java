@@ -17,5 +17,6 @@ public class NativeImageBuiltCallback implements OnProcessFinishCallback {
     @Override
     public void finish() {
         lambda.list.setStatus(LambdaStatusType.BUILT);
+        lambda.list.setUpdateID(true);
     }
 }

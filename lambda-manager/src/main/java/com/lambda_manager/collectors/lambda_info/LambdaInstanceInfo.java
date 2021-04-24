@@ -7,10 +7,11 @@ import java.util.Timer;
 
 public class LambdaInstanceInfo {
 
-    private final int id;
+    private int id;
     private int openRequestCount;
     private String args;
     private Timer timer;
+    private boolean updated = false;
     private ConnectionTriplet<String, String, RxHttpClient> connectionTriplet;
 
     public LambdaInstanceInfo(int id) {
@@ -51,5 +52,12 @@ public class LambdaInstanceInfo {
 
     public void setConnectionTriplet(ConnectionTriplet<String, String, RxHttpClient> connectionTriplet) {
         this.connectionTriplet = connectionTriplet;
+    }
+
+    public void shouldUpdateID(LambdaInstancesInfo lambdaInstancesInfo) {
+        if (lambdaInstancesInfo.isUpdateID() && !updated) {
+            id = lambdaInstancesInfo.getId();
+            updated = true;
+        }
     }
 }
