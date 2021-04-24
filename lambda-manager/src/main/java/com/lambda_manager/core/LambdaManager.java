@@ -8,7 +8,6 @@ import com.lambda_manager.exceptions.argument_parser.InvalidJSONFile;
 import com.lambda_manager.exceptions.user.ErrorUploadingNewConfiguration;
 import com.lambda_manager.exceptions.user.ErrorUploadingNewLambda;
 import com.lambda_manager.exceptions.user.LambdaNotFound;
-import com.lambda_manager.processes.Processes;
 import com.lambda_manager.utils.LambdaManagerArgumentStorage;
 import com.lambda_manager.utils.LambdaTuple;
 import com.lambda_manager.utils.parser.ArgumentParser;
@@ -40,6 +39,20 @@ public class LambdaManager {
         return configuration;
     }
 
+    private String header(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda) {
+        switch (lambda.list.getStatus()) {
+            case NOT_BUILT_NOT_CONFIGURED:
+                return String.format("Time (hotspot-w-agent_id=%d): ", lambda.instance.getId());
+            case CONFIGURING_OR_BUILDING:
+            case NOT_BUILT_CONFIGURED:
+                return String.format("Time (hotspot_id=%d): ", lambda.instance.getId());
+            case BUILT:
+                return String.format("Time (vmm_id=%d): ", lambda.instance.getId());
+            default:
+                throw new UnsupportedOperationException();
+        }
+    }
+
     public Single<String> processRequest(String username, String lambdaName, String args) {
         try {
             if (configuration == null) {
@@ -56,8 +69,7 @@ public class LambdaManager {
             configuration.optimizer.registerCall(lambda, configuration);
             configuration.scheduler.reschedule(lambda, configuration);
 
-            logger.log(Level.FINE,
-                    "Time (vmm_id=" + lambda.instance.getId() + "): " + (System.currentTimeMillis() - start) + "\t[ms]");
+            logger.log(Level.FINE, header(lambda) + (System.currentTimeMillis() - start) + "\t[ms]");
             return Single.just(response);
         } catch (LambdaNotFound lambdaNotFound) {
             logger.log(Level.WARNING, lambdaNotFound.getMessage(), lambdaNotFound);
