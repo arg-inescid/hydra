@@ -30,7 +30,7 @@ class PlotType(enum.Enum):
     STARTUP = "startup"
     FOOTPRINT = "footprint"
     SCALABILITY = "scalability"
-    TOTAL_MEMORY = "total_memory"
+    TOTAL_MEMORY = "total memory"
 
 
 # Plot global variables.
@@ -48,15 +48,15 @@ xlabel = {
     "startup": "Timelapse (ms)",
     "footprint": "Timelapse (ms)",
     "scalability": "Timelapse (ms)",
-    "total_memory": "Timelapse (ms)"
+    "total memory": "Timelapse (ms)"
 }
 ylabel = {
     "latency": "99p latency (ms)",
     "throughput": "Throughput (req/sec)",
     "startup": "Startup time (ms)",
-    "footprint": "Memory footprint (kbytes)",
+    "footprint": "Memory footprint (MB)",
     "scalability": "Number of active lambdas",
-    "total_memory": "Total system memory"
+    "total memory": "Total system memory (GB)"
 }
 plot_template = '''reset
 set terminal pngcairo enhanced font "Verdana,64" size 4500,3000 linewidth 20
@@ -65,7 +65,7 @@ set grid
 set key out top horizontal
 set xlabel "{xlabel}"
 set ylabel "{ylabel}"
-set decimalsign locale
+set decimalsign '.'
 set yrange [0:]
 set xrange [1:]
 '''
@@ -102,6 +102,14 @@ def print_message(message, t):
         print('\033[1;32m' + t.value + " " + message + '\033[0m')  # green
         return
     print(message)
+
+
+def kb_to_mb(value):
+    return value / 1000
+
+
+def kb_to_gb(value):
+    return value / 1_000_000
 
 
 # File util methods.
@@ -183,7 +191,10 @@ def footprint_startup(plot_type, plot_data):
         if key in lambda_logs and entry[2] != "Exit":
             find_results = regex.findall(lambda_logs[key])
             if len(find_results) > 0:
-                output.append("{} {}".format(entry[0], find_results[0]))
+                value = int(find_results[0])
+                if plot_type == PlotType.FOOTPRINT.value:
+                    value = kb_to_mb(value)
+                output.append("{} {}".format(entry[0], value))
             else:
                 print_message("Regex and content are not matching! Regex: {}. Content: {}".format(
                     plot_data['regex'], lambda_logs[key]), MessageType.WARN)
@@ -204,7 +215,7 @@ def scalability_total_memory(plot_type, plot_data):
                 else:
                     find_results = regex.findall(lambda_logs[key])
                     if len(find_results) > 0:
-                        column += int(find_results[0])
+                        column += kb_to_gb(int(find_results[0]))
                     else:
                         print_message("Regex and content are not matching! Regex: {}. Content: {}".format(
                             plot_data['regex'], lambda_logs[key]), MessageType.WARN)
@@ -214,7 +225,7 @@ def scalability_total_memory(plot_type, plot_data):
                 else:
                     find_results = regex.findall(lambda_logs[key])
                     if len(find_results) > 0:
-                        column -= int(find_results[0])
+                        column -= kb_to_gb(int(find_results[0]))
                     else:
                         print_message("Regex and content are not matching! Regex: {}. Content: {}".format(
                             plot_data['regex'], lambda_logs[key]), MessageType.WARN)

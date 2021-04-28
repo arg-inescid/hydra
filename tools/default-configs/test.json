@@ -28,7 +28,7 @@
 					"sending_info":
 					[
 						{
-							"iterations": 3,
+							"iterations": 100,
 							"num_requests": 1000,
 							"num_clients": 100,
 							"lambda_name": "hello",
@@ -46,7 +46,7 @@
 					"sending_info":
 					[
 						{
-							"iterations": 3,
+							"iterations": 100,
 							"num_requests": 1000,
 							"num_clients": 100,
 							"lambda_name": "hello",
@@ -64,7 +64,7 @@
 					"sending_info":
 					[
 						{
-							"iterations": 3,
+							"iterations": 100,
 							"num_requests": 1000,
 							"num_clients": 100,
 							"lambda_name": "hello",

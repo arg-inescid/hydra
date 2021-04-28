@@ -60,7 +60,7 @@
 			"data":
 			[
 				{
-					"title": "VMM footprint",
+					"title": "Lambda footprint",
 					"regex": "Maximum resident set size \\(kbytes\\):\\s*(\\d*)"
 				}
 			]
@@ -72,7 +72,7 @@
 			"data":
 			[
 				{
-					"title": "VMM startup",
+					"title": "Lambda startup",
 					"regex": "VMM boot time:\\s*(\\d*)"
 				}
 			]
@@ -89,7 +89,7 @@
 			]
 		},
 		{
-			"type": "total_memory",
+			"type": "total memory",
             "output": "../benchmarks/results/hello-world-java/hello-world-total-memory.png",
 			"show_image": false,
 			"data":

@@ -1,7 +1,7 @@
 {
-   "gateway":           "169.254.10.9/16",
-   "maxLambdas":        50,
-   "timeout":           10000,
+   "gateway":           "10.0.123.179/18",
+   "maxLambdas":        101,
+   "timeout":           25000,
    "healthCheck":       50,
    "memory":            "512M",
    "lambdaPort":        8080,
