@@ -1,4 +1,6 @@
 import enum
+import glob
+import os
 import shlex
 import subprocess
 import sys
@@ -46,21 +48,30 @@ def run(command):
 
 
 def make_kernel_writable():
-    pass
+    print_message("Making kernel writable...", MessageType.INFO)
+    kernel_location = os.path.join("/", "boot")
+    kernel_files = sorted(glob.glob(os.path.join(kernel_location, "vmlinuz-*-generic")))
+    if len(kernel_files) == 0:
+        print_message("Something went wrong! No kernel files found!", MessageType.ERROR)
+        exit(1)
+    run("sudo chmod +w {}".format(os.path.join(kernel_location, kernel_files[-1])))
+    print_message("Making kernel writable...done", MessageType.INFO)
 
 
 def install_world():
     print_message("Installing world...", MessageType.INFO)
-    run("sudo aptitude install gcc libz-dev libguestfs-tools qemu qemu-kvm maven apache2-utils gnuplot")
+    run("sudo apt-get install gcc libz-dev libguestfs-tools qemu qemu-kvm maven apache2-utils gnuplot")
     print_message("Installing the world...done", MessageType.INFO)
 
 
 def install_nginx():
-    pass
+    print_message("Installing nginx...", MessageType.INFO)
+    run("sudo apt-get install nginx")
+    print_message("Installing the nginx...done", MessageType.INFO)
 
 
 def install_docker():
-    print_message("Installing docker...", MessageType.INFO)     # https://docs.docker.com/engine/install/ubuntu/
+    print_message("Installing docker...", MessageType.INFO)  # https://docs.docker.com/engine/install/ubuntu/
     run("sudo apt-get update")
     run("sudo apt-get install apt-transport-https ca-certificates gnupg-agent software-properties-common curl wget")
     run("curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -")
@@ -84,7 +95,7 @@ if __name__ == '__main__':
     install_required_packages()
     make_kernel_writable()
     install_world()
-    install_nginx()
-    install_docker()
-    install_native_image()
-    setup_virtualization()
+    # install_nginx()
+    # install_docker()
+    # install_native_image()
+    # setup_virtualization()
