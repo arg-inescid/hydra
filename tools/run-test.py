@@ -19,6 +19,13 @@ class MessageType(enum.Enum):
     ERROR = "[ERR0-{}]"
     WARN = "[WARN-{}]"
     SPEC = "[SPEC-{}]"
+    NO_HEADER = ""
+
+
+# Test global variables.
+MAX_VERBOSITY_LVL = 2
+VERBOSITY_LVL = 0
+GENERAL_INFO = "general"
 
 
 # Util methods.
@@ -38,8 +45,23 @@ def print_message(username, message, t):
     print(message)
 
 
+def set_verbosity(flag):
+    global VERBOSITY_LVL
+    v_count = flag.count("v")
+    if v_count != len(flag):
+        print_message(GENERAL_INFO, "Verbosity flag should be v or vv instead of {flag}. Output verbosity level will "
+                                    "fallback to 0."
+                      .format(flag=flag), MessageType.WARN)
+        return
+    VERBOSITY_LVL = min(v_count, MAX_VERBOSITY_LVL)
+    print_message(GENERAL_INFO, "Output verbosity level is set to {level}.".format(level=VERBOSITY_LVL),
+                  MessageType.SPEC)
+
+
 def install_required_packages():
-    print_message("general", run("general", sys.executable + " -m pip install requests"), MessageType.WARN)
+    print_message(GENERAL_INFO, "Installing required packages...", MessageType.INFO)
+    run(GENERAL_INFO, sys.executable + " -m pip install requests")
+    print_message(GENERAL_INFO, "Installing required packages...done", MessageType.INFO)
 
 
 # File util methods.
@@ -48,10 +70,10 @@ def load_data(filename):
         with open(filename) as input_file:
             return json.load(input_file)
     except IOError:
-        print_message("general", "Input file {} is missing or deleted!".format(filename), MessageType.ERROR)
+        print_message(GENERAL_INFO, "Input file {} is missing or deleted!".format(filename), MessageType.ERROR)
         exit(1)
     except JSONDecodeError as err:
-        print_message("general", "Bad JSON syntax: {}".format(err), MessageType.ERROR)
+        print_message(GENERAL_INFO, "Bad JSON syntax: {}".format(err), MessageType.ERROR)
         exit(1)
 
 
@@ -64,10 +86,10 @@ def read_file(username, filename):
         exit(1)
 
 
-def write_file(username, filename, output):
+def write_file(username, filename, content):
     try:
         with open(filename, 'a') as output_file:
-            output_file.write(output)
+            output_file.write(content)
     except IOError:
         print_message(username, "Error during writing in output file {}!".format(filename), MessageType.ERROR)
         exit(1)
@@ -78,22 +100,24 @@ def run(username, command):
     outs, errs = subprocess.Popen(shlex.split(command),
                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
     outs, errs = outs.decode(sys.stdout.encoding), errs.decode(sys.stdout.encoding)
-    if len(errs) > 0:
+    if len(outs) > 0 and VERBOSITY_LVL > 1:
+        print_message(username, outs, MessageType.NO_HEADER)
+    if len(errs) > 0 and VERBOSITY_LVL > 0:
         print_message(username, "Command ({}) error log:\n{}".format(command, errs), MessageType.WARN)
     return outs
 
 
 def configure_managers(managers):
     for manager in managers:
-        print_message("general", "Response: " +
+        print_message(GENERAL_INFO, "Response: " +
                       requests.post("{manager}/configure_manager".format(manager=manager['address']),
                                     headers={'Content-type': 'application/json'},
-                                    data=read_file("general", manager['config_path'])).text, MessageType.INFO)
+                                    data=read_file(GENERAL_INFO, manager['config_path'])).text, MessageType.INFO)
 
 
 def register_managers(load_balancer, managers):
     for manager in managers:
-        print_message("general", "Response: " +
+        print_message(GENERAL_INFO, "Response: " +
                       requests.post("{load_balancer}/register_manager?upstream=manager_cluster&add=&server={manager}"
                                     .format(load_balancer=load_balancer, manager=manager)).text, MessageType.INFO)
 
@@ -184,13 +208,13 @@ def create_user(user_info, manager):
 
 def unregister_managers(load_balancer, managers):
     for manager in managers:
-        print_message("general", "Response: " +
+        print_message(GENERAL_INFO, "Response: " +
                       requests.post("{load_balancer}/register_manager?upstream=manager_cluster&remove=&server={manager}"
                                     .format(load_balancer=load_balancer, manager=manager)).text, MessageType.INFO)
 
 
 def test(data):
-    print_message("general", "{} is running...".format(data['test']), MessageType.INFO)
+    print_message(GENERAL_INFO, "{} is running...".format(data['test']), MessageType.INFO)
 
     # register_managers(data['entry_point'], data['managers'])
     configure_managers(data['managers'])
@@ -206,13 +230,20 @@ def test(data):
 
     # unregister_managers(data['entry_point'], data['managers'])
 
-    print_message("general", "{} is running...done".format(data['test']), MessageType.INFO)
+    print_message(GENERAL_INFO, "{} is running...done".format(data['test']), MessageType.INFO)
 
 
 # Main function.
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print_message("general", "Insufficient number of arguments ({})!".format(len(sys.argv)), MessageType.ERROR)
+    if len(sys.argv) == 1:
+        print_message(GENERAL_INFO, "Insufficient number of arguments ({})!".format(len(sys.argv)), MessageType.ERROR)
         exit(1)
+    test_config_index = 0
+    if len(sys.argv) == 2:
+        test_config_index = 1
+        print_message(GENERAL_INFO, "Output verbosity level will be 0.", MessageType.SPEC)
+    else:
+        test_config_index = 2
+        set_verbosity(sys.argv[1])
     install_required_packages()
-    test(load_data(sys.argv[1]))
+    test(load_data(sys.argv[test_config_index]))

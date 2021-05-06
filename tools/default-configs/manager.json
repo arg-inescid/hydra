@@ -1,0 +1,26 @@
+{
+  "gateway": "10.0.123.179/18",
+  "maxLambdas": 101,
+  "timeout": 25000,
+  "healthCheck": 50,
+  "memory": "512M",
+  "lambdaPort": 8080,
+  "lambdaConsole": true,
+  "managerConsole": {
+    "turnOff": false,
+    "redirectToFile": true,
+    "fineGrain": true
+  },
+  "managerState": {
+    "scheduler": "com.lambda_manager.schedulers.impl.RoundedRobinScheduler",
+    "optimizer": "com.lambda_manager.optimizers.impl.DefaultOptimizer",
+    "encoder": "com.lambda_manager.encoders.impl.DefaultEncoder",
+    "storage": "com.lambda_manager.collectors.lambda_storage.impl.DefaultLambdaStorage",
+    "client": "com.lambda_manager.connectivity.client.impl.DefaultLambdaManagerClient",
+    "codeWriter": "com.lambda_manager.code_writer.impl.DefaultFunctionWriter",
+    "lambdaInfo": {
+      "instance": "com.lambda_manager.collectors.lambda_info.impl.DefaultLambdaInfo",
+      "list": "com.lambda_manager.collectors.lambda_info.impl.DefaultLambdaInstancesInfo"
+    }
+  }
+}

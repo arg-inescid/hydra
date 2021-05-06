@@ -21,6 +21,7 @@ class MessageType(enum.Enum):
     ERROR = "[ERR0]"
     WARN = "[WARN]"
     SPEC = "[SPEC]"
+    NO_HEADER = ""
 
 
 # Plot type.
@@ -34,6 +35,9 @@ class PlotType(enum.Enum):
 
 
 # Plot global variables.
+MAX_VERBOSITY_LVL = 2
+VERBOSITY_LVL = 0
+
 lambda_logs = {}
 manager_log = []
 
@@ -112,6 +116,18 @@ def kb_to_gb(value):
     return value / 1_000_000
 
 
+def set_verbosity(flag):
+    global VERBOSITY_LVL
+    v_count = flag.count("v")
+    if v_count != len(flag):
+        print_message("Verbosity flag should be v or vv instead of {flag}. Output verbosity level will fallback to 0."
+                      .format(flag=flag), MessageType.WARN)
+        return
+    VERBOSITY_LVL = min(v_count, MAX_VERBOSITY_LVL)
+    print_message("Output verbosity level is set to {level}.".format(level=VERBOSITY_LVL),
+                  MessageType.SPEC)
+
+
 # File util methods.
 def load_data(filename):
     try:
@@ -134,10 +150,10 @@ def read_file(filename):
         exit(1)
 
 
-def write_file(filename, output):
+def write_file(filename, content):
     try:
         with open(filename, 'w') as output_file:
-            output_file.write(output)
+            output_file.write(content)
     except IOError:
         print_message("Error during writing in output file {}!".format(filename), MessageType.ERROR)
         exit(1)
@@ -269,7 +285,9 @@ def run(command):
     outs, errs = subprocess.Popen(shlex.split(command),
                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
     outs, errs = outs.decode(sys.stdout.encoding), errs.decode(sys.stdout.encoding)
-    if len(errs) > 0:
+    if len(outs) > 0 and VERBOSITY_LVL > 1:
+        print_message(outs, MessageType.NO_HEADER)
+    if len(errs) > 0 and VERBOSITY_LVL > 0:
         print_message("Command ({}) error log:\n{}".format(command, errs), MessageType.WARN)
     return outs
 
@@ -346,7 +364,14 @@ def plot(plots_info):
 
 # Main function.
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
+    if len(sys.argv) == 1:
         print_message("Insufficient number of arguments ({})!".format(len(sys.argv)), MessageType.ERROR)
         exit(1)
-    plot(load_data(sys.argv[1]))
+    plot_config_index = 0
+    if len(sys.argv) == 2:
+        plot_config_index = 1
+        print_message("Output verbosity level will be 0.", MessageType.SPEC)
+    else:
+        plot_config_index = 2
+        set_verbosity(sys.argv[1])
+    plot(load_data(sys.argv[plot_config_index]))
