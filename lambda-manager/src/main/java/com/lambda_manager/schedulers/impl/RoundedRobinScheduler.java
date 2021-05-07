@@ -8,14 +8,13 @@ import com.lambda_manager.handlers.DefaultLambdaShutdownHandler;
 import com.lambda_manager.processes.ProcessBuilder;
 import com.lambda_manager.processes.Processes;
 import com.lambda_manager.schedulers.Scheduler;
+import com.lambda_manager.utils.Environment;
 import com.lambda_manager.utils.LambdaTuple;
 
 import java.util.Timer;
 
 @SuppressWarnings("unused")
 public class RoundedRobinScheduler implements Scheduler {
-
-    private static final int THRESHOLD = 200;
 
     private long previousLambdaStartupTime;
 
@@ -33,9 +32,9 @@ public class RoundedRobinScheduler implements Scheduler {
     private long timeToWait() {
         long currentTime = System.currentTimeMillis();
         long timeSpan = currentTime - previousLambdaStartupTime;
-        if (timeSpan <= THRESHOLD) {
-            previousLambdaStartupTime += THRESHOLD;
-            return THRESHOLD - timeSpan;
+        if (timeSpan <= Environment.THRESHOLD) {
+            previousLambdaStartupTime += Environment.THRESHOLD;
+            return Environment.THRESHOLD - timeSpan;
         } else {
             previousLambdaStartupTime = currentTime;
             return 0;

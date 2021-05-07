@@ -5,9 +5,8 @@ import io.micronaut.runtime.event.ApplicationStartupEvent;
 
 import javax.inject.Singleton;
 import java.io.File;
-import java.io.FilenameFilter;
 
-import static com.lambda_manager.utils.Constants.*;
+import static com.lambda_manager.utils.Environment.*;
 
 @SuppressWarnings("unused")
 @Singleton

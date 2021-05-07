@@ -18,8 +18,8 @@ public class AgentConfigReadyCallback implements OnProcessFinishCallback {
     }
 
     @Override
-    public void finish() {
+    public void finish(int exitCode) {
         lambda.list.setStatus(LambdaStatusType.NOT_BUILT_CONFIGURED);
-        callback.finish();
+        callback.finish(exitCode);
     }
 }

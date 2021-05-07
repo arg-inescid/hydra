@@ -4,7 +4,7 @@
   "managers": [
     {
       "address": "http://localhost:9000",
-      "config_path": "default-configs/config.json"
+      "config_path": "default-configs/manager.json"
     }
   ],
   "users": [

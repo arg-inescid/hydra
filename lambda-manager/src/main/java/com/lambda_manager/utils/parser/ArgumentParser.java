@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.lambda_manager.exceptions.argument_parser.ErrorDuringParsingJSONFile;
 import com.lambda_manager.exceptions.argument_parser.ErrorDuringSerializationJSONObject;
-import com.lambda_manager.exceptions.argument_parser.InvalidJSONFile;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -15,7 +14,7 @@ public class ArgumentParser {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    public static ManagerArguments parse(String configData) throws InvalidJSONFile, ErrorDuringParsingJSONFile {
+    public static ManagerArguments parse(String configData) throws ErrorDuringParsingJSONFile {
         try {
             return objectMapper.readValue(configData, ManagerArguments.class);
         } catch (IOException ioException) {

@@ -18,6 +18,7 @@ cd "$FUNCTION_HOME" || {
 }
 if [[ ! -f $FUNCTION_HOME/$FUNCTION_NAME.img ]]; then
   "$JAVA_HOME"/bin/native-image \
+    --no-fallback \
     -H:IncludeResources="logback.xml|application.yml" \
     -jar "$FUNCTION_JAR" \
     -H:Virtualize="$VIRTUALIZE_PATH" \

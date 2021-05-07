@@ -1,5 +1,7 @@
 package com.lambda_manager.utils.logger;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.logging.LogRecord;
 import java.util.logging.SimpleFormatter;
 
@@ -7,20 +9,19 @@ public class CustomFormatter extends SimpleFormatter {
 
     @Override
     public String format(LogRecord record) {
-        String header;
-        String message = record.getMessage();
-        if (message.contains("#")) {
-            String[] split = message.split("#");
-            message = split[1];
-            header = "Timestamp (" + split[0] + ")";
-        } else {
-            header = "Timestamp (" + ElapseTimer.elapsedTime() + ")";
+        String throwable = "";
+        if (record.getThrown() != null) {
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            pw.println();
+            record.getThrown().printStackTrace(pw);
+            pw.close();
+            throwable = sw.toString();
         }
-        return header +
-                " " +
-                record.getLevel().getLocalizedName() +
-                ": " +
-                message +
-                "\n";
+        return String.format("%s %s %s %s%n",
+                String.format("Timestamp (%s)", ElapseTimer.elapsedTime()),
+                record.getLevel().getLocalizedName(),
+                record.getMessage(),
+                throwable);
     }
 }

@@ -25,7 +25,7 @@ MAX_VERBOSITY_LVL = 2
 VERBOSITY_LVL = 0
 
 SETUP_DB_VM_LOC = os.path.join("..", "lambda-manager", "src", "scripts", "qemu-jvm")
-SETUP_DB_VM_FILE = "setup-debian-vm.sh"
+SETUP_DB_VM_FILE = "setup_debian_vm.sh"
 SETUP_SCRIPT = '''
 #!/usr/bin/bash
 cd {location}
@@ -33,7 +33,7 @@ bash {file}
 '''
 
 MASK = "24"
-GET_DEF_GATEWAY_FILE = "get-default-gateway.sh"
+GET_DEF_GATEWAY_FILE = "get_default_gateway.sh"
 GET_DEF_GATEWAY_SCRIPT = '''
 #!/usr/bin/bash
 ip r | grep default | awk '{print $3}' | head -n 1
@@ -139,6 +139,8 @@ def install_world():
     run("sudo apt-get install -y default-jdk default-jre")
     # Installing load balancer (nginx)...
     run("sudo apt-get install -y nginx")
+    # Installing build tools...
+    run("sudo apt-get install -y maven")
     # Installing tools for testing and plotting...
     run("sudo apt-get install -y apache2-utils gnuplot")
     print_message("Installing the world...done", MessageType.INFO)

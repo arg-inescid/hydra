@@ -41,8 +41,8 @@ VERBOSITY_LVL = 0
 lambda_logs = {}
 manager_log = []
 
-LAMBDA_LOGS_DIR = "../lambda-manager/src/lambda_logs"
-MANAGER_LOG_FILE = "../lambda-manager/src/manager_logs/lambda_manager.log"
+LAMBDA_LOGS_DIR = os.path.join("..", "lambda-manager", "src", "lambda_logs")
+MANAGER_LOG_FILE = os.path.join(LAMBDA_LOGS_DIR, "lambda_manager.log")
 MANAGER_LOG_REGEX = "Timestamp \\((\\d+)\\).*PID -> (\\d+).*(Output|Exit)"
 PLOT_FILENAME = "plot_file.gplot"
 FILENAME_LENGTH = 10

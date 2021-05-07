@@ -10,7 +10,7 @@ import io.micronaut.http.client.RxHttpClient;
 
 import java.util.List;
 
-import static com.lambda_manager.utils.Constants.REMOVE_TAPS_FILENAME;
+import static com.lambda_manager.utils.Environment.REMOVE_TAPS_FILENAME;
 
 public class RemoveTaps extends AbstractProcess {
 

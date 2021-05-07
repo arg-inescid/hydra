@@ -10,7 +10,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
-import static com.lambda_manager.utils.Constants.IS_ALIVE_PAUSE;
+import static com.lambda_manager.utils.Environment.IS_ALIVE_PAUSE;
 
 public class ProcessBuilder extends Thread {
 
@@ -33,10 +33,10 @@ public class ProcessBuilder extends Thread {
         try {
             java.lang.ProcessBuilder processBuilder = prepareStartup();
             this.process = processBuilder.start();
-            int code = process.waitFor();
-            callback.finish();
+            int exitCode = process.waitFor();
+            callback.finish(exitCode);
             logger.log(Level.INFO, String.format("PID -> %d | Command -> %s | Exit code -> %d",
-                    pid, Arrays.toString(command.toArray()), code));
+                    pid, Arrays.toString(command.toArray()), exitCode));
         } catch (IOException | InterruptedException e) {
             logger.log(Level.WARNING, String.format("PID -> %d | Command -> %s | Raised exception! ",
                     pid, Arrays.toString(command.toArray())), e);
