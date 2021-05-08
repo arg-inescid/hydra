@@ -9,6 +9,7 @@ import com.lambda_manager.utils.LambdaTuple;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Paths;
 
 @SuppressWarnings("unused")
 public class DefaultFunctionWriter implements FunctionWriter {
@@ -22,9 +23,10 @@ public class DefaultFunctionWriter implements FunctionWriter {
         LambdaInstanceInfo lambdaInstanceInfo = new LambdaInstanceInfo(id);
         LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda = new LambdaTuple<>(lambdaInstancesInfo, lambdaInstanceInfo);
 
-        File newSrcDir = new File("src/codebase/" + encodedName);
+        String functionDir = Paths.get("src", "codebase", encodedName).toString();
+        File newSrcDir = new File(functionDir);
         if(newSrcDir.mkdirs()) {
-            File lambdaCodeFile = new File("src/codebase/" + encodedName + "/" + encodedName + ".jar");
+            File lambdaCodeFile = new File(Paths.get(functionDir, encodedName + ".jar").toString());
             if(lambdaCodeFile.createNewFile()) {
                 FileOutputStream fileOutputStream = new FileOutputStream(lambdaCodeFile);
                 fileOutputStream.write(lambdaCode);
@@ -39,7 +41,7 @@ public class DefaultFunctionWriter implements FunctionWriter {
 
     @Override
     public void remove(String encodedName) {
-        File dir = new File("src/codebase/" + encodedName);
+        File dir = new File(Paths.get("src", "codebase", encodedName).toString());
         if(dir.exists()) {
             purgeDirectory(dir, true);
         }

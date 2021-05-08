@@ -17,7 +17,7 @@ sudo pkill qemu
 mkfifo mypipe
 ip r | grep "$COMMON_GATEWAY_PART" | grep linkdown | awk '{print $3}' >mypipe &
 while IFS= read -r tap; do
-  echo "Deleting tap [$tap]..."
+  echo "Deleting tap $tap..."
   sudo bash src/scripts/remove_taps.sh "$tap"
 done <mypipe
 rm mypipe

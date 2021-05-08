@@ -1,5 +1,5 @@
 package com.lambda_manager.callbacks;
 
 public interface OnProcessFinishCallback {
-    void finish();
+    void finish(int exitCode);
 }

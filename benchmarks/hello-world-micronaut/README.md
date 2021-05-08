@@ -1,12 +1,18 @@
-## Micronaut 2.4.1 Documentation
+## Description
 
-- [User Guide](https://docs.micronaut.io/2.4.1/guide/index.html)
-- [API Reference](https://docs.micronaut.io/2.4.1/api/index.html)
-- [Configuration Reference](https://docs.micronaut.io/2.4.1/guide/configurationreference.html)
-- [Micronaut Guides](https://guides.micronaut.io/index.html)
----
+Simple *Hello World* [Micronaut](https://guides.micronaut.io/index.html) server.
 
-## Feature http-client documentation
+### Language
 
-- [Micronaut HTTP Client documentation](https://docs.micronaut.io/latest/guide/index.html#httpClient)
+Written in **Java** using Micronaut.
 
+### Build tool
+
+Built with **Gradle**.
+
+### Functions
+
+```python
+def hello_world():
+    return "Hello World!"
+```

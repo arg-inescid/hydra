@@ -16,7 +16,7 @@ public class CopyOutputLogFileCallback implements OnProcessFinishCallback {
     }
 
     @Override
-    public void finish() {
+    public void finish(int exitCode) {
         File sourceFile = new File(sourceFilename);
         try(FileInputStream fileInputStream = new FileInputStream(sourceFile);
             FileWriter fileWriter = new FileWriter(destinationFilename, true)) {

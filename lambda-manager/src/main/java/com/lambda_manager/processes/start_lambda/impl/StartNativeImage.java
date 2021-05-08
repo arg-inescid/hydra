@@ -2,12 +2,13 @@ package com.lambda_manager.processes.start_lambda.impl;
 
 import com.lambda_manager.callbacks.OnProcessFinishCallback;
 import com.lambda_manager.callbacks.impl.DefaultCallback;
+import com.lambda_manager.callbacks.impl.NeedFallbackCallback;
 import com.lambda_manager.collectors.lambda_info.LambdaInstanceInfo;
 import com.lambda_manager.collectors.lambda_info.LambdaInstancesInfo;
 import com.lambda_manager.core.LambdaManagerConfiguration;
 import com.lambda_manager.processes.start_lambda.StartLambda;
 import com.lambda_manager.utils.ConnectionTriplet;
-import com.lambda_manager.utils.Constants;
+import com.lambda_manager.utils.Environment;
 import com.lambda_manager.utils.LambdaTuple;
 import io.micronaut.http.client.RxHttpClient;
 
@@ -16,7 +17,7 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 
-import static com.lambda_manager.utils.Constants.*;
+import static com.lambda_manager.utils.Environment.*;
 
 public class StartNativeImage extends StartLambda {
 
@@ -39,13 +40,13 @@ public class StartNativeImage extends StartLambda {
         command.add(connectionTriplet.tap);
         command.add(configuration.argumentStorage.getGateway());
         command.add(configuration.argumentStorage.getMask());
-        if(configuration.argumentStorage.isLambdaConsoleActive()) {
+        if (configuration.argumentStorage.isLambdaConsoleActive()) {
             command.add("--console");
         } else {
             command.add("");    // Placeholder.
         }
         command.add(String.valueOf(configuration.argumentStorage.getLambdaPort()));
-        if(lambda.instance.getArgs() != null) {
+        if (lambda.instance.getArgs() != null) {
             Collections.addAll(command, lambda.instance.getArgs().split(","));
         }
         command.add(String.valueOf(System.currentTimeMillis()));
@@ -54,7 +55,7 @@ public class StartNativeImage extends StartLambda {
 
     @Override
     protected OnProcessFinishCallback callback(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
-        return new DefaultCallback();
+        return new NeedFallbackCallback(lambda);
     }
 
     @Override
@@ -81,8 +82,8 @@ public class StartNativeImage extends StartLambda {
 
     @Override
     protected long pid() {
-        if(this.pid == -1) {
-            this.pid = Constants.pid();
+        if (this.pid == -1) {
+            this.pid = Environment.pid();
         }
         return this.pid;
     }

@@ -57,6 +57,6 @@ cp "$FUNCTION_JAR" "$LAMBDA_HOME"/shared
 cp "$MANAGER_HOME"/src/main/resources/caller-filter-config.json "$LAMBDA_HOME"/shared
 echo "\$JAVA_HOME/bin/java -Djava.library.path=\$JAVA_HOME/lib -agentlib:native-image-agent=config-output-dir=config,caller-filter-file=caller-filter-config.json -jar $FUNCTION_NAME.jar ${*:9}" > "$LAMBDA_HOME"/shared/run.sh
 
-"$LAMBDA_HOME"/debian-vm_unikernel.sh --memory "$LAMBDA_MEMORY" --gateway "$LAMBDA_GATEWAY" --ip "$LAMBDA_IP" \
+"$LAMBDA_HOME"/debian_vm_unikernel.sh --memory "$LAMBDA_MEMORY" --gateway "$LAMBDA_GATEWAY" --ip "$LAMBDA_IP" \
   --mask "$LAMBDA_MASK" --kernel "$KERNEL_PATH" --img "$LAMBDA_HOME"/stretch.img --shared "$LAMBDA_HOME"/shared \
   --tap "$LAMBDA_TAP" "$LAMBDA_CONSOLE"

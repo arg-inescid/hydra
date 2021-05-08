@@ -45,12 +45,14 @@ public class ManagerState implements Serializable {
      *
      * @param scheduler - The Scheduler class which will be used by the Manager.
      * @param optimizer - The Optimizer class which will be used by the Manager.
-     * @param client - The Client class which will be used by the Manager.
-     * @param storage - The Lambda Storage class which will be used by the Manager.
      * @param encoder - The Encoder class which will be used by the Manager.
+     * @param storage - The Lambda Storage class which will be used by the Manager.
+     * @param client - The Client class which will be used by the Manager.
+     * @param codeWriter - The CodeWriter class which will be used by the Manager.
      * @param lambdaInfo - The class which stores information about one type of the lambda,
      */
-    public ManagerState(String scheduler, String optimizer, String encoder, String storage, String client, String codeWriter, LambdaInfo lambdaInfo) {
+    public ManagerState(String scheduler, String optimizer, String encoder, String storage, String client,
+                        String codeWriter, LambdaInfo lambdaInfo) {
         super();
         this.scheduler = scheduler;
         this.optimizer = optimizer;

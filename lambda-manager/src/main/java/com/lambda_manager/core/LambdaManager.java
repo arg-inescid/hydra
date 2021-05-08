@@ -4,8 +4,7 @@ import com.lambda_manager.collectors.lambda_info.LambdaInstanceInfo;
 import com.lambda_manager.collectors.lambda_info.LambdaInstancesInfo;
 import com.lambda_manager.exceptions.argument_parser.ErrorDuringParsingJSONFile;
 import com.lambda_manager.exceptions.argument_parser.ErrorDuringReflectiveClassCreation;
-import com.lambda_manager.exceptions.argument_parser.InvalidJSONFile;
-import com.lambda_manager.exceptions.user.ErrorUploadingNewConfiguration;
+import com.lambda_manager.exceptions.user.ErrorDuringCreatingNewConnectionPool;
 import com.lambda_manager.exceptions.user.ErrorUploadingNewLambda;
 import com.lambda_manager.exceptions.user.LambdaNotFound;
 import com.lambda_manager.utils.LambdaManagerArgumentStorage;
@@ -15,7 +14,6 @@ import io.micronaut.context.BeanContext;
 import io.reactivex.Single;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -119,15 +117,9 @@ public class LambdaManager {
 
             logger.log(Level.INFO, "Successfully uploaded lambda manager configuration!");
             return Single.just("Successfully uploaded lambda manager configuration!");
-        } catch (InvalidJSONFile invalidJSONFile) {
-            logger.log(Level.SEVERE, "Invalid JSON syntax!", invalidJSONFile);
-            return Single.just("Invalid JSON syntax!");
-        } catch (ErrorDuringParsingJSONFile | ErrorDuringReflectiveClassCreation | ErrorUploadingNewConfiguration e) {
+        } catch (ErrorDuringParsingJSONFile | ErrorDuringReflectiveClassCreation | ErrorDuringCreatingNewConnectionPool e) {
             logger.log(Level.SEVERE, e.getMessage(), e);
-            return Single.just(e.getMessage());
-        } catch (MalformedURLException malformedURL) {
-            logger.log(Level.SEVERE, "Malformed URL! Bad syntax!", malformedURL);
-            return Single.just("Malformed URL! Bad syntax!");
+            return Single.just("Error during uploading new configuration!");
         }
     }
 }

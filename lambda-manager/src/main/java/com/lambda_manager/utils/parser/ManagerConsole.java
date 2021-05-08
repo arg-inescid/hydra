@@ -31,9 +31,9 @@ public class ManagerConsole implements Serializable
     }
 
     /**
-     *
-     * @param redirectToFile
-     * @param fineGrain
+     * @param turnOff - Turn On/Off logging.
+     * @param redirectToFile - Should the logging be redirected to file or printed in console.
+     * @param fineGrain - Fine or coarse grain logging.
      */
     public ManagerConsole(boolean turnOff, boolean redirectToFile, boolean fineGrain) {
         super();

@@ -2,15 +2,16 @@ package com.lambda_manager.utils;
 
 import java.nio.file.Paths;
 
-public class Constants {
+public class Environment {
 
-    private Constants() {
+    private Environment() {
     }
 
     private static long NEXT_ID = 0;
 
     public static final int RAND_STRING_LEN = 10;
     public static final int IS_ALIVE_PAUSE = 50;
+    public static final int THRESHOLD = 200;
 
     public static final String HOTSPOT = "hotspot";
     public static final String HOTSPOT_W_AGENT = "hotspot_w_agent";

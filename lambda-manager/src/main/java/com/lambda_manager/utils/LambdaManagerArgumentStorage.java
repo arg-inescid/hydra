@@ -8,7 +8,7 @@ import com.lambda_manager.connectivity.client.LambdaManagerClient;
 import com.lambda_manager.core.LambdaManagerConfiguration;
 import com.lambda_manager.encoders.Encoder;
 import com.lambda_manager.exceptions.argument_parser.ErrorDuringReflectiveClassCreation;
-import com.lambda_manager.exceptions.user.ErrorUploadingNewConfiguration;
+import com.lambda_manager.exceptions.user.ErrorDuringCreatingNewConnectionPool;
 import com.lambda_manager.optimizers.Optimizer;
 import com.lambda_manager.processes.ProcessBuilder;
 import com.lambda_manager.processes.Processes;
@@ -35,8 +35,8 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static com.lambda_manager.utils.Constants.MANAGER_LOG_FILENAME;
-import static com.lambda_manager.utils.Constants.RAND_STRING_LEN;
+import static com.lambda_manager.utils.Environment.MANAGER_LOG_FILENAME;
+import static com.lambda_manager.utils.Environment.RAND_STRING_LEN;
 
 public class LambdaManagerArgumentStorage {
 
@@ -70,24 +70,22 @@ public class LambdaManagerArgumentStorage {
         this.isLambdaConsoleActive = managerArguments.isLambdaConsole();
     }
 
-    private void prepareConnectionPool(LambdaManagerConfiguration configuration, BeanContext beanContext)
-            throws MalformedURLException, ErrorUploadingNewConfiguration {
-
-        for (int i = 0; i < maxLambdas; i++) {
-            String ip = getNextIPAddress();
-            String tap = generateRandomString();
-            RxHttpClient client = beanContext.createBean(RxHttpClient.class,
-                    new URL("http://" + ip + ":" + lambdaPort));
-            connectionPool.add(new ConnectionTriplet<>(ip, tap, client));
-        }
-
-        ProcessBuilder createTaps = Processes.CREATE_TAPS.build(null, configuration);
-        createTaps.start();
+    private void prepareConnectionPool(LambdaManagerConfiguration configuration, BeanContext beanContext) 
+            throws ErrorDuringCreatingNewConnectionPool {
         try {
+            for (int i = 0; i < maxLambdas; i++) {
+                String ip = getNextIPAddress();
+                String tap = generateRandomString();
+                RxHttpClient client = beanContext.createBean(RxHttpClient.class,
+                        new URL("http", ip, lambdaPort, "/"));
+                connectionPool.add(new ConnectionTriplet<>(ip, tap, client));
+            }
+
+            ProcessBuilder createTaps = Processes.CREATE_TAPS.build(null, configuration);
+            createTaps.start();
             createTaps.join();
-        } catch (InterruptedException interruptedException) {
-            throw new ErrorUploadingNewConfiguration("Error during uploading new configuration!",
-                    interruptedException);
+        } catch (InterruptedException | MalformedURLException e) {
+            throw new ErrorDuringCreatingNewConnectionPool("Error during creating new connection pool!", e);
         }
     }
 
@@ -148,7 +146,7 @@ public class LambdaManagerArgumentStorage {
     }
 
     public LambdaManagerConfiguration initializeLambdaManager(ManagerArguments managerArguments, BeanContext beanContext)
-            throws ErrorDuringReflectiveClassCreation, MalformedURLException, ErrorUploadingNewConfiguration {
+            throws ErrorDuringReflectiveClassCreation, ErrorDuringCreatingNewConnectionPool {
 
         initClassFields(managerArguments);
         prepareLogger(managerArguments.getManagerConsole());

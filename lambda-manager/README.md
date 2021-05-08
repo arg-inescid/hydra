@@ -1,12 +1,26 @@
-## Micronaut 2.4.1 Documentation
+## Lambda manager
 
-- [User Guide](https://docs.micronaut.io/2.4.1/guide/index.html)
-- [API Reference](https://docs.micronaut.io/2.4.1/api/index.html)
-- [Configuration Reference](https://docs.micronaut.io/2.4.1/guide/configurationreference.html)
-- [Micronaut Guides](https://guides.micronaut.io/index.html)
----
+The Lambda manager project is core component of the serverless architecture. Manager is written in Java
+using [Micronaut](https://guides.micronaut.io/index.html).
 
-## Feature http-client documentation
+### Main components
 
-- [Micronaut HTTP Client documentation](https://docs.micronaut.io/latest/guide/index.html#httpClient)
+The Manager consists of next main components:
+
+- `Encode` - Class for transforming username and lambda name to unique name, which is then used as the key for Lambda
+  Storage.
+- `Lambda Storage` - Class for storing meta-information about every registered lambda. Like ID, lambda name, available
+  instances, created instances, active instances, opened HTTP connections...
+- `Code Writer` - Class for storing binary code of servers writing them on the same disk as lambda manager.
+- `Scheduler` - Class which is deciding which instance of lambda should we call.
+- `Optimizer` - Class which is deciding whether to start a new instance of a lambda with as **Hotspot** or **VMM**. 
+  Server as next step in execution pipe (after `Encoder ` and `Scheduler` and before `Client`).
+- `Client` - Class for making connections toward lambdas.
+- `Lambda Manager` - Core class which is just a template while all implementations are kept in concrete implementations
+  of Interfaces for all above classes.
+
+### TODOs
+- Maybe we want to share some parts from confluence page here, like overall scheme, use cases...
+- Maybe we also want to share some parts from presentation here...
+- Maybe to show some results here or in README.md from the top directory.
 

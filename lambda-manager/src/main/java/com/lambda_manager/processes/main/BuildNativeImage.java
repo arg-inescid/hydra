@@ -12,7 +12,7 @@ import java.io.File;
 import java.nio.file.Paths;
 import java.util.List;
 
-import static com.lambda_manager.utils.Constants.LAMBDA_LOGS;
+import static com.lambda_manager.utils.Environment.LAMBDA_LOGS;
 
 public class BuildNativeImage extends AbstractProcess {
 

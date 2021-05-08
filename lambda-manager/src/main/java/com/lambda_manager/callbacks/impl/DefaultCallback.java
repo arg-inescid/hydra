@@ -5,6 +5,6 @@ import com.lambda_manager.callbacks.OnProcessFinishCallback;
 public class DefaultCallback implements OnProcessFinishCallback {
 
     @Override
-    public void finish() {
+    public void finish(int exitCode) {
     }
 }
