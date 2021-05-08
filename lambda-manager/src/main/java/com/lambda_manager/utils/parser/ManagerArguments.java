@@ -48,14 +48,17 @@ public class ManagerArguments implements Serializable
     }
 
     /**
+     *
+     * @param gateway - The default PC's gateway address.
+     * @param maxLambdas - How many lambdas can be started in total by this manager.
+     * @param timeout - Time during which lambda can stay inactive.
+     * @param healthCheck - Lambda's health will be checked in this time-span, after the first health response,
+     *                      no more checks are made.
+     * @param memory - Maximum memory consumption per active lambda.
+     * @param lambdaPort - In which port the lambda will receive it's requests.
      * @param lambdaConsole - Is console active during qemu's run.
+     * @param managerConsole - The class with information about manager logging.
      * @param managerState - The class that represent state of one manager's instance.
-     * @param memory - How maximum memory will consume one active lambda.
-     * @param lambdaPort - First port in lambda port space.
-     * @param healthCheck - Stated instance health is checked in this time span. After first health response,
-     *                    no more check are made.
-     * @param timeout - Timeout
-     * @param gateway - The Bridge address.
      */
     public ManagerArguments(String gateway, int maxLambdas, int timeout, int healthCheck, String memory, int lambdaPort,
                             boolean lambdaConsole, ManagerConsole managerConsole, ManagerState managerState) {

@@ -2,17 +2,8 @@ plugins {
     id 'java'
 }
 
-jar {
-    manifest {
-        attributes(
-                'Class-Path': configurations.compile.collect { it.getName() }.join(' '),
-                'Main-Class': 'com.hello_world.HelloWorld'
-        )
-    }
-}
-
 group 'com.hello_world'
-version '0.1'
+version '1.0'
 
 repositories {
     mavenCentral()
