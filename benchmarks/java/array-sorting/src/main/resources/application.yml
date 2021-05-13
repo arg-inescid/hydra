@@ -1,0 +1,5 @@
+micronaut:
+  application:
+    name: array-sorting
+  server:
+    port: 8080

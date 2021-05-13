@@ -10,7 +10,7 @@ Written in **Java**.
 
 Built with **Gradle**.
 
-### Function
+### Functions
 
 ```python
 def hello_world():

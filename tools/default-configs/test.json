@@ -19,7 +19,7 @@
           "command": "upload",
           "allocate": 100,
           "lambda_name": "hello",
-          "source": "../benchmarks/hello-world-java/build/libs/hello-world-java-1.0.jar"
+          "source": "../benchmarks/java/hello-world/build/libs/hello-world-1.0.jar"
         },
         {
           "command": "send",
