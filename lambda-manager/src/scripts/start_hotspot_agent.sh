@@ -59,4 +59,7 @@ echo "\$JAVA_HOME/bin/java -Djava.library.path=\$JAVA_HOME/lib -agentlib:native-
 
 "$LAMBDA_HOME"/debian_vm_unikernel.sh --memory "$LAMBDA_MEMORY" --gateway "$LAMBDA_GATEWAY" --ip "$LAMBDA_IP" \
   --mask "$LAMBDA_MASK" --kernel "$KERNEL_PATH" --img "$LAMBDA_HOME"/stretch.img --shared "$LAMBDA_HOME"/shared \
-  --tap "$LAMBDA_TAP" "$LAMBDA_CONSOLE"
+  --tap "$LAMBDA_TAP" "$LAMBDA_CONSOLE" &
+echo $! > "$LAMBDA_HOME"/lambda.pid
+echo "$LAMBDA_IP" > "$LAMBDA_HOME"/lambda.ip
+wait
