@@ -6,7 +6,6 @@ import com.lambda_manager.connectivity.client.LambdaManagerClient;
 import com.lambda_manager.encoders.Encoder;
 import com.lambda_manager.optimizers.Optimizer;
 import com.lambda_manager.schedulers.Scheduler;
-import com.lambda_manager.utils.LambdaManagerArgumentStorage;
 
 public class LambdaManagerConfiguration {
     public final Scheduler scheduler;

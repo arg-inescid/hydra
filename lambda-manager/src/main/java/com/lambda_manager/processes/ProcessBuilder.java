@@ -10,7 +10,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
-import static com.lambda_manager.utils.Environment.IS_ALIVE_PAUSE;
+import static com.lambda_manager.core.Environment.IS_ALIVE_PAUSE;
 
 public class ProcessBuilder extends Thread {
 

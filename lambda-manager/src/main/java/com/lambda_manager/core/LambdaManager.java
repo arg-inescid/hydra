@@ -7,8 +7,8 @@ import com.lambda_manager.exceptions.argument_parser.ErrorDuringReflectiveClassC
 import com.lambda_manager.exceptions.user.ErrorDuringCreatingNewConnectionPool;
 import com.lambda_manager.exceptions.user.ErrorUploadingNewLambda;
 import com.lambda_manager.exceptions.user.LambdaNotFound;
-import com.lambda_manager.utils.LambdaManagerArgumentStorage;
 import com.lambda_manager.utils.LambdaTuple;
+import com.lambda_manager.utils.Messages;
 import com.lambda_manager.utils.parser.ArgumentParser;
 import io.micronaut.context.BeanContext;
 import io.reactivex.Single;
@@ -54,8 +54,8 @@ public class LambdaManager {
     public Single<String> processRequest(String username, String lambdaName, String args) {
         try {
             if (configuration == null) {
-                logger.log(Level.WARNING, "No configuration has been uploaded!");
-                return Single.just("No configuration has been uploaded!");
+                logger.log(Level.WARNING, Messages.NO_CONFIGURATION_UPLOADED);
+                return Single.just(Messages.NO_CONFIGURATION_UPLOADED);
             }
 
             long start = System.currentTimeMillis();
@@ -72,14 +72,17 @@ public class LambdaManager {
         } catch (LambdaNotFound lambdaNotFound) {
             logger.log(Level.WARNING, lambdaNotFound.getMessage(), lambdaNotFound);
             return Single.just(lambdaNotFound.getMessage());
+        } catch (Throwable throwable) {
+            logger.log(Level.SEVERE, throwable.getMessage(), throwable);
+            return Single.just(Messages.INTERNAL_ERROR);
         }
     }
 
     public Single<String> uploadLambda(int allocate, String username, String lambdaName, byte[] lambdaCode) {
         try {
             if (configuration == null) {
-                logger.log(Level.WARNING, "No configuration has been uploaded!");
-                return Single.just("No configuration has been uploaded!");
+                logger.log(Level.WARNING, Messages.NO_CONFIGURATION_UPLOADED);
+                return Single.just(Messages.NO_CONFIGURATION_UPLOADED);
             }
 
             String encodedName = configuration.encoder.encode(username, lambdaName);
@@ -88,26 +91,34 @@ public class LambdaManager {
                 configuration.functionWriter.upload(lambdaInstancesInfo, encodedName, lambdaCode);
             }
 
-            logger.log(Level.INFO, "Successfully uploaded lambda [" + lambdaName + "]!");
-            return Single.just("Successfully uploaded lambda [" + lambdaName + "]!");
+            logger.log(Level.INFO, String.format(Messages.SUCCESS_LAMBDA_UPLOAD, lambdaName));
+            return Single.just(String.format(Messages.SUCCESS_LAMBDA_UPLOAD, lambdaName));
         } catch (IOException | ErrorUploadingNewLambda e) {
             logger.log(Level.SEVERE, "Error during uploading new lambda [" + lambdaName + "]!", e);
             return Single.just("Error during uploading new lambda [" + lambdaName + "]!");
+        } catch (Throwable throwable) {
+            logger.log(Level.SEVERE, throwable.getMessage(), throwable);
+            return Single.just(Messages.INTERNAL_ERROR);
         }
     }
 
     public Single<String> removeLambda(String username, String lambdaName) {
-        if (configuration == null) {
-            logger.log(Level.WARNING, "No configuration has been uploaded!");
-            return Single.just("No configuration has been uploaded!");
+        try {
+            if (configuration == null) {
+                logger.log(Level.WARNING, Messages.NO_CONFIGURATION_UPLOADED);
+                return Single.just(Messages.NO_CONFIGURATION_UPLOADED);
+            }
+
+            String encodedName = configuration.encoder.encode(username, lambdaName);
+            configuration.storage.unregister(encodedName);
+            configuration.functionWriter.remove(encodedName);
+
+            logger.log(Level.INFO, "Successfully removed lambda [" + lambdaName + "]!");
+            return Single.just("Successfully removed lambda [" + lambdaName + "]!");
+        } catch (Throwable throwable) {
+            logger.log(Level.SEVERE, throwable.getMessage(), throwable);
+            return Single.just(Messages.INTERNAL_ERROR);
         }
-
-        String encodedName = configuration.encoder.encode(username, lambdaName);
-        configuration.storage.unregister(encodedName);
-        configuration.functionWriter.remove(encodedName);
-
-        logger.log(Level.INFO, "Successfully removed lambda [" + lambdaName + "]!");
-        return Single.just("Successfully removed lambda [" + lambdaName + "]!");
     }
 
     public Single<String> configureManager(String configData, BeanContext beanContext) {
@@ -115,11 +126,14 @@ public class LambdaManager {
             configuration = new LambdaManagerArgumentStorage().initializeLambdaManager(
                     ArgumentParser.parse(configData), beanContext);
 
-            logger.log(Level.INFO, "Successfully uploaded lambda manager configuration!");
-            return Single.just("Successfully uploaded lambda manager configuration!");
+            logger.log(Level.INFO, Messages.SUCCESS_CONFIGURATION_UPLOAD);
+            return Single.just(Messages.SUCCESS_CONFIGURATION_UPLOAD);
         } catch (ErrorDuringParsingJSONFile | ErrorDuringReflectiveClassCreation | ErrorDuringCreatingNewConnectionPool e) {
             logger.log(Level.SEVERE, e.getMessage(), e);
             return Single.just("Error during uploading new configuration!");
+        } catch (Throwable throwable) {
+            logger.log(Level.SEVERE, throwable.getMessage(), throwable);
+            return Single.just(Messages.INTERNAL_ERROR);
         }
     }
 }

@@ -7,7 +7,7 @@ import com.lambda_manager.collectors.lambda_info.LambdaInstancesInfo;
 import com.lambda_manager.core.LambdaManagerConfiguration;
 import com.lambda_manager.processes.start_lambda.StartLambda;
 import com.lambda_manager.utils.ConnectionTriplet;
-import com.lambda_manager.utils.Environment;
+import com.lambda_manager.core.Environment;
 import com.lambda_manager.utils.LambdaTuple;
 import io.micronaut.http.client.RxHttpClient;
 
@@ -16,7 +16,7 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 
-import static com.lambda_manager.utils.Environment.*;
+import static com.lambda_manager.core.Environment.*;
 
 public class StartHotspot extends StartLambda {
 
@@ -32,6 +32,7 @@ public class StartHotspot extends StartLambda {
         command.add("--output=" + this.memoryFilename);
         command.add("-v");
         command.add("bash");
+        // TODO: Replace hardcoded paths with Paths.get().
         command.add("src/scripts/start_hotspot.sh");
         command.add(lambda.list.getName());
         command.add(String.valueOf(lambda.instance.getId()));

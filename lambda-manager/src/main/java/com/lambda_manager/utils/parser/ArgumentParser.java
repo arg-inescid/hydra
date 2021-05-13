@@ -14,19 +14,19 @@ public class ArgumentParser {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    public static ManagerArguments parse(String configData) throws ErrorDuringParsingJSONFile {
+    public static LambdaManagerConfiguration parse(String configData) throws ErrorDuringParsingJSONFile {
         try {
-            return objectMapper.readValue(configData, ManagerArguments.class);
+            return objectMapper.readValue(configData, LambdaManagerConfiguration.class);
         } catch (IOException ioException) {
             throw new ErrorDuringParsingJSONFile("Error during parsing JSON configuration file!", ioException);
         }
     }
 
-    public static void serialize(ManagerArguments managerArguments, OutputStreamWriter writer)
+    public static void serialize(LambdaManagerConfiguration lambdaManagerConfiguration, OutputStreamWriter writer)
             throws ErrorDuringSerializationJSONObject {
         try {
             objectMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
-            objectMapper.writeValue(writer, managerArguments);
+            objectMapper.writeValue(writer, lambdaManagerConfiguration);
             Logger.getLogger(Logger.GLOBAL_LOGGER_NAME).log(Level.INFO, "Serialized object is: \n" + writer);
         } catch (IOException ioException) {
             throw new ErrorDuringSerializationJSONObject("Error during serialization of JSON object!", ioException);

@@ -16,7 +16,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
         "codeWriter",
         "lambdaInfo"
 })
-public class ManagerState implements Serializable {
+public class LambdaManagerState implements Serializable {
 
     @JsonProperty("scheduler")
     private String scheduler;
@@ -38,7 +38,7 @@ public class ManagerState implements Serializable {
      * No args constructor for use in serialization
      *
      */
-    public ManagerState() {
+    public LambdaManagerState() {
     }
 
     /**
@@ -51,8 +51,8 @@ public class ManagerState implements Serializable {
      * @param codeWriter - The CodeWriter class which will be used by the Manager.
      * @param lambdaInfo - The class which stores information about one type of the lambda,
      */
-    public ManagerState(String scheduler, String optimizer, String encoder, String storage, String client,
-                        String codeWriter, LambdaInfo lambdaInfo) {
+    public LambdaManagerState(String scheduler, String optimizer, String encoder, String storage, String client,
+                              String codeWriter, LambdaInfo lambdaInfo) {
         super();
         this.scheduler = scheduler;
         this.optimizer = optimizer;
