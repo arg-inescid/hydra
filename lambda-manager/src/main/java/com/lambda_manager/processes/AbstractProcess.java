@@ -5,13 +5,13 @@ import com.lambda_manager.callbacks.impl.DefaultCallback;
 import com.lambda_manager.collectors.lambda_info.LambdaInstanceInfo;
 import com.lambda_manager.collectors.lambda_info.LambdaInstancesInfo;
 import com.lambda_manager.core.LambdaManagerConfiguration;
-import com.lambda_manager.utils.Environment;
+import com.lambda_manager.core.Environment;
 import com.lambda_manager.utils.LambdaTuple;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.lambda_manager.utils.Environment.DEFAULT_FILENAME;
+import static com.lambda_manager.core.Environment.DEFAULT_FILENAME;
 
 public abstract class AbstractProcess {
 

@@ -18,7 +18,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
         "managerConsole",
         "managerState"
 })
-public class ManagerArguments implements Serializable
+public class LambdaManagerConfiguration implements Serializable
 {
     @JsonProperty("gateway")
     private String gateway;
@@ -35,16 +35,16 @@ public class ManagerArguments implements Serializable
     @JsonProperty("lambdaConsole")
     private boolean lambdaConsole;
     @JsonProperty("managerConsole")
-    private ManagerConsole managerConsole;
+    private LambdaManagerConsole lambdaManagerConsole;
     @JsonProperty("managerState")
-    private ManagerState managerState;
+    private LambdaManagerState lambdaManagerState;
     private final static long serialVersionUID = -6081673374812554207L;
 
     /**
      * No args constructor for use in serialization
      *
      */
-    public ManagerArguments() {
+    public LambdaManagerConfiguration() {
     }
 
     /**
@@ -57,11 +57,11 @@ public class ManagerArguments implements Serializable
      * @param memory - Maximum memory consumption per active lambda.
      * @param lambdaPort - In which port the lambda will receive it's requests.
      * @param lambdaConsole - Is console active during qemu's run.
-     * @param managerConsole - The class with information about manager logging.
-     * @param managerState - The class that represent state of one manager's instance.
+     * @param lambdaManagerConsole - The class with information about manager logging.
+     * @param lambdaManagerState - The class that represent state of one manager's instance.
      */
-    public ManagerArguments(String gateway, int maxLambdas, int timeout, int healthCheck, String memory, int lambdaPort,
-                            boolean lambdaConsole, ManagerConsole managerConsole, ManagerState managerState) {
+    public LambdaManagerConfiguration(String gateway, int maxLambdas, int timeout, int healthCheck, String memory, int lambdaPort,
+                                      boolean lambdaConsole, LambdaManagerConsole lambdaManagerConsole, LambdaManagerState lambdaManagerState) {
         super();
         this.gateway = gateway;
         this.maxLambdas = maxLambdas;
@@ -70,8 +70,8 @@ public class ManagerArguments implements Serializable
         this.memory = memory;
         this.lambdaPort = lambdaPort;
         this.lambdaConsole = lambdaConsole;
-        this.managerConsole = managerConsole;
-        this.managerState = managerState;
+        this.lambdaManagerConsole = lambdaManagerConsole;
+        this.lambdaManagerState = lambdaManagerState;
     }
 
     @JsonProperty("gateway")
@@ -145,23 +145,23 @@ public class ManagerArguments implements Serializable
     }
 
     @JsonProperty("managerConsole")
-    public ManagerConsole getManagerConsole() {
-        return managerConsole;
+    public LambdaManagerConsole getManagerConsole() {
+        return lambdaManagerConsole;
     }
 
     @JsonProperty("managerConsole")
-    public void setManagerConsole(ManagerConsole managerConsole) {
-        this.managerConsole = managerConsole;
+    public void setManagerConsole(LambdaManagerConsole lambdaManagerConsole) {
+        this.lambdaManagerConsole = lambdaManagerConsole;
     }
 
     @JsonProperty("managerState")
-    public ManagerState getManagerState() {
-        return managerState;
+    public LambdaManagerState getManagerState() {
+        return lambdaManagerState;
     }
 
     @JsonProperty("managerState")
-    public void setManagerState(ManagerState managerState) {
-        this.managerState = managerState;
+    public void setManagerState(LambdaManagerState lambdaManagerState) {
+        this.lambdaManagerState = lambdaManagerState;
     }
 
 }

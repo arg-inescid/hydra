@@ -10,9 +10,9 @@ import io.micronaut.http.client.RxHttpClient;
 
 import java.util.List;
 
-import static com.lambda_manager.utils.Environment.REMOVE_TAPS_FILENAME;
+import static com.lambda_manager.core.Environment.REMOVE_TAPS_FILENAME;
 
-public class RemoveTaps extends AbstractProcess {
+public class RemoveTapsFromPool extends AbstractProcess {
 
     @Override
     protected List<String> makeCommand(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {

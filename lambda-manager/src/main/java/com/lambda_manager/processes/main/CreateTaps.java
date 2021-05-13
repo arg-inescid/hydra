@@ -9,7 +9,7 @@ import com.lambda_manager.utils.LambdaTuple;
 import io.micronaut.http.client.RxHttpClient;
 
 import java.util.List;
-import static com.lambda_manager.utils.Environment.CREATE_TAPS_FILENAME;
+import static com.lambda_manager.core.Environment.CREATE_TAPS_FILENAME;
 
 public class CreateTaps extends AbstractProcess {
 

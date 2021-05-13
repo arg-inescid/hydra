@@ -1,4 +1,4 @@
-package com.lambda_manager.utils;
+package com.lambda_manager.core;
 
 import io.micronaut.context.event.ApplicationEventListener;
 import io.micronaut.runtime.event.ApplicationStartupEvent;
@@ -6,11 +6,11 @@ import io.micronaut.runtime.event.ApplicationStartupEvent;
 import javax.inject.Singleton;
 import java.io.File;
 
-import static com.lambda_manager.utils.Environment.*;
+import static com.lambda_manager.core.Environment.*;
 
 @SuppressWarnings("unused")
 @Singleton
-public class CleanLogFiles implements ApplicationEventListener<ApplicationStartupEvent> {
+public class StartupHook implements ApplicationEventListener<ApplicationStartupEvent> {
 
     @Override
     public void onApplicationEvent(ApplicationStartupEvent event) {

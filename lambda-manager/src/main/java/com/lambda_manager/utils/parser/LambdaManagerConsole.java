@@ -13,7 +13,7 @@ import java.io.Serializable;
         "redirectToFile",
         "fineGrain"
 })
-public class ManagerConsole implements Serializable
+public class LambdaManagerConsole implements Serializable
 {
     @JsonProperty("turnOff")
     private boolean turnOff;
@@ -27,7 +27,7 @@ public class ManagerConsole implements Serializable
      * No args constructor for use in serialization
      *
      */
-    public ManagerConsole() {
+    public LambdaManagerConsole() {
     }
 
     /**
@@ -35,7 +35,7 @@ public class ManagerConsole implements Serializable
      * @param redirectToFile - Should the logging be redirected to file or printed in console.
      * @param fineGrain - Fine or coarse grain logging.
      */
-    public ManagerConsole(boolean turnOff, boolean redirectToFile, boolean fineGrain) {
+    public LambdaManagerConsole(boolean turnOff, boolean redirectToFile, boolean fineGrain) {
         super();
         this.turnOff = turnOff;
         this.redirectToFile = redirectToFile;

@@ -2,7 +2,8 @@ package com.lambda_manager.processes;
 
 import com.lambda_manager.processes.main.BuildNativeImage;
 import com.lambda_manager.processes.main.CreateTaps;
-import com.lambda_manager.processes.main.RemoveTaps;
+import com.lambda_manager.processes.main.RemoveTapsFromPool;
+import com.lambda_manager.processes.main.RemoveTapsOutsidePool;
 import com.lambda_manager.processes.start_lambda.*;
 import com.lambda_manager.processes.start_lambda.impl.StartHotspot;
 import com.lambda_manager.processes.start_lambda.impl.StartHotspotWithAgent;
@@ -10,7 +11,8 @@ import com.lambda_manager.processes.start_lambda.impl.StartNativeImage;
 
 public class Processes {
     public static final AbstractProcess CREATE_TAPS = new CreateTaps();
-    public static final AbstractProcess REMOVE_TAPS = new RemoveTaps();
+    public static final AbstractProcess REMOVE_TAPS_FROM_POOL = new RemoveTapsFromPool();
+    public static final AbstractProcess REMOVE_TAPS_OUTSIDE_POOL = new RemoveTapsOutsidePool();
     public static final AbstractProcess BUILD_NATIVE_IMAGE = new BuildNativeImage();
 
     public static final AbstractProcess START_LAMBDA = new StartLambda();

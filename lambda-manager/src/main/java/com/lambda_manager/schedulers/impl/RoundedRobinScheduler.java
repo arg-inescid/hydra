@@ -8,7 +8,7 @@ import com.lambda_manager.handlers.DefaultLambdaShutdownHandler;
 import com.lambda_manager.processes.ProcessBuilder;
 import com.lambda_manager.processes.Processes;
 import com.lambda_manager.schedulers.Scheduler;
-import com.lambda_manager.utils.Environment;
+import com.lambda_manager.core.Environment;
 import com.lambda_manager.utils.LambdaTuple;
 
 import java.util.Timer;

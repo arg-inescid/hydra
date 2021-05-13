@@ -1,11 +1,10 @@
-package com.lambda_manager.utils;
+package com.lambda_manager.core;
 
 import com.github.maltalex.ineter.base.IPv4Address;
 import com.github.maltalex.ineter.range.IPv4Subnet;
 import com.lambda_manager.code_writer.FunctionWriter;
 import com.lambda_manager.collectors.lambda_storage.LambdaStorage;
 import com.lambda_manager.connectivity.client.LambdaManagerClient;
-import com.lambda_manager.core.LambdaManagerConfiguration;
 import com.lambda_manager.encoders.Encoder;
 import com.lambda_manager.exceptions.argument_parser.ErrorDuringReflectiveClassCreation;
 import com.lambda_manager.exceptions.user.ErrorDuringCreatingNewConnectionPool;
@@ -13,11 +12,12 @@ import com.lambda_manager.optimizers.Optimizer;
 import com.lambda_manager.processes.ProcessBuilder;
 import com.lambda_manager.processes.Processes;
 import com.lambda_manager.schedulers.Scheduler;
+import com.lambda_manager.utils.ConnectionTriplet;
 import com.lambda_manager.utils.logger.CustomFormatter;
 import com.lambda_manager.utils.logger.ElapseTimer;
-import com.lambda_manager.utils.parser.ManagerArguments;
-import com.lambda_manager.utils.parser.ManagerConsole;
-import com.lambda_manager.utils.parser.ManagerState;
+import com.lambda_manager.utils.parser.LambdaManagerConfiguration;
+import com.lambda_manager.utils.parser.LambdaManagerConsole;
+import com.lambda_manager.utils.parser.LambdaManagerState;
 import io.micronaut.context.BeanContext;
 import io.micronaut.http.client.RxHttpClient;
 
@@ -27,6 +27,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Random;
@@ -35,8 +36,8 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static com.lambda_manager.utils.Environment.MANAGER_LOG_FILENAME;
-import static com.lambda_manager.utils.Environment.RAND_STRING_LEN;
+import static com.lambda_manager.core.Environment.MANAGER_LOG_FILENAME;
+import static com.lambda_manager.core.Environment.RAND_STRING_LEN;
 
 public class LambdaManagerArgumentStorage {
 
@@ -53,29 +54,29 @@ public class LambdaManagerArgumentStorage {
     private int lambdaPort;
     private boolean isLambdaConsoleActive;
 
-    private void initClassFields(ManagerArguments managerArguments) {
-        String gatewayString = managerArguments.getGateway();
+    private void initClassFields(LambdaManagerConfiguration lambdaManagerConfiguration) {
+        String gatewayString = lambdaManagerConfiguration.getGateway();
         this.gateway = gatewayString.split("/")[0];
         IPv4Subnet gatewayWithMask = IPv4Subnet.of(gatewayString);
         this.mask = gatewayWithMask.getNetworkMask().toString();
         this.iPv4AddressIterator = gatewayWithMask.iterator();
         this.iPv4AddressIterator.next();
 
-        this.maxLambdas = managerArguments.getMaxLambdas();
+        this.maxLambdas = lambdaManagerConfiguration.getMaxLambdas();
 
-        this.timeout = managerArguments.getTimeout();
-        this.healthCheck = managerArguments.getHealthCheck();
-        this.memorySpace = managerArguments.getMemory();
-        this.lambdaPort = managerArguments.getLambdaPort();
-        this.isLambdaConsoleActive = managerArguments.isLambdaConsole();
+        this.timeout = lambdaManagerConfiguration.getTimeout();
+        this.healthCheck = lambdaManagerConfiguration.getHealthCheck();
+        this.memorySpace = lambdaManagerConfiguration.getMemory();
+        this.lambdaPort = lambdaManagerConfiguration.getLambdaPort();
+        this.isLambdaConsoleActive = lambdaManagerConfiguration.isLambdaConsole();
     }
 
-    private void prepareConnectionPool(LambdaManagerConfiguration configuration, BeanContext beanContext) 
+    private void prepareConnectionPool(com.lambda_manager.core.LambdaManagerConfiguration configuration, BeanContext beanContext)
             throws ErrorDuringCreatingNewConnectionPool {
         try {
             for (int i = 0; i < maxLambdas; i++) {
                 String ip = getNextIPAddress();
-                String tap = generateRandomString();
+                String tap = String.format("%s-%s", Environment.TAP_PREFIX, generateRandomString());
                 RxHttpClient client = beanContext.createBean(RxHttpClient.class,
                         new URL("http", ip, lambdaPort, "/"));
                 connectionPool.add(new ConnectionTriplet<>(ip, tap, client));
@@ -89,22 +90,23 @@ public class LambdaManagerArgumentStorage {
         }
     }
 
-    private void prepareLogger(ManagerConsole managerConsole) {
+    private void prepareLogger(LambdaManagerConsole lambdaManagerConsole) {
         CustomFormatter formatter = new CustomFormatter();
         Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 
-        if (!managerConsole.isTurnOff()) {
-            if (managerConsole.isFineGrain()) {
+        if (!lambdaManagerConsole.isTurnOff()) {
+            if (lambdaManagerConsole.isFineGrain()) {
                 logger.setLevel(Level.FINE);
             }
             for (Handler handler : logger.getParent().getHandlers()) {
                 handler.setFormatter(formatter);
-                if (managerConsole.isFineGrain()) {
+                if (lambdaManagerConsole.isFineGrain()) {
                     handler.setLevel(Level.FINE);
                 }
             }
-            if (managerConsole.isRedirectToFile()) {
-                logger.log(Level.INFO, "Log is redirected to file -> " + MANAGER_LOG_FILENAME);
+            if (lambdaManagerConsole.isRedirectToFile()) {
+                logger.log(Level.INFO, String.format("Log is redirected to file -> %s",
+                        Paths.get(System.getProperty("user.dir"), MANAGER_LOG_FILENAME)));
                 logger.setUseParentHandlers(false);
                 try {
                     File managerLogFile = new File(MANAGER_LOG_FILENAME);
@@ -133,24 +135,24 @@ public class LambdaManagerArgumentStorage {
         }
     }
 
-    private LambdaManagerConfiguration prepareConfiguration(ManagerState managerState)
+    private com.lambda_manager.core.LambdaManagerConfiguration prepareConfiguration(LambdaManagerState lambdaManagerState)
             throws ErrorDuringReflectiveClassCreation {
 
-        Scheduler scheduler = (Scheduler) createObject(managerState.getScheduler());
-        Optimizer optimizer = (Optimizer) createObject(managerState.getOptimizer());
-        Encoder encoder = (Encoder) createObject(managerState.getEncoder());
-        LambdaStorage storage = (LambdaStorage) createObject(managerState.getStorage());
-        LambdaManagerClient client = (LambdaManagerClient) createObject(managerState.getClient());
-        FunctionWriter functionWriter = (FunctionWriter) createObject(managerState.getCodeWriter());
-        return new LambdaManagerConfiguration(scheduler, optimizer, encoder, storage, client, functionWriter, this);
+        Scheduler scheduler = (Scheduler) createObject(lambdaManagerState.getScheduler());
+        Optimizer optimizer = (Optimizer) createObject(lambdaManagerState.getOptimizer());
+        Encoder encoder = (Encoder) createObject(lambdaManagerState.getEncoder());
+        LambdaStorage storage = (LambdaStorage) createObject(lambdaManagerState.getStorage());
+        LambdaManagerClient client = (LambdaManagerClient) createObject(lambdaManagerState.getClient());
+        FunctionWriter functionWriter = (FunctionWriter) createObject(lambdaManagerState.getCodeWriter());
+        return new com.lambda_manager.core.LambdaManagerConfiguration(scheduler, optimizer, encoder, storage, client, functionWriter, this);
     }
 
-    public LambdaManagerConfiguration initializeLambdaManager(ManagerArguments managerArguments, BeanContext beanContext)
+    public com.lambda_manager.core.LambdaManagerConfiguration initializeLambdaManager(LambdaManagerConfiguration lambdaManagerConfiguration, BeanContext beanContext)
             throws ErrorDuringReflectiveClassCreation, ErrorDuringCreatingNewConnectionPool {
 
-        initClassFields(managerArguments);
-        prepareLogger(managerArguments.getManagerConsole());
-        LambdaManagerConfiguration configuration = prepareConfiguration(managerArguments.getManagerState());
+        initClassFields(lambdaManagerConfiguration);
+        prepareLogger(lambdaManagerConfiguration.getManagerConsole());
+        com.lambda_manager.core.LambdaManagerConfiguration configuration = prepareConfiguration(lambdaManagerConfiguration.getManagerState());
         prepareConnectionPool(configuration, beanContext);
         ElapseTimer.init(); // Start internal timer.
         return configuration;
