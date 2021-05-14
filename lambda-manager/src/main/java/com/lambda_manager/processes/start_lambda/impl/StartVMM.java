@@ -24,7 +24,7 @@ public class StartVMM extends StartLambda {
     @Override
     protected List<String> makeCommand(LambdaTuple<Function, Lambda> lambda, LambdaManagerConfiguration configuration) {
         clearPreviousState();
-        lambda.instance.setExecutionMode(LambdaExecutionMode.NATIVE_IMAGE);
+        lambda.lambda.setExecutionMode(LambdaExecutionMode.NATIVE_IMAGE);
         this.outputFilename = outputFilename(lambda, configuration);
         this.memoryFilename = memoryFilename(lambda, configuration);
         ConnectionTriplet<String, String, RxHttpClient> connectionTriplet = lambda.lambda.getConnectionTriplet();

@@ -24,7 +24,7 @@ public class StartHotspot extends StartLambda {
     @Override
     protected List<String> makeCommand(LambdaTuple<Function, Lambda> lambda, LambdaManagerConfiguration configuration) {
         clearPreviousState();
-        lambda.instance.setExecutionMode(LambdaExecutionMode.HOTSPOT);
+        lambda.lambda.setExecutionMode(LambdaExecutionMode.HOTSPOT);
         this.outputFilename = outputFilename(lambda, configuration);
         this.memoryFilename = memoryFilename(lambda, configuration);
         ConnectionTriplet<String, String, RxHttpClient> connectionTriplet = lambda.lambda.getConnectionTriplet();
