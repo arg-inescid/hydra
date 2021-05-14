@@ -2,8 +2,8 @@ package com.lambda_manager.processes;
 
 import com.lambda_manager.callbacks.OnProcessFinishCallback;
 import com.lambda_manager.callbacks.impl.DefaultCallback;
-import com.lambda_manager.collectors.lambda_info.LambdaInstanceInfo;
-import com.lambda_manager.collectors.lambda_info.LambdaInstancesInfo;
+import com.lambda_manager.collectors.meta_info.Lambda;
+import com.lambda_manager.collectors.meta_info.Function;
 import com.lambda_manager.core.LambdaManagerConfiguration;
 import com.lambda_manager.core.Environment;
 import com.lambda_manager.utils.LambdaTuple;
@@ -20,21 +20,21 @@ public abstract class AbstractProcess {
     protected String memoryFilename; // TODO - delete this field. We don't need it.
     protected long pid = -1;
 
-    public final ProcessBuilder build(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+    public final ProcessBuilder build(LambdaTuple<Function, Lambda> lambda, LambdaManagerConfiguration configuration) {
         return new ProcessBuilder(makeCommand(lambda, configuration), callback(lambda, configuration),
                 outputFilename(lambda, configuration), pid());
     }
 
-    protected abstract List<String> makeCommand(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration);
+    protected abstract List<String> makeCommand(LambdaTuple<Function, Lambda> lambda, LambdaManagerConfiguration configuration);
 
-    protected OnProcessFinishCallback callback(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+    protected OnProcessFinishCallback callback(LambdaTuple<Function, Lambda> lambda, LambdaManagerConfiguration configuration) {
         return new DefaultCallback();
     }
 
-    protected abstract String outputFilename(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda,
+    protected abstract String outputFilename(LambdaTuple<Function, Lambda> lambda,
                                              LambdaManagerConfiguration configuration);
 
-    protected String memoryFilename(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda,
+    protected String memoryFilename(LambdaTuple<Function, Lambda> lambda,
                                     LambdaManagerConfiguration configuration) {
         return DEFAULT_FILENAME;
     }

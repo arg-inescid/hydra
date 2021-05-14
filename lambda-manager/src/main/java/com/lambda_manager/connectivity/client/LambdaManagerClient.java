@@ -1,12 +1,10 @@
 package com.lambda_manager.connectivity.client;
 
-import com.lambda_manager.collectors.lambda_info.LambdaInstanceInfo;
-import com.lambda_manager.collectors.lambda_info.LambdaInstancesInfo;
+import com.lambda_manager.collectors.meta_info.Lambda;
+import com.lambda_manager.collectors.meta_info.Function;
 import com.lambda_manager.core.LambdaManagerConfiguration;
-import com.lambda_manager.exceptions.user.ErrorUploadingNewLambda;
 import com.lambda_manager.utils.LambdaTuple;
-import io.micronaut.context.BeanContext;
 
 public interface LambdaManagerClient {
-    String sendRequest(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration);
+    String sendRequest(LambdaTuple<Function, Lambda> lambda, LambdaManagerConfiguration configuration);
 }

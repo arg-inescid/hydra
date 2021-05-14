@@ -63,12 +63,12 @@ structure is provided bellow (value inside [ ] represents JSON data types):
       "commands": [
         {
           "command": "remove",
-          "lambda_name": "[STRING] Function name?"
+          "function_name": "[STRING] Function name?"
         },
         {
           "command": "upload",
           "allocate": "[INTEGER] How many instances the user wants allocate for this function?",
-          "lambda_name": "[STRING] Function name?",
+          "function_name": "[STRING] Function name?",
           "source": "[STRING] Function source code path?"
         },
         {
@@ -78,7 +78,7 @@ structure is provided bellow (value inside [ ] represents JSON data types):
               "iterations": "[INTEGER] How many test iterations...",
               "num_requests": "[INTEGER] with how many request per iteration...",
               "num_clients": "[INTEGER] with how many clients in parallel?",
-              "lambda_name": "[STRING] Function name?",
+              "function_name": "[STRING] Function name?",
               "args_pool": [
                 "[ANY] arg1",
                 "[ANY] arg2",

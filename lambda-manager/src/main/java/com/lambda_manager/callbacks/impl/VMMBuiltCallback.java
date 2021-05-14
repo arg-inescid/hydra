@@ -6,20 +6,17 @@ import com.lambda_manager.collectors.meta_info.Function;
 import com.lambda_manager.optimizers.FunctionStatus;
 import com.lambda_manager.utils.LambdaTuple;
 
-public class AgentConfigReadyCallback implements OnProcessFinishCallback {
+public class VMMBuiltCallback implements OnProcessFinishCallback {
 
     private final LambdaTuple<Function, Lambda> lambda;
-    private final OnProcessFinishCallback callback;
 
-    public AgentConfigReadyCallback(LambdaTuple<Function, Lambda> lambda,
-                                    OnProcessFinishCallback callback) {
+    public VMMBuiltCallback(LambdaTuple<Function, Lambda> lambda) {
         this.lambda = lambda;
-        this.callback = callback;
     }
 
     @Override
     public void finish(int exitCode) {
-        lambda.function.setStatus(FunctionStatus.NOT_BUILT_CONFIGURED);
-        callback.finish(exitCode);
+        lambda.function.setStatus(FunctionStatus.BUILT);
+        lambda.function.setUpdateID(true);
     }
 }

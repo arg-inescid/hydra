@@ -20,9 +20,9 @@ public class Environment {
     public static final String NATIVE_IMAGE = "native_image";
 
     // Directories.
-    public static final String CODEBASE = Paths.get("src", "codebase").toString();
-    public static final String MANAGER_LOGS = Paths.get("src", "manager_logs").toString();
-    public static final String LAMBDA_LOGS = Paths.get("src", "lambda_logs").toString();
+    public static final String CODEBASE = "codebase";
+    public static final String MANAGER_LOGS = "manager_logs";
+    public static final String LAMBDA_LOGS = "lambda_logs";
 
     // Filenames.
     public static final String DEFAULT_FILENAME = "default_filename.log";

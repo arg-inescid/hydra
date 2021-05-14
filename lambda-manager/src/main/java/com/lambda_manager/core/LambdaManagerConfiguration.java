@@ -1,7 +1,7 @@
 package com.lambda_manager.core;
 
-import com.lambda_manager.code_writer.FunctionWriter;
-import com.lambda_manager.collectors.lambda_storage.LambdaStorage;
+import com.lambda_manager.function_writer.FunctionWriter;
+import com.lambda_manager.collectors.function_storage.FunctionStorage;
 import com.lambda_manager.connectivity.client.LambdaManagerClient;
 import com.lambda_manager.encoders.Encoder;
 import com.lambda_manager.optimizers.Optimizer;
@@ -11,13 +11,13 @@ public class LambdaManagerConfiguration {
     public final Scheduler scheduler;
     public final Optimizer optimizer;
     public final Encoder encoder;
-    public final LambdaStorage storage;
+    public final FunctionStorage storage;
     public final LambdaManagerClient client;
     public final FunctionWriter functionWriter;
     public final LambdaManagerArgumentStorage argumentStorage;
 
     public LambdaManagerConfiguration(Scheduler scheduler, Optimizer optimizer, Encoder encoder,
-                                      LambdaStorage storage, LambdaManagerClient client,
+                                      FunctionStorage storage, LambdaManagerClient client,
                                       FunctionWriter functionWriter, LambdaManagerArgumentStorage argumentStorage) {
         this.scheduler = scheduler;
         this.optimizer = optimizer;

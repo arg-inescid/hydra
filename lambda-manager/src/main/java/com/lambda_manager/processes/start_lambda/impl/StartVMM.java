@@ -2,8 +2,8 @@ package com.lambda_manager.processes.start_lambda.impl;
 
 import com.lambda_manager.callbacks.OnProcessFinishCallback;
 import com.lambda_manager.callbacks.impl.NeedFallbackCallback;
-import com.lambda_manager.collectors.lambda_info.LambdaInstanceInfo;
-import com.lambda_manager.collectors.lambda_info.LambdaInstancesInfo;
+import com.lambda_manager.collectors.meta_info.Lambda;
+import com.lambda_manager.collectors.meta_info.Function;
 import com.lambda_manager.core.LambdaManagerConfiguration;
 import com.lambda_manager.processes.start_lambda.StartLambda;
 import com.lambda_manager.utils.ConnectionTriplet;
@@ -18,22 +18,22 @@ import java.util.List;
 
 import static com.lambda_manager.core.Environment.*;
 
-public class StartNativeImage extends StartLambda {
+public class StartVMM extends StartLambda {
 
     @Override
-    protected List<String> makeCommand(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+    protected List<String> makeCommand(LambdaTuple<Function, Lambda> lambda, LambdaManagerConfiguration configuration) {
         clearPreviousState();
         this.outputFilename = outputFilename(lambda, configuration);
         this.memoryFilename = memoryFilename(lambda, configuration);
-        ConnectionTriplet<String, String, RxHttpClient> connectionTriplet = lambda.instance.getConnectionTriplet();
+        ConnectionTriplet<String, String, RxHttpClient> connectionTriplet = lambda.lambda.getConnectionTriplet();
 
         command.add("/usr/bin/time");
         command.add("--append");
         command.add("--output=" + this.memoryFilename);
         command.add("-v");
         command.add("bash");
-        command.add("src/scripts/start_native_image.sh");
-        command.add(lambda.list.getName());
+        command.add("src/scripts/start_vmm.sh");
+        command.add(lambda.function.getName());
         command.add(configuration.argumentStorage.getMemorySpace());
         command.add(connectionTriplet.ip);
         command.add(connectionTriplet.tap);
@@ -45,21 +45,21 @@ public class StartNativeImage extends StartLambda {
             command.add("");    // Placeholder.
         }
         command.add(String.valueOf(configuration.argumentStorage.getLambdaPort()));
-        if (lambda.instance.getArgs() != null) {
-            Collections.addAll(command, lambda.instance.getArgs().split(","));
+        if (lambda.lambda.getArgs() != null) {
+            Collections.addAll(command, lambda.lambda.getArgs().split(","));
         }
         command.add(String.valueOf(System.currentTimeMillis()));
         return command;
     }
 
     @Override
-    protected OnProcessFinishCallback callback(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+    protected OnProcessFinishCallback callback(LambdaTuple<Function, Lambda> lambda, LambdaManagerConfiguration configuration) {
         return new NeedFallbackCallback(lambda);
     }
 
     @Override
-    protected String outputFilename(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
-        String dirPath = Paths.get(LAMBDA_LOGS, String.valueOf(lambda.instance.getId()), lambda.list.getName(),
+    protected String outputFilename(LambdaTuple<Function, Lambda> lambda, LambdaManagerConfiguration configuration) {
+        String dirPath = Paths.get(LAMBDA_LOGS, lambda.function.getName(), String.valueOf(lambda.lambda.getId()),
                 NATIVE_IMAGE).toString();
         //noinspection ResultOfMethodCallIgnored
         new File(dirPath).mkdirs();
@@ -69,8 +69,8 @@ public class StartNativeImage extends StartLambda {
     }
 
     @Override
-    protected String memoryFilename(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
-        String dirPath = Paths.get(LAMBDA_LOGS, String.valueOf(lambda.instance.getId()), lambda.list.getName(),
+    protected String memoryFilename(LambdaTuple<Function, Lambda> lambda, LambdaManagerConfiguration configuration) {
+        String dirPath = Paths.get(LAMBDA_LOGS, lambda.function.getName(), String.valueOf(lambda.lambda.getId()),
                 NATIVE_IMAGE).toString();
         //noinspection ResultOfMethodCallIgnored
         new File(dirPath).mkdirs();

@@ -13,12 +13,12 @@
       "commands": [
         {
           "command": "remove",
-          "lambda_name": "hello"
+          "function_name": "hello-world"
         },
         {
           "command": "upload",
           "allocate": 100,
-          "lambda_name": "hello",
+          "function_name": "hello-world",
           "source": "../benchmarks/java/hello-world/build/libs/hello-world-1.0.jar"
         },
         {
@@ -28,7 +28,7 @@
               "iterations": 100,
               "num_requests": 1000,
               "num_clients": 100,
-              "lambda_name": "hello",
+              "function_name": "hello-world",
               "args_pool": [],
               "output": "../benchmarks/results/hello-world-java/hello-world-java-1.dat"
             }
@@ -45,7 +45,7 @@
               "iterations": 100,
               "num_requests": 1000,
               "num_clients": 100,
-              "lambda_name": "hello",
+              "function_name": "hello-world",
               "args_pool": [],
               "output": "../benchmarks/results/hello-world-java/hello-world-java-2.dat"
             }
@@ -62,7 +62,7 @@
               "iterations": 100,
               "num_requests": 1000,
               "num_clients": 100,
-              "lambda_name": "hello",
+              "function_name": "hello-world",
               "args_pool": [],
               "output": "../benchmarks/results/hello-world-java/hello-world-java-3.dat"
             }

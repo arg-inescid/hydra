@@ -1,7 +1,7 @@
 #!/bin/bash
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
-source "$DIR"/env.sh
+source "$DIR"/environment.sh
 
 FUNCTION_NAME=$1
 if [ -z "$FUNCTION_NAME" ]; then
@@ -9,7 +9,7 @@ if [ -z "$FUNCTION_NAME" ]; then
   exit 1
 fi
 
-FUNCTION_HOME=$MANAGER_HOME/src/codebase/$FUNCTION_NAME
+FUNCTION_HOME=$CODEBASE_HOME/$FUNCTION_NAME
 FUNCTION_JAR=$FUNCTION_HOME/$FUNCTION_NAME.jar
 
 cd "$FUNCTION_HOME" || {

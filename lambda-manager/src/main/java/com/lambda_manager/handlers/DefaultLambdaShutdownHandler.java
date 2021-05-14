@@ -1,7 +1,7 @@
 package com.lambda_manager.handlers;
 
-import com.lambda_manager.collectors.lambda_info.LambdaInstanceInfo;
-import com.lambda_manager.collectors.lambda_info.LambdaInstancesInfo;
+import com.lambda_manager.collectors.meta_info.Lambda;
+import com.lambda_manager.collectors.meta_info.Function;
 import com.lambda_manager.core.LambdaManager;
 import com.lambda_manager.processes.ProcessBuilder;
 import com.lambda_manager.utils.LambdaTuple;
@@ -10,9 +10,9 @@ import java.util.TimerTask;
 
 public class DefaultLambdaShutdownHandler extends TimerTask {
 
-    private final LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda;
+    private final LambdaTuple<Function, Lambda> lambda;
 
-    public DefaultLambdaShutdownHandler(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda) {
+    public DefaultLambdaShutdownHandler(LambdaTuple<Function, Lambda> lambda) {
         this.lambda = lambda;
     }
 
@@ -20,21 +20,21 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
     public void run() {
         ProcessBuilder processBuilder;
 
-        synchronized (lambda.list) {
-            if(!lambda.list.getStartedInstances().remove(lambda.instance)) {
+        synchronized (lambda.function) {
+            if(!lambda.function.getStartedLambdas().remove(lambda.lambda)) {
                 return;
             }
-            lambda.instance.getTimer().cancel();
-            processBuilder = lambda.list.getCurrentlyActiveWorkers().remove(lambda.instance.getId());
+            lambda.lambda.getTimer().cancel();
+            processBuilder = lambda.function.getCurrentlyActiveWorkers().remove(lambda.lambda.getId());
         }
 
         processBuilder.shutdownInstance();
 
         // Cleanup is finished, add server back to list of all available servers.
-        synchronized (lambda.list) {
-            LambdaManager.getConfiguration().argumentStorage.returnConnectionTriplet(lambda.instance.getConnectionTriplet());
-            lambda.list.getAvailableInstances().add(lambda.instance);
-            lambda.list.notify();
+        synchronized (lambda.function) {
+            LambdaManager.getConfiguration().argumentStorage.returnConnectionTriplet(lambda.lambda.getConnectionTriplet());
+            lambda.function.getAvailableLambdas().add(lambda.lambda);
+            lambda.function.notify();
         }
     }
 }

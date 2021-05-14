@@ -28,24 +28,24 @@ public class LambdaManagerController {
     }
 
     @Get("/{user}/{name}")
-    public Single<String> processRequest(@PathVariable("user") String username, @PathVariable("name") String lambdaName,
-                                        @Nullable @QueryValue("args") String args) {
-        return lambdaManager.processRequest(username, lambdaName, args);
+    public Single<String> processRequest(@PathVariable("user") String username, @PathVariable("name") String functionName,
+                                        @Nullable @QueryValue("args") String functionArguments) {
+        return lambdaManager.processRequest(username, functionName, functionArguments);
     }
 
-    @Post(value = "/upload_lambda", consumes = APPLICATION_OCTET_STREAM)
+    @Post(value = "/upload_function", consumes = APPLICATION_OCTET_STREAM)
     public Single<String> uploadLambda(@QueryValue("allocate") int allocate, @QueryValue("user") String username,
-                                       @QueryValue("name") String lambdaName, @Body byte[] octetStreamData) {
-        return lambdaManager.uploadLambda(allocate, username, lambdaName, octetStreamData);
+                                       @QueryValue("name") String functionName, @Body byte[] functionCode) {
+        return lambdaManager.uploadFunction(allocate, username, functionName, functionCode);
     }
 
-    @Post("/remove_lambda")
-    public Single<String> removeLambda(@QueryValue("user") String username, @QueryValue("name") String lambdaName) {
-        return lambdaManager.removeLambda(username, lambdaName);
+    @Post("/remove_function")
+    public Single<String> removeLambda(@QueryValue("user") String username, @QueryValue("name") String functionName) {
+        return lambdaManager.removeFunction(username, functionName);
     }
 
     @Post(value = "/configure_manager", consumes = APPLICATION_JSON)
-    public Single<String> configureManager(@Body String configData) {
-        return lambdaManager.configureManager(configData, beanContext);
+    public Single<String> configureManager(@Body String lambdaManagerConfiguration) {
+        return lambdaManager.configureManager(lambdaManagerConfiguration, beanContext);
     }
 }

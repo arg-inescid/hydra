@@ -1,6 +1,7 @@
 package com.lambda_manager.processes;
 
 import com.lambda_manager.callbacks.OnProcessFinishCallback;
+import com.lambda_manager.utils.Messages;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,6 +16,7 @@ import static com.lambda_manager.core.Environment.IS_ALIVE_PAUSE;
 public class ProcessBuilder extends Thread {
 
     private final List<String> command;
+    private final String commandAsString;
     private final OnProcessFinishCallback callback;
     private final String outputFilename;
     private final Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
@@ -23,6 +25,7 @@ public class ProcessBuilder extends Thread {
 
     public ProcessBuilder(List<String> command, OnProcessFinishCallback callback, String outputFilename, long pid) {
         this.command = command;
+        this.commandAsString = Arrays.toString(command.toArray());
         this.callback = callback;
         this.outputFilename = outputFilename;
         this.pid = pid;
@@ -35,11 +38,9 @@ public class ProcessBuilder extends Thread {
             this.process = processBuilder.start();
             int exitCode = process.waitFor();
             callback.finish(exitCode);
-            logger.log(Level.INFO, String.format("PID -> %d | Command -> %s | Exit code -> %d",
-                    pid, Arrays.toString(command.toArray()), exitCode));
+            logger.log(Level.INFO, String.format(Messages.PROCESS_EXIT, pid, commandAsString, exitCode));
         } catch (IOException | InterruptedException e) {
-            logger.log(Level.WARNING, String.format("PID -> %d | Command -> %s | Raised exception! ",
-                    pid, Arrays.toString(command.toArray())), e);
+            logger.log(Level.WARNING, String.format(Messages.PROCESS_RAISE_EXCEPTION, pid, commandAsString), e);
         }
     }
 
@@ -48,9 +49,7 @@ public class ProcessBuilder extends Thread {
         java.lang.ProcessBuilder processBuilder = new java.lang.ProcessBuilder();
         processBuilder.redirectOutput(outputFile).redirectError(outputFile);
         processBuilder.command(command);
-        logger.log(Level.INFO, String.format("PID -> %d | Command -> %s | Output -> %s",
-                pid, Arrays.toString(command.toArray()), outputFilename));
-
+        logger.log(Level.INFO, String.format(Messages.PROCESS_START, pid, commandAsString, outputFilename));
         return processBuilder;
     }
 

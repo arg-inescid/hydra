@@ -5,18 +5,19 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+@SuppressWarnings("unused")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
-        "instance",
-        "list"
+        "lambda",
+        "function"
 })
 public class LambdaInfo implements Serializable
 {
 
-    @JsonProperty("instance")
-    private String instance;
-    @JsonProperty("list")
-    private String list;
+    @JsonProperty("lambda")
+    private String lambda;
+    @JsonProperty("function")
+    private String function;
     private final static long serialVersionUID = 4416228688532741447L;
 
     /**
@@ -28,33 +29,33 @@ public class LambdaInfo implements Serializable
 
     /**
      *
-     * @param instance - The class which collects information about one instance of the lambda.
-     * @param list - The class which collects information about multiple instances of the same lambda.
+     * @param lambda - The class which collects information about the lambdas.
+     * @param function - The class which collects information about the functions.
      */
-    public LambdaInfo(String instance, String list) {
+    public LambdaInfo(String lambda, String function) {
         super();
-        this.instance = instance;
-        this.list = list;
+        this.lambda = lambda;
+        this.function = function;
     }
 
-    @JsonProperty("instance")
-    public String getInstance() {
-        return instance;
+    @JsonProperty("lambda")
+    public String getLambda() {
+        return lambda;
     }
 
-    @JsonProperty("instance")
-    public void setInstance(String instance) {
-        this.instance = instance;
+    @JsonProperty("lambda")
+    public void setLambda(String lambda) {
+        this.lambda = lambda;
     }
 
-    @JsonProperty("list")
-    public String getList() {
-        return list;
+    @JsonProperty("function")
+    public String getFunction() {
+        return function;
     }
 
-    @JsonProperty("list")
-    public void setList(String list) {
-        this.list = list;
+    @JsonProperty("function")
+    public void setFunction(String function) {
+        this.function = function;
     }
 
 }

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
-source "$DIR"/env.sh
+source "$DIR"/environment.sh
 
 FUNCTION_NAME=$1
 if [ -z "$FUNCTION_NAME" ]; then
@@ -41,7 +41,7 @@ fi
 
 LAMBDA_CONSOLE=$7
 
-FUNCTION_HOME=$MANAGER_HOME/src/codebase/$FUNCTION_NAME
+FUNCTION_HOME=$CODEBASE_HOME/$FUNCTION_NAME
 
 bash "$FUNCTION_HOME"/"${FUNCTION_NAME}"_unikernel.sh --memory "$LAMBDA_MEMORY" --ip "$LAMBDA_IP" --tap "$LAMBDA_TAP" \
   --gateway "$LAMBDA_GATEWAY" --mask "$LAMBDA_MASK" "$LAMBDA_CONSOLE" "${@:8}"

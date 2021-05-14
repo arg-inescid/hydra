@@ -15,12 +15,12 @@
     "scheduler": "com.lambda_manager.schedulers.impl.RoundedRobinScheduler",
     "optimizer": "com.lambda_manager.optimizers.impl.DefaultOptimizer",
     "encoder": "com.lambda_manager.encoders.impl.DefaultEncoder",
-    "storage": "com.lambda_manager.collectors.lambda_storage.impl.DefaultLambdaStorage",
+    "storage": "com.lambda_manager.collectors.function_storage.impl.DefaultFunctionStorage",
     "client": "com.lambda_manager.connectivity.client.impl.DefaultLambdaManagerClient",
-    "codeWriter": "com.lambda_manager.code_writer.impl.DefaultFunctionWriter",
+    "codeWriter": "com.lambda_manager.function_writer.impl.DefaultFunctionWriter",
     "lambdaInfo": {
-      "instance": "com.lambda_manager.collectors.lambda_info.impl.DefaultLambdaInfo",
-      "list": "com.lambda_manager.collectors.lambda_info.impl.DefaultLambdaInstancesInfo"
+      "lambda": "com.lambda_manager.collectors.meta_info.impl.DefaultLambda",
+      "function": "com.lambda_manager.collectors.meta_info.impl.DefaultFunction"
     }
   }
 }

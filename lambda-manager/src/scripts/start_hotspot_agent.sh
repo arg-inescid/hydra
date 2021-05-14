@@ -1,7 +1,7 @@
 #!/bin/bash
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
-source "$DIR"/env.sh
+source "$DIR"/environment.sh
 source "$DIR"/start_hotspot_shared.sh
 
 FUNCTION_NAME=$1
@@ -48,7 +48,7 @@ fi
 
 LAMBDA_CONSOLE=$8
 
-FUNCTION_HOME=$MANAGER_HOME/src/codebase/$FUNCTION_NAME
+FUNCTION_HOME=$CODEBASE_HOME/$FUNCTION_NAME
 FUNCTION_JAR=$FUNCTION_HOME/$FUNCTION_NAME.jar
 LAMBDA_HOME=$FUNCTION_HOME/start-hotspot-w-agent-id-$LAMBDA_ID
 

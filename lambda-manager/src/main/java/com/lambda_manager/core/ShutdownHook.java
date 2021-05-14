@@ -2,6 +2,7 @@ package com.lambda_manager.core;
 
 import com.lambda_manager.processes.ProcessBuilder;
 import com.lambda_manager.processes.Processes;
+import com.lambda_manager.utils.Messages;
 import io.micronaut.context.event.ApplicationEventListener;
 import io.micronaut.runtime.event.ApplicationShutdownEvent;
 
@@ -35,9 +36,9 @@ public class ShutdownHook implements ApplicationEventListener<ApplicationShutdow
                 removeTapsOutsidePool(configuration);
                 configuration.argumentStorage.cleanupStorage();
             }
-            logger.log(Level.INFO, "Execution finished successfully! :)");
+            logger.log(Level.INFO, Messages.EXECUTION_SUCCESS);
         } catch (InterruptedException interruptedException) {
-            logger.log(Level.WARNING, "Error during cleaning taps!", interruptedException);
+            logger.log(Level.WARNING, Messages.ERROR_TAP_REMOVAL, interruptedException);
         }
     }
 }

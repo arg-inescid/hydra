@@ -1,7 +1,7 @@
 #!/bin/bash
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
-source "$DIR"/env.sh
+source "$DIR"/environment.sh
 
 QEMU_JVM_DIR=$MANAGER_HOME/src/scripts/qemu-jvm
 

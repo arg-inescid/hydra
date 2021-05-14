@@ -1,9 +1,9 @@
 package com.lambda_manager.schedulers.impl;
 
-import com.lambda_manager.collectors.lambda_info.LambdaInstanceInfo;
-import com.lambda_manager.collectors.lambda_info.LambdaInstancesInfo;
+import com.lambda_manager.collectors.meta_info.Lambda;
+import com.lambda_manager.collectors.meta_info.Function;
 import com.lambda_manager.core.LambdaManagerConfiguration;
-import com.lambda_manager.exceptions.user.LambdaNotFound;
+import com.lambda_manager.exceptions.user.FunctionNotFound;
 import com.lambda_manager.handlers.DefaultLambdaShutdownHandler;
 import com.lambda_manager.processes.ProcessBuilder;
 import com.lambda_manager.processes.Processes;
@@ -18,11 +18,11 @@ public class RoundedRobinScheduler implements Scheduler {
 
     private long previousLambdaStartupTime;
 
-    private void gate(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda) {
+    private void gate(LambdaTuple<Function, Lambda> lambda) {
         long toWait = timeToWait();
         if (toWait > 0) {
             try {
-                lambda.list.wait(toWait);
+                lambda.function.wait(toWait);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -41,21 +41,21 @@ public class RoundedRobinScheduler implements Scheduler {
         }
     }
 
-    private void acquireConnection(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda,
+    private void acquireConnection(LambdaTuple<Function, Lambda> lambda,
                                    LambdaManagerConfiguration configuration) {
-        lambda.instance.setConnectionTriplet(configuration.argumentStorage.nextConnectionTriplet());
+        lambda.lambda.setConnectionTriplet(configuration.argumentStorage.nextConnectionTriplet());
     }
 
-    private void buildProcess(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda,
+    private void buildProcess(LambdaTuple<Function, Lambda> lambda,
                               LambdaManagerConfiguration configuration) {
 
         ProcessBuilder processBuilder = Processes.START_LAMBDA.build(lambda, configuration);
-        lambda.list.getCurrentlyActiveWorkers().put(lambda.instance.getId(), processBuilder);
+        lambda.function.getCurrentlyActiveWorkers().put(lambda.lambda.getId(), processBuilder);
         processBuilder.start();
     }
 
     @Override
-    public void spawnNewLambda(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda,
+    public void spawnNewLambda(LambdaTuple<Function, Lambda> lambda,
                                LambdaManagerConfiguration configuration) {
         gate(lambda);
         acquireConnection(lambda, configuration);
@@ -63,67 +63,67 @@ public class RoundedRobinScheduler implements Scheduler {
     }
 
     @Override
-    public LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> schedule(String lambdaName, String args,
-                                                                         LambdaManagerConfiguration configuration)
-            throws LambdaNotFound {
+    public LambdaTuple<Function, Lambda> schedule(String lambdaName, String args,
+                                                  LambdaManagerConfiguration configuration)
+            throws FunctionNotFound {
 
-        LambdaInstancesInfo lambdaInstancesInfo = configuration.storage.get(lambdaName);
-        if (lambdaInstancesInfo == null) {
-            throw new LambdaNotFound("Lambda [" + lambdaName + "] has not been uploaded!");
+        Function function = configuration.storage.get(lambdaName);
+        if (function == null) {
+            throw new FunctionNotFound("Lambda [" + lambdaName + "] has not been uploaded!");
         }
 
-        LambdaInstanceInfo lambdaInstanceInfo;
+        Lambda lambda;
         //noinspection SynchronizationOnLocalVariableOrMethodParameter
-        synchronized (lambdaInstancesInfo) {
-            if (lambdaInstancesInfo.getStartedInstances().isEmpty()) {
-                if (lambdaInstancesInfo.getAvailableInstances().isEmpty()) {
-                    if (lambdaInstancesInfo.getActiveInstances().isEmpty()) {
+        synchronized (function) {
+            if (function.getStartedLambdas().isEmpty()) {
+                if (function.getAvailableLambdas().isEmpty()) {
+                    if (function.getActiveLambdas().isEmpty()) {
                         try {
-                            lambdaInstancesInfo.wait();
+                            function.wait();
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
-                        lambdaInstanceInfo = lambdaInstancesInfo.getAvailableInstances().remove(0);
-                        lambdaInstanceInfo.setArgs(args);
-                        lambdaInstanceInfo.shouldUpdateID(lambdaInstancesInfo);
-                        spawnNewLambda(new LambdaTuple<>(lambdaInstancesInfo, lambdaInstanceInfo), configuration);
+                        lambda = function.getAvailableLambdas().remove(0);
+                        lambda.setArgs(args);
+                        lambda.shouldUpdateID(function);
+                        spawnNewLambda(new LambdaTuple<>(function, lambda), configuration);
                     } else {
-                        lambdaInstanceInfo = lambdaInstancesInfo.getActiveInstances().remove(0);
+                        lambda = function.getActiveLambdas().remove(0);
                     }
                 } else {
-                    lambdaInstanceInfo = lambdaInstancesInfo.getAvailableInstances().remove(0);
-                    lambdaInstanceInfo.setArgs(args);
-                    lambdaInstanceInfo.shouldUpdateID(lambdaInstancesInfo);
-                    spawnNewLambda(new LambdaTuple<>(lambdaInstancesInfo, lambdaInstanceInfo), configuration);
+                    lambda = function.getAvailableLambdas().remove(0);
+                    lambda.setArgs(args);
+                    lambda.shouldUpdateID(function);
+                    spawnNewLambda(new LambdaTuple<>(function, lambda), configuration);
                 }
             } else {
-                lambdaInstanceInfo = lambdaInstancesInfo.getStartedInstances().remove(0);
-                lambdaInstanceInfo.getTimer().cancel();
+                lambda = function.getStartedLambdas().remove(0);
+                lambda.getTimer().cancel();
             }
 
-            lambdaInstancesInfo.getActiveInstances().add(lambdaInstanceInfo);
-            lambdaInstanceInfo.setOpenRequestCount(lambdaInstanceInfo.getOpenRequestCount() + 1);
+            function.getActiveLambdas().add(lambda);
+            lambda.setOpenRequestCount(lambda.getOpenRequestCount() + 1);
         }
 
-        return new LambdaTuple<>(lambdaInstancesInfo, lambdaInstanceInfo);
+        return new LambdaTuple<>(function, lambda);
     }
 
     @Override
-    public void reschedule(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
-        synchronized (lambda.list) {
-            int openRequestCount = lambda.instance.getOpenRequestCount() - 1;
-            lambda.instance.setOpenRequestCount(openRequestCount);
+    public void reschedule(LambdaTuple<Function, Lambda> lambda, LambdaManagerConfiguration configuration) {
+        synchronized (lambda.function) {
+            int openRequestCount = lambda.lambda.getOpenRequestCount() - 1;
+            lambda.lambda.setOpenRequestCount(openRequestCount);
             if (openRequestCount == 0) {
-                lambda.list.getActiveInstances().remove(lambda.instance);
-                lambda.list.getStartedInstances().add(lambda.instance);
+                lambda.function.getActiveLambdas().remove(lambda.lambda);
+                lambda.function.getStartedLambdas().add(lambda.lambda);
 
-                Timer currentTimer = lambda.instance.getTimer();
+                Timer currentTimer = lambda.lambda.getTimer();
                 if (currentTimer != null) {
                     currentTimer.cancel();
                 }
                 Timer newTimer = new Timer();
                 newTimer.schedule(new DefaultLambdaShutdownHandler(lambda), configuration.argumentStorage.getTimeout());
-                lambda.instance.setTimer(newTimer);
+                lambda.lambda.setTimer(newTimer);
             }
         }
     }

@@ -1,9 +1,9 @@
 package com.lambda_manager.optimizers.impl;
 
-import com.lambda_manager.collectors.lambda_info.LambdaInstanceInfo;
-import com.lambda_manager.collectors.lambda_info.LambdaInstancesInfo;
+import com.lambda_manager.collectors.meta_info.Lambda;
+import com.lambda_manager.collectors.meta_info.Function;
 import com.lambda_manager.core.LambdaManagerConfiguration;
-import com.lambda_manager.optimizers.LambdaStatusType;
+import com.lambda_manager.optimizers.FunctionStatus;
 import com.lambda_manager.optimizers.Optimizer;
 import com.lambda_manager.processes.AbstractProcess;
 import com.lambda_manager.processes.Processes;
@@ -14,21 +14,21 @@ import com.lambda_manager.utils.LambdaTuple;
 public class DefaultOptimizer implements Optimizer {
 
     @Override
-    public void registerCall(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+    public void registerCall(LambdaTuple<Function, Lambda> lambda, LambdaManagerConfiguration configuration) {
     	// TODO - while we don't have use for it, delete it.
     }
 
     @Override
-    public StartLambda whomToSpawn(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda, LambdaManagerConfiguration configuration) {
+    public StartLambda whomToSpawn(LambdaTuple<Function, Lambda> lambda, LambdaManagerConfiguration configuration) {
         AbstractProcess process;
-        switch (lambda.list.getStatus()) {
+        switch (lambda.function.getStatus()) {
             case NOT_BUILT_NOT_CONFIGURED:
                 process = Processes.START_HOTSPOT_WITH_AGENT;
-                lambda.list.setStatus(LambdaStatusType.CONFIGURING_OR_BUILDING);
+                lambda.function.setStatus(FunctionStatus.CONFIGURING_OR_BUILDING);
                 break;
             case NOT_BUILT_CONFIGURED:
-                Processes.BUILD_NATIVE_IMAGE.build(lambda, configuration).start();
-                lambda.list.setStatus(LambdaStatusType.CONFIGURING_OR_BUILDING);
+                Processes.BUILD_VMM.build(lambda, configuration).start();
+                lambda.function.setStatus(FunctionStatus.CONFIGURING_OR_BUILDING);
             case CONFIGURING_OR_BUILDING:
                 process = Processes.START_HOTSPOT;
                 break;
@@ -36,7 +36,7 @@ public class DefaultOptimizer implements Optimizer {
                 process = Processes.START_NATIVE_IMAGE;
                 break;
             default:
-                throw new IllegalStateException("Unexpected value: " + lambda.list.getStatus());
+                throw new IllegalStateException("Unexpected value: " + lambda.function.getStatus());
         }
 
         return (StartLambda) process;

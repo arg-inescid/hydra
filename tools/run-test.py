@@ -122,20 +122,20 @@ def register_managers(load_balancer, managers):
                                     .format(load_balancer=load_balancer, manager=manager)).text, MessageType.INFO)
 
 
-def upload_lambdas(username, entry_point, command_info):
+def upload_function(username, entry_point, command_info):
     print_message(username, "Response: " +
-                  requests.post("{entry_point}/upload_lambda?allocate={allocate}&user={username}&name={lambda_name}"
+                  requests.post("{entry_point}/upload_function?allocate={allocate}&user={username}&name={function_name}"
                                 .format(allocate=command_info['allocate'], entry_point=entry_point, username=username,
-                                        lambda_name=command_info['lambda_name']),
+                                        function_name=command_info['function_name']),
                                 headers={'Content-type': 'application/octet-stream'},
                                 data=read_file(username, command_info['source'])).text, MessageType.INFO)
 
 
-def remove_lambdas(username, entry_point, command_info):
-    print_message(username, "Response: " + requests.post("{entry_point}/remove_lambda?"
-                                                         "user={username}&name={lambda_name}"
+def remove_function(username, entry_point, command_info):
+    print_message(username, "Response: " + requests.post("{entry_point}/remove_function?"
+                                                         "user={username}&name={function_name}"
                                                          .format(entry_point=entry_point, username=username,
-                                                                 lambda_name=command_info['lambda_name'])).text,
+                                                                 function_name=command_info['function_name'])).text,
                   MessageType.INFO)
 
 
@@ -158,9 +158,9 @@ def send(username, manager, command_info):
 
         args = "?args=" + command_info['args_pool'][random.randint(0, args_len - 1)] if args_len > 0 else ""
         output = "ITERATION({})...\n".format(i)
-        output += run(username, "ab -n {num_requests} -c {num_clients} {manager}/{username}/{lambda_name}{args}"
+        output += run(username, "ab -n {num_requests} -c {num_clients} {manager}/{username}/{function_name}{args}"
                       .format(num_requests=command_info['num_requests'], num_clients=command_info['num_clients'],
-                              manager=manager, username=username, lambda_name=command_info['lambda_name'],
+                              manager=manager, username=username, function_name=command_info['function_name'],
                               args=args))
         output += "ITERATION({})...done\n\n".format(i)
         write_file(username, command_info['output'], output)
@@ -186,10 +186,10 @@ def create_user(user_info, manager):
     for command_info in user_info['commands']:
         command_info['command'].lower()
         if command_info['command'] == "u" or command_info['command'] == "upload":
-            upload_lambdas(user_info['username'], manager, command_info)
+            upload_function(user_info['username'], manager, command_info)
             continue
         if command_info['command'] == "r" or command_info['command'] == "remove":
-            remove_lambdas(user_info['username'], manager, command_info)
+            remove_function(user_info['username'], manager, command_info)
             continue
         if command_info['command'] == "s" or command_info['command'] == "send":
             start_sending(user_info['username'], manager, command_info)

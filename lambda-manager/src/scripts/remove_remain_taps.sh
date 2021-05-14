@@ -12,7 +12,7 @@ sudo pkill qemu
 mkfifo mypipe
 ip r | grep "$COMMON_TAP_NAME_PART" | awk '{print $3}' >mypipe &
 while IFS= read -r tap; do
-  echo "Deleting tap $tap..."
+  echo "$tap was deleted outside the pool."
   sudo bash src/scripts/remove_taps.sh "$tap"
 done <mypipe
 rm mypipe

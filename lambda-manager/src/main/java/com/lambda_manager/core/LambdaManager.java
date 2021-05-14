@@ -1,12 +1,12 @@
 package com.lambda_manager.core;
 
-import com.lambda_manager.collectors.lambda_info.LambdaInstanceInfo;
-import com.lambda_manager.collectors.lambda_info.LambdaInstancesInfo;
+import com.lambda_manager.collectors.meta_info.Lambda;
+import com.lambda_manager.collectors.meta_info.Function;
 import com.lambda_manager.exceptions.argument_parser.ErrorDuringParsingJSONFile;
 import com.lambda_manager.exceptions.argument_parser.ErrorDuringReflectiveClassCreation;
-import com.lambda_manager.exceptions.user.ErrorDuringCreatingNewConnectionPool;
-import com.lambda_manager.exceptions.user.ErrorUploadingNewLambda;
-import com.lambda_manager.exceptions.user.LambdaNotFound;
+import com.lambda_manager.exceptions.user.ErrorDuringCreatingConnectionPool;
+import com.lambda_manager.exceptions.user.ErrorUploadingLambda;
+import com.lambda_manager.exceptions.user.FunctionNotFound;
 import com.lambda_manager.utils.LambdaTuple;
 import com.lambda_manager.utils.Messages;
 import com.lambda_manager.utils.parser.ArgumentParser;
@@ -37,21 +37,21 @@ public class LambdaManager {
         return configuration;
     }
 
-    private String header(LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda) {
-        switch (lambda.list.getStatus()) {
+    private String formatRequestSpentTimeMessage(LambdaTuple<Function, Lambda> lambda, long spentTime) {
+        switch (lambda.function.getStatus()) {
             case NOT_BUILT_NOT_CONFIGURED:
-                return String.format("Time (hotspot-w-agent_id=%d): ", lambda.instance.getId());
+                return String.format(Messages.TIME_HOTSPOT_W_AGENT, lambda.lambda.getId(), spentTime);
             case CONFIGURING_OR_BUILDING:
             case NOT_BUILT_CONFIGURED:
-                return String.format("Time (hotspot_id=%d): ", lambda.instance.getId());
+                return String.format(Messages.TIME_HOTSPOT, lambda.lambda.getId(), spentTime);
             case BUILT:
-                return String.format("Time (vmm_id=%d): ", lambda.instance.getId());
+                return String.format(Messages.TIME_NATIVE_IMAGE, lambda.lambda.getId(), spentTime);
             default:
                 throw new UnsupportedOperationException();
         }
     }
 
-    public Single<String> processRequest(String username, String lambdaName, String args) {
+    public Single<String> processRequest(String username, String functionName, String functionArguments) {
         try {
             if (configuration == null) {
                 logger.log(Level.WARNING, Messages.NO_CONFIGURATION_UPLOADED);
@@ -59,78 +59,77 @@ public class LambdaManager {
             }
 
             long start = System.currentTimeMillis();
-            String encodedName = configuration.encoder.encode(username, lambdaName);
-            LambdaTuple<LambdaInstancesInfo, LambdaInstanceInfo> lambda = configuration.scheduler.schedule(encodedName,
-                    args, configuration);
+            String encodedName = configuration.encoder.encode(username, functionName);
+            LambdaTuple<Function, Lambda> lambda = configuration.scheduler.schedule(encodedName,
+                    functionArguments, configuration);
 
             String response = configuration.client.sendRequest(lambda, configuration);
             configuration.optimizer.registerCall(lambda, configuration);
             configuration.scheduler.reschedule(lambda, configuration);
 
-            logger.log(Level.FINE, header(lambda) + (System.currentTimeMillis() - start) + "\t[ms]");
+            logger.log(Level.FINE, formatRequestSpentTimeMessage(lambda, System.currentTimeMillis() - start));
             return Single.just(response);
-        } catch (LambdaNotFound lambdaNotFound) {
-            logger.log(Level.WARNING, lambdaNotFound.getMessage(), lambdaNotFound);
-            return Single.just(lambdaNotFound.getMessage());
+        } catch (FunctionNotFound functionNotFound) {
+            logger.log(Level.WARNING, functionNotFound.getMessage(), functionNotFound);
+            return Single.just(functionNotFound.getMessage());
         } catch (Throwable throwable) {
             logger.log(Level.SEVERE, throwable.getMessage(), throwable);
             return Single.just(Messages.INTERNAL_ERROR);
         }
     }
 
-    public Single<String> uploadLambda(int allocate, String username, String lambdaName, byte[] lambdaCode) {
+    public Single<String> uploadFunction(int allocate, String username, String functionName, byte[] functionCode) {
         try {
             if (configuration == null) {
                 logger.log(Level.WARNING, Messages.NO_CONFIGURATION_UPLOADED);
                 return Single.just(Messages.NO_CONFIGURATION_UPLOADED);
             }
 
-            String encodedName = configuration.encoder.encode(username, lambdaName);
-            LambdaInstancesInfo lambdaInstancesInfo = configuration.storage.register(encodedName);
+            String encodedName = configuration.encoder.encode(username, functionName);
+            Function function = configuration.storage.register(encodedName);
             for (int i = 0; i < allocate; i++) {
-                configuration.functionWriter.upload(lambdaInstancesInfo, encodedName, lambdaCode);
+                configuration.functionWriter.upload(function, encodedName, functionCode);
             }
 
-            logger.log(Level.INFO, String.format(Messages.SUCCESS_LAMBDA_UPLOAD, lambdaName));
-            return Single.just(String.format(Messages.SUCCESS_LAMBDA_UPLOAD, lambdaName));
-        } catch (IOException | ErrorUploadingNewLambda e) {
-            logger.log(Level.SEVERE, "Error during uploading new lambda [" + lambdaName + "]!", e);
-            return Single.just("Error during uploading new lambda [" + lambdaName + "]!");
+            logger.log(Level.INFO, String.format(Messages.SUCCESS_FUNCTION_UPLOAD, functionName));
+            return Single.just(String.format(Messages.SUCCESS_FUNCTION_UPLOAD, functionName));
+        } catch (IOException | ErrorUploadingLambda e) {
+            logger.log(Level.SEVERE, String.format(Messages.ERROR_FUNCTION_UPLOAD, functionName), e);
+            return Single.just(String.format(Messages.ERROR_FUNCTION_UPLOAD, functionName));
         } catch (Throwable throwable) {
             logger.log(Level.SEVERE, throwable.getMessage(), throwable);
             return Single.just(Messages.INTERNAL_ERROR);
         }
     }
 
-    public Single<String> removeLambda(String username, String lambdaName) {
+    public Single<String> removeFunction(String username, String functionName) {
         try {
             if (configuration == null) {
                 logger.log(Level.WARNING, Messages.NO_CONFIGURATION_UPLOADED);
                 return Single.just(Messages.NO_CONFIGURATION_UPLOADED);
             }
 
-            String encodedName = configuration.encoder.encode(username, lambdaName);
+            String encodedName = configuration.encoder.encode(username, functionName);
             configuration.storage.unregister(encodedName);
             configuration.functionWriter.remove(encodedName);
 
-            logger.log(Level.INFO, "Successfully removed lambda [" + lambdaName + "]!");
-            return Single.just("Successfully removed lambda [" + lambdaName + "]!");
+            logger.log(Level.INFO, String.format(Messages.SUCCESS_FUNCTION_REMOVE, functionName));
+            return Single.just(String.format(Messages.SUCCESS_FUNCTION_REMOVE, functionName));
         } catch (Throwable throwable) {
             logger.log(Level.SEVERE, throwable.getMessage(), throwable);
             return Single.just(Messages.INTERNAL_ERROR);
         }
     }
 
-    public Single<String> configureManager(String configData, BeanContext beanContext) {
+    public Single<String> configureManager(String lambdaManagerConfiguration, BeanContext beanContext) {
         try {
             configuration = new LambdaManagerArgumentStorage().initializeLambdaManager(
-                    ArgumentParser.parse(configData), beanContext);
-
+                    ArgumentParser.parse(lambdaManagerConfiguration), beanContext);
             logger.log(Level.INFO, Messages.SUCCESS_CONFIGURATION_UPLOAD);
             return Single.just(Messages.SUCCESS_CONFIGURATION_UPLOAD);
-        } catch (ErrorDuringParsingJSONFile | ErrorDuringReflectiveClassCreation | ErrorDuringCreatingNewConnectionPool e) {
+        } catch (ErrorDuringParsingJSONFile | ErrorDuringReflectiveClassCreation | ErrorDuringCreatingConnectionPool e) {
             logger.log(Level.SEVERE, e.getMessage(), e);
-            return Single.just("Error during uploading new configuration!");
+            return Single.just(Messages.ERROR_CONFIGURATION_UPLOAD);
         } catch (Throwable throwable) {
             logger.log(Level.SEVERE, throwable.getMessage(), throwable);
             return Single.just(Messages.INTERNAL_ERROR);
