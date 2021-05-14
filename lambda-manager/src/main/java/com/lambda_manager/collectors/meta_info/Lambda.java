@@ -1,5 +1,6 @@
 package com.lambda_manager.collectors.meta_info;
 
+import com.lambda_manager.optimizers.LambdaExecutionMode;
 import com.lambda_manager.utils.ConnectionTriplet;
 import io.micronaut.http.client.RxHttpClient;
 
@@ -17,6 +18,7 @@ public class Lambda {
     private Timer timer;
     private boolean updated = false;
     private ConnectionTriplet<String, String, RxHttpClient> connectionTriplet;
+    private LambdaExecutionMode executionMode; 
 
     public Lambda(int id) {
         this.id = id;
@@ -64,4 +66,12 @@ public class Lambda {
             updated = true;
         }
     }
+
+	public LambdaExecutionMode getExecutionMode() {
+		return executionMode;
+	}
+
+	public void setExecutionMode(LambdaExecutionMode executionMode) {
+		this.executionMode = executionMode;
+	}
 }

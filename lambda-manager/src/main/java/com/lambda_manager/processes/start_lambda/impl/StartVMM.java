@@ -5,6 +5,7 @@ import com.lambda_manager.callbacks.impl.NeedFallbackCallback;
 import com.lambda_manager.collectors.meta_info.Lambda;
 import com.lambda_manager.collectors.meta_info.Function;
 import com.lambda_manager.core.LambdaManagerConfiguration;
+import com.lambda_manager.optimizers.LambdaExecutionMode;
 import com.lambda_manager.processes.start_lambda.StartLambda;
 import com.lambda_manager.utils.ConnectionTriplet;
 import com.lambda_manager.core.Environment;
@@ -23,6 +24,7 @@ public class StartVMM extends StartLambda {
     @Override
     protected List<String> makeCommand(LambdaTuple<Function, Lambda> lambda, LambdaManagerConfiguration configuration) {
         clearPreviousState();
+        lambda.instance.setExecutionMode(LambdaExecutionMode.NATIVE_IMAGE);
         this.outputFilename = outputFilename(lambda, configuration);
         this.memoryFilename = memoryFilename(lambda, configuration);
         ConnectionTriplet<String, String, RxHttpClient> connectionTriplet = lambda.lambda.getConnectionTriplet();
