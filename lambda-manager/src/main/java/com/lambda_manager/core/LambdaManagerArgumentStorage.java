@@ -71,7 +71,8 @@ public class LambdaManagerArgumentStorage {
         this.isLambdaConsoleActive = lambdaManagerConfiguration.isLambdaConsole();
     }
 
-    private void prepareConnectionPool(com.lambda_manager.core.LambdaManagerConfiguration configuration, BeanContext beanContext)
+    private void prepareConnectionPool(com.lambda_manager.core.LambdaManagerConfiguration configuration,
+                                       BeanContext beanContext)
             throws ErrorDuringCreatingConnectionPool {
         try {
             for (int i = 0; i < maxLambdas; i++) {
@@ -245,10 +246,6 @@ public class LambdaManagerArgumentStorage {
 
     public String getMemorySpace() {
         return memorySpace;
-    }
-
-    public int getLambdaPort() {
-        return lambdaPort;
     }
 
     public boolean isLambdaConsoleActive() {

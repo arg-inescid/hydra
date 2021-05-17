@@ -27,20 +27,25 @@ public class LambdaManagerController {
         this.lambdaManager = LambdaManager.getLambdaManager();
     }
 
-    @Get("/{user}/{name}")
-    public Single<String> processRequest(@PathVariable("user") String username, @PathVariable("name") String functionName,
-                                        @Nullable @QueryValue("args") String functionArguments) {
-        return lambdaManager.processRequest(username, functionName, functionArguments);
+    @Get("/{username}/{function_name}")
+    public Single<String> processRequest(@PathVariable("username") String username,
+                                         @PathVariable("function_name") String functionName,
+                                         @Nullable @QueryValue("parameters") String parameters) {
+        return lambdaManager.processRequest(username, functionName, parameters);
     }
 
     @Post(value = "/upload_function", consumes = APPLICATION_OCTET_STREAM)
-    public Single<String> uploadLambda(@QueryValue("allocate") int allocate, @QueryValue("user") String username,
-                                       @QueryValue("name") String functionName, @Body byte[] functionCode) {
-        return lambdaManager.uploadFunction(allocate, username, functionName, functionCode);
+    public Single<String> uploadFunction(@QueryValue("allocate") int allocate,
+                                         @QueryValue("username") String username,
+                                         @QueryValue("function_name") String functionName,
+                                         @Nullable @QueryValue("arguments") String arguments,
+                                         @Body byte[] functionCode) {
+        return lambdaManager.uploadFunction(allocate, username, functionName, arguments, functionCode);
     }
 
     @Post("/remove_function")
-    public Single<String> removeLambda(@QueryValue("user") String username, @QueryValue("name") String functionName) {
+    public Single<String> removeFunction(@QueryValue("username") String username,
+                                         @QueryValue("function_name") String functionName) {
         return lambdaManager.removeFunction(username, functionName);
     }
 

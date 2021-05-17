@@ -10,6 +10,7 @@ import com.lambda_manager.processes.Processes;
 import com.lambda_manager.schedulers.Scheduler;
 import com.lambda_manager.core.Environment;
 import com.lambda_manager.utils.LambdaTuple;
+import com.lambda_manager.utils.Messages;
 
 import java.util.Timer;
 
@@ -63,13 +64,13 @@ public class RoundedRobinScheduler implements Scheduler {
     }
 
     @Override
-    public LambdaTuple<Function, Lambda> schedule(String lambdaName, String args,
+    public LambdaTuple<Function, Lambda> schedule(String functionName, String parameters,
                                                   LambdaManagerConfiguration configuration)
             throws FunctionNotFound {
 
-        Function function = configuration.storage.get(lambdaName);
+        Function function = configuration.storage.get(functionName);
         if (function == null) {
-            throw new FunctionNotFound("Lambda [" + lambdaName + "] has not been uploaded!");
+            throw new FunctionNotFound(String.format(Messages.FUNCTION_NOT_FOUND, functionName));
         }
 
         Lambda lambda;
@@ -84,7 +85,7 @@ public class RoundedRobinScheduler implements Scheduler {
                             e.printStackTrace();
                         }
                         lambda = function.getAvailableLambdas().remove(0);
-                        lambda.setArgs(args);
+                        lambda.setParameters(parameters);
                         lambda.shouldUpdateID(function);
                         spawnNewLambda(new LambdaTuple<>(function, lambda), configuration);
                     } else {
@@ -92,7 +93,7 @@ public class RoundedRobinScheduler implements Scheduler {
                     }
                 } else {
                     lambda = function.getAvailableLambdas().remove(0);
-                    lambda.setArgs(args);
+                    lambda.setParameters(parameters);
                     lambda.shouldUpdateID(function);
                     spawnNewLambda(new LambdaTuple<>(function, lambda), configuration);
                 }

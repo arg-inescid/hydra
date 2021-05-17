@@ -38,6 +38,8 @@ public final class Logger {
     }
 
     public static void close() {
-        HANDLER.close();
+        if (HANDLER != null) {
+            HANDLER.close();
+        }
     }
 }

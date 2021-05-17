@@ -19,6 +19,7 @@
           "command": "upload",
           "allocate": 100,
           "function_name": "hello-world",
+          "arguments": "8080",
           "source": "../benchmarks/java/hello-world/build/libs/hello-world-1.0.jar"
         },
         {
@@ -29,7 +30,7 @@
               "num_requests": 1000,
               "num_clients": 100,
               "function_name": "hello-world",
-              "args_pool": [],
+              "parameters_pool": [],
               "output": "../benchmarks/results/hello-world-java/hello-world-java-1.dat"
             }
           ]
@@ -46,7 +47,7 @@
               "num_requests": 1000,
               "num_clients": 100,
               "function_name": "hello-world",
-              "args_pool": [],
+              "parameters_pool": [],
               "output": "../benchmarks/results/hello-world-java/hello-world-java-2.dat"
             }
           ]
@@ -63,7 +64,7 @@
               "num_requests": 1000,
               "num_clients": 100,
               "function_name": "hello-world",
-              "args_pool": [],
+              "parameters_pool": [],
               "output": "../benchmarks/results/hello-world-java/hello-world-java-3.dat"
             }
           ]

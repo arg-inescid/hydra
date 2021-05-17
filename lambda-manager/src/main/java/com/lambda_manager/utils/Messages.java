@@ -19,7 +19,8 @@ public class Messages {
     // Remove function messages.
     public static final String SUCCESS_FUNCTION_REMOVE = "Successfully removed function - %s!";
 
-    // Spent time messages.
+    // Request messages.
+    public static final String FUNCTION_NOT_FOUND = "Function - %s - has not been uploaded!";
     public static final String TIME_HOTSPOT_W_AGENT = "Time (hotspot-w-agent_id=%d): %d\t[ms]";
     public static final String TIME_HOTSPOT = "Time (hotspot_id=%d): %d\t[ms]";
     public static final String TIME_NATIVE_IMAGE = "Time (vmm_id=%d): %d\t[ms]";

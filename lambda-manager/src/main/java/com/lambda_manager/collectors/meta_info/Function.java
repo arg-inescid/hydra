@@ -14,6 +14,7 @@ public class Function {
     private final String name;
     private FunctionStatus status;
     private boolean updateID;
+    private String arguments;
     private final ArrayList<Lambda> availableLambdas = new ArrayList<>();
     private final ArrayList<Lambda> startedLambdas = new ArrayList<>();
     private final ArrayList<Lambda> activeLambdas = new ArrayList<>();
@@ -46,6 +47,14 @@ public class Function {
 
     public void setUpdateID(boolean updateID) {
         this.updateID = updateID;
+    }
+
+    public String getArguments() {
+        return arguments;
+    }
+
+    public void setArguments(String arguments) {
+        this.arguments = arguments;
     }
 
     public ArrayList<Lambda> getAvailableLambdas() {

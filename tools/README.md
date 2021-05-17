@@ -69,6 +69,7 @@ structure is provided bellow (value inside [ ] represents JSON data types):
           "command": "upload",
           "allocate": "[INTEGER] How many instances the user wants allocate for this function?",
           "function_name": "[STRING] Function name?",
+          "arguments": "[STRING] Comma separated lambda arguments",
           "source": "[STRING] Function source code path?"
         },
         {
@@ -79,10 +80,10 @@ structure is provided bellow (value inside [ ] represents JSON data types):
               "num_requests": "[INTEGER] with how many request per iteration...",
               "num_clients": "[INTEGER] with how many clients in parallel?",
               "function_name": "[STRING] Function name?",
-              "args_pool": [
-                "[ANY] arg1",
-                "[ANY] arg2",
-                "[ANY] arg3"
+              "parameters_pool": [
+                "[STRING] set1_param1, set1_param2, set1_param3",
+                "[STRING] set2_param1, set2_param2",
+                "[STRING] set3_param1, set3_param2, set3_param3, set3_param3"
               ],
               "output": "[STRING] Where the ApacheBench should store results?"
             }

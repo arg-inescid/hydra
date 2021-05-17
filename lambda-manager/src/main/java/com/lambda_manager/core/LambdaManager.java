@@ -50,7 +50,7 @@ public class LambdaManager {
         }
     }
 
-    public Single<String> processRequest(String username, String functionName, String functionArguments) {
+    public Single<String> processRequest(String username, String functionName, String parameters) {
         try {
             if (configuration == null) {
                 Logger.log(Level.WARNING, Messages.NO_CONFIGURATION_UPLOADED);
@@ -60,7 +60,7 @@ public class LambdaManager {
             long start = System.currentTimeMillis();
             String encodedName = configuration.encoder.encode(username, functionName);
             LambdaTuple<Function, Lambda> lambda = configuration.scheduler.schedule(encodedName,
-                    functionArguments, configuration);
+                    parameters, configuration);
 
             String response = configuration.client.sendRequest(lambda, configuration);
             configuration.optimizer.registerCall(lambda, configuration);
@@ -77,7 +77,11 @@ public class LambdaManager {
         }
     }
 
-    public Single<String> uploadFunction(int allocate, String username, String functionName, byte[] functionCode) {
+    public Single<String> uploadFunction(int allocate,
+                                         String username,
+                                         String functionName,
+                                         String arguments,
+                                         byte[] functionCode) {
         try {
             if (configuration == null) {
                 Logger.log(Level.WARNING, Messages.NO_CONFIGURATION_UPLOADED);
@@ -86,6 +90,7 @@ public class LambdaManager {
 
             String encodedName = configuration.encoder.encode(username, functionName);
             Function function = configuration.storage.register(encodedName);
+            function.setArguments(arguments);
             for (int i = 0; i < allocate; i++) {
                 configuration.functionWriter.upload(function, encodedName, functionCode);
             }

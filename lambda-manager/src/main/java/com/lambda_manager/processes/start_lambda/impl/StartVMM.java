@@ -46,9 +46,8 @@ public class StartVMM extends StartLambda {
         } else {
             command.add("");    // Placeholder.
         }
-        command.add(String.valueOf(configuration.argumentStorage.getLambdaPort()));
-        if (lambda.lambda.getArgs() != null) {
-            Collections.addAll(command, lambda.lambda.getArgs().split(","));
+        if (lambda.function.getArguments() != null) {
+            Collections.addAll(command, lambda.function.getArguments().split(","));
         }
         command.add(String.valueOf(System.currentTimeMillis()));
         return command;

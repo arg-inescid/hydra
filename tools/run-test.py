@@ -123,18 +123,28 @@ def register_managers(load_balancer, managers):
 
 
 def upload_function(username, entry_point, command_info):
+    arguments = "&arguments=" + command_info['arguments'] if len(command_info['arguments']) > 0 else ""
     print_message(username, "Response: " +
-                  requests.post("{entry_point}/upload_function?allocate={allocate}&user={username}&name={function_name}"
-                                .format(allocate=command_info['allocate'], entry_point=entry_point, username=username,
-                                        function_name=command_info['function_name']),
+                  requests.post("{entry_point}/upload_function?"
+                                "allocate={allocate}&"
+                                "username={username}&"
+                                "function_name={function_name}"
+                                "{arguments}"
+                                .format(allocate=command_info['allocate'],
+                                        entry_point=entry_point,
+                                        username=username,
+                                        function_name=command_info['function_name'],
+                                        arguments=arguments),
                                 headers={'Content-type': 'application/octet-stream'},
                                 data=read_file(username, command_info['source'])).text, MessageType.INFO)
 
 
 def remove_function(username, entry_point, command_info):
     print_message(username, "Response: " + requests.post("{entry_point}/remove_function?"
-                                                         "user={username}&name={function_name}"
-                                                         .format(entry_point=entry_point, username=username,
+                                                         "username={username}&"
+                                                         "function_name={function_name}"
+                                                         .format(entry_point=entry_point,
+                                                                 username=username,
                                                                  function_name=command_info['function_name'])).text,
                   MessageType.INFO)
 
@@ -152,16 +162,21 @@ def send(username, manager, command_info):
     if os.path.exists(command_info['output']):
         os.remove(command_info['output'])
 
-    args_len = len(command_info['args_pool'])
+    parameters_len = len(command_info['parameters_pool'])
     for i in range(command_info['iterations']):
         print_message(username, "Iteration {} of {}...".format(i, command_info['iterations'] - 1), MessageType.INFO)
 
-        args = "?args=" + command_info['args_pool'][random.randint(0, args_len - 1)] if args_len > 0 else ""
+        parameters = "?parameters=" + command_info['parameters_pool'][random.randint(0, parameters_len - 1)] \
+            if parameters_len > 0 else ""
         output = "ITERATION({})...\n".format(i)
-        output += run(username, "ab -n {num_requests} -c {num_clients} {manager}/{username}/{function_name}{args}"
-                      .format(num_requests=command_info['num_requests'], num_clients=command_info['num_clients'],
-                              manager=manager, username=username, function_name=command_info['function_name'],
-                              args=args))
+        output += run(username,
+                      "ab -n {num_requests} -c {num_clients} {manager}/{username}/{function_name}{parameters}"
+                      .format(num_requests=command_info['num_requests'],
+                              num_clients=command_info['num_clients'],
+                              manager=manager,
+                              username=username,
+                              function_name=command_info['function_name'],
+                              parameters=parameters))
         output += "ITERATION({})...done\n\n".format(i)
         write_file(username, command_info['output'], output)
 

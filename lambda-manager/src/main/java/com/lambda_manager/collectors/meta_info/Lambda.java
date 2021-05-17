@@ -14,7 +14,7 @@ public class Lambda {
     // TODO: Change logs format to be pid-execution_mode.log in both cases (codebase + lambda logs).
     private int id;
     private int openRequestCount;
-    private String args;
+    private String parameters;
     private Timer timer;
     private boolean updated = false;
     private ConnectionTriplet<String, String, RxHttpClient> connectionTriplet;
@@ -36,12 +36,12 @@ public class Lambda {
         this.openRequestCount = openRequestCount;
     }
 
-    public String getArgs() {
-        return args;
+    public String getParameters() {
+        return parameters;
     }
 
-    public void setArgs(String args) {
-        this.args = args;
+    public void setParameters(String parameters) {
+        this.parameters = parameters;
     }
 
     public Timer getTimer() {
