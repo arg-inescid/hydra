@@ -1,7 +1,7 @@
 #!/bin/bash
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
-source "$DIR"/env.sh
+source "$DIR"/environment.sh
 source "$DIR"/start_hotspot_shared.sh
 
 LAMBDA_HOME=$1

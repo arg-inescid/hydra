@@ -1,11 +1,10 @@
 package com.lambda_manager.utils;
 
 public class Messages {
-    // TODO: Added all messages from system.
+
     // General messages.
     public static final String INTERNAL_ERROR = "Internal system error!";
     public static final String HTTP_TIMEOUT = "HTTP request timeout!";
-    public static final String EXECUTION_SUCCESS = "Execution finished successfully! :)";
     public static final String LOG_REDIRECTION = "Log is redirected to file -> %s";
 
     // Lambda Manager configuration messages.
@@ -35,5 +34,11 @@ public class Messages {
 
     // Connection pool messages.
     public static final String ERROR_POOL_CREATION = "Error during creating new connection pool!";
+
+    // Parse/Serialize JSON.
+    public static final String ERROR_PARSING_JSON = "Error during parsing JSON configuration file!";
+    public static final String ERROR_SERIALIZE_JSON = "Error during serialization of JSON object!";
+    public static final String SUCCESS_SERIALIZE_JSON = "Serialized object is: %n%s";
+
 
 }

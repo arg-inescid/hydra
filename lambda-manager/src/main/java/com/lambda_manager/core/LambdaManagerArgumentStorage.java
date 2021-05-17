@@ -14,7 +14,7 @@ import com.lambda_manager.processes.Processes;
 import com.lambda_manager.schedulers.Scheduler;
 import com.lambda_manager.utils.ConnectionTriplet;
 import com.lambda_manager.utils.Messages;
-import com.lambda_manager.utils.logger.CustomFormatter;
+import com.lambda_manager.utils.logger.LambdaManagerFormatter;
 import com.lambda_manager.utils.logger.ElapseTimer;
 import com.lambda_manager.utils.parser.LambdaManagerConfiguration;
 import com.lambda_manager.utils.parser.LambdaManagerConsole;
@@ -32,10 +32,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Random;
-import java.util.logging.FileHandler;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.logging.*;
 
 import static com.lambda_manager.core.Environment.MANAGER_LOG_FILENAME;
 import static com.lambda_manager.core.Environment.RAND_STRING_LEN;
@@ -54,6 +51,8 @@ public class LambdaManagerArgumentStorage {
     private String memorySpace;
     private int lambdaPort;
     private boolean isLambdaConsoleActive;
+    
+    private LambdaManagerConsole cachedConsoleInfo;
 
     private void initClassFields(LambdaManagerConfiguration lambdaManagerConfiguration) {
         String gatewayString = lambdaManagerConfiguration.getGateway();
@@ -92,19 +91,17 @@ public class LambdaManagerArgumentStorage {
     }
 
     private void prepareLogger(LambdaManagerConsole lambdaManagerConsole) {
-        CustomFormatter formatter = new CustomFormatter();
         Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
+        LambdaManagerFormatter formatter = new LambdaManagerFormatter();
 
         if (!lambdaManagerConsole.isTurnOff()) {
-            if (lambdaManagerConsole.isFineGrain()) {
-                logger.setLevel(Level.FINE);
-            }
-            for (Handler handler : logger.getParent().getHandlers()) {
-                handler.setFormatter(formatter);
+            for (Handler loggerHandler : logger.getParent().getHandlers()) {
+                loggerHandler.setFormatter(formatter);
                 if (lambdaManagerConsole.isFineGrain()) {
-                    handler.setLevel(Level.FINE);
+                    loggerHandler.setLevel(Level.FINE);
                 }
             }
+
             if (lambdaManagerConsole.isRedirectToFile()) {
                 logger.log(Level.INFO, String.format(Messages.LOG_REDIRECTION,
                         Paths.get(System.getProperty("user.dir"), MANAGER_LOG_FILENAME)));
@@ -113,16 +110,31 @@ public class LambdaManagerArgumentStorage {
                     File managerLogFile = new File(MANAGER_LOG_FILENAME);
                     //noinspection ResultOfMethodCallIgnored
                     managerLogFile.createNewFile();
-                    Handler handler = new FileHandler(MANAGER_LOG_FILENAME, true);
-                    logger.addHandler(handler);
-                    handler.setFormatter(formatter);
+                    FileHandler fileHandler = new FileHandler(MANAGER_LOG_FILENAME, true);
+                    fileHandler.setFormatter(formatter);
+                    logger.addHandler(fileHandler);
                 } catch (IOException ioException) {
                     ioException.printStackTrace();
                 }
             }
+
+            if (lambdaManagerConsole.isFineGrain()) {
+                logger.setLevel(Level.FINE);
+            }
         } else {
             logger.setLevel(Level.OFF);
         }
+
+        com.lambda_manager.utils.logger.Logger.setLogger(logger);
+    }
+
+    private void cacheConsoleInfo(LambdaManagerConsole lambdaManagerConsole) {
+        this.cachedConsoleInfo = lambdaManagerConsole;
+    }
+    
+    private void prepareLogging(LambdaManagerConsole lambdaManagerConsole) {
+        prepareLogger(lambdaManagerConsole);
+        cacheConsoleInfo(lambdaManagerConsole);
     }
 
     private Object createObject(String className) throws ErrorDuringReflectiveClassCreation {
@@ -152,11 +164,36 @@ public class LambdaManagerArgumentStorage {
             throws ErrorDuringReflectiveClassCreation, ErrorDuringCreatingConnectionPool {
 
         initClassFields(lambdaManagerConfiguration);
-        prepareLogger(lambdaManagerConfiguration.getManagerConsole());
+        prepareLogging(lambdaManagerConfiguration.getManagerConsole());
         com.lambda_manager.core.LambdaManagerConfiguration configuration = prepareConfiguration(lambdaManagerConfiguration.getManagerState());
         prepareConnectionPool(configuration, beanContext);
         ElapseTimer.init(); // Start internal timer.
         return configuration;
+    }
+
+    public void prepareHandler() {
+        LambdaManagerFormatter formatter = new LambdaManagerFormatter();
+        Handler handler = new ConsoleHandler();
+        handler.setFormatter(formatter);
+
+        if (!cachedConsoleInfo.isTurnOff()) {
+            if (cachedConsoleInfo.isRedirectToFile()) {
+                try {
+                    handler = new FileHandler(MANAGER_LOG_FILENAME, true);
+                    handler.setFormatter(formatter);
+                } catch (IOException ioException) {
+                    ioException.printStackTrace();
+                }
+            }
+
+            if (cachedConsoleInfo.isFineGrain()) {
+                handler.setLevel(Level.FINE);
+            }
+        } else {
+            handler.setLevel(Level.OFF);
+        }
+
+        com.lambda_manager.utils.logger.Logger.setHandler(handler);
     }
 
     public void cleanupStorage() {

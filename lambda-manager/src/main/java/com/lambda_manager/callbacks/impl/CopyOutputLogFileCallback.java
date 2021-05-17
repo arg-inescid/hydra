@@ -25,6 +25,7 @@ public class CopyOutputLogFileCallback implements OnProcessFinishCallback {
             fileInputStream.read(data);
             fileWriter.write(new String(data, StandardCharsets.UTF_8));
         } catch (IOException e) {
+            // TODO: proper handle this.
             e.printStackTrace();
         }
     }

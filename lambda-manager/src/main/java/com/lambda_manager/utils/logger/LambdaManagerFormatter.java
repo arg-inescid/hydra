@@ -5,7 +5,7 @@ import java.io.StringWriter;
 import java.util.logging.LogRecord;
 import java.util.logging.SimpleFormatter;
 
-public class CustomFormatter extends SimpleFormatter {
+public class LambdaManagerFormatter extends SimpleFormatter {
 
     @Override
     public String format(LogRecord record) {

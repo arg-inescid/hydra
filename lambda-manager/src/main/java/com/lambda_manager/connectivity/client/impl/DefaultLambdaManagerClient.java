@@ -6,20 +6,18 @@ import com.lambda_manager.connectivity.client.LambdaManagerClient;
 import com.lambda_manager.core.LambdaManagerConfiguration;
 import com.lambda_manager.utils.LambdaTuple;
 import com.lambda_manager.utils.Messages;
+import com.lambda_manager.utils.logger.Logger;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.client.RxHttpClient;
 import io.micronaut.http.client.exceptions.HttpClientException;
 import io.reactivex.Flowable;
 
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @SuppressWarnings("unused")
 public class DefaultLambdaManagerClient implements LambdaManagerClient {
 
     private static final int FAULT_TOLERANCE = 300;
-
-    private final Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 
     public String sendRequest(LambdaTuple<Function, Lambda> lambda, LambdaManagerConfiguration configuration) {
         try (RxHttpClient client = lambda.lambda.getConnectionTriplet().client) {
@@ -35,7 +33,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
                     }
                 }
             }
-            logger.log(Level.WARNING, Messages.HTTP_TIMEOUT);
+            Logger.log(Level.WARNING, Messages.HTTP_TIMEOUT);
             return Messages.HTTP_TIMEOUT;
         }
     }

@@ -2,13 +2,13 @@ package com.lambda_manager.processes;
 
 import com.lambda_manager.callbacks.OnProcessFinishCallback;
 import com.lambda_manager.utils.Messages;
+import com.lambda_manager.utils.logger.Logger;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import static com.lambda_manager.core.Environment.IS_ALIVE_PAUSE;
@@ -19,7 +19,6 @@ public class ProcessBuilder extends Thread {
     private final String commandAsString;
     private final OnProcessFinishCallback callback;
     private final String outputFilename;
-    private final Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
     private final long pid;
     private Process process;
 
@@ -38,9 +37,9 @@ public class ProcessBuilder extends Thread {
             this.process = processBuilder.start();
             int exitCode = process.waitFor();
             callback.finish(exitCode);
-            logger.log(Level.INFO, String.format(Messages.PROCESS_EXIT, pid, commandAsString, exitCode));
+            Logger.log(Level.INFO, String.format(Messages.PROCESS_EXIT, pid, commandAsString, exitCode));
         } catch (IOException | InterruptedException e) {
-            logger.log(Level.WARNING, String.format(Messages.PROCESS_RAISE_EXCEPTION, pid, commandAsString), e);
+            Logger.log(Level.WARNING, String.format(Messages.PROCESS_RAISE_EXCEPTION, pid, commandAsString), e);
         }
     }
 
@@ -49,7 +48,7 @@ public class ProcessBuilder extends Thread {
         java.lang.ProcessBuilder processBuilder = new java.lang.ProcessBuilder();
         processBuilder.redirectOutput(outputFile).redirectError(outputFile);
         processBuilder.command(command);
-        logger.log(Level.INFO, String.format(Messages.PROCESS_START, pid, commandAsString, outputFilename));
+        Logger.log(Level.INFO, String.format(Messages.PROCESS_START, pid, commandAsString, outputFilename));
         return processBuilder;
     }
 
@@ -59,7 +58,7 @@ public class ProcessBuilder extends Thread {
     }
 
     private void shutdownInstance(Stream<ProcessHandle> descendants) {
-        if(descendants == null) {
+        if (descendants == null) {
             return;
         }
 

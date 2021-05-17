@@ -4,11 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.lambda_manager.exceptions.argument_parser.ErrorDuringParsingJSONFile;
 import com.lambda_manager.exceptions.argument_parser.ErrorDuringSerializationJSONObject;
+import com.lambda_manager.utils.Messages;
+import com.lambda_manager.utils.logger.Logger;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class ArgumentParser {
 
@@ -18,7 +19,7 @@ public class ArgumentParser {
         try {
             return objectMapper.readValue(configData, LambdaManagerConfiguration.class);
         } catch (IOException ioException) {
-            throw new ErrorDuringParsingJSONFile("Error during parsing JSON configuration file!", ioException);
+            throw new ErrorDuringParsingJSONFile(Messages.ERROR_PARSING_JSON, ioException);
         }
     }
 
@@ -27,9 +28,9 @@ public class ArgumentParser {
         try {
             objectMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
             objectMapper.writeValue(writer, lambdaManagerConfiguration);
-            Logger.getLogger(Logger.GLOBAL_LOGGER_NAME).log(Level.INFO, "Serialized object is: \n" + writer);
+            Logger.log(Level.INFO, String.format(Messages.SUCCESS_SERIALIZE_JSON, writer));
         } catch (IOException ioException) {
-            throw new ErrorDuringSerializationJSONObject("Error during serialization of JSON object!", ioException);
+            throw new ErrorDuringSerializationJSONObject(Messages.ERROR_SERIALIZE_JSON, ioException);
         }
     }
 }

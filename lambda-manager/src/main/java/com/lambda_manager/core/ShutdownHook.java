@@ -3,12 +3,12 @@ package com.lambda_manager.core;
 import com.lambda_manager.processes.ProcessBuilder;
 import com.lambda_manager.processes.Processes;
 import com.lambda_manager.utils.Messages;
+import com.lambda_manager.utils.logger.Logger;
 import io.micronaut.context.event.ApplicationEventListener;
 import io.micronaut.runtime.event.ApplicationShutdownEvent;
 
 import javax.inject.Singleton;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @SuppressWarnings("unused")
 @Singleton
@@ -28,17 +28,19 @@ public class ShutdownHook implements ApplicationEventListener<ApplicationShutdow
 
     @Override
     public void onApplicationEvent(ApplicationShutdownEvent event) {
-        Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
         try {
+            Environment.setShutdownHookActive(true);
             LambdaManagerConfiguration configuration = LambdaManager.getConfiguration();
             if (configuration != null) {
+                configuration.argumentStorage.prepareHandler();
                 removeTapsFromPool(configuration);
                 removeTapsOutsidePool(configuration);
                 configuration.argumentStorage.cleanupStorage();
             }
-            logger.log(Level.INFO, Messages.EXECUTION_SUCCESS);
         } catch (InterruptedException interruptedException) {
-            logger.log(Level.WARNING, Messages.ERROR_TAP_REMOVAL, interruptedException);
+            Logger.log(Level.WARNING, Messages.ERROR_TAP_REMOVAL, interruptedException);
+        } finally {
+            Logger.close();
         }
     }
 }

@@ -21,7 +21,7 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
     }
 
     private void shutdownHotSpotLambda(String lambdaPath) throws Throwable {
-        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_hotspot.sh", lambdaPath).start();
+        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/kill_hotspot.sh", lambdaPath).start();
         p.waitFor();
         if (p.exitValue() != 0) {
             logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", lambda.lambda.getId()));
@@ -34,10 +34,10 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
 
             switch (lambda.lambda.getExecutionMode()) {
                 case HOTSPOT:
-                    shutdownHotSpotLambda(String.format("src/codebase/%s/start-hotspot-id-%d", lambda.function.getName(), lambda.lambda.getId()));
+                    shutdownHotSpotLambda(String.format("codebase/%s/start-hotspot-id-%d", lambda.function.getName(), lambda.lambda.getId()));
                     break;
                 case HOTSPOT_W_AGENT:
-                    shutdownHotSpotLambda(String.format("src/codebase/%s/start-hotspot-w-agent-id-%d", lambda.function.getName(), lambda.lambda.getId()));
+                    shutdownHotSpotLambda(String.format("codebase/%s/start-hotspot-w-agent-id-%d", lambda.function.getName(), lambda.lambda.getId()));
                     break;
                 case NATIVE_IMAGE:
                     // Currently we don't shutdown lambdas running in Native Image.
@@ -66,7 +66,6 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
         shutdownLambda();
         processBuilder.shutdownInstance();
 
-        // Cleanup is finished, add server back to list of all available servers.
         synchronized (lambda.function) {
             LambdaManager.getConfiguration().argumentStorage.returnConnectionTriplet(lambda.lambda.getConnectionTriplet());
             lambda.function.getAvailableLambdas().add(lambda.lambda);
