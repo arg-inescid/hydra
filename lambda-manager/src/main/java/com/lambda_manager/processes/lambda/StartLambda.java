@@ -1,4 +1,4 @@
-package com.lambda_manager.processes.start_lambda;
+package com.lambda_manager.processes.lambda;
 
 import com.lambda_manager.callbacks.OnProcessFinishCallback;
 import com.lambda_manager.collectors.meta_info.Lambda;

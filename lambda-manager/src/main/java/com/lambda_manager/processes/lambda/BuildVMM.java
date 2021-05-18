@@ -1,4 +1,4 @@
-package com.lambda_manager.processes.main;
+package com.lambda_manager.processes.lambda;
 
 import com.lambda_manager.callbacks.OnProcessFinishCallback;
 import com.lambda_manager.callbacks.impl.VMMBuiltCallback;

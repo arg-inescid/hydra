@@ -1,13 +1,13 @@
 package com.lambda_manager.processes;
 
-import com.lambda_manager.processes.main.BuildVMM;
+import com.lambda_manager.processes.lambda.BuildVMM;
 import com.lambda_manager.processes.main.CreateTaps;
 import com.lambda_manager.processes.main.RemoveTapsFromPool;
 import com.lambda_manager.processes.main.RemoveTapsOutsidePool;
-import com.lambda_manager.processes.start_lambda.StartLambda;
-import com.lambda_manager.processes.start_lambda.impl.StartHotspot;
-import com.lambda_manager.processes.start_lambda.impl.StartHotspotWithAgent;
-import com.lambda_manager.processes.start_lambda.impl.StartVMM;
+import com.lambda_manager.processes.lambda.StartLambda;
+import com.lambda_manager.processes.lambda.impl.StartHotspot;
+import com.lambda_manager.processes.lambda.impl.StartHotspotWithAgent;
+import com.lambda_manager.processes.lambda.impl.StartVMM;
 
 import java.io.BufferedReader;
 import java.io.IOException;

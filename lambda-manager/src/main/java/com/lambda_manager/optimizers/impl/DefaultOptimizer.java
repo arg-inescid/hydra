@@ -7,7 +7,7 @@ import com.lambda_manager.optimizers.FunctionStatus;
 import com.lambda_manager.optimizers.Optimizer;
 import com.lambda_manager.processes.AbstractProcess;
 import com.lambda_manager.processes.Processes;
-import com.lambda_manager.processes.start_lambda.StartLambda;
+import com.lambda_manager.processes.lambda.StartLambda;
 import com.lambda_manager.utils.LambdaTuple;
 
 @SuppressWarnings("unused")

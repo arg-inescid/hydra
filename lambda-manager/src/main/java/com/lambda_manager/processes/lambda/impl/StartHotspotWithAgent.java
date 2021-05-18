@@ -1,4 +1,4 @@
-package com.lambda_manager.processes.start_lambda.impl;
+package com.lambda_manager.processes.lambda.impl;
 
 import com.lambda_manager.callbacks.OnProcessFinishCallback;
 import com.lambda_manager.callbacks.impl.AgentConfigReadyCallback;
@@ -7,7 +7,7 @@ import com.lambda_manager.collectors.meta_info.Lambda;
 import com.lambda_manager.collectors.meta_info.Function;
 import com.lambda_manager.core.LambdaManagerConfiguration;
 import com.lambda_manager.optimizers.LambdaExecutionMode;
-import com.lambda_manager.processes.start_lambda.StartLambda;
+import com.lambda_manager.processes.lambda.StartLambda;
 import com.lambda_manager.utils.ConnectionTriplet;
 import com.lambda_manager.core.Environment;
 import com.lambda_manager.utils.LambdaTuple;

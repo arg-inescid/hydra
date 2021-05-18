@@ -3,9 +3,10 @@ package com.lambda_manager.utils;
 public class Messages {
 
     // General messages.
-    public static final String INTERNAL_ERROR = "Internal system error!";
+    public static final String INTERNAL_ERROR = "Internal server error!";
     public static final String HTTP_TIMEOUT = "HTTP request timeout!";
     public static final String LOG_REDIRECTION = "Log is redirected to file -> %s";
+    public static final String UNDELIVERABLE_EXCEPTION = "Undeliverable exception received!";
 
     // Lambda Manager configuration messages.
     public static final String NO_CONFIGURATION_UPLOADED = "No configuration has been uploaded!";

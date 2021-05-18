@@ -16,11 +16,14 @@ import com.lambda_manager.utils.ConnectionTriplet;
 import com.lambda_manager.utils.Messages;
 import com.lambda_manager.utils.logger.LambdaManagerFormatter;
 import com.lambda_manager.utils.logger.ElapseTimer;
+import com.lambda_manager.utils.logger.Logger;
 import com.lambda_manager.utils.parser.LambdaManagerConfiguration;
 import com.lambda_manager.utils.parser.LambdaManagerConsole;
 import com.lambda_manager.utils.parser.LambdaManagerState;
 import io.micronaut.context.BeanContext;
 import io.micronaut.http.client.RxHttpClient;
+import io.reactivex.exceptions.UndeliverableException;
+import io.reactivex.plugins.RxJavaPlugins;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,7 +35,10 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Random;
-import java.util.logging.*;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.FileHandler;
+import java.util.logging.Handler;
+import java.util.logging.Level;
 
 import static com.lambda_manager.core.Environment.MANAGER_LOG_FILENAME;
 import static com.lambda_manager.core.Environment.RAND_STRING_LEN;
@@ -71,6 +77,36 @@ public class LambdaManagerArgumentStorage {
         this.isLambdaConsoleActive = lambdaManagerConfiguration.isLambdaConsole();
     }
 
+    private void initErrorHandler() {
+        RxJavaPlugins.setErrorHandler(e -> {
+            if (e instanceof UndeliverableException) {
+                e = e.getCause();
+            }
+            if (e instanceof IOException) {
+                // Irrelevant network problem or API that throws on cancellation.
+                Logger.log(Level.WARNING, Messages.INTERNAL_ERROR, e);
+                return;
+            }
+            if (e instanceof InterruptedException) {
+                // fine, some blocking code was interrupted by a dispose call.
+                Logger.log(Level.WARNING, Messages.INTERNAL_ERROR, e);
+                return;
+            }
+            if ((e instanceof NullPointerException) || (e instanceof IllegalArgumentException)) {
+                // That's likely a bug in the application.
+                Logger.log(Level.WARNING, Messages.INTERNAL_ERROR, e);
+                return;
+            }
+            if (e instanceof IllegalStateException) {
+                // That's a bug in RxJava or in a custom operator.
+                Logger.log(Level.WARNING, Messages.INTERNAL_ERROR, e);
+                return;
+            }
+            // TODO: We should discuss what to do in case of severe exceptions.
+            Logger.log(Level.SEVERE, Messages.UNDELIVERABLE_EXCEPTION, e);
+        });
+    }
+
     private void prepareConnectionPool(com.lambda_manager.core.LambdaManagerConfiguration configuration,
                                        BeanContext beanContext)
             throws ErrorDuringCreatingConnectionPool {
@@ -92,7 +128,7 @@ public class LambdaManagerArgumentStorage {
     }
 
     private void prepareLogger(LambdaManagerConsole lambdaManagerConsole) {
-        Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
+        java.util.logging.Logger logger = java.util.logging.Logger.getLogger(java.util.logging.Logger.GLOBAL_LOGGER_NAME);
         LambdaManagerFormatter formatter = new LambdaManagerFormatter();
 
         if (!lambdaManagerConsole.isTurnOff()) {
@@ -126,7 +162,7 @@ public class LambdaManagerArgumentStorage {
             logger.setLevel(Level.OFF);
         }
 
-        com.lambda_manager.utils.logger.Logger.setLogger(logger);
+        Logger.setLogger(logger);
     }
 
     private void cacheConsoleInfo(LambdaManagerConsole lambdaManagerConsole) {
@@ -165,6 +201,7 @@ public class LambdaManagerArgumentStorage {
             throws ErrorDuringReflectiveClassCreation, ErrorDuringCreatingConnectionPool {
 
         initClassFields(lambdaManagerConfiguration);
+        initErrorHandler();
         prepareLogging(lambdaManagerConfiguration.getManagerConsole());
         com.lambda_manager.core.LambdaManagerConfiguration configuration = prepareConfiguration(lambdaManagerConfiguration.getManagerState());
         prepareConnectionPool(configuration, beanContext);
@@ -194,7 +231,7 @@ public class LambdaManagerArgumentStorage {
             handler.setLevel(Level.OFF);
         }
 
-        com.lambda_manager.utils.logger.Logger.setHandler(handler);
+        Logger.setHandler(handler);
     }
 
     public void cleanupStorage() {

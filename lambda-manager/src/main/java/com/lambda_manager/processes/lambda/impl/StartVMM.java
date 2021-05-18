@@ -1,12 +1,12 @@
-package com.lambda_manager.processes.start_lambda.impl;
+package com.lambda_manager.processes.lambda.impl;
 
 import com.lambda_manager.callbacks.OnProcessFinishCallback;
-import com.lambda_manager.callbacks.impl.CopyOutputLogFileCallback;
+import com.lambda_manager.callbacks.impl.NeedFallbackCallback;
 import com.lambda_manager.collectors.meta_info.Lambda;
 import com.lambda_manager.collectors.meta_info.Function;
 import com.lambda_manager.core.LambdaManagerConfiguration;
 import com.lambda_manager.optimizers.LambdaExecutionMode;
-import com.lambda_manager.processes.start_lambda.StartLambda;
+import com.lambda_manager.processes.lambda.StartLambda;
 import com.lambda_manager.utils.ConnectionTriplet;
 import com.lambda_manager.core.Environment;
 import com.lambda_manager.utils.LambdaTuple;
@@ -19,12 +19,12 @@ import java.util.List;
 
 import static com.lambda_manager.core.Environment.*;
 
-public class StartHotspot extends StartLambda {
+public class StartVMM extends StartLambda {
 
     @Override
     protected List<String> makeCommand(LambdaTuple<Function, Lambda> lambda, LambdaManagerConfiguration configuration) {
         clearPreviousState();
-        lambda.lambda.setExecutionMode(LambdaExecutionMode.HOTSPOT);
+        lambda.lambda.setExecutionMode(LambdaExecutionMode.NATIVE_IMAGE);
         this.outputFilename = outputFilename(lambda, configuration);
         this.memoryFilename = memoryFilename(lambda, configuration);
         ConnectionTriplet<String, String, RxHttpClient> connectionTriplet = lambda.lambda.getConnectionTriplet();
@@ -34,10 +34,8 @@ public class StartHotspot extends StartLambda {
         command.add("--output=" + this.memoryFilename);
         command.add("-v");
         command.add("bash");
-        // TODO: Replace hardcoded paths with Paths.get().
-        command.add("src/scripts/start_hotspot.sh");
+        command.add("src/scripts/start_vmm.sh");
         command.add(lambda.function.getName());
-        command.add(String.valueOf(lambda.lambda.getId()));
         command.add(configuration.argumentStorage.getMemorySpace());
         command.add(connectionTriplet.ip);
         command.add(connectionTriplet.tap);
@@ -57,18 +55,13 @@ public class StartHotspot extends StartLambda {
 
     @Override
     protected OnProcessFinishCallback callback(LambdaTuple<Function, Lambda> lambda, LambdaManagerConfiguration configuration) {
-        String sourceFile = Paths.get(CODEBASE,
-                lambda.function.getName(),
-                "start-hotspot-id-" + lambda.lambda.getId(),
-                RUN_LOG)
-                .toString();
-        return new CopyOutputLogFileCallback(sourceFile, this.outputFilename);
+        return new NeedFallbackCallback(lambda);
     }
 
     @Override
     protected String outputFilename(LambdaTuple<Function, Lambda> lambda, LambdaManagerConfiguration configuration) {
-        String dirPath = Paths.get(LAMBDA_LOGS, lambda.function.getName(), String.valueOf(lambda.lambda.getId()), HOTSPOT)
-                .toString();
+        String dirPath = Paths.get(LAMBDA_LOGS, lambda.function.getName(), String.valueOf(lambda.lambda.getId()),
+                NATIVE_IMAGE).toString();
         //noinspection ResultOfMethodCallIgnored
         new File(dirPath).mkdirs();
         return outputFilename == null ?
@@ -78,8 +71,8 @@ public class StartHotspot extends StartLambda {
 
     @Override
     protected String memoryFilename(LambdaTuple<Function, Lambda> lambda, LambdaManagerConfiguration configuration) {
-        String dirPath = Paths.get(LAMBDA_LOGS, lambda.function.getName(), String.valueOf(lambda.lambda.getId()), HOTSPOT)
-                .toString();
+        String dirPath = Paths.get(LAMBDA_LOGS, lambda.function.getName(), String.valueOf(lambda.lambda.getId()),
+                NATIVE_IMAGE).toString();
         //noinspection ResultOfMethodCallIgnored
         new File(dirPath).mkdirs();
         return memoryFilename == null ?
