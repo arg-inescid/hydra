@@ -1,5 +1,6 @@
 #!/bin/bash
 
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 FILE_FORMAT=raw
 print_and_die() {
     echo -e "$1" >&2
@@ -162,4 +163,7 @@ sudo qemu-system-x86_64 \
                 -no-hpet \
                 -fsdev local,id=fs1,path=$SHARED_DIR,security_model=none \
                 -device virtio-9p-device,fsdev=fs1,mount_tag=shared \
-                -blockdev driver=$FILE_FORMAT,node-name=drive,file.locking=off,file.driver=file,file.filename=$IMAGE_NAME \
+                -blockdev driver=$FILE_FORMAT,node-name=drive,file.locking=off,file.driver=file,file.filename=$IMAGE_NAME &
+echo "$!" > "$DIR"/lambda.pid
+echo "$VMM_IP" > "$DIR"/lambda.ip
+wait

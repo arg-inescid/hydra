@@ -2,7 +2,7 @@
 
 # Note: adapted from https://blog.nelhage.com/2013/12/lightweight-linux-kernel-development-with-kvm/
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-source "$DIR"/../env.sh
+source "$DIR"/../environment.sh
 
 # Build a Wheezy chroot. Install an sshd, since it will be handy later.
 mkdir -p stretch

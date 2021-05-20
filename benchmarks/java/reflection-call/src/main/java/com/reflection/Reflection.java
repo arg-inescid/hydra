@@ -10,12 +10,9 @@ import com.sun.net.httpserver.HttpServer;
 
 public class Reflection {
 
-    private static String classNameArgument;
-
     public static void main(String[] args) throws Exception {
         System.out.println("VMM boot time: " + (System.currentTimeMillis() - Long.parseLong(args[args.length - 1])));
         HttpServer server = HttpServer.create(new InetSocketAddress(Integer.parseInt(args[0])), 0);
-        classNameArgument = args[1];
         server.createContext("/", new MyHandler());
         server.setExecutor(null); // creates a default executor
         server.start();
@@ -26,9 +23,10 @@ public class Reflection {
         @Override
         public void handle(HttpExchange t) throws IOException {
             String response = "Success";
-
+            String className = t.getRequestURI().getQuery().split("=")[1];
+            
             try {
-                Class.forName(classNameArgument);
+                Class.forName(className);
             } catch (ClassNotFoundException e) {
                 response = "Failed";
             }
