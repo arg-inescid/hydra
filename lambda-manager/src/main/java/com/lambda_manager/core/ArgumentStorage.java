@@ -2,20 +2,20 @@ package com.lambda_manager.core;
 
 import com.github.maltalex.ineter.base.IPv4Address;
 import com.github.maltalex.ineter.range.IPv4Subnet;
-import com.lambda_manager.function_writer.FunctionWriter;
 import com.lambda_manager.collectors.function_storage.FunctionStorage;
 import com.lambda_manager.connectivity.client.LambdaManagerClient;
 import com.lambda_manager.encoders.Encoder;
 import com.lambda_manager.exceptions.argument_parser.ErrorDuringReflectiveClassCreation;
 import com.lambda_manager.exceptions.user.ErrorDuringCreatingConnectionPool;
+import com.lambda_manager.function_writer.FunctionWriter;
 import com.lambda_manager.optimizers.Optimizer;
 import com.lambda_manager.processes.ProcessBuilder;
 import com.lambda_manager.processes.Processes;
 import com.lambda_manager.schedulers.Scheduler;
 import com.lambda_manager.utils.ConnectionTriplet;
 import com.lambda_manager.utils.Messages;
-import com.lambda_manager.utils.logger.LambdaManagerFormatter;
 import com.lambda_manager.utils.logger.ElapseTimer;
+import com.lambda_manager.utils.logger.LambdaManagerFormatter;
 import com.lambda_manager.utils.logger.Logger;
 import com.lambda_manager.utils.parser.LambdaManagerConfiguration;
 import com.lambda_manager.utils.parser.LambdaManagerConsole;
@@ -43,7 +43,7 @@ import java.util.logging.Level;
 import static com.lambda_manager.core.Environment.MANAGER_LOG_FILENAME;
 import static com.lambda_manager.core.Environment.RAND_STRING_LEN;
 
-public class LambdaManagerArgumentStorage {
+public class ArgumentStorage {
 
     private String gateway;
     private String mask;
@@ -57,8 +57,11 @@ public class LambdaManagerArgumentStorage {
     private String memorySpace;
     private int lambdaPort;
     private boolean isLambdaConsoleActive;
-    
+
     private LambdaManagerConsole cachedConsoleInfo;
+
+    private ArgumentStorage() {
+    }
 
     private void initClassFields(LambdaManagerConfiguration lambdaManagerConfiguration) {
         String gatewayString = lambdaManagerConfiguration.getGateway();
@@ -107,9 +110,7 @@ public class LambdaManagerArgumentStorage {
         });
     }
 
-    private void prepareConnectionPool(com.lambda_manager.core.LambdaManagerConfiguration configuration,
-                                       BeanContext beanContext)
-            throws ErrorDuringCreatingConnectionPool {
+    private void prepareConnectionPool(BeanContext beanContext) throws ErrorDuringCreatingConnectionPool {
         try {
             for (int i = 0; i < maxLambdas; i++) {
                 String ip = getNextIPAddress();
@@ -119,7 +120,7 @@ public class LambdaManagerArgumentStorage {
                 connectionPool.add(new ConnectionTriplet<>(ip, tap, client));
             }
 
-            ProcessBuilder createTaps = Processes.CREATE_TAPS.build(null, configuration);
+            ProcessBuilder createTaps = Processes.CREATE_TAPS.build(null);
             createTaps.start();
             createTaps.join();
         } catch (InterruptedException | MalformedURLException e) {
@@ -185,28 +186,31 @@ public class LambdaManagerArgumentStorage {
         }
     }
 
-    private com.lambda_manager.core.LambdaManagerConfiguration prepareConfiguration(LambdaManagerState lambdaManagerState)
+    private void prepareConfiguration(LambdaManagerState lambdaManagerState)
             throws ErrorDuringReflectiveClassCreation {
-
         Scheduler scheduler = (Scheduler) createObject(lambdaManagerState.getScheduler());
         Optimizer optimizer = (Optimizer) createObject(lambdaManagerState.getOptimizer());
         Encoder encoder = (Encoder) createObject(lambdaManagerState.getEncoder());
         FunctionStorage storage = (FunctionStorage) createObject(lambdaManagerState.getStorage());
         LambdaManagerClient client = (LambdaManagerClient) createObject(lambdaManagerState.getClient());
         FunctionWriter functionWriter = (FunctionWriter) createObject(lambdaManagerState.getCodeWriter());
-        return new com.lambda_manager.core.LambdaManagerConfiguration(scheduler, optimizer, encoder, storage, client, functionWriter, this);
+        Configuration.initFields(scheduler, optimizer, encoder, storage, client, functionWriter, this);
     }
 
-    public com.lambda_manager.core.LambdaManagerConfiguration initializeLambdaManager(LambdaManagerConfiguration lambdaManagerConfiguration, BeanContext beanContext)
+    public void doInitialize(LambdaManagerConfiguration lambdaManagerConfiguration, BeanContext beanContext)
             throws ErrorDuringReflectiveClassCreation, ErrorDuringCreatingConnectionPool {
-
         initClassFields(lambdaManagerConfiguration);
         initErrorHandler();
         prepareLogging(lambdaManagerConfiguration.getManagerConsole());
-        com.lambda_manager.core.LambdaManagerConfiguration configuration = prepareConfiguration(lambdaManagerConfiguration.getManagerState());
-        prepareConnectionPool(configuration, beanContext);
+        prepareConfiguration(lambdaManagerConfiguration.getManagerState());
+        prepareConnectionPool(beanContext);
         ElapseTimer.init(); // Start internal timer.
-        return configuration;
+    }
+
+    public static void initializeLambdaManager(LambdaManagerConfiguration lambdaManagerConfiguration, BeanContext beanContext)
+            throws ErrorDuringReflectiveClassCreation, ErrorDuringCreatingConnectionPool {
+        ArgumentStorage argumentStorage = new ArgumentStorage();
+        argumentStorage.doInitialize(lambdaManagerConfiguration, beanContext);
     }
 
     public void prepareHandler() {

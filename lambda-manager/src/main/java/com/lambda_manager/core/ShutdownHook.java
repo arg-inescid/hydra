@@ -14,14 +14,14 @@ import java.util.logging.Level;
 @Singleton
 public class ShutdownHook implements ApplicationEventListener<ApplicationShutdownEvent> {
 
-    private void removeTapsFromPool(LambdaManagerConfiguration configuration) throws InterruptedException {
-        ProcessBuilder removeTapsWorker = Processes.REMOVE_TAPS_FROM_POOL.build(null, configuration);
+    private void removeTapsFromPool() throws InterruptedException {
+        ProcessBuilder removeTapsWorker = Processes.REMOVE_TAPS_FROM_POOL.build(null);
         removeTapsWorker.start();
         removeTapsWorker.join();
     }
 
-    private void removeTapsOutsidePool(LambdaManagerConfiguration configuration) throws InterruptedException {
-        ProcessBuilder removeTapsOutsidePoolWorker = Processes.REMOVE_TAPS_OUTSIDE_POOL.build(null, configuration);
+    private void removeTapsOutsidePool() throws InterruptedException {
+        ProcessBuilder removeTapsOutsidePoolWorker = Processes.REMOVE_TAPS_OUTSIDE_POOL.build(null);
         removeTapsOutsidePoolWorker.start();
         removeTapsOutsidePoolWorker.join();
     }
@@ -30,12 +30,11 @@ public class ShutdownHook implements ApplicationEventListener<ApplicationShutdow
     public void onApplicationEvent(ApplicationShutdownEvent event) {
         try {
             Environment.setShutdownHookActive(true);
-            LambdaManagerConfiguration configuration = LambdaManager.getConfiguration();
-            if (configuration != null) {
-                configuration.argumentStorage.prepareHandler();
-                removeTapsFromPool(configuration);
-                removeTapsOutsidePool(configuration);
-                configuration.argumentStorage.cleanupStorage();
+            if (Configuration.isInitialized()) {
+                Configuration.argumentStorage.prepareHandler();
+                removeTapsFromPool();
+                removeTapsOutsidePool();
+                Configuration.argumentStorage.cleanupStorage();
             }
         } catch (InterruptedException interruptedException) {
             Logger.log(Level.WARNING, Messages.ERROR_TAP_REMOVAL, interruptedException);

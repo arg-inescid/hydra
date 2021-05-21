@@ -21,17 +21,11 @@ public class LambdaManagerController {
     @Inject
     private BeanContext beanContext;
 
-    private final LambdaManager lambdaManager;
-
-    public LambdaManagerController() {
-        this.lambdaManager = LambdaManager.getLambdaManager();
-    }
-
     @Get("/{username}/{function_name}")
     public Single<String> processRequest(@PathVariable("username") String username,
                                          @PathVariable("function_name") String functionName,
                                          @Nullable @QueryValue("parameters") String parameters) {
-        return lambdaManager.processRequest(username, functionName, parameters);
+        return LambdaManager.processRequest(username, functionName, parameters);
     }
 
     @Post(value = "/upload_function", consumes = APPLICATION_OCTET_STREAM)
@@ -40,17 +34,17 @@ public class LambdaManagerController {
                                          @QueryValue("function_name") String functionName,
                                          @Nullable @QueryValue("arguments") String arguments,
                                          @Body byte[] functionCode) {
-        return lambdaManager.uploadFunction(allocate, username, functionName, arguments, functionCode);
+        return LambdaManager.uploadFunction(allocate, username, functionName, arguments, functionCode);
     }
 
     @Post("/remove_function")
     public Single<String> removeFunction(@QueryValue("username") String username,
                                          @QueryValue("function_name") String functionName) {
-        return lambdaManager.removeFunction(username, functionName);
+        return LambdaManager.removeFunction(username, functionName);
     }
 
     @Post(value = "/configure_manager", consumes = APPLICATION_JSON)
     public Single<String> configureManager(@Body String lambdaManagerConfiguration) {
-        return lambdaManager.configureManager(lambdaManagerConfiguration, beanContext);
+        return LambdaManager.configureManager(lambdaManagerConfiguration, beanContext);
     }
 }

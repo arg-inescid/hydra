@@ -1,8 +1,8 @@
 package com.lambda_manager.handlers;
 
-import com.lambda_manager.collectors.meta_info.Lambda;
 import com.lambda_manager.collectors.meta_info.Function;
-import com.lambda_manager.core.LambdaManager;
+import com.lambda_manager.collectors.meta_info.Lambda;
+import com.lambda_manager.core.Configuration;
 import com.lambda_manager.processes.ProcessBuilder;
 import com.lambda_manager.processes.Processes;
 import com.lambda_manager.utils.LambdaTuple;
@@ -21,10 +21,10 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
     }
 
     private void shutdownHotSpotLambda(String lambdaPath) throws Throwable {
-        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/kill_hotspot.sh", lambdaPath).start();
+        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_hotspot.sh", lambdaPath).start();
         p.waitFor();
         if (p.exitValue() != 0) {
-            logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", lambda.lambda.getId()));
+            logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", lambda.lambda.pid()));
             Processes.printProcessErrorStream(logger, Level.WARNING, p);
         }
     }
@@ -34,19 +34,19 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
 
             switch (lambda.lambda.getExecutionMode()) {
                 case HOTSPOT:
-                    shutdownHotSpotLambda(String.format("codebase/%s/start-hotspot-id-%d", lambda.function.getName(), lambda.lambda.getId()));
+                    shutdownHotSpotLambda(String.format("codebase/%s/start-hotspot-id-%d", lambda.function.getName(), lambda.lambda.pid()));
                     break;
                 case HOTSPOT_W_AGENT:
-                    shutdownHotSpotLambda(String.format("codebase/%s/start-hotspot-w-agent-id-%d", lambda.function.getName(), lambda.lambda.getId()));
+                    shutdownHotSpotLambda(String.format("codebase/%s/start-hotspot-w-agent-id-%d", lambda.function.getName(), lambda.lambda.pid()));
                     break;
                 case NATIVE_IMAGE:
                     // Currently we don't shutdown lambdas running in Native Image.
                     break;
                 default:
-                    logger.log(Level.WARNING, String.format("Lambda ID=%d has no known execution mode: %s", lambda.lambda.getId(), lambda.lambda.getExecutionMode()));
+                    logger.log(Level.WARNING, String.format("Lambda ID=%d has no known execution mode: %s", lambda.lambda.pid(), lambda.lambda.getExecutionMode()));
             }
         } catch (Throwable t) {
-            logger.log(Level.SEVERE, String.format("Lambda ID=%d failed to shutdown: %s", lambda.lambda.getId(), t.getMessage()));
+            logger.log(Level.SEVERE, String.format("Lambda ID=%d failed to shutdown: %s", lambda.lambda.pid(), t.getMessage()));
             t.printStackTrace();
         }
     }
@@ -60,14 +60,14 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
                 return;
             }
             lambda.lambda.getTimer().cancel();
-            processBuilder = lambda.function.getCurrentlyActiveWorkers().remove(lambda.lambda.getId());
+            processBuilder = lambda.function.removeProcess(lambda.lambda.pid());
         }
 
-        shutdownLambda();
+//        shutdownLambda();
         processBuilder.shutdownInstance();
 
         synchronized (lambda.function) {
-            LambdaManager.getConfiguration().argumentStorage.returnConnectionTriplet(lambda.lambda.getConnectionTriplet());
+            Configuration.argumentStorage.returnConnectionTriplet(lambda.lambda.getConnectionTriplet());
             lambda.function.getAvailableLambdas().add(lambda.lambda);
             lambda.function.notify();
         }

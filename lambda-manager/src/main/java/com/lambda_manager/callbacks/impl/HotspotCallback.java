@@ -5,12 +5,12 @@ import com.lambda_manager.callbacks.OnProcessFinishCallback;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 
-public class CopyOutputLogFileCallback implements OnProcessFinishCallback {
+public class HotspotCallback implements OnProcessFinishCallback {
 
     private final String sourceFilename;
     private final String destinationFilename;
 
-    public CopyOutputLogFileCallback(String sourceFilename, String destinationFile) {
+    public HotspotCallback(String sourceFilename, String destinationFile) {
         this.sourceFilename = sourceFilename;
         this.destinationFilename = destinationFile;
     }

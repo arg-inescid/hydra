@@ -6,17 +6,16 @@ import com.lambda_manager.collectors.meta_info.Function;
 import com.lambda_manager.optimizers.FunctionStatus;
 import com.lambda_manager.utils.LambdaTuple;
 
-public class VMMBuiltCallback implements OnProcessFinishCallback {
+public class BuildVMMCallback implements OnProcessFinishCallback {
 
     private final LambdaTuple<Function, Lambda> lambda;
 
-    public VMMBuiltCallback(LambdaTuple<Function, Lambda> lambda) {
+    public BuildVMMCallback(LambdaTuple<Function, Lambda> lambda) {
         this.lambda = lambda;
     }
 
     @Override
     public void finish(int exitCode) {
         lambda.function.setStatus(FunctionStatus.BUILT);
-        lambda.function.setUpdateID(true);
     }
 }

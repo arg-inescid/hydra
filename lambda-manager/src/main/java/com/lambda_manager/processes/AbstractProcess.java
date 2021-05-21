@@ -2,53 +2,38 @@ package com.lambda_manager.processes;
 
 import com.lambda_manager.callbacks.OnProcessFinishCallback;
 import com.lambda_manager.callbacks.impl.DefaultCallback;
-import com.lambda_manager.collectors.meta_info.Lambda;
 import com.lambda_manager.collectors.meta_info.Function;
-import com.lambda_manager.core.LambdaManagerConfiguration;
+import com.lambda_manager.collectors.meta_info.Lambda;
 import com.lambda_manager.core.Environment;
 import com.lambda_manager.utils.LambdaTuple;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static com.lambda_manager.core.Environment.DEFAULT_FILENAME;
 
 public abstract class AbstractProcess {
 
-    protected List<String> command; // TODO - delete this field. We don't need it.
-    protected String outputFilename; // TODO - delete this field. We don't need it.
-    protected String memoryFilename; // TODO - delete this field. We don't need it.
-    protected long pid = -1;
-
-    public final ProcessBuilder build(LambdaTuple<Function, Lambda> lambda, LambdaManagerConfiguration configuration) {
-        return new ProcessBuilder(makeCommand(lambda, configuration), callback(lambda, configuration),
-                outputFilename(lambda, configuration), pid());
+    public final ProcessBuilder build(LambdaTuple<Function, Lambda> lambda) {
+        return new ProcessBuilder(pid(lambda), makeCommand(lambda), callback(lambda), outputFilename(lambda));
     }
 
-    protected abstract List<String> makeCommand(LambdaTuple<Function, Lambda> lambda, LambdaManagerConfiguration configuration);
+    protected abstract List<String> makeCommand(LambdaTuple<Function, Lambda> lambda);
 
-    protected OnProcessFinishCallback callback(LambdaTuple<Function, Lambda> lambda, LambdaManagerConfiguration configuration) {
+    protected OnProcessFinishCallback callback(LambdaTuple<Function, Lambda> lambda) {
         return new DefaultCallback();
     }
 
-    protected abstract String outputFilename(LambdaTuple<Function, Lambda> lambda,
-                                             LambdaManagerConfiguration configuration);
+    protected abstract String outputFilename(LambdaTuple<Function, Lambda> lambda);
 
-    protected String memoryFilename(LambdaTuple<Function, Lambda> lambda,
-                                    LambdaManagerConfiguration configuration) {
+    protected String memoryFilename(LambdaTuple<Function, Lambda> lambda) {
         return DEFAULT_FILENAME;
     }
 
-    // TODO - this method should be deleted once we delete the fields.
-    protected void clearPreviousState() {
-        this.command = new ArrayList<>();
-        this.outputFilename = null;
-        this.memoryFilename = null;
-        this.pid = -1;
-    }
-
-    protected long pid() {
-        this.pid = Environment.pid();
-        return this.pid;
+    private long pid(LambdaTuple<Function, Lambda> lambdaTuple) {
+        long nextPID = Environment.pid();
+        if(lambdaTuple != null) {
+            lambdaTuple.lambda.setPid(nextPID);
+        }
+        return nextPID;
     }
 }

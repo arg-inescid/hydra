@@ -1,14 +1,14 @@
 package com.lambda_manager.schedulers.impl;
 
-import com.lambda_manager.collectors.meta_info.Lambda;
 import com.lambda_manager.collectors.meta_info.Function;
-import com.lambda_manager.core.LambdaManagerConfiguration;
+import com.lambda_manager.collectors.meta_info.Lambda;
+import com.lambda_manager.core.Configuration;
+import com.lambda_manager.core.Environment;
 import com.lambda_manager.exceptions.user.FunctionNotFound;
 import com.lambda_manager.handlers.DefaultLambdaShutdownHandler;
 import com.lambda_manager.processes.ProcessBuilder;
 import com.lambda_manager.processes.Processes;
 import com.lambda_manager.schedulers.Scheduler;
-import com.lambda_manager.core.Environment;
 import com.lambda_manager.utils.LambdaTuple;
 import com.lambda_manager.utils.Messages;
 
@@ -42,33 +42,26 @@ public class RoundedRobinScheduler implements Scheduler {
         }
     }
 
-    private void acquireConnection(LambdaTuple<Function, Lambda> lambda,
-                                   LambdaManagerConfiguration configuration) {
-        lambda.lambda.setConnectionTriplet(configuration.argumentStorage.nextConnectionTriplet());
+    private void acquireConnection(LambdaTuple<Function, Lambda> lambda) {
+        lambda.lambda.setConnectionTriplet(Configuration.argumentStorage.nextConnectionTriplet());
     }
 
-    private void buildProcess(LambdaTuple<Function, Lambda> lambda,
-                              LambdaManagerConfiguration configuration) {
-
-        ProcessBuilder processBuilder = Processes.START_LAMBDA.build(lambda, configuration);
-        lambda.function.getCurrentlyActiveWorkers().put(lambda.lambda.getId(), processBuilder);
+    private void buildProcess(LambdaTuple<Function, Lambda> lambdaTuple) {
+        ProcessBuilder processBuilder = Processes.START_LAMBDA.build(lambdaTuple);
+        lambdaTuple.function.addNewProcess(lambdaTuple.lambda.pid(), processBuilder);
         processBuilder.start();
     }
 
     @Override
-    public void spawnNewLambda(LambdaTuple<Function, Lambda> lambda,
-                               LambdaManagerConfiguration configuration) {
+    public void spawnNewLambda(LambdaTuple<Function, Lambda> lambda) {
         gate(lambda);
-        acquireConnection(lambda, configuration);
-        buildProcess(lambda, configuration);
+        acquireConnection(lambda);
+        buildProcess(lambda);
     }
 
     @Override
-    public LambdaTuple<Function, Lambda> schedule(String functionName, String parameters,
-                                                  LambdaManagerConfiguration configuration)
-            throws FunctionNotFound {
-
-        Function function = configuration.storage.get(functionName);
+    public LambdaTuple<Function, Lambda> schedule(String functionName, String parameters) throws FunctionNotFound {
+        Function function = Configuration.storage.get(functionName);
         if (function == null) {
             throw new FunctionNotFound(String.format(Messages.FUNCTION_NOT_FOUND, functionName));
         }
@@ -86,16 +79,14 @@ public class RoundedRobinScheduler implements Scheduler {
                         }
                         lambda = function.getAvailableLambdas().remove(0);
                         lambda.setParameters(parameters);
-                        lambda.shouldUpdateID(function);
-                        spawnNewLambda(new LambdaTuple<>(function, lambda), configuration);
+                        spawnNewLambda(new LambdaTuple<>(function, lambda));
                     } else {
                         lambda = function.getActiveLambdas().remove(0);
                     }
                 } else {
                     lambda = function.getAvailableLambdas().remove(0);
                     lambda.setParameters(parameters);
-                    lambda.shouldUpdateID(function);
-                    spawnNewLambda(new LambdaTuple<>(function, lambda), configuration);
+                    spawnNewLambda(new LambdaTuple<>(function, lambda));
                 }
             } else {
                 lambda = function.getStartedLambdas().remove(0);
@@ -110,7 +101,7 @@ public class RoundedRobinScheduler implements Scheduler {
     }
 
     @Override
-    public void reschedule(LambdaTuple<Function, Lambda> lambda, LambdaManagerConfiguration configuration) {
+    public void reschedule(LambdaTuple<Function, Lambda> lambda) {
         synchronized (lambda.function) {
             int openRequestCount = lambda.lambda.getOpenRequestCount() - 1;
             lambda.lambda.setOpenRequestCount(openRequestCount);
@@ -123,7 +114,7 @@ public class RoundedRobinScheduler implements Scheduler {
                     currentTimer.cancel();
                 }
                 Timer newTimer = new Timer();
-                newTimer.schedule(new DefaultLambdaShutdownHandler(lambda), configuration.argumentStorage.getTimeout());
+                newTimer.schedule(new DefaultLambdaShutdownHandler(lambda), Configuration.argumentStorage.getTimeout());
                 lambda.lambda.setTimer(newTimer);
             }
         }

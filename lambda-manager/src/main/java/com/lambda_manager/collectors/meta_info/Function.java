@@ -9,24 +9,17 @@ import java.util.HashMap;
 // TODO: Make this interface.
 public class Function {
 
-	// TODO - we don't need this ID! This is super misleading...
-    private int id = 0;
     private final String name;
     private FunctionStatus status;
-    private boolean updateID;
     private String arguments;
     private final ArrayList<Lambda> availableLambdas = new ArrayList<>();
     private final ArrayList<Lambda> startedLambdas = new ArrayList<>();
     private final ArrayList<Lambda> activeLambdas = new ArrayList<>();
-    private final HashMap<Integer, ProcessBuilder> currentlyActiveWorkers = new HashMap<>();
+    private final HashMap<Long, ProcessBuilder> activeProcesses = new HashMap<>();
 
     public Function(String name) {
         this.name = name;
         this.status = FunctionStatus.NOT_BUILT_NOT_CONFIGURED;
-    }
-
-    public int getId() {
-        return id++;
     }
 
     public String getName() {
@@ -39,14 +32,6 @@ public class Function {
 
     public void setStatus(FunctionStatus status) {
         this.status = status;
-    }
-
-    public boolean isUpdateID() {
-        return updateID;
-    }
-
-    public void setUpdateID(boolean updateID) {
-        this.updateID = updateID;
     }
 
     public String getArguments() {
@@ -69,7 +54,11 @@ public class Function {
         return activeLambdas;
     }
 
-    public HashMap<Integer, ProcessBuilder> getCurrentlyActiveWorkers() {
-        return currentlyActiveWorkers;
+    public void addNewProcess(Long pid, ProcessBuilder processBuilder) {
+        activeProcesses.put(pid, processBuilder);
+    }
+
+    public ProcessBuilder removeProcess(Long pid) {
+        return activeProcesses.remove(pid);
     }
 }

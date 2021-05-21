@@ -21,8 +21,7 @@ public class DefaultFunctionWriter implements FunctionWriter {
                                                 String encodedName, byte[] functionCode)
             throws ErrorUploadingLambda, IOException {
 
-        int id = function.getId();
-        Lambda lambdaInstanceInfo = new Lambda(id);
+        Lambda lambdaInstanceInfo = new Lambda();
         LambdaTuple<Function, Lambda> lambda = new LambdaTuple<>(function, lambdaInstanceInfo);
 
         String functionDir = Paths.get(Environment.CODEBASE, encodedName).toString();

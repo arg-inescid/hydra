@@ -1,6 +1,7 @@
 package com.lambda_manager.processes;
 
 import com.lambda_manager.processes.lambda.BuildVMM;
+import com.lambda_manager.processes.lambda.StopHotspot;
 import com.lambda_manager.processes.main.CreateTaps;
 import com.lambda_manager.processes.main.RemoveTapsFromPool;
 import com.lambda_manager.processes.main.RemoveTapsOutsidePool;
@@ -16,6 +17,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Processes {
+
     public static final AbstractProcess CREATE_TAPS = new CreateTaps();
     public static final AbstractProcess REMOVE_TAPS_FROM_POOL = new RemoveTapsFromPool();
     public static final AbstractProcess REMOVE_TAPS_OUTSIDE_POOL = new RemoveTapsOutsidePool();
@@ -24,6 +26,7 @@ public class Processes {
     public static final AbstractProcess START_LAMBDA = new StartLambda();
     public static final AbstractProcess START_HOTSPOT = new StartHotspot();
     public static final AbstractProcess START_HOTSPOT_WITH_AGENT = new StartHotspotWithAgent();
+    public static final AbstractProcess STOP_HOTSPOT = new StopHotspot();
     public static final AbstractProcess START_NATIVE_IMAGE = new StartVMM();
 
     public static void printProcessErrorStream(Logger logger, Level level, Process p) throws IOException {

@@ -9,23 +9,22 @@ import java.util.Timer;
 // TODO: Make this interface.
 public class Lambda {
 
-    // TODO: This should be invocation ID (PID) instead of static ID.
-    // TODO: Change lambda logs hierarchy to be the same as the one on codebase.
-    // TODO: Change logs format to be pid-execution_mode.log in both cases (codebase + lambda logs).
-    private int id;
+    private long pid;
     private int openRequestCount;
     private String parameters;
     private Timer timer;
-    private boolean updated = false;
     private ConnectionTriplet<String, String, RxHttpClient> connectionTriplet;
-    private LambdaExecutionMode executionMode; 
+    private LambdaExecutionMode executionMode;
 
-    public Lambda(int id) {
-        this.id = id;
+    public Lambda() {
     }
 
-    public int getId() {
-        return id;
+    public void setPid(long pid) {
+        this.pid = pid;
+    }
+
+    public long pid() {
+        return pid;
     }
 
     public int getOpenRequestCount() {
@@ -60,18 +59,11 @@ public class Lambda {
         this.connectionTriplet = connectionTriplet;
     }
 
-    public void shouldUpdateID(Function function) {
-        if (function.isUpdateID() && !updated) {
-            id = function.getId();
-            updated = true;
-        }
+    public LambdaExecutionMode getExecutionMode() {
+        return executionMode;
     }
 
-	public LambdaExecutionMode getExecutionMode() {
-		return executionMode;
-	}
-
-	public void setExecutionMode(LambdaExecutionMode executionMode) {
-		this.executionMode = executionMode;
-	}
+    public void setExecutionMode(LambdaExecutionMode executionMode) {
+        this.executionMode = executionMode;
+    }
 }

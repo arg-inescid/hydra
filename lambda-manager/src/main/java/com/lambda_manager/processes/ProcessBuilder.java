@@ -22,7 +22,7 @@ public class ProcessBuilder extends Thread {
     private final long pid;
     private Process process;
 
-    public ProcessBuilder(List<String> command, OnProcessFinishCallback callback, String outputFilename, long pid) {
+    public ProcessBuilder(long pid, List<String> command, OnProcessFinishCallback callback, String outputFilename) {
         this.command = command;
         this.commandAsString = Arrays.toString(command.toArray());
         this.callback = callback;

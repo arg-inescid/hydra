@@ -12,7 +12,7 @@ public final class Logger {
     private static Handler HANDLER;
 
     public static void log(Level level, String msg) {
-        if (!Environment.isShutdownHookActive()) {
+        if (Environment.notShutdownHookActive()) {
             LOGGER.log(level, msg);
         } else {
             HANDLER.publish(new LogRecord(level, msg));
@@ -20,7 +20,7 @@ public final class Logger {
     }
 
     public static void log(Level level, String msg, Throwable throwable) {
-        if (!Environment.isShutdownHookActive()) {
+        if (Environment.notShutdownHookActive()) {
             LOGGER.log(level, msg, throwable);
         } else {
             LogRecord record = new LogRecord(level, msg);

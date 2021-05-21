@@ -17,17 +17,21 @@ public class Environment {
     // Tap name is limited to 15 characters. In our case tap names are created from prefix (4 chars) + random string (10 chars).
     public static final String TAP_PREFIX = "lmt";
 
-    public static final String HOTSPOT = "hotspot";
-    public static final String HOTSPOT_W_AGENT = "hotspot_w_agent";
-    public static final String NATIVE_IMAGE = "native_image";
-
-    // Directories.
+    // Project Directories.
     public static final String CODEBASE = "codebase";
     public static final String MANAGER_LOGS = "manager_logs";
     public static final String LAMBDA_LOGS = "lambda_logs";
 
+    // Lambda log directories.
+    public static final String HOTSPOT = "pid_%d_hotspot";
+    public static final String HOTSPOT_W_AGENT = "pid_%d_hotspot_w_agent";
+    public static final String BUILD_VMM = "build_vmm";
+    public static final String VMM = "pid_%d_vmm";
+
     // Filenames.
     public static final String DEFAULT_FILENAME = "default_filename.log";
+    public static final String OUTPUT = "output.log";
+    public static final String MEMORY = "memory.log";
     public static final String RUN_LOG = Paths.get("shared", "run.log").toString();
     public static final String MANAGER_LOG_FILENAME = Paths.get(MANAGER_LOGS, "lambda_manager.log").toString();
     public static final String CREATE_TAPS_FILENAME = Paths.get(MANAGER_LOGS, "create_taps.log").toString();
@@ -37,8 +41,8 @@ public class Environment {
         return NEXT_ID++;
     }
 
-    public static boolean isShutdownHookActive() {
-        return shutdownHookActive;
+    public static boolean notShutdownHookActive() {
+        return !shutdownHookActive;
     }
 
     public static void setShutdownHookActive(boolean shutdownHookActive) {

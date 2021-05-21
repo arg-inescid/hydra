@@ -1,8 +1,9 @@
 #!/bin/bash
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+
 source "$DIR"/environment.sh
-source "$DIR"/start_hotspot_shared.sh
+source "$DIR"/prepare_lambda_directory.sh
 
 LAMBDA_HOME=$1
 if [ -z "$LAMBDA_HOME" ]; then
@@ -10,5 +11,5 @@ if [ -z "$LAMBDA_HOME" ]; then
   exit 1
 fi
 
-sudo ssh -o StrictHostKeyChecking=no -i "$LAMBDA_HOME"/id_rsa root@$(cat "$LAMBDA_HOME"/lambda.ip) pkill java
-sudo kill $(cat "$LAMBDA_HOME"/lambda.pid)
+sudo ssh -o StrictHostKeyChecking=no -i "$LAMBDA_HOME"/id_rsa root@"$(cat "$LAMBDA_HOME"/lambda.ip)" pkill java
+sudo kill "$(cat "$LAMBDA_HOME"/lambda.pid)"

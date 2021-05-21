@@ -19,52 +19,37 @@ import java.util.logging.Level;
 
 public class LambdaManager {
 
-    private static LambdaManager lambdaManager;
-    private static LambdaManagerConfiguration configuration;
-
     private LambdaManager() {
     }
 
-    public static LambdaManager getLambdaManager() {
-        if (lambdaManager == null) {
-            lambdaManager = new LambdaManager();
-        }
-        return lambdaManager;
-    }
-
-    public static LambdaManagerConfiguration getConfiguration() {
-        return configuration;
-    }
-
-    private String formatRequestSpentTimeMessage(LambdaTuple<Function, Lambda> lambda, long spentTime) {
+    private static String formatRequestSpentTimeMessage(LambdaTuple<Function, Lambda> lambda, long spentTime) {
         switch (lambda.function.getStatus()) {
             case NOT_BUILT_NOT_CONFIGURED:
-                return String.format(Messages.TIME_HOTSPOT_W_AGENT, lambda.lambda.getId(), spentTime);
+                return String.format(Messages.TIME_HOTSPOT_W_AGENT, lambda.lambda.pid(), spentTime);
             case CONFIGURING_OR_BUILDING:
             case NOT_BUILT_CONFIGURED:
-                return String.format(Messages.TIME_HOTSPOT, lambda.lambda.getId(), spentTime);
+                return String.format(Messages.TIME_HOTSPOT, lambda.lambda.pid(), spentTime);
             case BUILT:
-                return String.format(Messages.TIME_NATIVE_IMAGE, lambda.lambda.getId(), spentTime);
+                return String.format(Messages.TIME_NATIVE_IMAGE, lambda.lambda.pid(), spentTime);
             default:
                 throw new UnsupportedOperationException();
         }
     }
 
-    public Single<String> processRequest(String username, String functionName, String parameters) {
+    public static Single<String> processRequest(String username, String functionName, String parameters) {
         try {
-            if (configuration == null) {
+            if (!Configuration.isInitialized()) {
                 Logger.log(Level.WARNING, Messages.NO_CONFIGURATION_UPLOADED);
                 return Single.just(Messages.NO_CONFIGURATION_UPLOADED);
             }
 
             long start = System.currentTimeMillis();
-            String encodedName = configuration.encoder.encode(username, functionName);
-            LambdaTuple<Function, Lambda> lambda = configuration.scheduler.schedule(encodedName,
-                    parameters, configuration);
+            String encodedName = Configuration.encoder.encode(username, functionName);
+            LambdaTuple<Function, Lambda> lambda = Configuration.scheduler.schedule(encodedName, parameters);
 
-            String response = configuration.client.sendRequest(lambda, configuration);
-            configuration.optimizer.registerCall(lambda, configuration);
-            configuration.scheduler.reschedule(lambda, configuration);
+            String response = Configuration.client.sendRequest(lambda);
+            Configuration.optimizer.registerCall(lambda);
+            Configuration.scheduler.reschedule(lambda);
 
             Logger.log(Level.FINE, formatRequestSpentTimeMessage(lambda, System.currentTimeMillis() - start));
             return Single.just(response);
@@ -77,22 +62,22 @@ public class LambdaManager {
         }
     }
 
-    public Single<String> uploadFunction(int allocate,
+    public static Single<String> uploadFunction(int allocate,
                                          String username,
                                          String functionName,
                                          String arguments,
                                          byte[] functionCode) {
         try {
-            if (configuration == null) {
+            if (!Configuration.isInitialized()) {
                 Logger.log(Level.WARNING, Messages.NO_CONFIGURATION_UPLOADED);
                 return Single.just(Messages.NO_CONFIGURATION_UPLOADED);
             }
 
-            String encodedName = configuration.encoder.encode(username, functionName);
-            Function function = configuration.storage.register(encodedName);
+            String encodedName = Configuration.encoder.encode(username, functionName);
+            Function function = Configuration.storage.register(encodedName);
             function.setArguments(arguments);
             for (int i = 0; i < allocate; i++) {
-                configuration.functionWriter.upload(function, encodedName, functionCode);
+                Configuration.functionWriter.upload(function, encodedName, functionCode);
             }
 
             Logger.log(Level.INFO, String.format(Messages.SUCCESS_FUNCTION_UPLOAD, functionName));
@@ -106,16 +91,16 @@ public class LambdaManager {
         }
     }
 
-    public Single<String> removeFunction(String username, String functionName) {
+    public static Single<String> removeFunction(String username, String functionName) {
         try {
-            if (configuration == null) {
+            if (!Configuration.isInitialized()) {
                 Logger.log(Level.WARNING, Messages.NO_CONFIGURATION_UPLOADED);
                 return Single.just(Messages.NO_CONFIGURATION_UPLOADED);
             }
 
-            String encodedName = configuration.encoder.encode(username, functionName);
-            configuration.storage.unregister(encodedName);
-            configuration.functionWriter.remove(encodedName);
+            String encodedName = Configuration.encoder.encode(username, functionName);
+            Configuration.storage.unregister(encodedName);
+            Configuration.functionWriter.remove(encodedName);
 
             Logger.log(Level.INFO, String.format(Messages.SUCCESS_FUNCTION_REMOVE, functionName));
             return Single.just(String.format(Messages.SUCCESS_FUNCTION_REMOVE, functionName));
@@ -125,10 +110,9 @@ public class LambdaManager {
         }
     }
 
-    public Single<String> configureManager(String lambdaManagerConfiguration, BeanContext beanContext) {
+    public static Single<String> configureManager(String lambdaManagerConfiguration, BeanContext beanContext) {
         try {
-            configuration = new LambdaManagerArgumentStorage().initializeLambdaManager(
-                    ArgumentParser.parse(lambdaManagerConfiguration), beanContext);
+            ArgumentStorage.initializeLambdaManager(ArgumentParser.parse(lambdaManagerConfiguration), beanContext);
             Logger.log(Level.INFO, Messages.SUCCESS_CONFIGURATION_UPLOAD);
             return Single.just(Messages.SUCCESS_CONFIGURATION_UPLOAD);
         } catch (ErrorDuringParsingJSONFile | ErrorDuringReflectiveClassCreation | ErrorDuringCreatingConnectionPool e) {
