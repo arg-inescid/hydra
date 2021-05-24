@@ -16,10 +16,10 @@ public class VMMCallback implements OnProcessFinishCallback {
 
     @Override
     public void finish(int exitCode) {
-        if(exitCode != 0) {
+        if (exitCode != 0) {
             // Need fallback to execution with Hotspot with agent.
             lambda.lambda.getTimer().cancel();
-            if(lambda.function.getStatus() == FunctionStatus.BUILT) {
+            if (lambda.function.getStatus() == FunctionStatus.BUILT) {
                 lambda.function.setStatus(FunctionStatus.NOT_BUILT_NOT_CONFIGURED);
             }
         }

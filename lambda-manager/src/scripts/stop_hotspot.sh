@@ -3,7 +3,7 @@
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 
 source "$DIR"/environment.sh
-source "$DIR"/prepare_lambda_directory.sh
+source "$DIR"/prepare_lambda_directories.sh
 
 LAMBDA_HOME=$1
 if [ -z "$LAMBDA_HOME" ]; then

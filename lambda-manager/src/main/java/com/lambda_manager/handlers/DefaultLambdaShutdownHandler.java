@@ -34,10 +34,10 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
 
             switch (lambda.lambda.getExecutionMode()) {
                 case HOTSPOT:
-                    shutdownHotSpotLambda(String.format("codebase/%s/start-hotspot-id-%d", lambda.function.getName(), lambda.lambda.pid()));
+                    shutdownHotSpotLambda(String.format("codebase/%s/pid_%d_hotspot", lambda.function.getName(), lambda.lambda.pid()));
                     break;
                 case HOTSPOT_W_AGENT:
-                    shutdownHotSpotLambda(String.format("codebase/%s/start-hotspot-w-agent-id-%d", lambda.function.getName(), lambda.lambda.pid()));
+                    shutdownHotSpotLambda(String.format("codebase/%s/pid_%d_hotspot_w_agent", lambda.function.getName(), lambda.lambda.pid()));
                     break;
                 case NATIVE_IMAGE:
                     // Currently we don't shutdown lambdas running in Native Image.
@@ -63,7 +63,7 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
             processBuilder = lambda.function.removeProcess(lambda.lambda.pid());
         }
 
-//        shutdownLambda();
+        shutdownLambda();
         processBuilder.shutdownInstance();
 
         synchronized (lambda.function) {
