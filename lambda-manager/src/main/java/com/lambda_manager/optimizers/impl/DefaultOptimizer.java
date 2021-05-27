@@ -24,6 +24,7 @@ public class DefaultOptimizer implements Optimizer {
         switch (lambda.function.getStatus()) {
             case NOT_BUILT_NOT_CONFIGURED:
                 process = Processes.START_HOTSPOT_WITH_AGENT;
+                lambda.function.setLastAgentPID(lambda.lambda.pid());
                 lambda.function.setStatus(FunctionStatus.CONFIGURING_OR_BUILDING);
                 break;
             case NOT_BUILT_CONFIGURED:

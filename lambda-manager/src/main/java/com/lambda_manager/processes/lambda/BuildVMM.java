@@ -23,6 +23,7 @@ public class BuildVMM extends AbstractProcess {
         command.add("bash");
         command.add("src/scripts/build_vmm.sh");
         command.add(lambda.function.getName());
+        command.add(String.valueOf(lambda.function.getLastAgentPID()));
         return command;
     }
 

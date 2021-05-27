@@ -12,6 +12,12 @@ public class Function {
     private final String name;
     private FunctionStatus status;
     private String arguments;
+    /**
+     * There will be only one started agent per function, so we need to keep information about PID for that single lambda.
+     * We are sending this information to {@link com.lambda_manager.processes.lambda.BuildVMM } because during a build,
+     * we need to have access to the agent's generated configurations.
+     */
+    private long lastAgentPID;
     private final ArrayList<Lambda> availableLambdas = new ArrayList<>();
     private final ArrayList<Lambda> startedLambdas = new ArrayList<>();
     private final ArrayList<Lambda> activeLambdas = new ArrayList<>();
@@ -40,6 +46,14 @@ public class Function {
 
     public void setArguments(String arguments) {
         this.arguments = arguments;
+    }
+
+    public long getLastAgentPID() {
+        return lastAgentPID;
+    }
+
+    public void setLastAgentPID(long lastAgentPID) {
+        this.lastAgentPID = lastAgentPID;
     }
 
     public ArrayList<Lambda> getAvailableLambdas() {
