@@ -36,7 +36,7 @@ public class DefaultFunctionWriter implements FunctionWriter {
                 throw new ErrorUploadingLambda(String.format(Messages.ERROR_FUNCTION_UPLOAD, lambda.function.getName()));
             }
         }
-        function.getAvailableLambdas().add(lambdaInstanceInfo);
+        function.getStoppedLambdas().add(lambdaInstanceInfo);
         return lambda;
     }
 

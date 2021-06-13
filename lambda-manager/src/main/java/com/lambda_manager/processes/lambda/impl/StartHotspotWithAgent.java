@@ -47,6 +47,7 @@ public class StartHotspotWithAgent extends StartLambda {
         } else {
             command.add("");    // Placeholder.
         }
+        command.add(String.valueOf(lambda.function.getLastAgentPID()));
         if (lambda.function.getArguments() != null) {
             Collections.addAll(command, lambda.function.getArguments().split(","));
         }

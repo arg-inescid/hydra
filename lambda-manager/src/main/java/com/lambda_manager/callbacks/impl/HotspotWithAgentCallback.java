@@ -19,6 +19,7 @@ public class HotspotWithAgentCallback implements OnProcessFinishCallback {
 
     @Override
     public void finish(int exitCode) {
+        lambda.function.setLastAgentPID(lambda.lambda.pid());
         lambda.function.setStatus(FunctionStatus.NOT_BUILT_CONFIGURED);
         callback.finish(exitCode);
     }

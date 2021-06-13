@@ -7,6 +7,8 @@ import com.lambda_manager.exceptions.argument_parser.ErrorDuringReflectiveClassC
 import com.lambda_manager.exceptions.user.ErrorDuringCreatingConnectionPool;
 import com.lambda_manager.exceptions.user.ErrorUploadingLambda;
 import com.lambda_manager.exceptions.user.FunctionNotFound;
+import com.lambda_manager.optimizers.FunctionStatus;
+import com.lambda_manager.optimizers.LambdaExecutionMode;
 import com.lambda_manager.utils.LambdaTuple;
 import com.lambda_manager.utils.Messages;
 import com.lambda_manager.utils.logger.Logger;
@@ -19,17 +21,20 @@ import java.util.logging.Level;
 
 public class LambdaManager {
 
+	/** Number of times a request will be sent to a different Lambda upon timeout. */
+	// TODO - This value should be configurable.
+	private static final int LAMBDA_FAULT_TOLERANCE = 3;
+
     private LambdaManager() {
     }
 
     private static String formatRequestSpentTimeMessage(LambdaTuple<Function, Lambda> lambda, long spentTime) {
-        switch (lambda.function.getStatus()) {
-            case NOT_BUILT_NOT_CONFIGURED:
+        switch (lambda.lambda.getExecutionMode()) {
+            case HOTSPOT_W_AGENT:
                 return String.format(Messages.TIME_HOTSPOT_W_AGENT, lambda.lambda.pid(), spentTime);
-            case CONFIGURING_OR_BUILDING:
-            case NOT_BUILT_CONFIGURED:
+            case HOTSPOT:
                 return String.format(Messages.TIME_HOTSPOT, lambda.lambda.pid(), spentTime);
-            case BUILT:
+            case NATIVE_IMAGE:
                 return String.format(Messages.TIME_NATIVE_IMAGE, lambda.lambda.pid(), spentTime);
             default:
                 throw new UnsupportedOperationException();
@@ -43,15 +48,32 @@ public class LambdaManager {
                 return Single.just(Messages.NO_CONFIGURATION_UPLOADED);
             }
 
-            long start = System.currentTimeMillis();
-            String encodedName = Configuration.encoder.encode(username, functionName);
-            LambdaTuple<Function, Lambda> lambda = Configuration.scheduler.schedule(encodedName, parameters);
+            Function function = Configuration.storage.get(Configuration.encoder.encode(username, functionName));
+            String response = null;
+            LambdaExecutionMode targetMode = null;
 
-            String response = Configuration.client.sendRequest(lambda);
-            Configuration.optimizer.registerCall(lambda);
-            Configuration.scheduler.reschedule(lambda);
+            // TODO - We should strive to have a simple LambdaManager. This loop should be part of the scheduler?
+            for (int i = 0; i < LAMBDA_FAULT_TOLERANCE; i++) {
+                long start = System.currentTimeMillis();
+                LambdaTuple<Function, Lambda> lambda = Configuration.scheduler.schedule(function, targetMode);
+                lambda.lambda.setParameters(parameters);
+                response = Configuration.client.sendRequest(lambda);
+                Configuration.optimizer.registerCall(lambda);
+                Configuration.scheduler.reschedule(lambda);
 
-            Logger.log(Level.FINE, formatRequestSpentTimeMessage(lambda, System.currentTimeMillis() - start));
+                if (response.equals(Messages.HTTP_TIMEOUT)) {
+                    if (lambda.lambda.getExecutionMode() == LambdaExecutionMode.NATIVE_IMAGE) {
+                        function.setStatus(FunctionStatus.NOT_BUILT_NOT_CONFIGURED);
+                        targetMode = LambdaExecutionMode.HOTSPOT_W_AGENT;
+                    }
+                    Logger.log(Level.INFO, "Decommisioning (failed requests) lambda " + lambda.lambda.pid());
+                    lambda.function.decommissionLambda(lambda.lambda);
+                } else {
+                    Logger.log(Level.FINE, formatRequestSpentTimeMessage(lambda, System.currentTimeMillis() - start));
+                    break;
+                }
+            }
+
             return Single.just(response);
         } catch (FunctionNotFound functionNotFound) {
             Logger.log(Level.WARNING, functionNotFound.getMessage(), functionNotFound);

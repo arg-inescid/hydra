@@ -38,4 +38,5 @@ LAMBDA_HOME=$FUNCTION_HOME/pid_"$LAMBDA_ID"_hotspot_w_agent
   -jar "$FUNCTION_JAR" \
   -H:Virtualize="$VIRTUALIZE_PATH" \
   -H:ConfigurationFileDirectories="$LAMBDA_HOME"/shared/config \
-  -H:ExcludeResources=".*/io.micronaut.*$|io.netty.*$"
+  -H:ExcludeResources=".*/io.micronaut.*$|io.netty.*$" \
+  -H:+InterceptReflectiveOperationException

@@ -6,15 +6,23 @@ import io.micronaut.http.client.RxHttpClient;
 
 import java.util.Timer;
 
-// TODO: Make this interface.
 public class Lambda {
 
     private long pid;
+
+    /** Number of requests currently being executed. */
     private int openRequestCount;
+
+    /** Number of processed requests since the lambda started. */
+    private int closedRequestCount;
+
     private String parameters;
     private Timer timer;
     private ConnectionTriplet<String, String, RxHttpClient> connectionTriplet;
     private LambdaExecutionMode executionMode;
+
+    /** Indicates whether or not this lambda should be used for future requests. */
+    private boolean decomissioned;
 
     public Lambda() {
     }
@@ -27,12 +35,28 @@ public class Lambda {
         return pid;
     }
 
-    public int getOpenRequestCount() {
-        return openRequestCount;
+    public int incOpenRequestCount() {
+        return ++openRequestCount;
     }
 
-    public void setOpenRequestCount(int openRequestCount) {
-        this.openRequestCount = openRequestCount;
+    public int decOpenRequestCount() {
+        return --openRequestCount;
+    }
+
+    public int incClosedRequestCount() {
+        return ++closedRequestCount;
+    }
+
+    public int decClosedRequestCount() {
+        return --closedRequestCount;
+    }
+
+    public void resetClosedRequestCount() {
+        closedRequestCount = 0;
+    }
+
+    public int getClosedRequestCount() {
+        return closedRequestCount;
     }
 
     public String getParameters() {
@@ -66,4 +90,13 @@ public class Lambda {
     public void setExecutionMode(LambdaExecutionMode executionMode) {
         this.executionMode = executionMode;
     }
+
+	public boolean isDecomissioned() {
+		return decomissioned;
+	}
+
+	public void setDecomissioned(boolean decomissioned) {
+		this.decomissioned = decomissioned;
+	}
+
 }

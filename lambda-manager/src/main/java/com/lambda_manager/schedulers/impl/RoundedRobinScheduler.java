@@ -5,14 +5,20 @@ import com.lambda_manager.collectors.meta_info.Lambda;
 import com.lambda_manager.core.Configuration;
 import com.lambda_manager.core.Environment;
 import com.lambda_manager.exceptions.user.FunctionNotFound;
+import com.lambda_manager.exceptions.user.SchedulingException;
 import com.lambda_manager.handlers.DefaultLambdaShutdownHandler;
+import com.lambda_manager.optimizers.FunctionStatus;
+import com.lambda_manager.optimizers.LambdaExecutionMode;
 import com.lambda_manager.processes.ProcessBuilder;
 import com.lambda_manager.processes.Processes;
 import com.lambda_manager.schedulers.Scheduler;
 import com.lambda_manager.utils.LambdaTuple;
 import com.lambda_manager.utils.Messages;
+import com.lambda_manager.utils.logger.Logger;
 
+import java.util.ArrayList;
 import java.util.Timer;
+import java.util.logging.Level;
 
 @SuppressWarnings("unused")
 public class RoundedRobinScheduler implements Scheduler {
@@ -52,49 +58,77 @@ public class RoundedRobinScheduler implements Scheduler {
         processBuilder.start();
     }
 
-    @Override
-    public void spawnNewLambda(LambdaTuple<Function, Lambda> lambda) {
+    private void spawnNewLambda(LambdaTuple<Function, Lambda> lambda) {
         gate(lambda);
         acquireConnection(lambda);
         buildProcess(lambda);
     }
 
-    @Override
-    public LambdaTuple<Function, Lambda> schedule(String functionName, String parameters) throws FunctionNotFound {
-        Function function = Configuration.storage.get(functionName);
-        if (function == null) {
-            throw new FunctionNotFound(String.format(Messages.FUNCTION_NOT_FOUND, functionName));
-        }
+    private Lambda findLambda(ArrayList<Lambda> lambdas) {
+        return findLambda(lambdas, null);
+    }
 
-        Lambda lambda;
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter
-        synchronized (function) {
-            if (function.getStartedLambdas().isEmpty()) {
-                if (function.getAvailableLambdas().isEmpty()) {
-                    if (function.getActiveLambdas().isEmpty()) {
-                        try {
-                            function.wait();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
+    private Lambda findLambda(ArrayList<Lambda> lambdas, LambdaExecutionMode targetMode) {
+        for (Lambda lambda : lambdas) {
+            if (!lambda.isDecomissioned()) {
+                 if (targetMode != null && lambda.getExecutionMode() != targetMode) {
+                     continue;
+                 } else {
+                     return lambda;
+                 }
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public LambdaTuple<Function, Lambda> schedule(Function function, LambdaExecutionMode targetMode) throws FunctionNotFound, SchedulingException {
+        Lambda lambda = null;
+
+        while (true) {
+
+            //noinspection SynchronizationOnLocalVariableOrMethodParameter
+            synchronized (function) {
+                if ((lambda = findLambda(function.getIdleLambdas(), targetMode)) == null) {
+                    if ((lambda = findLambda(function.getStoppedLambdas())) == null) {
+                        if ((lambda = findLambda(function.getRunningLambdas(), targetMode)) != null) {
+                            function.getRunningLambdas().remove(lambda);
                         }
-                        lambda = function.getAvailableLambdas().remove(0);
-                        lambda.setParameters(parameters);
-                        spawnNewLambda(new LambdaTuple<>(function, lambda));
                     } else {
-                        lambda = function.getActiveLambdas().remove(0);
+                        function.getStoppedLambdas().remove(lambda);
+                        spawnNewLambda(new LambdaTuple<>(function, lambda));
                     }
                 } else {
-                    lambda = function.getAvailableLambdas().remove(0);
-                    lambda.setParameters(parameters);
-                    spawnNewLambda(new LambdaTuple<>(function, lambda));
+                    function.getIdleLambdas().remove(lambda);
+                    lambda.getTimer().cancel();
                 }
-            } else {
-                lambda = function.getStartedLambdas().remove(0);
-                lambda.getTimer().cancel();
+                if (lambda != null) {
+                    function.getRunningLambdas().add(lambda);
+                    lambda.incOpenRequestCount();
+                    break;
+                }
             }
 
-            function.getActiveLambdas().add(lambda);
-            lambda.setOpenRequestCount(lambda.getOpenRequestCount() + 1);
+            try {
+                // TODO - print a warning.
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+
+        // TODO - move to Configuration.optimizer -> should be here?
+        if (function.getNumberDecommissedLambdas() < (function.getTotalNumberLambdas() / 2)) {
+            if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT && function.getStatus() == FunctionStatus.BUILT) {
+                function.decommissionLambda(lambda);
+                Logger.log(Level.INFO, "Decommisioning (hotspot to native image) lambda " + lambda.pid());
+            }
+
+            if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT && lambda.getClosedRequestCount() > 1000) {
+                function.decommissionLambda(lambda);
+                Logger.log(Level.INFO, "Decommisioning (wrapping agent) lambda " + lambda.pid());
+            }
         }
 
         return new LambdaTuple<>(function, lambda);
@@ -103,17 +137,18 @@ public class RoundedRobinScheduler implements Scheduler {
     @Override
     public void reschedule(LambdaTuple<Function, Lambda> lambda) {
         synchronized (lambda.function) {
-            int openRequestCount = lambda.lambda.getOpenRequestCount() - 1;
-            lambda.lambda.setOpenRequestCount(openRequestCount);
+            int openRequestCount = lambda.lambda.decOpenRequestCount();
+            lambda.lambda.incClosedRequestCount();
             if (openRequestCount == 0) {
-                lambda.function.getActiveLambdas().remove(lambda.lambda);
-                lambda.function.getStartedLambdas().add(lambda.lambda);
+                lambda.function.getRunningLambdas().remove(lambda.lambda);
+                lambda.function.getIdleLambdas().add(lambda.lambda);
 
                 Timer currentTimer = lambda.lambda.getTimer();
                 if (currentTimer != null) {
                     currentTimer.cancel();
                 }
                 Timer newTimer = new Timer();
+                // TODO - allow a timer for immediate termination.
                 newTimer.schedule(new DefaultLambdaShutdownHandler(lambda), Configuration.argumentStorage.getTimeout());
                 lambda.lambda.setTimer(newTimer);
             }

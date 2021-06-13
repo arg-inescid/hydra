@@ -56,20 +56,24 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
         ProcessBuilder processBuilder;
 
         synchronized (lambda.function) {
-            if (!lambda.function.getStartedLambdas().remove(lambda.lambda)) {
+            if (!lambda.function.getIdleLambdas().remove(lambda.lambda)) {
                 return;
             }
             lambda.lambda.getTimer().cancel();
             processBuilder = lambda.function.removeProcess(lambda.lambda.pid());
         }
 
+        lambda.function.commissionLambda(lambda.lambda);
+        lambda.lambda.resetClosedRequestCount();
+
         shutdownLambda();
         processBuilder.shutdownInstance();
 
         synchronized (lambda.function) {
             Configuration.argumentStorage.returnConnectionTriplet(lambda.lambda.getConnectionTriplet());
-            lambda.function.getAvailableLambdas().add(lambda.lambda);
+            lambda.function.getStoppedLambdas().add(lambda.lambda);
             lambda.function.notify();
         }
     }
+
 }

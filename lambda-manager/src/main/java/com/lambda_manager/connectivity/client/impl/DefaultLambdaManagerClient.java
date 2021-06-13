@@ -12,6 +12,7 @@ import io.micronaut.http.MutableHttpParameters;
 import io.micronaut.http.MutableHttpRequest;
 import io.micronaut.http.client.RxHttpClient;
 import io.micronaut.http.client.exceptions.HttpClientException;
+import io.micronaut.http.client.exceptions.ReadTimeoutException;
 import io.reactivex.Flowable;
 
 import java.util.logging.Level;
@@ -19,10 +20,11 @@ import java.util.logging.Level;
 @SuppressWarnings("unused")
 public class DefaultLambdaManagerClient implements LambdaManagerClient {
 
+	// TODO - This value be configurable?
+	/** Number of times a request will be re-sent to a particular Lambda upon an error. */
     private static final int FAULT_TOLERANCE = 300;
 
-    @Override
-    public HttpRequest<?> buildHTTPRequest(String parametersString) {
+    private HttpRequest<?> buildHTTPRequest(String parametersString) {
         MutableHttpRequest<Object> request = HttpRequest.GET("/");
         if(parametersString != null) {
             MutableHttpParameters requestParameters = request.getParameters();
@@ -44,6 +46,9 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
             for (int failures = 0; failures < FAULT_TOLERANCE; failures++) {
                 try {
                     return flowable.blockingFirst();
+                } catch (ReadTimeoutException readTimeoutException) {
+                    // TODO - we are giving up on this lambda. We should log this as a warning!
+                    break;
                 } catch (HttpClientException httpClientException) {
                     try {
                         Thread.sleep(Configuration.argumentStorage.getHealthCheck());

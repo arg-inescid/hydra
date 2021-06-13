@@ -7,6 +7,5 @@ import com.lambda_manager.utils.LambdaTuple;
 import io.micronaut.http.HttpRequest;
 
 public interface LambdaManagerClient {
-    HttpRequest<?> buildHTTPRequest(String parameters);
     String sendRequest(LambdaTuple<Function, Lambda> lambda);
 }

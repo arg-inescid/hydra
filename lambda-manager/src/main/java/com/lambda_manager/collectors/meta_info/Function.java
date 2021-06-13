@@ -6,7 +6,6 @@ import com.lambda_manager.processes.ProcessBuilder;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-// TODO: Make this interface.
 public class Function {
 
     private final String name;
@@ -18,10 +17,21 @@ public class Function {
      * we need to have access to the agent's generated configurations.
      */
     private long lastAgentPID;
-    private final ArrayList<Lambda> availableLambdas = new ArrayList<>();
-    private final ArrayList<Lambda> startedLambdas = new ArrayList<>();
-    private final ArrayList<Lambda> activeLambdas = new ArrayList<>();
+
+    /** Unallocated lambdas. */
+    private final ArrayList<Lambda> stoppedLambdas = new ArrayList<>();
+
+    /** Idle lambdas, waiting for requests. */
+    private final ArrayList<Lambda> idleLambdas = new ArrayList<>();
+
+    /** Busy lambdas, running requests. */
+    private final ArrayList<Lambda> runningLambdas = new ArrayList<>();
+
+    /** Active processes by PID. */
     private final HashMap<Long, ProcessBuilder> activeProcesses = new HashMap<>();
+
+    /** Number of Lambdas that are not receiving requests. */
+    private int decommissedLambdas;
 
     public Function(String name) {
         this.name = name;
@@ -56,16 +66,16 @@ public class Function {
         this.lastAgentPID = lastAgentPID;
     }
 
-    public ArrayList<Lambda> getAvailableLambdas() {
-        return availableLambdas;
+    public ArrayList<Lambda> getStoppedLambdas() {
+        return stoppedLambdas;
     }
 
-    public ArrayList<Lambda> getStartedLambdas() {
-        return startedLambdas;
+    public ArrayList<Lambda> getIdleLambdas() {
+        return idleLambdas;
     }
 
-    public ArrayList<Lambda> getActiveLambdas() {
-        return activeLambdas;
+    public ArrayList<Lambda> getRunningLambdas() {
+        return runningLambdas;
     }
 
     public void addNewProcess(Long pid, ProcessBuilder processBuilder) {
@@ -75,4 +85,22 @@ public class Function {
     public ProcessBuilder removeProcess(Long pid) {
         return activeProcesses.remove(pid);
     }
+
+	public int getNumberDecommissedLambdas() {
+		return decommissedLambdas;
+	}
+
+	public void decommissionLambda(Lambda lambda) {
+		decommissedLambdas++;
+		lambda.setDecomissioned(true);
+	}
+
+	public void commissionLambda(Lambda lambda) {
+		decommissedLambdas--;
+		lambda.setDecomissioned(false);
+	}
+
+	public int getTotalNumberLambdas() {
+		return stoppedLambdas.size() + idleLambdas.size() + runningLambdas.size();
+	}
 }
