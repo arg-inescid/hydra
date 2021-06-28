@@ -2,12 +2,12 @@ package com.lambda_manager.connectivity;
 
 import com.lambda_manager.core.LambdaManager;
 import io.micronaut.context.BeanContext;
+import io.micronaut.core.annotation.Nullable;
 import io.micronaut.http.annotation.*;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.reactivex.Single;
 
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 import static io.micronaut.http.MediaType.APPLICATION_JSON;

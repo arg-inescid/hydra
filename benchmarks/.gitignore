@@ -1,2 +1,21 @@
-results/*
-!results/.gitkeep
+# Results for CPP benchmarks.
+results/cpp/*
+!results/cpp/.gitkeep
+
+# Results for Java benchmarks.
+results/java/array-hashing/*
+!results/java/array-hashing/.gitkeep
+results/java/array-sorting/*
+!results/java/array-sorting/.gitkeep
+results/java/hello-world/*
+!results/java/hello-world/.gitkeep
+results/java/hello-world-micronaut/*
+!results/java/hello-world-micronaut/.gitkeep
+results/java/reflection-call/*
+!results/java/reflection-call/.gitkeep
+results/java/tree-traversal/*
+!results/java/tree-traversal/.gitkeep
+
+# Results for Python benchmarks
+results/python/hello-world/*
+results/python/hello-world/.gitkeep

@@ -1,14 +1,13 @@
 plugins {
     id("com.github.johnrengelman.shadow") version "7.0.0"
-    id("io.micronaut.application") version "1.5.1"
+    id("io.micronaut.application") version "1.5.0"
 }
 
 version = "1.0"
-group = "com.lambda_manager"
+group = "com.hello_world"
 
 repositories {
     mavenCentral()
-    google()
 }
 
 micronaut {
@@ -16,31 +15,26 @@ micronaut {
     testRuntime("junit5")
     processing {
         incremental(true)
-        annotations("com.lambda_manager.*")
+        annotations("com.hello_world.*")
     }
 }
 
 dependencies {
-    implementation("io.micronaut:micronaut-validation")
+    implementation("io.micronaut:micronaut-http-client")
     implementation("io.micronaut:micronaut-runtime")
     implementation("javax.annotation:javax.annotation-api")
-    implementation("io.micronaut:micronaut-http-client")
-    implementation("com.github.maltalex:ineter:0.2.0")
+    implementation("io.micronaut:micronaut-validation")
     runtimeOnly("ch.qos.logback:logback-classic")
 }
 
 
 application {
-    mainClass.set("com.lambda_manager.EntryPoint")
+    mainClass.set("com.hello_world.Application")
 }
-
 java {
     sourceCompatibility = JavaVersion.toVersion("11")
     targetCompatibility = JavaVersion.toVersion("11")
 }
 
-tasks {
 
-
-}
 

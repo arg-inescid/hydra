@@ -1,3 +1,43 @@
+## Manager configuration
+
+### Description
+
+Before each operation with the lambda manager, we need to specify the manager's behavior using this configuration. The
+proper description of each field in this configuration is provided below.
+
+Default value for each variable rest inside configs/manager/default-manager.json.
+
+```json
+{
+  "gateway": "[STRING] The default PC's gateway address with mask?",
+  "maxLambdas": "[INTEGER] How many lambdas can be started in total by this manager?",
+  "timeout": "[INTEGER] Time during which lambda can stay inactive?",
+  "healthCheck": "[INTEGER] Lambda's health will be checked in this time-span, after the first health response, no more checks are made.",
+  "memory": "[STRING] Maximum memory consumption per active lambda?",
+  "lambdaPort": "[INTEGER] In which port the lambda will receive it's requests?",
+  "lambdaConsole": "[BOOLEAN] Is console active during qemu's run?",
+  "managerConsole": {
+    "turnOff": "[BOOLEAN] Turn On/Off logging",
+    "redirectToFile": "[BOOLEAN] Should the logging be redirected to file or printed in console?",
+    "fineGrain": "[BOOLEAN] Fine or coarse grain logging?"
+  },
+  "managerState": {
+    "scheduler": "[STRING] Fully qualified name of chosen Scheduler?",
+    "optimizer": "[STRING] Fully qualified name of chosen Optimizer?",
+    "encoder": "[STRING] Fully qualified name of chosen Encoder?",
+    "storage": "[STRING] Fully qualified name of chosen Storage?",
+    "client": "[STRING] Fully qualified name of chosen Client?",
+    "codeWriter": "[STRING] Fully qualified name of chosen Code writer?",
+    "lambdaInfo": {
+      "lambda": "[STRING] Fully qualified name of chosen Lambda?",
+      "function": "[STRING] Fully qualified name of chosen Function?"
+    }
+  }
+}
+```
+
+---
+
 ## Installing dependencies
 
 ### General
@@ -29,7 +69,12 @@ Verbosity levels:
 The tool for running tests `run-test.py` will create multi-user, multi-client (multiple clients behind the same
 username) an environment with different loads based on test configuration for system stress testing.
 
+There is also possibility to start all test at once, using  `run-tests.py`. Test are separate into different tiers,
+based on level of complexity.
+
 ### Arguments
+
+#### Separate testing
 
 ```commandline
 python run-test.py test_config_path
@@ -45,7 +90,7 @@ Verbosity levels:
 - Level 2 - level 1 plus full output log.
 
 The second argument of the tool is a path for the test configuration. A detailed explanation of the configuration
-structure is provided bellow (value inside [ ] represents JSON data types):
+structure is provide bellow (value inside [ ] represents JSON data types):
 
 ```json
 {
@@ -83,7 +128,7 @@ structure is provided bellow (value inside [ ] represents JSON data types):
               "parameters_pool": [
                 "[STRING] set1_param1, set1_param2, set1_param3",
                 "[STRING] set2_param1, set2_param2",
-                "[STRING] set3_param1, set3_param2, set3_param3, set3_param3"
+                "[STRING] set3_param1, set3_param2, set3_param3, set3_param4"
               ],
               "output": "[STRING] Where the ApacheBench should store results?"
             }
@@ -98,6 +143,17 @@ structure is provided bellow (value inside [ ] represents JSON data types):
   ]
 }
 ```
+
+#### Test all at once
+
+```commandline
+python run-tests.py
+python run-tests.py verbosity_level
+```
+
+The tool receives none or one argument, if there are no arguments, the default verbosity level will be set to 0, if the
+arguments have been passed then it should be in the format *v* or *vv* (verbosity level 1 or 2). Verbosity level will be
+sent to each test separately.<br/>
 
 ---
 

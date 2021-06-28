@@ -40,6 +40,8 @@ public class ProcessBuilder extends Thread {
             Logger.log(Level.INFO, String.format(Messages.PROCESS_EXIT, pid, commandAsString, exitCode));
         } catch (IOException | InterruptedException e) {
             Logger.log(Level.WARNING, String.format(Messages.PROCESS_RAISE_EXCEPTION, pid, commandAsString), e);
+        } catch (Throwable throwable) {
+            Logger.log(Level.SEVERE, String.format(Messages.PROCESS_SHUTDOWN_EXCEPTION, pid, commandAsString), throwable);
         }
     }
 

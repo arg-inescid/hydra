@@ -33,6 +33,8 @@ public class Messages {
     public static final String PROCESS_START = "PID -> %d | Command -> %s | Output -> %s";
     public static final String PROCESS_EXIT = "PID -> %d | Command -> %s | Exit code -> %d";
     public static final String PROCESS_RAISE_EXCEPTION = "PID -> %d | Command -> %s | Raised exception!";
+    public static final String PROCESS_SHUTDOWN_EXCEPTION = "PID -> %d | | Command -> %s | " +
+            "Raise exception in shutdown callback!";
 
     // Connection pool messages.
     public static final String ERROR_POOL_CREATION = "Error during creating new connection pool!";
