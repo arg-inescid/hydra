@@ -2,6 +2,8 @@ package com.lambda_manager.core;
 
 import com.lambda_manager.processes.ProcessBuilder;
 import com.lambda_manager.processes.Processes;
+import com.lambda_manager.processes.main.RemoveTapsFromPool;
+import com.lambda_manager.processes.main.RemoveTapsOutsidePool;
 import com.lambda_manager.utils.Messages;
 import com.lambda_manager.utils.logger.Logger;
 import io.micronaut.context.event.ApplicationEventListener;
@@ -15,13 +17,13 @@ import java.util.logging.Level;
 public class ShutdownHook implements ApplicationEventListener<ApplicationShutdownEvent> {
 
     private void removeTapsFromPool() throws InterruptedException {
-        ProcessBuilder removeTapsWorker = Processes.REMOVE_TAPS_FROM_POOL.build(null);
+        ProcessBuilder removeTapsWorker = new RemoveTapsFromPool().build();
         removeTapsWorker.start();
         removeTapsWorker.join();
     }
 
     private void removeTapsOutsidePool() throws InterruptedException {
-        ProcessBuilder removeTapsOutsidePoolWorker = Processes.REMOVE_TAPS_OUTSIDE_POOL.build(null);
+        ProcessBuilder removeTapsOutsidePoolWorker = new RemoveTapsOutsidePool().build();
         removeTapsOutsidePoolWorker.start();
         removeTapsOutsidePoolWorker.join();
     }

@@ -4,11 +4,18 @@ import com.lambda_manager.optimizers.LambdaExecutionMode;
 import com.lambda_manager.utils.ConnectionTriplet;
 import io.micronaut.http.client.RxHttpClient;
 
+import com.lambda_manager.processes.ProcessBuilder;
+
+
 import java.util.Timer;
 
 public class Lambda {
 
-    private long pid;
+	/** The Function that this Lambda is executing. */
+    private Function function;
+
+    /** The process that is hosting the lambda execution. */
+    private ProcessBuilder process;
 
     /** Number of requests currently being executed. */
     private int openRequestCount;
@@ -27,12 +34,20 @@ public class Lambda {
     public Lambda() {
     }
 
-    public void setPid(long pid) {
-        this.pid = pid;
+    public Function getFunction() {
+        return this.function;
     }
 
-    public long pid() {
-        return pid;
+    public void setFunction(Function function) {
+        this.function = function;
+    }
+
+    public ProcessBuilder getProcess() {
+        return this.process;
+    }
+
+    public void setProcess(ProcessBuilder process) {
+        this.process = process;
     }
 
     public int incOpenRequestCount() {
