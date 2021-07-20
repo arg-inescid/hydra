@@ -1,5 +1,5 @@
 {
-  "test": "hello-world",
+  "test": "test1",
   "entry_point": "http://localhost:9000",
   "managers": [
     {
@@ -26,9 +26,9 @@
           "command": "send",
           "sending_info": [
             {
-              "iterations": 1,
-              "num_requests": 10,
-              "num_clients": 1,
+              "iterations": 1000,
+              "num_requests": 100,
+              "num_clients": 100,
               "function_name": "hello-world",
               "parameters_pool": [],
               "output": "../../benchmarks/results/java/hello-world/hello-world-java-1.dat"
