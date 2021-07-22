@@ -9,7 +9,6 @@ import com.lambda_manager.exceptions.user.ErrorUploadingLambda;
 import com.lambda_manager.exceptions.user.FunctionNotFound;
 import com.lambda_manager.optimizers.FunctionStatus;
 import com.lambda_manager.optimizers.LambdaExecutionMode;
-import com.lambda_manager.utils.LambdaTuple;
 import com.lambda_manager.utils.Messages;
 import com.lambda_manager.utils.logger.Logger;
 import com.lambda_manager.utils.parser.ArgumentParser;
@@ -28,14 +27,14 @@ public class LambdaManager {
     private LambdaManager() {
     }
 
-    private static String formatRequestSpentTimeMessage(LambdaTuple<Function, Lambda> lambda, long spentTime) {
-        switch (lambda.lambda.getExecutionMode()) {
+    private static String formatRequestSpentTimeMessage(Lambda lambda, long spentTime) {
+        switch (lambda.getExecutionMode()) {
             case HOTSPOT_W_AGENT:
-                return String.format(Messages.TIME_HOTSPOT_W_AGENT, lambda.lambda.pid(), spentTime);
+                return String.format(Messages.TIME_HOTSPOT_W_AGENT, lambda.getProcess().pid(), spentTime);
             case HOTSPOT:
-                return String.format(Messages.TIME_HOTSPOT, lambda.lambda.pid(), spentTime);
+                return String.format(Messages.TIME_HOTSPOT, lambda.getProcess().pid(), spentTime);
             case NATIVE_IMAGE:
-                return String.format(Messages.TIME_NATIVE_IMAGE, lambda.lambda.pid(), spentTime);
+                return String.format(Messages.TIME_NATIVE_IMAGE, lambda.getProcess().pid(), spentTime);
             default:
                 throw new UnsupportedOperationException();
         }
@@ -55,19 +54,19 @@ public class LambdaManager {
             // TODO - We should strive to have a simple LambdaManager. This loop should be part of the scheduler?
             for (int i = 0; i < LAMBDA_FAULT_TOLERANCE; i++) {
                 long start = System.currentTimeMillis();
-                LambdaTuple<Function, Lambda> lambda = Configuration.scheduler.schedule(function, targetMode);
-                lambda.lambda.setParameters(parameters);
+                Lambda lambda = Configuration.scheduler.schedule(function, targetMode);
+                lambda.setParameters(parameters);
                 response = Configuration.client.sendRequest(lambda);
                 Configuration.optimizer.registerCall(lambda);
                 Configuration.scheduler.reschedule(lambda);
 
                 if (response.equals(Messages.HTTP_TIMEOUT)) {
-                    if (lambda.lambda.getExecutionMode() == LambdaExecutionMode.NATIVE_IMAGE) {
+                    if (lambda.getExecutionMode() == LambdaExecutionMode.NATIVE_IMAGE) {
                         function.setStatus(FunctionStatus.NOT_BUILT_NOT_CONFIGURED);
                         targetMode = LambdaExecutionMode.HOTSPOT_W_AGENT;
                     }
-                    Logger.log(Level.INFO, "Decommisioning (failed requests) lambda " + lambda.lambda.pid());
-                    lambda.function.decommissionLambda(lambda.lambda);
+                    Logger.log(Level.INFO, "Decommisioning (failed requests) lambda " + lambda.getProcess().pid());
+                    lambda.getFunction().decommissionLambda(lambda);
                 } else {
                     Logger.log(Level.FINE, formatRequestSpentTimeMessage(lambda, System.currentTimeMillis() - start));
                     break;

@@ -5,7 +5,6 @@ import com.lambda_manager.function_writer.FunctionWriter;
 import com.lambda_manager.collectors.meta_info.Lambda;
 import com.lambda_manager.collectors.meta_info.Function;
 import com.lambda_manager.exceptions.user.ErrorUploadingLambda;
-import com.lambda_manager.utils.LambdaTuple;
 import com.lambda_manager.utils.Messages;
 
 import java.io.File;
@@ -17,13 +16,8 @@ import java.nio.file.Paths;
 public class DefaultFunctionWriter implements FunctionWriter {
 
     @Override
-    public LambdaTuple<Function, Lambda> upload(Function function,
-                                                String encodedName, byte[] functionCode)
+    public void upload(Function function, String encodedName, byte[] functionCode)
             throws ErrorUploadingLambda, IOException {
-
-        Lambda lambdaInstanceInfo = new Lambda();
-        LambdaTuple<Function, Lambda> lambda = new LambdaTuple<>(function, lambdaInstanceInfo);
-
         String functionDir = Paths.get(Environment.CODEBASE, encodedName).toString();
         File newSrcDir = new File(functionDir);
         if(newSrcDir.mkdirs()) {
@@ -33,11 +27,10 @@ public class DefaultFunctionWriter implements FunctionWriter {
                 fileOutputStream.write(functionCode);
                 fileOutputStream.close();
             } else {
-                throw new ErrorUploadingLambda(String.format(Messages.ERROR_FUNCTION_UPLOAD, lambda.function.getName()));
+                throw new ErrorUploadingLambda(String.format(Messages.ERROR_FUNCTION_UPLOAD, function.getName()));
             }
         }
-        function.getStoppedLambdas().add(lambdaInstanceInfo);
-        return lambda;
+        function.getStoppedLambdas().add(new Lambda());
     }
 
     @Override
@@ -48,7 +41,6 @@ public class DefaultFunctionWriter implements FunctionWriter {
         }
     }
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     private void purgeDirectory(File dir, boolean deleteDir) {
         //noinspection ConstantConditions
         for (File file: dir.listFiles()) {

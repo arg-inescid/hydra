@@ -30,6 +30,10 @@ public class ProcessBuilder extends Thread {
         this.pid = pid;
     }
 
+    public long pid() {
+        return this.pid;
+    }
+
     @Override
     public void run() {
         try {

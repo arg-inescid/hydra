@@ -4,7 +4,6 @@ import com.lambda_manager.collectors.meta_info.Function;
 import com.lambda_manager.collectors.meta_info.Lambda;
 import com.lambda_manager.connectivity.client.LambdaManagerClient;
 import com.lambda_manager.core.Configuration;
-import com.lambda_manager.utils.LambdaTuple;
 import com.lambda_manager.utils.Messages;
 import com.lambda_manager.utils.logger.Logger;
 import io.micronaut.http.HttpRequest;
@@ -39,9 +38,9 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
     }
 
     @Override
-    public String sendRequest(LambdaTuple<Function, Lambda> lambda) {
-        HttpRequest<?> request = buildHTTPRequest(lambda.lambda.getParameters());
-        try (RxHttpClient client = lambda.lambda.getConnectionTriplet().client) {
+    public String sendRequest(Lambda lambda) {
+        HttpRequest<?> request = buildHTTPRequest(lambda.getParameters());
+        try (RxHttpClient client = lambda.getConnectionTriplet().client) {
             Flowable<String> flowable = client.retrieve(request);
             for (int failures = 0; failures < FAULT_TOLERANCE; failures++) {
                 try {

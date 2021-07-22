@@ -20,7 +20,7 @@
           "allocate": 3,
           "function_name": "hello-world",
           "arguments": "8080",
-          "source": "../../benchmarks/src/java/hello-world/build/libs/hello-world-1.0.jar"
+          "source": "../../benchmarks/language/java/hello-world/build/libs/hello-world-1.0.jar"
         },
         {
           "command": "send",

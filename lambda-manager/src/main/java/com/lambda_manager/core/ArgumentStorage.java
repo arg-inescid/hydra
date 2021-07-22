@@ -10,7 +10,7 @@ import com.lambda_manager.exceptions.user.ErrorDuringCreatingConnectionPool;
 import com.lambda_manager.function_writer.FunctionWriter;
 import com.lambda_manager.optimizers.Optimizer;
 import com.lambda_manager.processes.ProcessBuilder;
-import com.lambda_manager.processes.Processes;
+import com.lambda_manager.processes.main.CreateTaps;
 import com.lambda_manager.schedulers.Scheduler;
 import com.lambda_manager.utils.ConnectionTriplet;
 import com.lambda_manager.utils.Messages;
@@ -120,7 +120,7 @@ public class ArgumentStorage {
                 connectionPool.add(new ConnectionTriplet<>(ip, tap, client));
             }
 
-            ProcessBuilder createTaps = Processes.CREATE_TAPS.build(null);
+            ProcessBuilder createTaps = new CreateTaps().build();
             createTaps.start();
             createTaps.join();
         } catch (InterruptedException | MalformedURLException e) {

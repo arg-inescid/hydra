@@ -78,12 +78,12 @@ public class Function {
         return runningLambdas;
     }
 
-    public void addNewProcess(Long pid, ProcessBuilder processBuilder) {
-        activeProcesses.put(pid, processBuilder);
+    public void addProcess(ProcessBuilder process) {
+        activeProcesses.put(process.pid(), process);
     }
 
-    public ProcessBuilder removeProcess(Long pid) {
-        return activeProcesses.remove(pid);
+    public ProcessBuilder removeProcess(ProcessBuilder process) {
+        return activeProcesses.remove(process.pid());
     }
 
 	public int getNumberDecommissedLambdas() {

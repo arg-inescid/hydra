@@ -2,13 +2,11 @@ package com.lambda_manager.processes.lambda.impl;
 
 import com.lambda_manager.callbacks.OnProcessFinishCallback;
 import com.lambda_manager.callbacks.impl.HotspotCallback;
-import com.lambda_manager.collectors.meta_info.Function;
 import com.lambda_manager.collectors.meta_info.Lambda;
 import com.lambda_manager.core.Configuration;
 import com.lambda_manager.optimizers.LambdaExecutionMode;
 import com.lambda_manager.processes.lambda.StartLambda;
 import com.lambda_manager.utils.ConnectionTriplet;
-import com.lambda_manager.utils.LambdaTuple;
 import io.micronaut.http.client.RxHttpClient;
 
 import java.io.File;
@@ -21,22 +19,26 @@ import static com.lambda_manager.core.Environment.*;
 
 public class StartHotspot extends StartLambda {
 
-    @Override
-    protected List<String> makeCommand(LambdaTuple<Function, Lambda> lambdaTuple) {
+    public StartHotspot(Lambda lambda) {
+		super(lambda);
+	}
+
+	@Override
+    protected List<String> makeCommand() {
         List<String> command = new ArrayList<>();
 
-        lambdaTuple.lambda.setExecutionMode(LambdaExecutionMode.HOTSPOT);
-        ConnectionTriplet<String, String, RxHttpClient> connectionTriplet = lambdaTuple.lambda.getConnectionTriplet();
+        lambda.setExecutionMode(LambdaExecutionMode.HOTSPOT);
+        ConnectionTriplet<String, String, RxHttpClient> connectionTriplet = lambda.getConnectionTriplet();
 
         command.add("/usr/bin/time");
         command.add("--append");
-        command.add(String.format("--output=%s", memoryFilename(lambdaTuple)));
+        command.add(String.format("--output=%s", memoryFilename()));
         command.add("-v");
         command.add("bash");
         // TODO: Replace hardcoded paths with Paths.get().
         command.add("src/scripts/start_hotspot.sh");
-        command.add(lambdaTuple.function.getName());
-        command.add(String.valueOf(lambdaTuple.lambda.pid()));
+        command.add(lambda.getFunction().getName());
+        command.add(String.valueOf(pid));
         command.add(Configuration.argumentStorage.getMemorySpace());
         command.add(connectionTriplet.ip);
         command.add(connectionTriplet.tap);
@@ -47,30 +49,30 @@ public class StartHotspot extends StartLambda {
         } else {
             command.add("");    // Placeholder.
         }
-        if (lambdaTuple.function.getArguments() != null) {
-            Collections.addAll(command, lambdaTuple.function.getArguments().split(","));
+        if (lambda.getFunction().getArguments() != null) {
+            Collections.addAll(command, lambda.getFunction().getArguments().split(","));
         }
         command.add(String.valueOf(System.currentTimeMillis()));
         return command;
     }
 
     @Override
-    protected OnProcessFinishCallback callback(LambdaTuple<Function, Lambda> lambda) {
+    protected OnProcessFinishCallback callback() {
         String sourceFile = Paths.get(
                 CODEBASE,
-                lambda.function.getName(),
-                String.format(HOTSPOT, lambda.lambda.pid()),
+                lambda.getFunction().getName(),
+                String.format(HOTSPOT, pid),
                 RUN_LOG)
                 .toString();
-        return new HotspotCallback(sourceFile, outputFilename(lambda));
+        return new HotspotCallback(sourceFile, outputFilename());
     }
 
     @Override
-    protected String outputFilename(LambdaTuple<Function, Lambda> lambda) {
+    protected String outputFilename() {
         String dirPath = Paths.get(
                 LAMBDA_LOGS,
-                lambda.function.getName(),
-                String.format(HOTSPOT, lambda.lambda.pid()))
+                lambda.getFunction().getName(),
+                String.format(HOTSPOT, pid))
                 .toString();
         //noinspection ResultOfMethodCallIgnored
         new File(dirPath).mkdirs();
@@ -78,11 +80,11 @@ public class StartHotspot extends StartLambda {
     }
 
     @Override
-    protected String memoryFilename(LambdaTuple<Function, Lambda> lambda) {
+    protected String memoryFilename() {
         String dirPath = Paths.get(
                 LAMBDA_LOGS,
-                lambda.function.getName(),
-                String.format(HOTSPOT, lambda.lambda.pid()))
+                lambda.getFunction().getName(),
+                String.format(HOTSPOT, pid))
                 .toString();
         //noinspection ResultOfMethodCallIgnored
         new File(dirPath).mkdirs();
