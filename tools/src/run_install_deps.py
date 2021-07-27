@@ -8,8 +8,6 @@ import subprocess
 import sys
 from json import JSONDecodeError
 
-import requests
-
 
 # Message type.
 class MessageType(enum.Enum):
@@ -26,8 +24,7 @@ VERBOSITY_LVL = 0
 
 SETUP_DB_VM_LOC = os.path.join("..", "lambda-manager", "src", "scripts", "qemu-jvm")
 SETUP_DB_VM_FILE = "setup_debian_vm.sh"
-SETUP_SCRIPT = '''
-#!/usr/bin/bash
+SETUP_SCRIPT = '''#!/usr/bin/bash
 cd {location}
 bash {file}
 '''
@@ -159,17 +156,6 @@ def setup_debian_vm():
     print_message("Setup debian vm...done", MessageType.INFO)
 
 
-def install_docker():
-    print_message("Installing docker...", MessageType.INFO)
-    run("sudo apt-get install -y apt-transport-https ca-certificates gnupg-agent software-properties-common curl wget")
-    run("curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -")
-    run("sudo apt-key fingerprint 0EBFCD88")
-    run("sudo add-apt-repository 'deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable'")
-    run("sudo apt-get update")
-    run("sudo apt-get install -y docker-ce docker-ce-cli containerd.io")
-    print_message("Installing docker...done", MessageType.INFO)
-
-
 def setup_bridge():
     print_message("Creating bridge...", MessageType.INFO)
 
@@ -179,7 +165,7 @@ def setup_bridge():
     remove_file(GET_DEF_GATEWAY_FILE)
 
     # Replace existing gateway address in configs/manager/default-manager.json.
-    manager_config_path = os.path.join("../configs", "manager", "default-manager.json")
+    manager_config_path = os.path.join("configs", "manager", "default-manager.json")
     manager_config = read_json_file(manager_config_path)
     manager_config['gateway'] = "{}/{}".format(default_gateway[:-1], MASK)
     write_json_file(manager_config_path, manager_config)
@@ -188,9 +174,9 @@ def setup_bridge():
 
 
 # Main function.
-if __name__ == '__main__':
-    if len(sys.argv) == 2:
-        set_verbosity(sys.argv[1])
+def main(args):
+    if len(args) == 1:
+        set_verbosity(args[0])
     else:
         print_message("Output verbosity level will be 0.", MessageType.SPEC)
     install_required_packages()
@@ -198,5 +184,8 @@ if __name__ == '__main__':
     install_world()
     download_resources()
     setup_debian_vm()
-    install_docker()
     setup_bridge()
+
+
+if __name__ == '__main__':
+    main(sys.argv[1:])

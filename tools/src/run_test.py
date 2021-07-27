@@ -3,6 +3,7 @@ import enum
 import json
 import os
 import random
+import re
 import shlex
 import subprocess
 import sys
@@ -23,9 +24,12 @@ class MessageType(enum.Enum):
 
 
 # Test global variables.
+MANAGER_LOG_FILE = os.path.join("..", "lambda-manager", "manager_logs", "lambda_manager.log")
 MAX_VERBOSITY_LVL = 2
 VERBOSITY_LVL = 0
 GENERAL_INFO = "general"
+
+BENCHMARK_BUILD_SCRIPT = "build_script.sh"
 
 
 # Util methods.
@@ -77,9 +81,9 @@ def load_data(filename):
         exit(1)
 
 
-def read_file(username, filename):
+def read_file(username, filename, read_type='rb'):
     try:
-        with open(filename, 'rb') as input_file:
+        with open(filename, read_type) as input_file:
             return input_file.read()
     except IOError:
         print_message(username, "Input file {} is missing or deleted!".format(filename), MessageType.ERROR)
@@ -122,7 +126,23 @@ def register_managers(load_balancer, managers):
                                     .format(load_balancer=load_balancer, manager=manager)).text, MessageType.INFO)
 
 
+def build_benchmark(username, source_root):
+    print_message(username, "Building benchmark...", MessageType.INFO)
+    output = run(username,
+                 "bash {source_path}/{script_name}".format(source_path=os.path.abspath(source_root),
+                                                           script_name=BENCHMARK_BUILD_SCRIPT))
+    benchmark_path = None
+    try:
+        benchmark_path = re.search('BENCHMARK_PATH=(.+)', output).group(1)
+    except AttributeError:
+        print_message(username, "BENCHMARK_PATH variable is not specified!", MessageType.ERROR)
+        exit(2)
+    print_message(username, "Building benchmark...done", MessageType.INFO)
+    return benchmark_path
+
+
 def upload_function(username, entry_point, command_info):
+    benchmark_path = build_benchmark(username, command_info['source_root'])
     arguments = "&arguments=" + command_info['arguments'] if len(command_info['arguments']) > 0 else ""
     print_message(username, "Response: " +
                   requests.post("{entry_point}/upload_function?"
@@ -136,7 +156,7 @@ def upload_function(username, entry_point, command_info):
                                         function_name=command_info['function_name'],
                                         arguments=arguments),
                                 headers={'Content-type': 'application/octet-stream'},
-                                data=read_file(username, command_info['source'])).text, MessageType.INFO)
+                                data=read_file(username, benchmark_path)).text, MessageType.INFO)
 
 
 def remove_function(username, entry_point, command_info):
@@ -194,6 +214,20 @@ def start_sending(username, manager, command_info):
         send_thread.join()
 
 
+def check_failure_pattern(username, failure_pattern):
+    lambda_manager_log = read_file(username, MANAGER_LOG_FILE, 'r')
+    if len(lambda_manager_log) == 0:
+        print_message(username, "Lambda manager log is empty!", MessageType.WARN)
+        return
+    regex = re.compile(failure_pattern)
+    found_failure_patterns = regex.findall(lambda_manager_log)
+    if len(found_failure_patterns) > 0:
+        print_message(username, "Failure pattern is found {} times!".format(len(found_failure_patterns)),
+                      MessageType.WARN)
+    else:
+        print_message(username, "Success pattern is found!", MessageType.SPEC)
+
+
 def create_user(user_info, manager):
     print_message(user_info['username'], "{} is sending commands...".format(user_info['username']), MessageType.INFO)
 
@@ -217,6 +251,8 @@ def create_user(user_info, manager):
     if kindness_counter > 0:
         print_message(user_info['username'], "Thank you, {}, for your kindness!".format(user_info['username']),
                       MessageType.SPEC)
+
+    check_failure_pattern(user_info['username'], user_info['failure_pattern'])
 
     print_message(user_info['username'], "{} is sending commands...done".format(user_info['username']),
                   MessageType.INFO)
@@ -250,20 +286,24 @@ def test(data):
 
 
 # Main function.
-if __name__ == '__main__':
-    if len(sys.argv) == 1:
-        print_message(GENERAL_INFO, "Insufficient number of arguments - {}!".format(len(sys.argv)), MessageType.ERROR)
+def main(args):
+    if len(args) == 0:
+        print_message(GENERAL_INFO, "Insufficient number of arguments - {}!".format(len(args)), MessageType.ERROR)
         exit(1)
     test_config_index = 0
-    if len(sys.argv) == 2:
-        test_config_index = 1
+    if len(args) == 1:
+        test_config_index = 0
         print_message(GENERAL_INFO, "Output verbosity level will be 0.", MessageType.SPEC)
-    elif len(sys.argv) == 3:
-        test_config_index = 2
-        set_verbosity(sys.argv[1])
+    elif len(args) == 2:
+        test_config_index = 1
+        set_verbosity(args[0])
     else:
-        print_message(GENERAL_INFO, "Too much arguments - {}!".format(len(sys.argv)), MessageType.ERROR)
+        print_message(GENERAL_INFO, "Too much arguments - {}!".format(len(args)), MessageType.ERROR)
         exit(1)
 
     install_required_packages()
-    test(load_data(sys.argv[test_config_index]))
+    test(load_data(args[test_config_index]))
+
+
+if __name__ == '__main__':
+    main(sys.argv[1:])

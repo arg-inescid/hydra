@@ -19,8 +19,7 @@ For project setup, we need to do the following things:
 1. Clone the project into a local repository.
 2. Contact any contributor on this project to get access to a directory with all **resources**. Move **resources**
    folder to **lambda manager** directory.
-3. Run the command `sudo apt-get install -y python3` to install python.
-4. Run the command `sudo python3 tools/install-deps.py` to installing all necessary dependencies.
+3. Export path to **run** command-line tool with `export PATH=path/to/serverless-project/tools/bin:$PATH`.
 
 ---
 
@@ -33,12 +32,12 @@ For testing purposes, we need two terminals (**T1** and **T2**):
    `./gradlew clean assemble`.
 2. (T1) Run lambda manager with command `sudo java -jar build/libs/lambda-manager-1.0-all.jar`.
 3. (T2) Go to the directory with benchmark which you want to use as load for testing. For example,
-   `cd benchmarks/hello-world-java`.
+   `cd benchmarks/language/java/hello-world`.
 4. (T2) Build benchmark with command `./gradlew clean assemble`. Go back to project's root directory with `cd ../..`
 5. (T2) Go to the tool's directory with the command `cd tools`.
-6. (T2) Change manager's configuration `default-configs/manager.json` or leave it with default values.
-7. (T2) Change test's configuration `default-configs/test.json` or leave it with default values.
-8. (T2) Start testing tool with command `python3 run-test.py default-configs/test.json`.
+6. (T2) Change manager's configuration `configs/manager/local-manager.json` or leave it with default values.
+7. (T2) Change test's configuration `configs/tests/tier-1/hello-world.json` or leave it with default values.
+8. (T2) Start testing lambda manager with command `run test configs/tests/tier-1/hello-world.json.`
 
 ---
 
@@ -47,8 +46,8 @@ For testing purposes, we need two terminals (**T1** and **T2**):
 For plotting purposes, we will need results from the testing phase and plotting tool.
 
 1. Go to tools directory with command `cd tools`.
-2. Change the plot's configuration `default-configs/test.json` or leave it with default values.
-3. Start plotting tool with command `python3 run-plot.py default-configs/plot.json`.
+2. Change the plot's configuration `configs/plot/plot-all.json` or leave it with default values.
+3. Start plotting tool with command `run plot configs/plot/plot-all.json`.
 
 ---
 

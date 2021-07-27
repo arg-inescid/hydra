@@ -48,8 +48,8 @@ testing/developing.
 ### Arguments
 
 ```commandline
-python install-deps.py
-python install-deps.py verbosity_level
+run install-deps
+run install-deps verbosity_level
 ```
 
 The tool receives non or one argument, if no arguments have been passed the default verbosity level will be set to 0, if
@@ -77,8 +77,8 @@ based on level of complexity.
 #### Separate testing
 
 ```commandline
-python run-test.py test_config_path
-python run-test.py verbosity_level test_config_path 
+run test test_config_path
+run test verbosity_level test_config_path
 ```
 
 The tool receives one or two-argument, if one argument has been passed the default verbosity level will be set to 0, if
@@ -105,6 +105,7 @@ structure is provide bellow (value inside [ ] represents JSON data types):
   "users": [
     {
       "username": "[STRING] 1th username?",
+      "failure_pattern": "[STRING] Pattern is detected in lambda manage log in case of test failure.",
       "commands": [
         {
           "command": "remove",
@@ -115,7 +116,7 @@ structure is provide bellow (value inside [ ] represents JSON data types):
           "allocate": "[INTEGER] How many instances the user wants allocate for this function?",
           "function_name": "[STRING] Function name?",
           "arguments": "[STRING] Comma separated lambda arguments",
-          "source": "[STRING] Function source code path?"
+          "source": "[STRING] Function source code path (root directory)?"
         },
         {
           "command": "send",
@@ -147,8 +148,8 @@ structure is provide bellow (value inside [ ] represents JSON data types):
 #### Test all at once
 
 ```commandline
-python run-tests.py
-python run-tests.py verbosity_level
+run tests
+run tests verbosity_level
 ```
 
 The tool receives none or one argument, if there are no arguments, the default verbosity level will be set to 0, if the
@@ -166,8 +167,8 @@ The tool for generating plots `run-plot.py` will output plots based on plot conf
 ### Arguments
 
 ```commandline
-python run-plot.py test_config_path
-python run-plot.py verbosity_level test_config_path 
+run plot test_config_path
+run plot verbosity_level test_config_path
 ```
 
 The tool receives one or two-argument, if one argument has been passed the default verbosity level will be set to 0, if

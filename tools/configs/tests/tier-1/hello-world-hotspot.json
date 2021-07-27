@@ -4,12 +4,13 @@
   "managers": [
     {
       "address": "http://localhost:9000",
-      "config_path": "../configs/manager/default-manager.json"
+      "config_path": "configs/manager/default-manager.json"
     }
   ],
   "users": [
     {
       "username": "user1",
+      "failure_pattern": "HTTP request timeout!",
       "commands": [
         {
           "command": "remove",
@@ -20,7 +21,7 @@
           "allocate": 3,
           "function_name": "hello-world",
           "arguments": "8080",
-          "source": "../../benchmarks/language/java/hello-world/build/libs/hello-world-1.0.jar"
+          "source_root": "../benchmarks/language/java/hello-world/"
         },
         {
           "command": "send",
@@ -31,7 +32,7 @@
               "num_clients": 1,
               "function_name": "hello-world",
               "parameters_pool": [],
-              "output": "../../benchmarks/results/java/hello-world/hello-world-java-1.dat"
+              "output": "../benchmarks/results/java/hello-world/hello-world-java-1.dat"
             }
           ]
         }

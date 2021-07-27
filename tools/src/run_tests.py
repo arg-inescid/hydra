@@ -1,9 +1,8 @@
 #!/usr/bin/python3
 import enum
 import os
-import shlex
-import subprocess
 import sys
+import run_test
 
 
 # Message type.
@@ -16,7 +15,7 @@ class MessageType(enum.Enum):
 
 
 # Test global variables.
-TESTING_DIR = os.path.join("..", "configs", "test")
+TESTING_DIR = os.path.join("configs", "tests")
 MAX_VERBOSITY_LVL = 2
 VERBOSITY_LVL = 0
 
@@ -49,18 +48,6 @@ def set_verbosity(flag):
     print_message("Output verbosity level is set to {level}.".format(level=VERBOSITY_LVL), MessageType.SPEC)
 
 
-# Core methods.
-def run(command):
-    outs, errs = subprocess.Popen(shlex.split(command),
-                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
-    outs, errs = outs.decode(sys.stdout.encoding), errs.decode(sys.stdout.encoding)
-    if len(outs) > 0 and VERBOSITY_LVL > 1:
-        print_message(outs, MessageType.NO_HEADER)
-    if len(errs) > 0 and VERBOSITY_LVL > 0:
-        print_message("Command ({}) error log:\n{}".format(command, errs), MessageType.WARN)
-    return outs
-
-
 def test_all():
     for root, dirs, files in sorted(os.walk(TESTING_DIR)):
         # In case of first iteration where root is equals to configs/test.
@@ -72,20 +59,23 @@ def test_all():
         for file in sorted(files):
             if file == ".gitkeep":
                 continue
-            print_message("Test - {} - is running...".format(file.split(".json")[0]), MessageType.INFO)
-            run("python3 run-test.py {verbosity} {config}".format(verbosity="v" * VERBOSITY_LVL,
-                                                                  config=os.path.join(root, file)))
-            print_message("Test - {} - is running...done".format(file.split(".json")[0]), MessageType.INFO)
+            print_message("Test - {} - is running...".format(file.split(".json")[0]), MessageType.SPEC)
+            run_test.main(["v" * VERBOSITY_LVL, os.path.join(root, file)])
+            print_message("Test - {} - is running...done".format(file.split(".json")[0]), MessageType.SPEC)
         print_message("{}...done".format(current_tier), MessageType.INFO)
 
 
 # Main function.
-if __name__ == '__main__':
-    if len(sys.argv) == 1:
+def main(args):
+    if len(args) == 0:
         print_message("Output verbosity level will be 0.", MessageType.SPEC)
-    elif len(sys.argv) == 2:
-        set_verbosity(sys.argv[1])
+    elif len(args) == 1:
+        set_verbosity(args[0])
     else:
-        print_message("Too much arguments - {}!".format(len(sys.argv)), MessageType.ERROR)
+        print_message("Too much arguments - {}!".format(len(args)), MessageType.ERROR)
         exit(1)
     test_all()
+
+
+if __name__ == '__main__':
+    main(sys.argv[1:])

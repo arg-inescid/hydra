@@ -363,18 +363,22 @@ def plot(plots_info):
 
 
 # Main function.
-if __name__ == '__main__':
-    if len(sys.argv) == 1:
-        print_message("Insufficient number of arguments - {}!".format(len(sys.argv)), MessageType.ERROR)
+def main(args):
+    if len(args) == 0:
+        print_message("Insufficient number of arguments - {}!".format(len(args)), MessageType.ERROR)
         exit(1)
     plot_config_index = 0
-    if len(sys.argv) == 2:
-        plot_config_index = 1
+    if len(args) == 1:
+        plot_config_index = 0
         print_message("Output verbosity level will be 0.", MessageType.SPEC)
-    elif len(sys.argv) == 3:
-        plot_config_index = 2
-        set_verbosity(sys.argv[1])
+    elif len(args) == 2:
+        plot_config_index = 1
+        set_verbosity(args[0])
     else:
-        print_message("Too much arguments - {}!".format(len(sys.argv)), MessageType.ERROR)
+        print_message("Too much arguments - {}!".format(len(args)), MessageType.ERROR)
         exit(1)
-    plot(load_data(sys.argv[plot_config_index]))
+    plot(load_data(args[plot_config_index]))
+
+
+if __name__ == '__main__':
+    main(sys.argv[1:])

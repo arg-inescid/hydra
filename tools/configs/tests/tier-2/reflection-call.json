@@ -4,12 +4,13 @@
   "managers": [
     {
       "address": "http://localhost:9000",
-      "config_path": "../configs/manager/default-manager.json"
+      "config_path": "configs/manager/default-manager.json"
     }
   ],
   "users": [
     {
       "username": "user1",
+      "failure_pattern": "HTTP request timeout!",
       "commands": [
         {
           "command": "remove",
@@ -20,7 +21,7 @@
           "allocate": 100,
           "function_name": "reflection-call",
           "arguments": "8080",
-          "source": "../../benchmarks/src/java/reflection-call/build/libs/reflection-call-1.0.jar"
+          "source_root": "../benchmarks/language/java/reflection-call/"
         },
         {
           "command": "send",
@@ -31,7 +32,7 @@
               "num_clients": 100,
               "function_name": "reflection-call",
               "parameters_pool": ["com.reflection.DummyClass"],
-              "output": "../../benchmarks/results/java/reflection-call/reflection-call-java-1.dat"
+              "output": "../benchmarks/results/java/reflection-call/reflection-call-java-1.dat"
             }
           ]
         },
@@ -44,7 +45,7 @@
               "num_clients": 100,
               "function_name": "reflection-call",
               "parameters_pool": ["com.reflection.DummyClass"],
-              "output": "../../benchmarks/results/java/reflection-call/reflection-call-java-2.dat"
+              "output": "../benchmarks/results/java/reflection-call/reflection-call-java-2.dat"
             }
           ]
         },
@@ -57,7 +58,7 @@
               "num_clients": 100,
               "function_name": "reflection-call",
               "parameters_pool": ["com.reflection.DummyClass"],
-              "output": "../../benchmarks/results/java/reflection-call/reflection-call-java-3.dat"
+              "output": "../benchmarks/results/java/reflection-call/reflection-call-java-3.dat"
             }
           ]
         },

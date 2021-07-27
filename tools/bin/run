@@ -1,3 +1,12 @@
 #!/bin/bash
 
-echo "This is just a stub for future development."
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+
+REQUIRED_PKG="python3"
+PKG_OK=$(dpkg-query -W --showformat='${Status}\n' $REQUIRED_PKG | grep "install ok installed")
+if [ "" = "$PKG_OK" ]; then
+  echo "Installing $REQUIRED_PKG..."
+  sudo apt-get install $REQUIRED_PKG
+fi
+
+python3 "$DIR"/../src/run.py "$@"
