@@ -11,3 +11,5 @@ micronaut:
       maxFileSize: 100MB
       maxRequestSize: 100MB
       enabled: true
+    cors:
+      enabled: true

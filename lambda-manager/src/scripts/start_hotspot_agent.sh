@@ -28,6 +28,7 @@ if [[ -d "$PREV_AGENT_CONFIG" ]]; then
 else
   mkdir "$LAMBDA_HOME"/shared/config
   printf "[\n]\n" > "$LAMBDA_HOME"/shared/config/jni-config.json
+  printf "[\n]\n" > "$LAMBDA_HOME"/shared/config/predefined-classes-config.json
   printf "[\n]\n" > "$LAMBDA_HOME"/shared/config/proxy-config.json
   printf "[\n]\n" > "$LAMBDA_HOME"/shared/config/reflect-config.json
   printf "{\n}\n" > "$LAMBDA_HOME"/shared/config/resource-config.json

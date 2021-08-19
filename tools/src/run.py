@@ -6,6 +6,7 @@ import run_install_deps
 import run_plot
 import run_test
 import run_tests
+import run_measurements
 
 
 # Script type.
@@ -14,6 +15,7 @@ class ScriptType(enum.Enum):
     PLOT = "plot"
     INSTALL_DEPS = "install-deps"
     TESTS = "tests"
+    MEASUREMENTS = "measurements"
 
 
 def parse_input_arguments(args):
@@ -28,6 +30,8 @@ def parse_input_arguments(args):
         return
     if args[0] == ScriptType.TESTS.value:
         run_tests.main(args[1:])
+    if args[0] == ScriptType.MEASUREMENTS.value:
+        run_measurements.main(args[1:])
 
 
 # Main script for run command. Called from run.sh.

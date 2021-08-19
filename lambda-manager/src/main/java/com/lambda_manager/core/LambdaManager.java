@@ -1,5 +1,8 @@
 package com.lambda_manager.core;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.lambda_manager.collectors.meta_info.Function;
 import com.lambda_manager.collectors.meta_info.Lambda;
 import com.lambda_manager.exceptions.argument_parser.ErrorDuringParsingJSONFile;
@@ -9,6 +12,7 @@ import com.lambda_manager.exceptions.user.ErrorUploadingLambda;
 import com.lambda_manager.exceptions.user.FunctionNotFound;
 import com.lambda_manager.optimizers.FunctionStatus;
 import com.lambda_manager.optimizers.LambdaExecutionMode;
+import com.lambda_manager.utils.JsonUtils;
 import com.lambda_manager.utils.Messages;
 import com.lambda_manager.utils.logger.Logger;
 import com.lambda_manager.utils.parser.ArgumentParser;
@@ -16,6 +20,7 @@ import io.micronaut.context.BeanContext;
 import io.reactivex.Single;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.logging.Level;
 
 public class LambdaManager {
@@ -28,26 +33,29 @@ public class LambdaManager {
     }
 
     private static String formatRequestSpentTimeMessage(Lambda lambda, long spentTime) {
+        String username = Configuration.coder.decodeUsername(lambda.getFunction().getName());
+        String functionName = Configuration.coder.decodeFunctionName(lambda.getFunction().getName());
         switch (lambda.getExecutionMode()) {
             case HOTSPOT_W_AGENT:
-                return String.format(Messages.TIME_HOTSPOT_W_AGENT, lambda.getProcess().pid(), spentTime);
+                return String.format(Messages.TIME_HOTSPOT_W_AGENT, username, functionName, lambda.getProcess().pid(), spentTime);
             case HOTSPOT:
-                return String.format(Messages.TIME_HOTSPOT, lambda.getProcess().pid(), spentTime);
+                return String.format(Messages.TIME_HOTSPOT, username, functionName, lambda.getProcess().pid(), spentTime);
             case NATIVE_IMAGE:
-                return String.format(Messages.TIME_NATIVE_IMAGE, lambda.getProcess().pid(), spentTime);
+                return String.format(Messages.TIME_NATIVE_IMAGE, username, functionName, lambda.getProcess().pid(), spentTime);
             default:
                 throw new UnsupportedOperationException();
         }
     }
 
     public static Single<String> processRequest(String username, String functionName, String parameters) {
+        String responseString = null;
         try {
             if (!Configuration.isInitialized()) {
                 Logger.log(Level.WARNING, Messages.NO_CONFIGURATION_UPLOADED);
-                return Single.just(Messages.NO_CONFIGURATION_UPLOADED);
+                responseString = Messages.NO_CONFIGURATION_UPLOADED;
             }
 
-            Function function = Configuration.storage.get(Configuration.encoder.encode(username, functionName));
+            Function function = Configuration.storage.get(Configuration.coder.encode(username, functionName));
             String response = null;
             LambdaExecutionMode targetMode = null;
 
@@ -73,14 +81,15 @@ public class LambdaManager {
                 }
             }
 
-            return Single.just(response);
+            responseString = response;
         } catch (FunctionNotFound functionNotFound) {
             Logger.log(Level.WARNING, functionNotFound.getMessage(), functionNotFound);
-            return Single.just(functionNotFound.getMessage());
+            responseString = functionNotFound.getMessage();
         } catch (Throwable throwable) {
             Logger.log(Level.SEVERE, throwable.getMessage(), throwable);
-            return Single.just(Messages.INTERNAL_ERROR);
+            responseString = Messages.INTERNAL_ERROR;
         }
+        return JsonUtils.constructJsonResponseObject(responseString);
     }
 
     public static Single<String> uploadFunction(int allocate,
@@ -88,13 +97,14 @@ public class LambdaManager {
                                          String functionName,
                                          String arguments,
                                          byte[] functionCode) {
+        String responseString = null;
         try {
             if (!Configuration.isInitialized()) {
                 Logger.log(Level.WARNING, Messages.NO_CONFIGURATION_UPLOADED);
-                return Single.just(Messages.NO_CONFIGURATION_UPLOADED);
+                responseString = Messages.NO_CONFIGURATION_UPLOADED;
             }
 
-            String encodedName = Configuration.encoder.encode(username, functionName);
+            String encodedName = Configuration.coder.encode(username, functionName);
             Function function = Configuration.storage.register(encodedName);
             function.setArguments(arguments);
             for (int i = 0; i < allocate; i++) {
@@ -102,46 +112,75 @@ public class LambdaManager {
             }
 
             Logger.log(Level.INFO, String.format(Messages.SUCCESS_FUNCTION_UPLOAD, functionName));
-            return Single.just(String.format(Messages.SUCCESS_FUNCTION_UPLOAD, functionName));
+            responseString = String.format(Messages.SUCCESS_FUNCTION_UPLOAD, functionName);
         } catch (IOException | ErrorUploadingLambda e) {
             Logger.log(Level.SEVERE, String.format(Messages.ERROR_FUNCTION_UPLOAD, functionName), e);
-            return Single.just(String.format(Messages.ERROR_FUNCTION_UPLOAD, functionName));
+            responseString = String.format(Messages.ERROR_FUNCTION_UPLOAD, functionName);
         } catch (Throwable throwable) {
             Logger.log(Level.SEVERE, throwable.getMessage(), throwable);
-            return Single.just(Messages.INTERNAL_ERROR);
+            responseString = Messages.INTERNAL_ERROR;
         }
+        return JsonUtils.constructJsonResponseObject(responseString);
     }
 
     public static Single<String> removeFunction(String username, String functionName) {
+        String responseString = null;
         try {
             if (!Configuration.isInitialized()) {
                 Logger.log(Level.WARNING, Messages.NO_CONFIGURATION_UPLOADED);
-                return Single.just(Messages.NO_CONFIGURATION_UPLOADED);
+                responseString = Messages.NO_CONFIGURATION_UPLOADED;
             }
 
-            String encodedName = Configuration.encoder.encode(username, functionName);
+            String encodedName = Configuration.coder.encode(username, functionName);
             Configuration.storage.unregister(encodedName);
             Configuration.functionWriter.remove(encodedName);
 
             Logger.log(Level.INFO, String.format(Messages.SUCCESS_FUNCTION_REMOVE, functionName));
-            return Single.just(String.format(Messages.SUCCESS_FUNCTION_REMOVE, functionName));
+            responseString = String.format(Messages.SUCCESS_FUNCTION_REMOVE, functionName);
         } catch (Throwable throwable) {
             Logger.log(Level.SEVERE, throwable.getMessage(), throwable);
-            return Single.just(Messages.INTERNAL_ERROR);
+            responseString = Messages.INTERNAL_ERROR;
         }
+        return JsonUtils.constructJsonResponseObject(responseString);
     }
 
     public static Single<String> configureManager(String lambdaManagerConfiguration, BeanContext beanContext) {
+        String responseString = null;
         try {
             ArgumentStorage.initializeLambdaManager(ArgumentParser.parse(lambdaManagerConfiguration), beanContext);
             Logger.log(Level.INFO, Messages.SUCCESS_CONFIGURATION_UPLOAD);
-            return Single.just(Messages.SUCCESS_CONFIGURATION_UPLOAD);
+            responseString = Messages.SUCCESS_CONFIGURATION_UPLOAD;
         } catch (ErrorDuringParsingJSONFile | ErrorDuringReflectiveClassCreation | ErrorDuringCreatingConnectionPool e) {
             Logger.log(Level.SEVERE, e.getMessage(), e);
-            return Single.just(Messages.ERROR_CONFIGURATION_UPLOAD);
+            responseString = Messages.ERROR_CONFIGURATION_UPLOAD;
         } catch (Throwable throwable) {
             Logger.log(Level.SEVERE, throwable.getMessage(), throwable);
-            return Single.just(Messages.INTERNAL_ERROR);
+            responseString = Messages.INTERNAL_ERROR;
         }
+        return JsonUtils.constructJsonResponseObject(responseString);
     }
+
+    public static Single<String> getFunctions() {
+        Object response = null;
+        try {
+            Map<String, Function> functionsMap = Configuration.storage.getAll();
+            ObjectMapper mapper = new ObjectMapper();
+            ArrayNode functionsArrayNode = mapper.createArrayNode();
+            for (Map.Entry<String, Function> entry : functionsMap.entrySet()) {
+                ObjectNode functionNode = mapper.createObjectNode();
+                String username = Configuration.coder.decodeUsername(entry.getValue().getName());
+                String functionName = Configuration.coder.decodeFunctionName(entry.getValue().getName());
+                functionNode.put("user", username);
+                functionNode.put("name", functionName);
+                functionNode.put("maxLambdas", entry.getValue().getTotalNumberLambdas());
+                functionsArrayNode.add(functionNode);
+            }
+            response = functionsArrayNode;
+        } catch (Throwable throwable) {
+            Logger.log(Level.SEVERE, throwable.getMessage(), throwable);
+            response = Messages.INTERNAL_ERROR;
+        }
+        return JsonUtils.constructJsonResponseObject(response);
+    }
+
 }

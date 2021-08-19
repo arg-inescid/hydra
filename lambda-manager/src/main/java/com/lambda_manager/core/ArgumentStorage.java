@@ -4,7 +4,7 @@ import com.github.maltalex.ineter.base.IPv4Address;
 import com.github.maltalex.ineter.range.IPv4Subnet;
 import com.lambda_manager.collectors.function_storage.FunctionStorage;
 import com.lambda_manager.connectivity.client.LambdaManagerClient;
-import com.lambda_manager.encoders.Encoder;
+import com.lambda_manager.encoders.Coder;
 import com.lambda_manager.exceptions.argument_parser.ErrorDuringReflectiveClassCreation;
 import com.lambda_manager.exceptions.user.ErrorDuringCreatingConnectionPool;
 import com.lambda_manager.function_writer.FunctionWriter;
@@ -190,7 +190,7 @@ public class ArgumentStorage {
             throws ErrorDuringReflectiveClassCreation {
         Scheduler scheduler = (Scheduler) createObject(lambdaManagerState.getScheduler());
         Optimizer optimizer = (Optimizer) createObject(lambdaManagerState.getOptimizer());
-        Encoder encoder = (Encoder) createObject(lambdaManagerState.getEncoder());
+        Coder encoder = (Coder) createObject(lambdaManagerState.getEncoder());
         FunctionStorage storage = (FunctionStorage) createObject(lambdaManagerState.getStorage());
         LambdaManagerClient client = (LambdaManagerClient) createObject(lambdaManagerState.getClient());
         FunctionWriter functionWriter = (FunctionWriter) createObject(lambdaManagerState.getCodeWriter());
