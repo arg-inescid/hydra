@@ -4,7 +4,7 @@
   "managers": [
     {
       "address": "http://localhost:9000",
-      "config_path": "configs/manager/default-manager.json"
+      "config_path": "../../manager/default-manager.json"
     }
   ],
   "users": [
@@ -21,7 +21,7 @@
           "allocate": 100,
           "function_name": "reflection-call",
           "arguments": "8080",
-          "source_root": "../benchmarks/language/java/reflection-call/"
+          "source_root": "../../../../benchmarks/language/java/reflection-call/"
         },
         {
           "command": "send",
@@ -32,7 +32,7 @@
               "num_clients": 100,
               "function_name": "reflection-call",
               "parameters_pool": ["com.reflection.DummyClass"],
-              "output": "../benchmarks/results/java/reflection-call/reflection-call-java-1.dat"
+              "output": "../../../../benchmarks/results/java/reflection-call/reflection-call-java-1.dat"
             }
           ]
         },
@@ -45,7 +45,7 @@
               "num_clients": 100,
               "function_name": "reflection-call",
               "parameters_pool": ["com.reflection.DummyClass"],
-              "output": "../benchmarks/results/java/reflection-call/reflection-call-java-2.dat"
+              "output": "../../../../benchmarks/results/java/reflection-call/reflection-call-java-2.dat"
             }
           ]
         },
@@ -58,7 +58,7 @@
               "num_clients": 100,
               "function_name": "reflection-call",
               "parameters_pool": ["com.reflection.DummyClass"],
-              "output": "../benchmarks/results/java/reflection-call/reflection-call-java-3.dat"
+              "output": "../../../../benchmarks/results/java/reflection-call/reflection-call-java-3.dat"
             }
           ]
         },
@@ -71,7 +71,7 @@
               "num_clients": 100,
               "function_name": "reflection-call",
               "parameters_pool": ["com.reflection.DummyClass1"],
-              "output": "../benchmarks/results/java/reflection-call/reflection-call-java-4.dat"
+              "output": "../../../../benchmarks/results/java/reflection-call/reflection-call-java-4.dat"
             }
           ]
         },
@@ -84,7 +84,7 @@
               "num_clients": 100,
               "function_name": "reflection-call",
               "parameters_pool": ["com.reflection.DummyClass1"],
-              "output": "../benchmarks/results/java/reflection-call/reflection-call-java-5.dat"
+              "output": "../../../../benchmarks/results/java/reflection-call/reflection-call-java-5.dat"
             }
           ]
         },
@@ -97,7 +97,7 @@
               "num_clients": 100,
               "function_name": "reflection-call",
               "parameters_pool": ["com.reflection.DummyClass", "com.reflection.DummyClass1"],
-              "output": "../benchmarks/results/java/reflection-call/reflection-call-java-6.dat"
+              "output": "../../../../benchmarks/results/java/reflection-call/reflection-call-java-6.dat"
             }
           ]
         },
@@ -110,7 +110,7 @@
               "num_clients": 100,
               "function_name": "reflection-call",
               "parameters_pool": ["com.reflection.DummyClass1", "com.reflection.DummyClass"],
-              "output": "../benchmarks/results/java/reflection-call/reflection-call-java-7.dat"
+              "output": "../../../../benchmarks/results/java/reflection-call/reflection-call-java-7.dat"
             }
           ]
         }

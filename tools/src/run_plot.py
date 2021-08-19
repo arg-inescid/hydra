@@ -41,8 +41,8 @@ VERBOSITY_LVL = 0
 lambda_logs = {}
 manager_log = []
 
-LAMBDA_LOGS_DIR = os.path.join("..", "lambda-manager", "lambda_logs")
-MANAGER_LOG_FILE = os.path.join("..", "lambda-manager", "manager_logs", "lambda_manager.log")
+LAMBDA_LOGS_DIR = os.path.join("..", "..", "lambda-manager", "lambda_logs")
+MANAGER_LOG_FILE = os.path.join("..", "..", "lambda-manager", "manager_logs", "lambda_manager.log")
 MANAGER_LOG_REGEX = "Timestamp \\((\\d+)\\).*PID -> (\\d+).*(Output|Exit)"
 PLOT_FILENAME = "plot_file.gplot"
 FILENAME_LENGTH = 10
@@ -159,17 +159,22 @@ def write_file(filename, content):
         exit(1)
 
 
-def filterApacheBenchFile(plots_data):
+def filterApacheBenchFile(plot_config_dir, plots_data):
     outputs = []
     titles = []
     for plot_data in plots_data:
-        file = read_file(plot_data['filepath'])
+        file = read_file(os.path.join(plot_config_dir, plot_data['filepath']))
         if len(file) == 0:
             continue
         regex = re.compile(plot_data['regex'])
         outputs.append(regex.findall(file))
         titles.append(plot_data['title'])
     return outputs, titles
+
+
+def generate_hm_entry(root, filename):
+    filename, extension = os.path.splitext(filename)
+    return filename + "_" + os.path.basename(root).split("_")[1] + extension
 
 
 def readAllLambdaLogFiles():
@@ -179,7 +184,7 @@ def readAllLambdaLogFiles():
         for filename in files:
             if filename == ".gitkeep":
                 continue
-            lambda_logs[filename] = read_file(os.path.join(root, filename))
+            lambda_logs[generate_hm_entry(root, filename)] = read_file(os.path.join(root, filename))
 
 
 def readManagerLogFile():
@@ -258,9 +263,9 @@ def filterLambdaLogFiles(plot_type, plot_data):
         return scalability_total_memory(plot_type, plot_data)
 
 
-def filter_file(plot_type, plots_data):
+def filter_file(plot_config_dir, plot_type, plots_data):
     if plot_type == PlotType.LATENCY.value or plot_type == PlotType.THROUGHPUT.value:
-        return filterApacheBenchFile(plots_data)
+        return filterApacheBenchFile(plot_config_dir, plots_data)
     else:
         return filterLambdaLogFiles(plot_type, plots_data[0])
 
@@ -335,18 +340,19 @@ def start_server(server_info):
         remove_tmp_files(['index.html'])
 
 
-def plot(plots_info):
+def plot(plot_config_dir, plots_info):
     print_message("{} is running...".format(plots_info['plot']), MessageType.INFO)
 
     images = []
     displayed_images = []
     for plot_info in plots_info['plots']:
-        plot_data, plot_titles = filter_file(plot_info['type'], plot_info['data'])
+        plot_data, plot_titles = filter_file(plot_config_dir, plot_info['type'], plot_info['data'])
         if plot_data and plot_titles:
-            generate_output(plot_data, plot_titles, plot_info['type'], plot_info['output'])
-            images.append((plot_info['type'].upper(), plot_info['output']))
+            real_output_path = os.path.join(plot_config_dir, plot_info['output'])
+            generate_output(plot_data, plot_titles, plot_info['type'], real_output_path)
+            images.append((plot_info['type'].upper(), real_output_path))
             if plot_info['show_image']:
-                displayed_image = threading.Thread(target=display_image, args=(plot_info['output'],))
+                displayed_image = threading.Thread(target=display_image, args=(real_output_path,))
                 displayed_images.append(displayed_image)
                 displayed_image.start()
         else:
@@ -364,6 +370,11 @@ def plot(plots_info):
 
 # Main function.
 def main(args):
+    global LAMBDA_LOGS_DIR, MANAGER_LOG_FILE
+
+    LAMBDA_LOGS_DIR = os.path.join(os.path.dirname(sys.argv[0]), LAMBDA_LOGS_DIR)
+    MANAGER_LOG_FILE = os.path.join(os.path.dirname(sys.argv[0]), MANAGER_LOG_FILE)
+
     if len(args) == 0:
         print_message("Insufficient number of arguments - {}!".format(len(args)), MessageType.ERROR)
         exit(1)
@@ -377,7 +388,7 @@ def main(args):
     else:
         print_message("Too much arguments - {}!".format(len(args)), MessageType.ERROR)
         exit(1)
-    plot(load_data(args[plot_config_index]))
+    plot(os.path.dirname(args[plot_config_index]), load_data(args[plot_config_index]))
 
 
 if __name__ == '__main__':

@@ -22,7 +22,9 @@ class MessageType(enum.Enum):
 MAX_VERBOSITY_LVL = 2
 VERBOSITY_LVL = 0
 
-SETUP_DB_VM_LOC = os.path.join("..", "lambda-manager", "src", "scripts", "qemu-jvm")
+MANAGER_CONFIG_PATH = os.path.join("..", "configs", "manager", "default-manager.json")
+
+SETUP_DB_VM_LOC = os.path.join("..", "..", "lambda-manager", "src", "scripts", "qemu-jvm")
 SETUP_DB_VM_FILE = "setup_debian_vm.sh"
 SETUP_SCRIPT = '''#!/usr/bin/bash
 cd {location}
@@ -164,17 +166,21 @@ def setup_bridge():
     default_gateway = run("bash {file}".format(file=GET_DEF_GATEWAY_FILE))
     remove_file(GET_DEF_GATEWAY_FILE)
 
-    # Replace existing gateway address in configs/manager/default-manager.json.
-    manager_config_path = os.path.join("configs", "manager", "default-manager.json")
-    manager_config = read_json_file(manager_config_path)
-    manager_config['gateway'] = "{}/{}".format(default_gateway[:-1], MASK)
-    write_json_file(manager_config_path, manager_config)
+    # Add gateway address in configs/manager/default-manager.json.
+    manager_config_file = read_json_file(MANAGER_CONFIG_PATH)
+    manager_config_file['gateway'] = "{}/{}".format(default_gateway[:-1], MASK)
+    write_json_file(MANAGER_CONFIG_PATH, manager_config_file)
 
     print_message("Creating bridge...done", MessageType.INFO)
 
 
 # Main function.
 def main(args):
+    global MANAGER_CONFIG_PATH, SETUP_DB_VM_LOC
+
+    MANAGER_CONFIG_PATH = os.path.join(os.path.dirname(sys.argv[0]), MANAGER_CONFIG_PATH)
+    SETUP_DB_VM_LOC = os.path.join(os.path.dirname(sys.argv[0]), SETUP_DB_VM_LOC)
+
     if len(args) == 1:
         set_verbosity(args[0])
     else:

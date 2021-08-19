@@ -15,7 +15,7 @@ class MessageType(enum.Enum):
 
 
 # Test global variables.
-TESTING_DIR = os.path.join("configs", "tests")
+TESTING_DIR = os.path.join("..", "configs", "tests")
 MAX_VERBOSITY_LVL = 2
 VERBOSITY_LVL = 0
 
@@ -67,6 +67,9 @@ def test_all():
 
 # Main function.
 def main(args):
+    global TESTING_DIR
+    TESTING_DIR = os.path.join(os.path.dirname(sys.argv[0]), TESTING_DIR)
+
     if len(args) == 0:
         print_message("Output verbosity level will be 0.", MessageType.SPEC)
     elif len(args) == 1:

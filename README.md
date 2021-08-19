@@ -20,6 +20,7 @@ For project setup, we need to do the following things:
 2. Contact any contributor on this project to get access to a directory with all **resources**. Move **resources**
    folder to **lambda manager** directory.
 3. Export path to **run** command-line tool with `export PATH=path/to/serverless-project/tools/bin:$PATH`.
+4. Add `source path/to/serverless-project/tools/bin/run_completion.sh` in your `~/.bashrc` or `~/.bash_profile` script if you want to enable auto-completion.
 
 ---
 

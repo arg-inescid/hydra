@@ -24,7 +24,7 @@ class MessageType(enum.Enum):
 
 
 # Test global variables.
-MANAGER_LOG_FILE = os.path.join("..", "lambda-manager", "manager_logs", "lambda_manager.log")
+MANAGER_LOG_FILE = os.path.join("..", "..", "lambda-manager", "manager_logs", "lambda_manager.log")
 MAX_VERBOSITY_LVL = 2
 VERBOSITY_LVL = 0
 GENERAL_INFO = "general"
@@ -111,12 +111,14 @@ def run(username, command):
     return outs
 
 
-def configure_managers(managers):
+def configure_managers(test_config_dir, managers):
     for manager in managers:
         print_message(GENERAL_INFO, "Response: " +
                       requests.post("{manager}/configure_manager".format(manager=manager['address']),
                                     headers={'Content-type': 'application/json'},
-                                    data=read_file(GENERAL_INFO, manager['config_path'])).text, MessageType.INFO)
+                                    data=read_file(GENERAL_INFO,
+                                                   os.path.join(test_config_dir, manager['config_path']))).text,
+                      MessageType.INFO)
 
 
 def register_managers(load_balancer, managers):
@@ -141,8 +143,8 @@ def build_benchmark(username, source_root):
     return benchmark_path
 
 
-def upload_function(username, entry_point, command_info):
-    benchmark_path = build_benchmark(username, command_info['source_root'])
+def upload_function(test_config_dir, username, entry_point, command_info):
+    benchmark_path = build_benchmark(username, os.path.join(test_config_dir, command_info['source_root']))
     arguments = "&arguments=" + command_info['arguments'] if len(command_info['arguments']) > 0 else ""
     print_message(username, "Response: " +
                   requests.post("{entry_point}/upload_function?"
@@ -175,12 +177,13 @@ def pause(username, command_info):
     print_message(username, "Pausing...done", MessageType.INFO)
 
 
-def send(username, manager, command_info):
-    path = os.path.dirname(command_info['output'])
+def send(test_config_dir, username, manager, command_info):
+    real_output_path = os.path.join(test_config_dir, command_info['output'])
+    path = os.path.dirname(real_output_path)
     if len(path) > 0:
         os.makedirs(path, exist_ok=True)
-    if os.path.exists(command_info['output']):
-        os.remove(command_info['output'])
+    if os.path.exists(real_output_path):
+        os.remove(real_output_path)
 
     parameters_len = len(command_info['parameters_pool'])
     for i in range(command_info['iterations']):
@@ -198,15 +201,15 @@ def send(username, manager, command_info):
                               function_name=command_info['function_name'],
                               parameters=parameters))
         output += "ITERATION({})...done\n\n".format(i)
-        write_file(username, command_info['output'], output)
+        write_file(username, real_output_path, output)
 
         print_message(username, "Iteration {} of {}...done".format(i, command_info['iterations'] - 1), MessageType.INFO)
 
 
-def start_sending(username, manager, command_info):
+def start_sending(test_config_dir, username, manager, command_info):
     send_threads = []
     for send_info in command_info['sending_info']:
-        send_thread = threading.Thread(target=send, args=(username, manager, send_info))
+        send_thread = threading.Thread(target=send, args=(test_config_dir, username, manager, send_info))
         send_thread.start()
         send_threads.append(send_thread)
 
@@ -222,26 +225,26 @@ def check_failure_pattern(username, failure_pattern):
     regex = re.compile(failure_pattern)
     found_failure_patterns = regex.findall(lambda_manager_log)
     if len(found_failure_patterns) > 0:
-        print_message(username, "Failure pattern is found {} times!".format(len(found_failure_patterns)),
+        print_message(username, "Failure pattern is found {} time(s)!".format(len(found_failure_patterns)),
                       MessageType.WARN)
     else:
         print_message(username, "Success pattern is found!", MessageType.SPEC)
 
 
-def create_user(user_info, manager):
+def create_user(test_config_dir, user_info, manager):
     print_message(user_info['username'], "{} is sending commands...".format(user_info['username']), MessageType.INFO)
 
     kindness_counter = 0
     for command_info in user_info['commands']:
         command_info['command'].lower()
         if command_info['command'] == "u" or command_info['command'] == "upload":
-            upload_function(user_info['username'], manager, command_info)
+            upload_function(test_config_dir, user_info['username'], manager, command_info)
             continue
         if command_info['command'] == "r" or command_info['command'] == "remove":
             remove_function(user_info['username'], manager, command_info)
             continue
         if command_info['command'] == "s" or command_info['command'] == "send":
-            start_sending(user_info['username'], manager, command_info)
+            start_sending(test_config_dir, user_info['username'], manager, command_info)
             continue
         if command_info['command'] == "p" or command_info['command'] == "pause":
             pause(user_info['username'], command_info)
@@ -265,15 +268,15 @@ def unregister_managers(load_balancer, managers):
                                     .format(load_balancer=load_balancer, manager=manager)).text, MessageType.INFO)
 
 
-def test(data):
+def test(test_config_dir, data):
     print_message(GENERAL_INFO, "Test - {} - is running...".format(data['test']), MessageType.INFO)
 
     # register_managers(data['entry_point'], data['managers'])
-    configure_managers(data['managers'])
+    configure_managers(test_config_dir, data['managers'])
 
     users = []
     for user_info in data['users']:
-        user = threading.Thread(target=create_user, args=(user_info, data['entry_point']))
+        user = threading.Thread(target=create_user, args=(test_config_dir, user_info, data['entry_point']))
         user.start()
         users.append(user)
 
@@ -287,6 +290,9 @@ def test(data):
 
 # Main function.
 def main(args):
+    global MANAGER_LOG_FILE
+    MANAGER_LOG_FILE = os.path.join(os.path.dirname(sys.argv[0]), MANAGER_LOG_FILE)
+
     if len(args) == 0:
         print_message(GENERAL_INFO, "Insufficient number of arguments - {}!".format(len(args)), MessageType.ERROR)
         exit(1)
@@ -302,7 +308,7 @@ def main(args):
         exit(1)
 
     install_required_packages()
-    test(load_data(args[test_config_index]))
+    test(os.path.dirname(args[test_config_index]), load_data(args[test_config_index]))
 
 
 if __name__ == '__main__':
