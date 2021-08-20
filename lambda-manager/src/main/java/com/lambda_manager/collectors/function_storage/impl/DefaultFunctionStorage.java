@@ -1,10 +1,14 @@
 package com.lambda_manager.collectors.function_storage.impl;
 
 import com.lambda_manager.collectors.meta_info.Function;
+import com.lambda_manager.core.Environment;
 import com.lambda_manager.exceptions.user.FunctionNotFound;
+import com.lambda_manager.utils.FileUtils;
 import com.lambda_manager.utils.Messages;
 import com.lambda_manager.collectors.function_storage.FunctionStorage;
 
+import java.io.File;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -14,18 +18,15 @@ public class DefaultFunctionStorage implements FunctionStorage {
     private final ConcurrentHashMap<String, Function> functions = new ConcurrentHashMap<>();
 
     @Override
-    public Function register(String functionName) {
-        Function function = functions.get(functionName);
-        if(function == null) {
-            function = new Function(functionName);
-            functions.put(functionName, function);
-        }
-        return function;
+    public Function register(String functionName, Function function, byte[] functionCode) throws Exception {
+        FileUtils.writeBytesToFile(new File(Paths.get(Environment.CODEBASE, functionName, functionName + ".jar").toString()), functionCode);
+        return functions.put(function.getName(), function);
     }
 
     @Override
     public void unregister(String functionName) {
         functions.remove(functionName);
+        FileUtils.purgeDirectory(new File(Paths.get(Environment.CODEBASE, functionName).toString()));
     }
 
     @Override

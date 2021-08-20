@@ -40,9 +40,11 @@ public class LambdaManagerController {
     public Single<String> uploadFunction(@QueryValue("allocate") int allocate,
                                          @QueryValue("username") String username,
                                          @QueryValue("function_name") String functionName,
+                                         @QueryValue("function_language") String functionLanguage,
+                                         @QueryValue("function_entry_point") String functionEntryPoint,
                                          @Nullable @QueryValue("arguments") String arguments,
                                          @Body byte[] functionCode) {
-        return LambdaManager.uploadFunction(allocate, username, functionName, arguments, functionCode);
+        return LambdaManager.uploadFunction(allocate, username, functionName, functionLanguage, functionEntryPoint, arguments, functionCode);
     }
 
     @Post("/remove_function")

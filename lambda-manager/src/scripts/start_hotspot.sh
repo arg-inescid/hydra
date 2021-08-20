@@ -13,8 +13,14 @@ FUNCTION_JAR=$FUNCTION_HOME/$FUNCTION_NAME.jar
 LAMBDA_HOME=$FUNCTION_HOME/pid_"$LAMBDA_ID"_hotspot
 prepare_hotspot_lambda_directory "$LAMBDA_HOME"
 
-cp "$FUNCTION_JAR" "$LAMBDA_HOME"/shared
-echo "\$JAVA_HOME/bin/java -jar $FUNCTION_NAME.jar ${*:9}" >"$LAMBDA_HOME"/shared/run.sh
+PROXY_JAR=$PROXIES_HOME/java/target/lambda-java-proxy-0.0.1.jar
+if [ ! -f $PROXY_JAR ]; then
+  echo "Proxy JAR - $PROXY_JAR - not found!"
+  exit 1
+fi
+
+cp "$PROXY_JAR" "$FUNCTION_JAR" "$LAMBDA_HOME"/shared
+echo "\$JAVA_HOME/bin/java -cp lambda-java-proxy-0.0.1.jar:$FUNCTION_NAME.jar org.graalvm.argo.proxies.JavaProxy ${*:9}" >"$LAMBDA_HOME"/shared/run.sh
 
 "$LAMBDA_HOME"/debian_vm_unikernel.sh --memory "$LAMBDA_MEMORY" --gateway "$LAMBDA_GATEWAY" --ip "$LAMBDA_IP" \
   --mask "$LAMBDA_MASK" --kernel "$KERNEL_PATH" --img "$LAMBDA_HOME"/stretch.img --shared "$LAMBDA_HOME"/shared \

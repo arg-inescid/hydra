@@ -5,12 +5,12 @@ import com.lambda_manager.callbacks.impl.HotspotCallback;
 import com.lambda_manager.callbacks.impl.HotspotWithAgentCallback;
 import com.lambda_manager.collectors.meta_info.Lambda;
 import com.lambda_manager.core.Configuration;
+import com.lambda_manager.core.Environment;
 import com.lambda_manager.optimizers.LambdaExecutionMode;
 import com.lambda_manager.processes.lambda.StartLambda;
 import com.lambda_manager.utils.ConnectionTriplet;
 import io.micronaut.http.client.RxHttpClient;
 
-import java.io.File;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -47,48 +47,31 @@ public class StartHotspotWithAgent extends StartLambda {
         if (Configuration.argumentStorage.isLambdaConsoleActive()) {
             command.add("--console");
         } else {
-            command.add("");    // Placeholder.
+            command.add("--noconsole");
         }
         command.add(String.valueOf(lambda.getFunction().getLastAgentPID()));
+        command.add(String.valueOf(System.currentTimeMillis()));
+        command.add(lambda.getFunction().getEntryPoint());
         if (lambda.getFunction().getArguments() != null) {
             Collections.addAll(command, lambda.getFunction().getArguments().split(","));
         }
-        command.add(String.valueOf(System.currentTimeMillis()));
         return command;
     }
 
     @Override
     protected OnProcessFinishCallback callback() {
-        String sourceFile = Paths.get(CODEBASE,
+        String sourceFile = Paths.get(
+                CODEBASE,
                 lambda.getFunction().getName(),
-                String.format(HOTSPOT_W_AGENT, pid),
+                String.format(getLambdaDirectory(), pid),
                 RUN_LOG)
                 .toString();
         // Nested OnProcessFinish callbacks.
         return new HotspotWithAgentCallback(lambda, new HotspotCallback(sourceFile, outputFilename()));
     }
 
-    @Override
-    protected String outputFilename() {
-        String dirPath = Paths.get(
-                LAMBDA_LOGS,
-                lambda.getFunction().getName(),
-                String.format(HOTSPOT_W_AGENT, pid))
-                .toString();
-        //noinspection ResultOfMethodCallIgnored
-        new File(dirPath).mkdirs();
-        return Paths.get(dirPath, OUTPUT).toString();
-    }
-
-    @Override
-    protected String memoryFilename() {
-        String dirPath = Paths.get(
-                LAMBDA_LOGS,
-                lambda.getFunction().getName(),
-                String.format(HOTSPOT_W_AGENT, pid))
-                .toString();
-        //noinspection ResultOfMethodCallIgnored
-        new File(dirPath).mkdirs();
-        return Paths.get(dirPath, MEMORY).toString();
-    }
+	@Override
+	public String getLambdaDirectory() {
+		return Environment.HOTSPOT_W_AGENT;
+	}
 }

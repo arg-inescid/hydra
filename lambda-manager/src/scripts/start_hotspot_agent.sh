@@ -19,7 +19,13 @@ if [ -z "$PREV_AGENT_PID" ]; then
   exit 1
 fi
 
-cp "$FUNCTION_JAR" "$LAMBDA_HOME"/shared
+PROXY_JAR=$PROXIES_HOME/java/target/lambda-java-proxy-0.0.1.jar
+if [ ! -f $PROXY_JAR ]; then
+  echo "Proxy JAR - $PROXY_JAR - not found!"
+  exit 1
+fi
+
+cp "$PROXY_JAR" "$FUNCTION_JAR" "$LAMBDA_HOME"/shared
 cp "$MANAGER_HOME"/src/main/resources/caller-filter-config.json "$LAMBDA_HOME"/shared
 
 PREV_AGENT_CONFIG=$FUNCTION_HOME/pid_"$PREV_AGENT_PID"_hotspot_w_agent/shared/config
@@ -35,7 +41,7 @@ else
   printf "[\n]\n" > "$LAMBDA_HOME"/shared/config/serialization-config.json
 fi
 
-echo "\$JAVA_HOME/bin/java -Djava.library.path=\$JAVA_HOME/lib -agentlib:native-image-agent=config-merge-dir=config,caller-filter-file=caller-filter-config.json,report-dynamic-feature-failures -jar $FUNCTION_NAME.jar ${*:10}" >"$LAMBDA_HOME"/shared/run.sh
+echo "\$JAVA_HOME/bin/java -Djava.library.path=\$JAVA_HOME/lib -agentlib:native-image-agent=config-merge-dir=config,caller-filter-file=caller-filter-config.json,report-dynamic-feature-failures -cp lambda-java-proxy-0.0.1.jar:$FUNCTION_NAME.jar org.graalvm.argo.proxies.JavaProxy ${*:10}" >"$LAMBDA_HOME"/shared/run.sh
 
 "$LAMBDA_HOME"/debian_vm_unikernel.sh --memory "$LAMBDA_MEMORY" --gateway "$LAMBDA_GATEWAY" --ip "$LAMBDA_IP" \
   --mask "$LAMBDA_MASK" --kernel "$KERNEL_PATH" --img "$LAMBDA_HOME"/stretch.img --shared "$LAMBDA_HOME"/shared \

@@ -6,8 +6,8 @@ import com.lambda_manager.encoders.Coder;
 public class DefaultCoder implements Coder {
 
     @Override
-    public String encode(String username, String lambdaName) {
-        return username + "_" + lambdaName;
+    public String encodeFunctionName(String username, String functionName) {
+        return username + "_" + functionName;
     }
 
     @Override

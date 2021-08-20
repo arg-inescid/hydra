@@ -30,8 +30,6 @@ public class LambdaManagerState implements Serializable {
     private String client;
     @JsonProperty("codeWriter")
     private String codeWriter;
-    @JsonProperty("lambdaInfo")
-    private LambdaInfo lambdaInfo;
     private final static long serialVersionUID = -5763918485183329321L;
 
     /**
@@ -52,7 +50,7 @@ public class LambdaManagerState implements Serializable {
      * @param lambdaInfo - The class which stores information about one type of the lambda,
      */
     public LambdaManagerState(String scheduler, String optimizer, String encoder, String storage, String client,
-                              String codeWriter, LambdaInfo lambdaInfo) {
+                              String codeWriter) {
         super();
         this.scheduler = scheduler;
         this.optimizer = optimizer;
@@ -60,7 +58,6 @@ public class LambdaManagerState implements Serializable {
         this.storage = storage;
         this.client = client;
         this.codeWriter = codeWriter;
-        this.lambdaInfo = lambdaInfo;
     }
 
     @JsonProperty("scheduler")
@@ -121,16 +118,6 @@ public class LambdaManagerState implements Serializable {
     @JsonProperty("codeWriter")
     public void setCodeWriter(String codeWriter) {
         this.codeWriter = codeWriter;
-    }
-
-    @JsonProperty("lambdaInfo")
-    public LambdaInfo getLambdaInfo() {
-        return lambdaInfo;
-    }
-
-    @JsonProperty("lambdaInfo")
-    public void setLambdaInfo(LambdaInfo lambdaInfo) {
-        this.lambdaInfo = lambdaInfo;
     }
 
 }

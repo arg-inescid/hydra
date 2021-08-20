@@ -17,10 +17,6 @@
     "encoder": "com.lambda_manager.encoders.impl.DefaultCoder",
     "storage": "com.lambda_manager.collectors.function_storage.impl.DefaultFunctionStorage",
     "client": "com.lambda_manager.connectivity.client.impl.DefaultLambdaManagerClient",
-    "codeWriter": "com.lambda_manager.function_writer.impl.DefaultFunctionWriter",
-    "lambdaInfo": {
-      "lambda": "com.lambda_manager.collectors.meta_info.impl.DefaultLambda",
-      "function": "com.lambda_manager.collectors.meta_info.impl.DefaultFunction"
-    }
+    "codeWriter": "com.lambda_manager.function_writer.impl.DefaultFunctionWriter"
   }
 }

@@ -19,6 +19,8 @@
           "command": "upload",
           "allocate": 3,
           "function_name": "hello-world",
+          "function_language": "Java",
+          "function_entry_point": "com.hello_world.HelloWorld",
           "arguments": "8080",
           "source_root": "../../../../benchmarks/language/java/hello-world/"
         },
