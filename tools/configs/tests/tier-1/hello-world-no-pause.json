@@ -1,5 +1,5 @@
 {
-  "test": "test1",
+  "test": "hello-world-no-pause",
   "entry_point": "http://localhost:9000",
   "managers": [
     {

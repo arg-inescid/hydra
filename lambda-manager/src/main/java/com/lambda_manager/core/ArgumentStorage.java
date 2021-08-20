@@ -146,6 +146,7 @@ public class ArgumentStorage {
                 try {
                     File managerLogFile = new File(MANAGER_LOG_FILENAME);
                     //noinspection ResultOfMethodCallIgnored
+                    managerLogFile.getParentFile().mkdirs();
                     managerLogFile.createNewFile();
                     FileHandler fileHandler = new FileHandler(MANAGER_LOG_FILENAME, true);
                     fileHandler.setFormatter(formatter);
