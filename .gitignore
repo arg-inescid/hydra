@@ -1,2 +1,3 @@
 resources/*
-!resources/.gitkeep
+!resources/*.jpg
+!resources/*.drawio

@@ -52,6 +52,14 @@ For plotting purposes, we will need results from the testing phase and plotting 
 
 ---
 
+## Web UI and monitoring
+
+The [Web UI](https://github.com/argo-com/web-ui) makes it easier to deploy, test and monitor your functions. The following diagram shows data flows between different parts of the system for monitoring purposes:
+
+![data flow diagram](resources/data_flow.jpg)
+
+---
+
 ## Get Support
 
 - Open a [GitHub issue](https://github.com/jovanstevanovic/serverless-architecture/issues) for bug reports, questions,
