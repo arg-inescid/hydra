@@ -3,7 +3,6 @@ package com.lambda_manager.core;
 import com.lambda_manager.collectors.function_storage.FunctionStorage;
 import com.lambda_manager.connectivity.client.LambdaManagerClient;
 import com.lambda_manager.encoders.Coder;
-import com.lambda_manager.function_writer.FunctionWriter;
 import com.lambda_manager.optimizers.Optimizer;
 import com.lambda_manager.schedulers.Scheduler;
 
@@ -16,7 +15,6 @@ public class Configuration {
     public static Coder coder;
     public static FunctionStorage storage;
     public static LambdaManagerClient client;
-    public static FunctionWriter functionWriter;
     public static ArgumentStorage argumentStorage;
 
     private Configuration() {
@@ -24,14 +22,13 @@ public class Configuration {
 
     public static void initFields(Scheduler scheduler, Optimizer optimizer, Coder encoder,
                                   FunctionStorage storage, LambdaManagerClient client,
-                                  FunctionWriter functionWriter, ArgumentStorage argumentStorage) {
+                                  ArgumentStorage argumentStorage) {
         Configuration.initialized = true;
         Configuration.scheduler = scheduler;
         Configuration.optimizer = optimizer;
         Configuration.coder = encoder;
         Configuration.storage = storage;
         Configuration.client = client;
-        Configuration.functionWriter = functionWriter;
         Configuration.argumentStorage = argumentStorage;
     }
 

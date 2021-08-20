@@ -7,7 +7,6 @@ import com.lambda_manager.connectivity.client.LambdaManagerClient;
 import com.lambda_manager.encoders.Coder;
 import com.lambda_manager.exceptions.argument_parser.ErrorDuringReflectiveClassCreation;
 import com.lambda_manager.exceptions.user.ErrorDuringCreatingConnectionPool;
-import com.lambda_manager.function_writer.FunctionWriter;
 import com.lambda_manager.optimizers.Optimizer;
 import com.lambda_manager.processes.ProcessBuilder;
 import com.lambda_manager.processes.main.CreateTaps;
@@ -147,6 +146,7 @@ public class ArgumentStorage {
                 try {
                     File managerLogFile = new File(MANAGER_LOG_FILENAME);
                     //noinspection ResultOfMethodCallIgnored
+                    managerLogFile.getParentFile().mkdirs();
                     managerLogFile.createNewFile();
                     FileHandler fileHandler = new FileHandler(MANAGER_LOG_FILENAME, true);
                     fileHandler.setFormatter(formatter);
@@ -193,8 +193,7 @@ public class ArgumentStorage {
         Coder encoder = (Coder) createObject(lambdaManagerState.getEncoder());
         FunctionStorage storage = (FunctionStorage) createObject(lambdaManagerState.getStorage());
         LambdaManagerClient client = (LambdaManagerClient) createObject(lambdaManagerState.getClient());
-        FunctionWriter functionWriter = (FunctionWriter) createObject(lambdaManagerState.getCodeWriter());
-        Configuration.initFields(scheduler, optimizer, encoder, storage, client, functionWriter, this);
+        Configuration.initFields(scheduler, optimizer, encoder, storage, client, this);
     }
 
     public void doInitialize(LambdaManagerConfiguration lambdaManagerConfiguration, BeanContext beanContext)

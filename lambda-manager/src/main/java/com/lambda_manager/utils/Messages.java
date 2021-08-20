@@ -15,6 +15,7 @@ public class Messages {
 
     // Upload function messages.
     public static final String SUCCESS_FUNCTION_UPLOAD = "Successfully uploaded function - %s!";
+    public static final String ERROR_FUNCTION_LANG = "Function language not found - %s!";
     public static final String ERROR_FUNCTION_UPLOAD = "Error during uploading new function - %s!";
 
     // Remove function messages.

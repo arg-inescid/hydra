@@ -1,5 +1,5 @@
 {
-  "test": "test1",
+  "test": "reflection-call",
   "entry_point": "http://localhost:9000",
   "managers": [
     {
@@ -20,6 +20,8 @@
           "command": "upload",
           "allocate": 100,
           "function_name": "reflection-call",
+          "function_language": "Java",
+          "function_entry_point": "com.hello_world.HelloWorld",
           "arguments": "8080",
           "source_root": "../../../../benchmarks/language/java/reflection-call/"
         },

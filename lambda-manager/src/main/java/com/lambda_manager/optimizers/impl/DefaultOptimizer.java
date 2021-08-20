@@ -4,7 +4,6 @@ import com.lambda_manager.collectors.meta_info.Lambda;
 import com.lambda_manager.collectors.meta_info.Function;
 import com.lambda_manager.optimizers.FunctionStatus;
 import com.lambda_manager.optimizers.Optimizer;
-import com.lambda_manager.processes.AbstractProcess;
 import com.lambda_manager.processes.lambda.BuildVMM;
 import com.lambda_manager.processes.lambda.StartLambda;
 import com.lambda_manager.processes.lambda.impl.StartHotspot;

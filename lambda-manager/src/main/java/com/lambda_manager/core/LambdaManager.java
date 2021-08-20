@@ -8,7 +8,6 @@ import com.lambda_manager.collectors.meta_info.Lambda;
 import com.lambda_manager.exceptions.argument_parser.ErrorDuringParsingJSONFile;
 import com.lambda_manager.exceptions.argument_parser.ErrorDuringReflectiveClassCreation;
 import com.lambda_manager.exceptions.user.ErrorDuringCreatingConnectionPool;
-import com.lambda_manager.exceptions.user.ErrorUploadingLambda;
 import com.lambda_manager.exceptions.user.FunctionNotFound;
 import com.lambda_manager.optimizers.FunctionStatus;
 import com.lambda_manager.optimizers.LambdaExecutionMode;
@@ -18,8 +17,6 @@ import com.lambda_manager.utils.logger.Logger;
 import com.lambda_manager.utils.parser.ArgumentParser;
 import io.micronaut.context.BeanContext;
 import io.reactivex.Single;
-
-import java.io.IOException;
 import java.util.Map;
 import java.util.logging.Level;
 
@@ -28,9 +25,6 @@ public class LambdaManager {
 	/** Number of times a request will be sent to a different Lambda upon timeout. */
 	// TODO - This value should be configurable.
 	private static final int LAMBDA_FAULT_TOLERANCE = 3;
-
-    private LambdaManager() {
-    }
 
     private static String formatRequestSpentTimeMessage(Lambda lambda, long spentTime) {
         String username = Configuration.coder.decodeUsername(lambda.getFunction().getName());
@@ -49,13 +43,14 @@ public class LambdaManager {
 
     public static Single<String> processRequest(String username, String functionName, String parameters) {
         String responseString = null;
-        try {
-            if (!Configuration.isInitialized()) {
-                Logger.log(Level.WARNING, Messages.NO_CONFIGURATION_UPLOADED);
-                responseString = Messages.NO_CONFIGURATION_UPLOADED;
-            }
 
-            Function function = Configuration.storage.get(Configuration.coder.encode(username, functionName));
+        if (!Configuration.isInitialized()) {
+            Logger.log(Level.WARNING, Messages.NO_CONFIGURATION_UPLOADED);
+            return JsonUtils.constructJsonResponseObject(Messages.NO_CONFIGURATION_UPLOADED);
+        }
+        
+        try {
+            Function function = Configuration.storage.get(Configuration.coder.encodeFunctionName(username, functionName));
             String response = null;
             LambdaExecutionMode targetMode = null;
 
@@ -95,25 +90,27 @@ public class LambdaManager {
     public static Single<String> uploadFunction(int allocate,
                                          String username,
                                          String functionName,
+                                         String functionLanguage,
+                                         String functionEntryPoint,
                                          String arguments,
                                          byte[] functionCode) {
-        String responseString = null;
+    	String responseString = null;
+    	
+    	if (!Configuration.isInitialized()) {
+            Logger.log(Level.WARNING, Messages.NO_CONFIGURATION_UPLOADED);
+            JsonUtils.constructJsonResponseObject(Messages.NO_CONFIGURATION_UPLOADED); 
+        }
+
         try {
-            if (!Configuration.isInitialized()) {
-                Logger.log(Level.WARNING, Messages.NO_CONFIGURATION_UPLOADED);
-                responseString = Messages.NO_CONFIGURATION_UPLOADED;
-            }
-
-            String encodedName = Configuration.coder.encode(username, functionName);
-            Function function = Configuration.storage.register(encodedName);
-            function.setArguments(arguments);
+            String fname = Configuration.coder.encodeFunctionName(username, functionName);
+            Function function = new Function(fname, functionLanguage, functionEntryPoint, arguments);
+            Configuration.storage.register(fname, function, functionCode);
             for (int i = 0; i < allocate; i++) {
-                Configuration.functionWriter.upload(function, encodedName, functionCode);
+                function.getStoppedLambdas().add(new Lambda(function));
             }
-
             Logger.log(Level.INFO, String.format(Messages.SUCCESS_FUNCTION_UPLOAD, functionName));
             responseString = String.format(Messages.SUCCESS_FUNCTION_UPLOAD, functionName);
-        } catch (IOException | ErrorUploadingLambda e) {
+        } catch (Exception e) {
             Logger.log(Level.SEVERE, String.format(Messages.ERROR_FUNCTION_UPLOAD, functionName), e);
             responseString = String.format(Messages.ERROR_FUNCTION_UPLOAD, functionName);
         } catch (Throwable throwable) {
@@ -125,16 +122,15 @@ public class LambdaManager {
 
     public static Single<String> removeFunction(String username, String functionName) {
         String responseString = null;
+
+        if (!Configuration.isInitialized()) {
+            Logger.log(Level.WARNING, Messages.NO_CONFIGURATION_UPLOADED);
+            return JsonUtils.constructJsonResponseObject(Messages.NO_CONFIGURATION_UPLOADED);
+        }
+
         try {
-            if (!Configuration.isInitialized()) {
-                Logger.log(Level.WARNING, Messages.NO_CONFIGURATION_UPLOADED);
-                responseString = Messages.NO_CONFIGURATION_UPLOADED;
-            }
-
-            String encodedName = Configuration.coder.encode(username, functionName);
-            Configuration.storage.unregister(encodedName);
-            Configuration.functionWriter.remove(encodedName);
-
+            String fname = Configuration.coder.encodeFunctionName(username, functionName);
+            Configuration.storage.unregister(fname);
             Logger.log(Level.INFO, String.format(Messages.SUCCESS_FUNCTION_REMOVE, functionName));
             responseString = String.format(Messages.SUCCESS_FUNCTION_REMOVE, functionName);
         } catch (Throwable throwable) {
@@ -162,6 +158,12 @@ public class LambdaManager {
 
     public static Single<String> getFunctions() {
         Object response = null;
+        
+        if (!Configuration.isInitialized()) {
+            Logger.log(Level.WARNING, Messages.NO_CONFIGURATION_UPLOADED);
+            return JsonUtils.constructJsonResponseObject(Messages.NO_CONFIGURATION_UPLOADED);
+        }
+        
         try {
             Map<String, Function> functionsMap = Configuration.storage.getAll();
             ObjectMapper mapper = new ObjectMapper();

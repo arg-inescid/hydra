@@ -8,9 +8,21 @@ import java.util.HashMap;
 
 public class Function {
 
+    /** Name of the function. The name of a function is a unique identifier. */
     private final String name;
+
+    /** Function language. */
+    private final FunctionLanguage language;
+
+    /** Function entry point (how should we invoke the function). */
+    private final String entryPoint;
+
+    /** Arguments passed to the function code when it is launched. Not to be confused with lambda invocation arguments. */
+    private final String arguments;
+
+    /** Function status in the optimization pipeline. */
     private FunctionStatus status;
-    private String arguments;
+
     /**
      * There will be only one started agent per function, so we need to keep information about PID for that single lambda.
      * We are sending this information to {@link com.lambda_manager.processes.lambda.BuildVMM } because during a build,
@@ -33,8 +45,11 @@ public class Function {
     /** Number of Lambdas that are not receiving requests. */
     private int decommissedLambdas;
 
-    public Function(String name) {
+    public Function(String name, String language, String entryPoint, String arguments) throws Exception {
         this.name = name;
+        this.language = FunctionLanguage.fromString(language);
+        this.entryPoint = entryPoint;
+        this.arguments = arguments;
         this.status = FunctionStatus.NOT_BUILT_NOT_CONFIGURED;
     }
 
@@ -52,10 +67,6 @@ public class Function {
 
     public String getArguments() {
         return arguments;
-    }
-
-    public void setArguments(String arguments) {
-        this.arguments = arguments;
     }
 
     public long getLastAgentPID() {
@@ -102,5 +113,13 @@ public class Function {
 
 	public int getTotalNumberLambdas() {
 		return stoppedLambdas.size() + idleLambdas.size() + runningLambdas.size();
+	}
+
+	public FunctionLanguage getLanguage() {
+		return language;
+	}
+
+	public String getEntryPoint() {
+		return entryPoint;
 	}
 }

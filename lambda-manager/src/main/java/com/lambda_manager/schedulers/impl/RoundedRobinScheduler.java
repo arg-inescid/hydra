@@ -54,7 +54,6 @@ public class RoundedRobinScheduler implements Scheduler {
     private void spawnNewLambda(Function function, Lambda lambda) {
         gate(function);
         acquireConnection(lambda);
-        lambda.setFunction(function);
         ProcessBuilder process = Configuration.optimizer.whomToSpawn(lambda).build();
         lambda.setProcess(process);
         function.addProcess(process);

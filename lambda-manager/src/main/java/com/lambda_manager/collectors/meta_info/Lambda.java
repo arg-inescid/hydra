@@ -12,7 +12,7 @@ import java.util.Timer;
 public class Lambda {
 
 	/** The Function that this Lambda is executing. */
-    private Function function;
+    private final Function function;
 
     /** The process that is hosting the lambda execution. */
     private ProcessBuilder process;
@@ -31,15 +31,12 @@ public class Lambda {
     /** Indicates whether or not this lambda should be used for future requests. */
     private boolean decomissioned;
 
-    public Lambda() {
+    public Lambda(Function function) {
+        this.function = function;
     }
 
     public Function getFunction() {
         return this.function;
-    }
-
-    public void setFunction(Function function) {
-        this.function = function;
     }
 
     public ProcessBuilder getProcess() {

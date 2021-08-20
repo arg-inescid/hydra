@@ -2,7 +2,7 @@ package com.lambda_manager.encoders;
 
 public interface Coder {
 
-    String encode(String username, String lambdaName);
+    String encodeFunctionName(String username, String functionName);
 
     String[] decode(String encodedName);
 
