@@ -69,7 +69,7 @@ def set_verbosity(flag):
 
 def install_required_packages():
     print_message("Installing required packages...", MessageType.INFO)
-    run(sys.executable + " -m pip install requests")
+    run(sys.executable + " -m pip install requests influxdb_client")
     print_message("Installing required packages...done", MessageType.INFO)
 
 
