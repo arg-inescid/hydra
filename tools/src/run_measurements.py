@@ -17,7 +17,8 @@ SLEEP_TIME_SEC = 10
 
 MANAGER_LOGS_DIR = os.path.join("..", "lambda-manager", "manager_logs")
 MANAGER_LOG_FILE = os.path.join(MANAGER_LOGS_DIR, "lambda_manager.log")
-MANAGER_LOG_LATENCY_REGEX = "Timestamp \\((\\d+)\\) FINE Time \\(user=(.*),function_name=(.*),state=(.*),id=(\\d+)\\):\\s*(\\d+)\\s*\\[ms\\]"
+MANAGER_LOG_LATENCY_REGEX = "Timestamp \\((\\d+)\\) FINE Time " \
+                            "\\(user=(.*),function_name=(.*),state=(.*),id=(\\d+)\\):\\s*(\\d+)\\s*\\[ms\\]"
 MANAGER_LOG_EXIT_RECORD_REGEX = "Timestamp \\((\\d+)\\).*PID -> (\\d+).*--output=(.*)\\/memory\\.log.*Exit"
 BOOT_TIME_REGEX = "VMM boot time: (\\d+)"
 
@@ -38,7 +39,8 @@ def process_latency(most_recent_timestamp, write_api):
         update_lambda_table(
             pid=entry[4], username=entry[1], function_name=entry[2])
         write_request_latency(
-            write_api=write_api, username=entry[1], function_name=entry[2], lambda_execution_mode=entry[3], request_latency_value=entry[5])
+            write_api=write_api, username=entry[1], function_name=entry[2], lambda_execution_mode=entry[3],
+            request_latency_value=entry[5])
         most_recent_timestamp = entry[0]
     return most_recent_timestamp
 
@@ -70,7 +72,7 @@ def process_startup(most_recent_timestamp, write_api):
         output_log_filename = os.path.join(
             "..", "lambda-manager", entry[2], "output.log")
         if entry[1] in LAMBDA_TABLE:
-            info = LAMBDA_TABLE[entry[1]]     # get lambda info by PID
+            info = LAMBDA_TABLE[entry[1]]  # get lambda info by PID
             write_startup(write_api=write_api, filename=output_log_filename,
                           username=info["username"], function_name=info["function_name"])
         most_recent_timestamp = entry[0]

@@ -22,6 +22,9 @@ _complete() { #  By convention, the function name
   i*)
     while IFS="" read -r line; do COMPREPLY+=("$line"); done < <(compgen -W 'install-deps' -- "$cur")
     ;;
+  m*)
+    while IFS="" read -r line; do COMPREPLY+=("$line"); done < <(compgen -W 'measurements' -- "$cur")
+    ;;
   h*)
     while IFS="" read -r line; do COMPREPLY+=("$line"); done < <(compgen -W 'help' -- "$cur")
     ;;
