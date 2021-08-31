@@ -7,9 +7,9 @@ using [Micronaut](https://guides.micronaut.io/index.html).
 
 The Manager consists of next main components:
 
-- `Encode` - Class for transforming username and lambda name to unique name, which is then used as the key for Lambda
+- `Encoder` - Class for transforming username and lambda name to unique name, which is then used as the key for Function
   Storage.
-- `Lambda Storage` - Class for storing meta-information about every registered lambda. Like ID, lambda name, available
+- `Function Storage` - Class for storing meta-information about every registered function. Like ID, function name, available
   instances, created instances, active instances, opened HTTP connections...
 - `Code Writer` - Class for storing binary code of servers writing them on the same disk as lambda manager.
 - `Scheduler` - Class which is deciding which instance of lambda should we call.
