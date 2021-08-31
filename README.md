@@ -1,67 +1,26 @@
-## Repository Structure
+## Lambda manager
 
-The Serverless platform main repository includes the components listed below. The documentation for each component
-includes further information for the component.
+The Lambda manager project is core component of the serverless architecture. Manager is written in Java
+using [Micronaut](https://guides.micronaut.io/index.html).
 
-- [Benchmarks](https://github.com/jovanstevanovic/serverless-architecture/blob/main/benchmarks/README.md) - contains
-  a list of function examples that we are using as a load for testing.
-- [Lambda Manager](https://github.com/jovanstevanovic/serverless-architecture/blob/main/lambda-manager/README.md) -
-  written in Java using [Micronaut](https://guides.micronaut.io/index.html), contains core components of the system.
-- [Tools](https://github.com/jovanstevanovic/serverless-architecture/blob/main/tools/README.md) - written in
-  Python, contain tools for testing and plotting.
+### Main components
 
----
+The Manager consists of next main components:
 
-## Setup
+- `Encode` - Class for transforming username and lambda name to unique name, which is then used as the key for Lambda
+  Storage.
+- `Lambda Storage` - Class for storing meta-information about every registered lambda. Like ID, lambda name, available
+  instances, created instances, active instances, opened HTTP connections...
+- `Code Writer` - Class for storing binary code of servers writing them on the same disk as lambda manager.
+- `Scheduler` - Class which is deciding which instance of lambda should we call.
+- `Optimizer` - Class which is deciding whether to start a new instance of a lambda with as **Hotspot** or **VMM**. 
+  Server as next step in execution pipe (after `Encoder ` and `Scheduler` and before `Client`).
+- `Client` - Class for making connections toward lambdas.
+- `Lambda Manager` - Core class which is just a template while all implementations are kept in concrete implementations
+  of Interfaces for all above classes.
 
-For project setup, we need to do the following things:
+### TODOs
+- Maybe we want to share some parts from confluence page here, like overall scheme, use cases...
+- Maybe we also want to share some parts from presentation here...
+- Maybe to show some results here or in README.md from the top directory.
 
-1. Clone the project into a local repository.
-2. Contact any contributor on this project to get access to a directory with all **resources**. Move **resources**
-   folder to **lambda manager** directory.
-3. Export path to **run** command-line tool with `export PATH=path/to/serverless-project/tools/bin:$PATH`.
-4. Add `source path/to/serverless-project/tools/bin/run_completion.sh` in your `~/.bashrc` or `~/.bash_profile` script if you want to enable auto-completion.
-
----
-
-## Testing
-
-For testing purposes, we need two terminals (**T1** and **T2**):
-
-1. (T1) Go to lambda manager's directory with `cd lambda-manager`. Build the lambda manager with Gradle using the
-   command
-   `./gradlew clean assemble`.
-2. (T1) Run lambda manager with command `sudo java -jar build/libs/lambda-manager-1.0-all.jar`.
-3. (T2) Go to the directory with benchmark which you want to use as load for testing. For example,
-   `cd benchmarks/language/java/hello-world`.
-4. (T2) Build benchmark with command `./gradlew clean assemble`. Go back to project's root directory with `cd ../..`
-5. (T2) Go to the tool's directory with the command `cd tools`.
-6. (T2) Change manager's configuration `configs/manager/local-manager.json` or leave it with default values.
-7. (T2) Change test's configuration `configs/tests/tier-1/hello-world.json` or leave it with default values.
-8. (T2) Start testing lambda manager with command `run test configs/tests/tier-1/hello-world.json.`
-
----
-
-## Plotting
-
-For plotting purposes, we will need results from the testing phase and plotting tool.
-
-1. Go to tools directory with command `cd tools`.
-2. Change the plot's configuration `configs/plot/plot-all.json` or leave it with default values.
-3. Start plotting tool with command `run plot configs/plot/plot-all.json`.
-
----
-
-## Web UI and monitoring
-
-The [Web UI](https://github.com/argo-com/web-ui) makes it easier to deploy, test and monitor your functions. The following diagram shows data flows between different parts of the system for monitoring purposes:
-
-![data flow diagram](resources/data_flow.jpg)
-
----
-
-## Get Support
-
-- Open a [GitHub issue](https://github.com/jovanstevanovic/serverless-architecture/issues) for bug reports, questions,
-  or requests for enhancements.
-  
