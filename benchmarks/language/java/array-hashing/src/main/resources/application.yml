@@ -1,5 +1,0 @@
-micronaut:
-  application:
-    name: array-hashing
-  server:
-    port: 8080

@@ -1,5 +1,0 @@
-micronaut:
-  application:
-    name: tree-traversal
-  server:
-    port: 8080
