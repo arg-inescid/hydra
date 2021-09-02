@@ -3,6 +3,11 @@
 The Lambda manager is a core component of the Argo architecture. Manager is written in Java
 using [Micronaut](https://guides.micronaut.io/index.html).
 
+### Getting ready
+
+For more information on what the Argo is, how to set up a project, do the testing and plotting, click on
+this [link](doc/README.md).
+
 ### Main components
 
 The Manager consists of next main components:
