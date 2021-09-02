@@ -9,7 +9,7 @@ information for the component.
   is using during lambda invocation.
 - [lambda-manager](https://github.com/argo-com/lambda-manager/blob/main/README.md) - The Lambda manager is a core
   component of the Argo architecture.
-- [argo-ui](https://github.com/argo-com/argo-ui/blob/master/README.md) - ArgoUI gives opportunities to users to upload
+- [web-ui](https://github.com/argo-com/web-ui/blob/master/README.md) - WebUI gives opportunities to users to upload
   functions, measure times, and plot functions.
 - [run](https://github.com/argo-com/run/blob/main/README.md) - Run is a command-line tool for testing, plotting, running
   gates, updating project, installing dependencies...
@@ -23,9 +23,10 @@ To set up project, we need to do the following things:
 1. Clone all repositories.
 2. Contact any contributor on this project to get access to a directory with all **resources**. Place **resources**
    folder in project root.
-3. Export path to **run** command-line tool with `export PATH=path/to/argo-root/tools/bin:$PATH`.
-4. Add `source path/to/argo-root/tools/bin/run_completion.sh` in your `~/.bashrc` or `~/.bash_profile` script if you
+3. Export path to **run** command-line tool with `export PATH=path/to/argo-root/run/bin:$PATH`.
+4. Add `source path/to/argo-root/run/bin/run_completion.sh` in your `~/.bashrc` or `~/.bash_profile` script if you
    want to enable auto-completion.
+5. Run `run install-deps` for installing all dependencies.
 
 ---
 
@@ -56,9 +57,9 @@ For plotting purposes, we will need results from the testing phase and plotting 
 
 ---
 
-## ArgoUI and monitoring
+## WebUI and monitoring
 
-The [ArgoUI](https://github.com/argo-com/argo-ui) makes it easier to deploy, test and monitor your functions. The
+The [WebUI](https://github.com/argo-com/web-ui) makes it easier to deploy, test and monitor your functions. The
 following diagram shows data flows between different parts of the system for monitoring purposes:
 
 ![data flow diagram](resources/data_flow.jpg)
