@@ -34,9 +34,8 @@ To set up project, we need to do the following things:
 
 For testing purposes, we need two terminals (**T1** and **T2**):
 
-1. (T1) Go to lambda manager's directory with `cd lambda-manager`. Build the lambda manager with Gradle using the
-   command `./gradlew clean assemble`.
-2. (T1) Run lambda manager with command `sudo java -jar build/libs/lambda-manager-1.0-all.jar`.
+1. (T1) Go to lambda manager's directory with `cd lambda-manager`.
+2. (T1) Build and run lambda manager with command `run manager`.
 3. (T2) Go to the directory with benchmark that you want to use as load for testing. For example,
    `cd benchmarks/language/java/hello-world`.
 4. (T2) Build benchmark with command `./gradlew clean assemble`. Go back to project's root directory with `cd ../..`
