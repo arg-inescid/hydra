@@ -10,7 +10,7 @@ cd "$DIR" || {
 }
 
 echo -e "${GREEN}Building lambda manager...${NC}"
-sudo ./gradlew clean assemble
+./gradlew clean assemble
 echo -e "${GREEN}Building lambda manager...done${NC}"
 
 echo -e "${GREEN}Running lambda manager...${NC}"
