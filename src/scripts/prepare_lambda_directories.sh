@@ -10,6 +10,7 @@ function prepare_hotspot_lambda_directory() {
   LAMBDA_HOME=$1
   mkdir "$LAMBDA_HOME" &> /dev/null
   cp -r "$QEMU_JVM_DIR"/{id_rsa,id_rsa.pub,debian_vm_unikernel.sh,stretch.img,shared} "$LAMBDA_HOME"
+  chmod 400 "$LAMBDA_HOME"/id_rsa
 }
 
 function prepare_vmm_lambda_directory() {
