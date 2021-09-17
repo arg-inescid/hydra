@@ -37,6 +37,10 @@ public final class Logger {
         Logger.HANDLER = handler;
     }
 
+    public static boolean isLoggable(Level level) {
+        return LOGGER.isLoggable(level);
+    }
+
     public static void close() {
         if (HANDLER != null) {
             HANDLER.close();

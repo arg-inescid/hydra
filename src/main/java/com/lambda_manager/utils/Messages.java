@@ -32,11 +32,14 @@ public class Messages {
     public static final String ERROR_TAP_REMOVAL = "Error during cleaning taps!";
 
     // Process messages.
-    public static final String PROCESS_START = "PID -> %d | Command -> %s | Output -> %s";
-    public static final String PROCESS_EXIT = "PID -> %d | Command -> %s | Exit code -> %d";
-    public static final String PROCESS_RAISE_EXCEPTION = "PID -> %d | Command -> %s | Raised exception!";
-    public static final String PROCESS_SHUTDOWN_EXCEPTION = "PID -> %d | | Command -> %s | " +
-                    "Raise exception in shutdown callback!";
+    public static final String PROCESS_START_FINE = "PID -> %d | Command -> %s | Output -> %s";
+    public static final String PROCESS_START_INFO = "PID -> %d | Type -> %s | Output -> %s";
+    public static final String PROCESS_EXIT_FINE = "PID -> %d | Command -> %s | Exit code -> %d";
+    public static final String PROCESS_EXIT_INFO = "PID -> %d | Type -> %s | Exit code -> %d";
+    public static final String PROCESS_RAISE_EXCEPTION_FINE = "PID -> %d | Command -> %s | Raised exception!";
+    public static final String PROCESS_RAISE_EXCEPTION_INFO = "PID -> %d | Type -> %s | Raised exception!";
+    public static final String PROCESS_SHUTDOWN_EXCEPTION_FINE = "PID -> %d | | Command -> %s | " + "Raise exception in shutdown callback!";
+    public static final String PROCESS_SHUTDOWN_EXCEPTION_INFO = "PID -> %d | | Type -> %s | " + "Raise exception in shutdown callback!";
 
     // Connection pool messages.
     public static final String ERROR_POOL_CREATION = "Error during creating new connection pool!";

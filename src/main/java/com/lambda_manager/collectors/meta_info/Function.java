@@ -1,10 +1,7 @@
 package com.lambda_manager.collectors.meta_info;
 
 import com.lambda_manager.optimizers.FunctionStatus;
-import com.lambda_manager.processes.ProcessBuilder;
-
 import java.util.ArrayList;
-import java.util.HashMap;
 
 public class Function {
 
@@ -42,9 +39,6 @@ public class Function {
 
     /** Busy lambdas, running requests. */
     private final ArrayList<Lambda> runningLambdas = new ArrayList<>();
-
-    /** Active processes by PID. */
-    private final HashMap<Long, ProcessBuilder> activeProcesses = new HashMap<>();
 
     /** Number of Lambdas that are not receiving requests. */
     private int decommissedLambdas;
@@ -93,17 +87,9 @@ public class Function {
         return runningLambdas;
     }
 
-    public void addProcess(ProcessBuilder process) {
-        activeProcesses.put(process.pid(), process);
-    }
-
-    public ProcessBuilder removeProcess(ProcessBuilder process) {
-        return activeProcesses.remove(process.pid());
-    }
-
-    public int getNumberDecommissedLambdas() {
-        return decommissedLambdas;
-    }
+	public int getNumberDecommissedLambdas() {
+		return decommissedLambdas;
+	}
 
     public void decommissionLambda(Lambda lambda) {
         decommissedLambdas++;

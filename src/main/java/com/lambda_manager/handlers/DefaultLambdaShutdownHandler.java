@@ -74,7 +74,6 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
                 return;
             }
             lambda.getTimer().cancel();
-            function.removeProcess(process);
         }
 
         function.commissionLambda(lambda);
