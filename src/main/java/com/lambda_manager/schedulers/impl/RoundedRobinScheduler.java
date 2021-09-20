@@ -8,6 +8,7 @@ import com.lambda_manager.optimizers.FunctionStatus;
 import com.lambda_manager.optimizers.LambdaExecutionMode;
 import com.lambda_manager.processes.ProcessBuilder;
 import com.lambda_manager.schedulers.Scheduler;
+import com.lambda_manager.utils.NetworkUtils;
 import com.lambda_manager.utils.logger.Logger;
 
 import java.util.ArrayList;
@@ -38,15 +39,6 @@ public class RoundedRobinScheduler implements Scheduler {
         }
     }
 
-    private void waitForLambda(Lambda lambda) {
-        try {
-            // TODO - replace with network port check.
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
-            // Ignored.
-        }
-    }
-
     private void startLambda(Function function, Lambda lambda) {
         new Thread() {
             @Override
@@ -56,12 +48,17 @@ public class RoundedRobinScheduler implements Scheduler {
                 ProcessBuilder process = Configuration.optimizer.whomToSpawn(lambda).build();
                 lambda.setProcess(process);
                 process.start();
-                waitForLambda(lambda);
+                boolean open = NetworkUtils.waitForOpenPort(lambda.getConnectionTriplet().ip, 8080, 25);
                 synchronized (function) {
-                    function.getIdleLambdas().add(lambda);
+                    if (open) {
+                        function.getIdleLambdas().add(lambda);
+                        Logger.log(Level.INFO, "Added new lambda for " + function.getName() + " with mode " + lambda.getExecutionMode());
+                    } else {
+                        function.getStoppedLambdas().add(lambda);
+                        Logger.log(Level.SEVERE, "Failed to add new lambda for " + function.getName() + " with mode " + lambda.getExecutionMode());
+                    }
                     lambda.resetTimer();
                 }
-                Logger.log(Level.INFO, "Added new lambda for " + function.getName() + " with mode " + lambda.getExecutionMode());
             }
         }.start();
     }
