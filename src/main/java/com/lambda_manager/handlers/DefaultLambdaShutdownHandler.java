@@ -55,7 +55,7 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
                     shutdownHotSpotLambda(String.format("codebase/%s/pid_%d_hotspot_w_agent", function.getName(), process.pid()));
                     break;
                 case NATIVE_IMAGE:
-                    // Currently we don't shutdown lambdas running in Native Image.
+                    // Currently, we don't shut down lambdas running in Native Image.
                     break;
                 default:
                     logger.log(Level.WARNING, String.format("Lambda ID=%d has no known execution mode: %s", process.pid(), lambda.getExecutionMode()));

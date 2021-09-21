@@ -24,7 +24,7 @@ public class ArgumentParser {
     }
 
     public static void serialize(LambdaManagerConfiguration lambdaManagerConfiguration, OutputStreamWriter writer)
-            throws ErrorDuringSerializationJSONObject {
+                    throws ErrorDuringSerializationJSONObject {
         try {
             objectMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
             objectMapper.writeValue(writer, lambdaManagerConfiguration);

@@ -18,10 +18,9 @@ public class HotspotCallback implements OnProcessFinishCallback {
     @Override
     public void finish(int exitCode) {
         File sourceFile = new File(sourceFilename);
-        try(FileInputStream fileInputStream = new FileInputStream(sourceFile);
-            FileWriter fileWriter = new FileWriter(destinationFilename, true)) {
+        try (FileInputStream fileInputStream = new FileInputStream(sourceFile);
+                        FileWriter fileWriter = new FileWriter(destinationFilename, true)) {
             byte[] data = new byte[(int) sourceFile.length()];
-            //noinspection ResultOfMethodCallIgnored
             fileInputStream.read(data);
             fileWriter.write(new String(data, StandardCharsets.UTF_8));
         } catch (IOException e) {

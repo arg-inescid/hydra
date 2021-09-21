@@ -14,13 +14,13 @@ import static com.lambda_manager.core.Environment.LAMBDA_LOGS;
 
 public class BuildVMM extends AbstractProcess {
 
-	private final Function function;
+    private final Function function;
 
     public BuildVMM(Function function) {
-		this.function = function;
-	}
+        this.function = function;
+    }
 
-	@Override
+    @Override
     protected List<String> makeCommand() {
         List<String> command = new ArrayList<>();
         command.add("bash");
@@ -38,7 +38,6 @@ public class BuildVMM extends AbstractProcess {
     @Override
     protected String outputFilename() {
         String dirPath = Paths.get(LAMBDA_LOGS, function.getName(), BUILD_VMM).toString();
-        //noinspection ResultOfMethodCallIgnored
         new File(dirPath).mkdir();
         return Paths.get(dirPath, "output.log").toString();
     }

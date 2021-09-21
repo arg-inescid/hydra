@@ -1,6 +1,5 @@
 package com.lambda_manager.connectivity.client.impl;
 
-import com.lambda_manager.collectors.meta_info.Function;
 import com.lambda_manager.collectors.meta_info.Lambda;
 import com.lambda_manager.connectivity.client.LambdaManagerClient;
 import com.lambda_manager.core.Configuration;
@@ -19,17 +18,17 @@ import java.util.logging.Level;
 @SuppressWarnings("unused")
 public class DefaultLambdaManagerClient implements LambdaManagerClient {
 
-	// TODO - This value be configurable?
-	/** Number of times a request will be re-sent to a particular Lambda upon an error. */
+    // TODO - This value be configurable?
+    /** Number of times a request will be re-sent to a particular Lambda upon an error. */
     private static final int FAULT_TOLERANCE = 300;
 
     private HttpRequest<?> buildHTTPRequest(String parametersString) {
         MutableHttpRequest<Object> request = HttpRequest.GET("/");
-        if(parametersString != null) {
+        if (parametersString != null) {
             MutableHttpParameters requestParameters = request.getParameters();
             String[] parameters = parametersString.split(",");
-            for(int i = 0; i < parameters.length; i++) {
-                if(parameters[i].length() > 0) {
+            for (int i = 0; i < parameters.length; i++) {
+                if (parameters[i].length() > 0) {
                     requestParameters.add(Integer.toString(i), parameters[i]);
                 }
             }

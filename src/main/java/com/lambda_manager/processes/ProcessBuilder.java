@@ -75,7 +75,6 @@ public class ProcessBuilder extends Thread {
                 processHandle.destroy();
                 while (processHandle.isAlive()) {
                     try {
-                        //noinspection BusyWait
                         Thread.sleep(IS_ALIVE_PAUSE);
                     } catch (InterruptedException e) {
                         e.printStackTrace(); // TODO - properly handle this exception

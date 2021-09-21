@@ -10,6 +10,7 @@ public class Messages {
 
     // Lambda Manager configuration messages.
     public static final String NO_CONFIGURATION_UPLOADED = "No configuration has been uploaded!";
+    public static final String CONFIGURATION_ALREADY_UPLOADED = "Configuration has been already uploaded!";
     public static final String SUCCESS_CONFIGURATION_UPLOAD = "Successfully uploaded lambda manager configuration!";
     public static final String ERROR_CONFIGURATION_UPLOAD = "Error during uploading new configuration!";
 
@@ -35,7 +36,7 @@ public class Messages {
     public static final String PROCESS_EXIT = "PID -> %d | Command -> %s | Exit code -> %d";
     public static final String PROCESS_RAISE_EXCEPTION = "PID -> %d | Command -> %s | Raised exception!";
     public static final String PROCESS_SHUTDOWN_EXCEPTION = "PID -> %d | | Command -> %s | " +
-            "Raise exception in shutdown callback!";
+                    "Raise exception in shutdown callback!";
 
     // Connection pool messages.
     public static final String ERROR_POOL_CREATION = "Error during creating new connection pool!";
@@ -44,6 +45,5 @@ public class Messages {
     public static final String ERROR_PARSING_JSON = "Error during parsing JSON configuration file!";
     public static final String ERROR_SERIALIZE_JSON = "Error during serialization of JSON object!";
     public static final String SUCCESS_SERIALIZE_JSON = "Serialized object is: %n%s";
-
 
 }

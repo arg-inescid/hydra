@@ -21,8 +21,8 @@ public class Configuration {
     }
 
     public static void initFields(Scheduler scheduler, Optimizer optimizer, Coder encoder,
-                                  FunctionStorage storage, LambdaManagerClient client,
-                                  ArgumentStorage argumentStorage) {
+                    FunctionStorage storage, LambdaManagerClient client,
+                    ArgumentStorage argumentStorage) {
         Configuration.initialized = true;
         Configuration.scheduler = scheduler;
         Configuration.optimizer = optimizer;

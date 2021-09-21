@@ -14,7 +14,8 @@ public class Environment {
     public static final int RAND_STRING_LEN = 10;
     public static final int IS_ALIVE_PAUSE = 50;
     public static final int THRESHOLD = 200;
-    // Tap name is limited to 15 characters. In our case tap names are created from prefix (4 chars) + random string (10 chars).
+    // Tap name is limited to 15 characters. In our case tap names are created from prefix (4 chars)
+    // + random string (10 chars).
     public static final String TAP_PREFIX = "lmt";
 
     // Project Directories.

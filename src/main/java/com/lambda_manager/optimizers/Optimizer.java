@@ -6,5 +6,6 @@ import com.lambda_manager.processes.lambda.StartLambda;
 // TODO - we should try to document interfaces and interface methods.
 public interface Optimizer {
     void registerCall(Lambda lambda);
+
     StartLambda whomToSpawn(Lambda lambda);
 }

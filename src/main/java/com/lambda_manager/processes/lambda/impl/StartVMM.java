@@ -17,10 +17,10 @@ import java.util.List;
 public class StartVMM extends StartLambda {
 
     public StartVMM(Lambda lambda) {
-		super(lambda);
-	}
+        super(lambda);
+    }
 
-	@Override
+    @Override
     protected List<String> makeCommand() {
         List<String> command = new ArrayList<>();
 
@@ -58,8 +58,8 @@ public class StartVMM extends StartLambda {
         return new VMMCallback(lambda);
     }
 
-	@Override
-	public String getLambdaDirectory() {
-		return Environment.VMM;
-	}
+    @Override
+    public String getLambdaDirectory() {
+        return Environment.VMM;
+    }
 }

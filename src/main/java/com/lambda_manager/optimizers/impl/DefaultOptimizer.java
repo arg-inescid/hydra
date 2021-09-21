@@ -14,7 +14,7 @@ public class DefaultOptimizer implements Optimizer {
 
     @Override
     public void registerCall(Lambda lambda) {
-    	// TODO - while we don't have use for it, delete it.
+        // TODO - while we don't have use for it, delete it.
     }
 
     @Override

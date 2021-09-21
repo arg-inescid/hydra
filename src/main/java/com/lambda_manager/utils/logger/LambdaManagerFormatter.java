@@ -19,9 +19,9 @@ public class LambdaManagerFormatter extends SimpleFormatter {
             throwable = sw.toString();
         }
         return String.format("%s %s %s %s%n",
-                String.format("Timestamp (%s)", ElapseTimer.elapsedTime()),
-                record.getLevel().getLocalizedName(),
-                record.getMessage(),
-                throwable);
+                        String.format("Timestamp (%s)", ElapseTimer.elapsedTime()),
+                        record.getLevel().getLocalizedName(),
+                        record.getMessage(),
+                        throwable);
     }
 }

@@ -17,16 +17,20 @@ public class Function {
     /** Function entry point (how should we invoke the function). */
     private final String entryPoint;
 
-    /** Arguments passed to the function code when it is launched. Not to be confused with lambda invocation arguments. */
+    /**
+     * Arguments passed to the function code when it is launched. Not to be confused with lambda
+     * invocation arguments.
+     */
     private final String arguments;
 
     /** Function status in the optimization pipeline. */
     private FunctionStatus status;
 
     /**
-     * There will be only one started agent per function, so we need to keep information about PID for that single lambda.
-     * We are sending this information to {@link com.lambda_manager.processes.lambda.BuildVMM } because during a build,
-     * we need to have access to the agent's generated configurations.
+     * There will be only one started agent per function, so we need to keep information about PID
+     * for that single lambda. We are sending this information to
+     * {@link com.lambda_manager.processes.lambda.BuildVMM } because during a build, we need to have
+     * access to the agent's generated configurations.
      */
     private long lastAgentPID;
 
@@ -97,29 +101,29 @@ public class Function {
         return activeProcesses.remove(process.pid());
     }
 
-	public int getNumberDecommissedLambdas() {
-		return decommissedLambdas;
-	}
+    public int getNumberDecommissedLambdas() {
+        return decommissedLambdas;
+    }
 
-	public void decommissionLambda(Lambda lambda) {
-		decommissedLambdas++;
-		lambda.setDecomissioned(true);
-	}
+    public void decommissionLambda(Lambda lambda) {
+        decommissedLambdas++;
+        lambda.setDecomissioned(true);
+    }
 
-	public void commissionLambda(Lambda lambda) {
-		decommissedLambdas--;
-		lambda.setDecomissioned(false);
-	}
+    public void commissionLambda(Lambda lambda) {
+        decommissedLambdas--;
+        lambda.setDecomissioned(false);
+    }
 
-	public int getTotalNumberLambdas() {
-		return stoppedLambdas.size() + idleLambdas.size() + runningLambdas.size();
-	}
+    public int getTotalNumberLambdas() {
+        return stoppedLambdas.size() + idleLambdas.size() + runningLambdas.size();
+    }
 
-	public FunctionLanguage getLanguage() {
-		return language;
-	}
+    public FunctionLanguage getLanguage() {
+        return language;
+    }
 
-	public String getEntryPoint() {
-		return entryPoint;
-	}
+    public String getEntryPoint() {
+        return entryPoint;
+    }
 }

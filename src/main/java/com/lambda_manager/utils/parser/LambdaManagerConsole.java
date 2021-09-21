@@ -9,18 +9,14 @@ import java.io.Serializable;
 @SuppressWarnings("unused")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
-        "turnOff",
-        "redirectToFile",
-        "fineGrain"
+                "turnOn",
+                "redirectToFile",
+                "fineGrain"
 })
-public class LambdaManagerConsole implements Serializable
-{
-    @JsonProperty("turnOff")
-    private boolean turnOff;
-    @JsonProperty("redirectToFile")
-    private boolean redirectToFile;
-    @JsonProperty("fineGrain")
-    private boolean fineGrain;
+public class LambdaManagerConsole implements Serializable {
+    @JsonProperty("turnOn") private boolean turnOn;
+    @JsonProperty("redirectToFile") private boolean redirectToFile;
+    @JsonProperty("fineGrain") private boolean fineGrain;
     private final static long serialVersionUID = -620888442421704577L;
 
     /**
@@ -31,25 +27,25 @@ public class LambdaManagerConsole implements Serializable
     }
 
     /**
-     * @param turnOff - Turn On/Off logging.
+     * @param turnOn - Turn On/Off logging.
      * @param redirectToFile - Should the logging be redirected to file or printed in console.
      * @param fineGrain - Fine or coarse grain logging.
      */
-    public LambdaManagerConsole(boolean turnOff, boolean redirectToFile, boolean fineGrain) {
+    public LambdaManagerConsole(boolean turnOn, boolean redirectToFile, boolean fineGrain) {
         super();
-        this.turnOff = turnOff;
+        this.turnOn = turnOn;
         this.redirectToFile = redirectToFile;
         this.fineGrain = fineGrain;
     }
 
-    @JsonProperty("turnOff")
-    public boolean isTurnOff() {
-        return turnOff;
+    @JsonProperty("turnOn")
+    public boolean isTurnOn() {
+        return turnOn;
     }
 
-    @JsonProperty("turnOff")
-    public void setTurnOff(boolean turnOff) {
-        this.turnOff = turnOff;
+    @JsonProperty("turnOn")
+    public void setTurnOn(boolean turnOn) {
+        this.turnOn = turnOn;
     }
 
     @JsonProperty("redirectToFile")

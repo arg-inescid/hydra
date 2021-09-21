@@ -22,9 +22,9 @@ import java.util.logging.Level;
 
 public class LambdaManager {
 
-	/** Number of times a request will be sent to a different Lambda upon timeout. */
-	// TODO - This value should be configurable.
-	private static final int LAMBDA_FAULT_TOLERANCE = 3;
+    /** Number of times a request will be sent to a different Lambda upon timeout. */
+    // TODO - This value should be configurable.
+    private static final int LAMBDA_FAULT_TOLERANCE = 3;
 
     private static String formatRequestSpentTimeMessage(Lambda lambda, long spentTime) {
         String username = Configuration.coder.decodeUsername(lambda.getFunction().getName());
@@ -42,19 +42,20 @@ public class LambdaManager {
     }
 
     public static Single<String> processRequest(String username, String functionName, String parameters) {
-        String responseString = null;
+        String responseString;
 
         if (!Configuration.isInitialized()) {
             Logger.log(Level.WARNING, Messages.NO_CONFIGURATION_UPLOADED);
             return JsonUtils.constructJsonResponseObject(Messages.NO_CONFIGURATION_UPLOADED);
         }
-        
+
         try {
             Function function = Configuration.storage.get(Configuration.coder.encodeFunctionName(username, functionName));
             String response = null;
             LambdaExecutionMode targetMode = null;
 
-            // TODO - We should strive to have a simple LambdaManager. This loop should be part of the scheduler?
+            // TODO - We should strive to have a simple LambdaManager. This loop should be part of
+            // the scheduler?
             for (int i = 0; i < LAMBDA_FAULT_TOLERANCE; i++) {
                 long start = System.currentTimeMillis();
                 Lambda lambda = Configuration.scheduler.schedule(function, targetMode);
@@ -88,17 +89,17 @@ public class LambdaManager {
     }
 
     public static Single<String> uploadFunction(int allocate,
-                                         String username,
-                                         String functionName,
-                                         String functionLanguage,
-                                         String functionEntryPoint,
-                                         String arguments,
-                                         byte[] functionCode) {
-    	String responseString = null;
-    	
-    	if (!Configuration.isInitialized()) {
+                    String username,
+                    String functionName,
+                    String functionLanguage,
+                    String functionEntryPoint,
+                    String arguments,
+                    byte[] functionCode) {
+        String responseString;
+
+        if (!Configuration.isInitialized()) {
             Logger.log(Level.WARNING, Messages.NO_CONFIGURATION_UPLOADED);
-            JsonUtils.constructJsonResponseObject(Messages.NO_CONFIGURATION_UPLOADED); 
+            JsonUtils.constructJsonResponseObject(Messages.NO_CONFIGURATION_UPLOADED);
         }
 
         try {
@@ -121,7 +122,7 @@ public class LambdaManager {
     }
 
     public static Single<String> removeFunction(String username, String functionName) {
-        String responseString = null;
+        String responseString;
 
         if (!Configuration.isInitialized()) {
             Logger.log(Level.WARNING, Messages.NO_CONFIGURATION_UPLOADED);
@@ -141,11 +142,15 @@ public class LambdaManager {
     }
 
     public static Single<String> configureManager(String lambdaManagerConfiguration, BeanContext beanContext) {
-        String responseString = null;
+        String responseString;
         try {
-            ArgumentStorage.initializeLambdaManager(ArgumentParser.parse(lambdaManagerConfiguration), beanContext);
-            Logger.log(Level.INFO, Messages.SUCCESS_CONFIGURATION_UPLOAD);
-            responseString = Messages.SUCCESS_CONFIGURATION_UPLOAD;
+            if (!Configuration.isInitialized()) {
+                ArgumentStorage.initializeLambdaManager(ArgumentParser.parse(lambdaManagerConfiguration), beanContext);
+                Logger.log(Level.INFO, Messages.SUCCESS_CONFIGURATION_UPLOAD);
+                responseString = Messages.SUCCESS_CONFIGURATION_UPLOAD;
+            } else {
+                responseString = Messages.CONFIGURATION_ALREADY_UPLOADED;
+            }
         } catch (ErrorDuringParsingJSONFile | ErrorDuringReflectiveClassCreation | ErrorDuringCreatingConnectionPool e) {
             Logger.log(Level.SEVERE, e.getMessage(), e);
             responseString = Messages.ERROR_CONFIGURATION_UPLOAD;
@@ -157,13 +162,13 @@ public class LambdaManager {
     }
 
     public static Single<String> getFunctions() {
-        Object response = null;
-        
+        Object response;
+
         if (!Configuration.isInitialized()) {
             Logger.log(Level.WARNING, Messages.NO_CONFIGURATION_UPLOADED);
             return JsonUtils.constructJsonResponseObject(Messages.NO_CONFIGURATION_UPLOADED);
         }
-        
+
         try {
             Map<String, Function> functionsMap = Configuration.storage.getAll();
             ObjectMapper mapper = new ObjectMapper();

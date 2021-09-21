@@ -16,8 +16,7 @@ public class CreateTaps extends AbstractProcess {
         List<String> command = new ArrayList<>();
         command.add("bash");
         command.add("src/scripts/create_taps.sh");
-        for (ConnectionTriplet<String, String, RxHttpClient> connectionTriplet :
-                Configuration.argumentStorage.getConnectionPool()) {
+        for (ConnectionTriplet<String, String, RxHttpClient> connectionTriplet : Configuration.argumentStorage.getConnectionPool()) {
             command.add(connectionTriplet.tap);
             command.add(connectionTriplet.ip);
         }

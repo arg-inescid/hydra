@@ -3,11 +3,11 @@ package com.lambda_manager.collectors.meta_info;
 import com.lambda_manager.utils.Messages;
 
 public enum FunctionLanguage {
-	JAVA("JAVA");
+    JAVA("JAVA");
 
-	private String language;
+    private final String language;
 
-	FunctionLanguage(String language) {
+    FunctionLanguage(String language) {
         this.language = language;
     }
 

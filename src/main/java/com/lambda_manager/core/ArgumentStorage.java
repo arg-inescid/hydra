@@ -90,7 +90,7 @@ public class ArgumentStorage {
                 return;
             }
             if (e instanceof InterruptedException) {
-                // fine, some blocking code was interrupted by a dispose call.
+                // Fine, some blocking code was interrupted by a disposed call.
                 Logger.log(Level.WARNING, Messages.INTERNAL_ERROR, e);
                 return;
             }
@@ -115,7 +115,7 @@ public class ArgumentStorage {
                 String ip = getNextIPAddress();
                 String tap = String.format("%s-%s", Environment.TAP_PREFIX, generateRandomString());
                 RxHttpClient client = beanContext.createBean(RxHttpClient.class,
-                        new URL("http", ip, lambdaPort, "/"));
+                                new URL("http", ip, lambdaPort, "/"));
                 connectionPool.add(new ConnectionTriplet<>(ip, tap, client));
             }
 
@@ -131,7 +131,7 @@ public class ArgumentStorage {
         java.util.logging.Logger logger = java.util.logging.Logger.getLogger(java.util.logging.Logger.GLOBAL_LOGGER_NAME);
         LambdaManagerFormatter formatter = new LambdaManagerFormatter();
 
-        if (!lambdaManagerConsole.isTurnOff()) {
+        if (lambdaManagerConsole.isTurnOn()) {
             for (Handler loggerHandler : logger.getParent().getHandlers()) {
                 loggerHandler.setFormatter(formatter);
                 if (lambdaManagerConsole.isFineGrain()) {
@@ -141,11 +141,10 @@ public class ArgumentStorage {
 
             if (lambdaManagerConsole.isRedirectToFile()) {
                 logger.log(Level.INFO, String.format(Messages.LOG_REDIRECTION,
-                        Paths.get(System.getProperty("user.dir"), MANAGER_LOG_FILENAME)));
+                                Paths.get(System.getProperty("user.dir"), MANAGER_LOG_FILENAME)));
                 logger.setUseParentHandlers(false);
                 try {
                     File managerLogFile = new File(MANAGER_LOG_FILENAME);
-                    //noinspection ResultOfMethodCallIgnored
                     managerLogFile.getParentFile().mkdirs();
                     managerLogFile.createNewFile();
                     FileHandler fileHandler = new FileHandler(MANAGER_LOG_FILENAME, true);
@@ -169,7 +168,7 @@ public class ArgumentStorage {
     private void cacheConsoleInfo(LambdaManagerConsole lambdaManagerConsole) {
         this.cachedConsoleInfo = lambdaManagerConsole;
     }
-    
+
     private void prepareLogging(LambdaManagerConsole lambdaManagerConsole) {
         prepareLogger(lambdaManagerConsole);
         cacheConsoleInfo(lambdaManagerConsole);
@@ -181,13 +180,13 @@ public class ArgumentStorage {
             Constructor<?> constructor = clazz.getConstructor();
             return constructor.newInstance();
         } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException
-                | InstantiationException | InvocationTargetException e) {
+                        | InstantiationException | InvocationTargetException e) {
             throw new ErrorDuringReflectiveClassCreation("Error during reflective class creation!", e);
         }
     }
 
     private void prepareConfiguration(LambdaManagerState lambdaManagerState)
-            throws ErrorDuringReflectiveClassCreation {
+                    throws ErrorDuringReflectiveClassCreation {
         Scheduler scheduler = (Scheduler) createObject(lambdaManagerState.getScheduler());
         Optimizer optimizer = (Optimizer) createObject(lambdaManagerState.getOptimizer());
         Coder encoder = (Coder) createObject(lambdaManagerState.getEncoder());
@@ -197,7 +196,7 @@ public class ArgumentStorage {
     }
 
     public void doInitialize(LambdaManagerConfiguration lambdaManagerConfiguration, BeanContext beanContext)
-            throws ErrorDuringReflectiveClassCreation, ErrorDuringCreatingConnectionPool {
+                    throws ErrorDuringReflectiveClassCreation, ErrorDuringCreatingConnectionPool {
         initClassFields(lambdaManagerConfiguration);
         initErrorHandler();
         prepareLogging(lambdaManagerConfiguration.getManagerConsole());
@@ -207,7 +206,7 @@ public class ArgumentStorage {
     }
 
     public static void initializeLambdaManager(LambdaManagerConfiguration lambdaManagerConfiguration, BeanContext beanContext)
-            throws ErrorDuringReflectiveClassCreation, ErrorDuringCreatingConnectionPool {
+                    throws ErrorDuringReflectiveClassCreation, ErrorDuringCreatingConnectionPool {
         ArgumentStorage argumentStorage = new ArgumentStorage();
         argumentStorage.doInitialize(lambdaManagerConfiguration, beanContext);
     }
@@ -217,7 +216,7 @@ public class ArgumentStorage {
         Handler handler = new ConsoleHandler();
         handler.setFormatter(formatter);
 
-        if (!cachedConsoleInfo.isTurnOff()) {
+        if (cachedConsoleInfo.isTurnOn()) {
             if (cachedConsoleInfo.isRedirectToFile()) {
                 try {
                     handler = new FileHandler(MANAGER_LOG_FILENAME, true);
@@ -294,8 +293,8 @@ public class ArgumentStorage {
 
     public String generateRandomString() {
         return new Random().ints('a', 'z' + 1)
-                .limit(RAND_STRING_LEN)
-                .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
-                .toString();
+                        .limit(RAND_STRING_LEN)
+                        .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+                        .toString();
     }
 }

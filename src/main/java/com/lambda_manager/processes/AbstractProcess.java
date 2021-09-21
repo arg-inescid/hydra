@@ -9,10 +9,10 @@ import static com.lambda_manager.core.Environment.DEFAULT_FILENAME;
 
 public abstract class AbstractProcess {
 
-	/**
-	 * The process identifier (not to be confused with OS pid.
-	 */
-	protected long pid;
+    /**
+     * The process identifier (not to be confused with OS pid).
+     */
+    protected long pid;
 
     public final ProcessBuilder build() {
         this.pid = Environment.pid();
@@ -24,6 +24,7 @@ public abstract class AbstractProcess {
     protected OnProcessFinishCallback callback() {
         return new DefaultCallback();
     }
+
     protected abstract String outputFilename();
 
     protected String memoryFilename() {

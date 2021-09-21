@@ -21,13 +21,12 @@ import static io.micronaut.http.MediaType.TEXT_PLAIN;
 @Controller()
 public class LambdaManagerController {
 
-    @Inject
-    private BeanContext beanContext;
+    @Inject private BeanContext beanContext;
 
     @Get("/{username}/{function_name}")
     public Single<String> processRequest(@PathVariable("username") String username,
-                                         @PathVariable("function_name") String functionName,
-                                         @Nullable @QueryValue("parameters") String parameters) {
+                    @PathVariable("function_name") String functionName,
+                    @Nullable @QueryValue("parameters") String parameters) {
         return LambdaManager.processRequest(username, functionName, parameters);
     }
 
@@ -38,18 +37,18 @@ public class LambdaManagerController {
 
     @Post(value = "/upload_function", consumes = APPLICATION_OCTET_STREAM)
     public Single<String> uploadFunction(@QueryValue("allocate") int allocate,
-                                         @QueryValue("username") String username,
-                                         @QueryValue("function_name") String functionName,
-                                         @QueryValue("function_language") String functionLanguage,
-                                         @QueryValue("function_entry_point") String functionEntryPoint,
-                                         @Nullable @QueryValue("arguments") String arguments,
-                                         @Body byte[] functionCode) {
+                    @QueryValue("username") String username,
+                    @QueryValue("function_name") String functionName,
+                    @QueryValue("function_language") String functionLanguage,
+                    @QueryValue("function_entry_point") String functionEntryPoint,
+                    @Nullable @QueryValue("arguments") String arguments,
+                    @Body byte[] functionCode) {
         return LambdaManager.uploadFunction(allocate, username, functionName, functionLanguage, functionEntryPoint, arguments, functionCode);
     }
 
     @Post("/remove_function")
     public Single<String> removeFunction(@QueryValue("username") String username,
-                                         @QueryValue("function_name") String functionName) {
+                    @QueryValue("function_name") String functionName) {
         return LambdaManager.removeFunction(username, functionName);
     }
 

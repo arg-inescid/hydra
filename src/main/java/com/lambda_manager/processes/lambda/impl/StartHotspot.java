@@ -20,10 +20,10 @@ import static com.lambda_manager.core.Environment.*;
 public class StartHotspot extends StartLambda {
 
     public StartHotspot(Lambda lambda) {
-		super(lambda);
-	}
+        super(lambda);
+    }
 
-	@Override
+    @Override
     protected List<String> makeCommand() {
         List<String> command = new ArrayList<>();
 
@@ -60,16 +60,16 @@ public class StartHotspot extends StartLambda {
     @Override
     protected OnProcessFinishCallback callback() {
         String sourceFile = Paths.get(
-                CODEBASE,
-                lambda.getFunction().getName(),
-                String.format(getLambdaDirectory(), pid),
-                RUN_LOG)
-                .toString();
+                        CODEBASE,
+                        lambda.getFunction().getName(),
+                        String.format(getLambdaDirectory(), pid),
+                        RUN_LOG)
+                        .toString();
         return new HotspotCallback(sourceFile, outputFilename());
     }
 
-	@Override
-	public String getLambdaDirectory() {
-		return Environment.HOTSPOT;
-	}
+    @Override
+    public String getLambdaDirectory() {
+        return Environment.HOTSPOT;
+    }
 }

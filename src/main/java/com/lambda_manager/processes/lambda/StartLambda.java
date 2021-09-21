@@ -22,11 +22,10 @@ public abstract class StartLambda extends AbstractProcess {
     @Override
     protected String outputFilename() {
         String dirPath = Paths.get(
-                LAMBDA_LOGS,
-                lambda.getFunction().getName(),
-                String.format(getLambdaDirectory(), pid))
-                .toString();
-        //noinspection ResultOfMethodCallIgnored
+                        LAMBDA_LOGS,
+                        lambda.getFunction().getName(),
+                        String.format(getLambdaDirectory(), pid))
+                        .toString();
         new File(dirPath).mkdirs();
         return Paths.get(dirPath, OUTPUT).toString();
     }
@@ -34,11 +33,10 @@ public abstract class StartLambda extends AbstractProcess {
     @Override
     protected String memoryFilename() {
         String dirPath = Paths.get(
-                LAMBDA_LOGS,
-                lambda.getFunction().getName(),
-                String.format(getLambdaDirectory(), pid))
-                .toString();
-        //noinspection ResultOfMethodCallIgnored
+                        LAMBDA_LOGS,
+                        lambda.getFunction().getName(),
+                        String.format(getLambdaDirectory(), pid))
+                        .toString();
         new File(dirPath).mkdirs();
         return Paths.get(dirPath, MEMORY).toString();
     }

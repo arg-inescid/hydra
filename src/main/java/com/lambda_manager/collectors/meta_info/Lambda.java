@@ -6,12 +6,11 @@ import io.micronaut.http.client.RxHttpClient;
 
 import com.lambda_manager.processes.ProcessBuilder;
 
-
 import java.util.Timer;
 
 public class Lambda {
 
-	/** The Function that this Lambda is executing. */
+    /** The Function that this Lambda is executing. */
     private final Function function;
 
     /** The process that is hosting the lambda execution. */
@@ -103,12 +102,12 @@ public class Lambda {
         this.executionMode = executionMode;
     }
 
-	public boolean isDecomissioned() {
-		return decomissioned;
-	}
+    public boolean isDecomissioned() {
+        return decomissioned;
+    }
 
-	public void setDecomissioned(boolean decomissioned) {
-		this.decomissioned = decomissioned;
-	}
+    public void setDecomissioned(boolean decomissioned) {
+        this.decomissioned = decomissioned;
+    }
 
 }

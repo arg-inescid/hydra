@@ -8,28 +8,22 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @SuppressWarnings("unused")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
-        "scheduler",
-        "optimizer",
-        "encoder",
-        "storage",
-        "client",
-        "codeWriter",
-        "lambdaInfo"
+                "scheduler",
+                "optimizer",
+                "encoder",
+                "storage",
+                "client",
+                "codeWriter",
+                "lambdaInfo"
 })
 public class LambdaManagerState implements Serializable {
 
-    @JsonProperty("scheduler")
-    private String scheduler;
-    @JsonProperty("optimizer")
-    private String optimizer;
-    @JsonProperty("encoder")
-    private String encoder;
-    @JsonProperty("storage")
-    private String storage;
-    @JsonProperty("client")
-    private String client;
-    @JsonProperty("codeWriter")
-    private String codeWriter;
+    @JsonProperty("scheduler") private String scheduler;
+    @JsonProperty("optimizer") private String optimizer;
+    @JsonProperty("encoder") private String encoder;
+    @JsonProperty("storage") private String storage;
+    @JsonProperty("client") private String client;
+    @JsonProperty("codeWriter") private String codeWriter;
     private final static long serialVersionUID = -5763918485183329321L;
 
     /**
@@ -47,10 +41,9 @@ public class LambdaManagerState implements Serializable {
      * @param storage - The Lambda Storage class which will be used by the Manager.
      * @param client - The Client class which will be used by the Manager.
      * @param codeWriter - The CodeWriter class which will be used by the Manager.
-     * @param lambdaInfo - The class which stores information about one type of the lambda,
      */
     public LambdaManagerState(String scheduler, String optimizer, String encoder, String storage, String client,
-                              String codeWriter) {
+                    String codeWriter) {
         super();
         this.scheduler = scheduler;
         this.optimizer = optimizer;

@@ -19,10 +19,10 @@ import com.lambda_manager.collectors.meta_info.Function;
 import com.lambda_manager.collectors.meta_info.Lambda;
 
 public class LambdaMemoryUtils {
-    
+
     private static final String RSS_REGEX = "(\\d+)";
     private static final String LAMBDA_PID_FILE = "lambda.pid";
-    
+
     private static final double KB_IN_MB = 1024;
 
     public static double getProcessMemory(Function function, Lambda lambda) throws IOException, InterruptedException {
@@ -40,12 +40,12 @@ public class LambdaMemoryUtils {
     private static double parseOutput(String processOutput) {
         Pattern pattern = Pattern.compile(RSS_REGEX);
         Matcher matcher = pattern.matcher(processOutput);
-        while (matcher.find()) {
+        if (matcher.find()) {
             return Double.parseDouble(matcher.group(1));
         }
         return 0;
     }
-    
+
     private static long getLambdaPid(Function function, Lambda lambda) throws IOException, InterruptedException {
         String lambdaMode = null;
         switch (lambda.getExecutionMode()) {
@@ -70,15 +70,11 @@ public class LambdaMemoryUtils {
 
     private static String readToString(BufferedReader reader) throws IOException {
         StringBuilder builder = new StringBuilder();
-        String line = null;
-        try {
+        String line;
+        try (reader) {
             while ((line = reader.readLine()) != null) {
-               builder.append(line);
+                builder.append(line);
             }
-        } catch (IOException e) {
-            throw e;
-        } finally {
-            reader.close();
         }
         return builder.toString();
     }
@@ -89,5 +85,5 @@ public class LambdaMemoryUtils {
         pgrepProcess.waitFor();
         return pgrepProcess.getInputStream();
     }
-    
+
 }

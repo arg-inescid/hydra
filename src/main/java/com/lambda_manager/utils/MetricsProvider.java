@@ -8,8 +8,8 @@ import com.lambda_manager.core.Configuration;
 
 import io.reactivex.Single;
 
-/** 
- * MetricsProvider is specific to the Prometheus metrics format 
+/**
+ * MetricsProvider is specific to the Prometheus metrics format
  */
 public class MetricsProvider {
 

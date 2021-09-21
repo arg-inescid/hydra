@@ -4,15 +4,11 @@ import com.lambda_manager.collectors.meta_info.Function;
 import com.lambda_manager.collectors.meta_info.Lambda;
 import com.lambda_manager.core.Configuration;
 import com.lambda_manager.core.Environment;
-import com.lambda_manager.exceptions.user.FunctionNotFound;
-import com.lambda_manager.exceptions.user.SchedulingException;
 import com.lambda_manager.handlers.DefaultLambdaShutdownHandler;
 import com.lambda_manager.optimizers.FunctionStatus;
 import com.lambda_manager.optimizers.LambdaExecutionMode;
 import com.lambda_manager.processes.ProcessBuilder;
-import com.lambda_manager.processes.lambda.StartLambda;
 import com.lambda_manager.schedulers.Scheduler;
-import com.lambda_manager.utils.Messages;
 import com.lambda_manager.utils.logger.Logger;
 
 import java.util.ArrayList;
@@ -67,23 +63,20 @@ public class RoundedRobinScheduler implements Scheduler {
     private Lambda findLambda(ArrayList<Lambda> lambdas, LambdaExecutionMode targetMode) {
         for (Lambda lambda : lambdas) {
             if (!lambda.isDecomissioned()) {
-                 if (targetMode != null && lambda.getExecutionMode() != targetMode) {
-                     continue;
-                 } else {
-                     return lambda;
-                 }
+                if (targetMode == null || lambda.getExecutionMode() == targetMode) {
+                    return lambda;
+                }
             }
         }
         return null;
     }
 
     @Override
-    public Lambda schedule(Function function, LambdaExecutionMode targetMode) throws FunctionNotFound, SchedulingException {
-        Lambda lambda = null;
+    public Lambda schedule(Function function, LambdaExecutionMode targetMode) {
+        Lambda lambda;
 
         while (true) {
 
-            //noinspection SynchronizationOnLocalVariableOrMethodParameter
             synchronized (function) {
                 if ((lambda = findLambda(function.getIdleLambdas(), targetMode)) == null) {
                     if ((lambda = findLambda(function.getStoppedLambdas())) == null) {
@@ -112,7 +105,6 @@ public class RoundedRobinScheduler implements Scheduler {
                 e.printStackTrace();
             }
         }
-
 
         // TODO - move to Configuration.optimizer -> should be here?
         if (function.getNumberDecommissedLambdas() < (function.getTotalNumberLambdas() / 2)) {

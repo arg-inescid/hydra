@@ -21,10 +21,10 @@ import static com.lambda_manager.core.Environment.*;
 public class StartHotspotWithAgent extends StartLambda {
 
     public StartHotspotWithAgent(Lambda lambda) {
-		super(lambda);
-	}
+        super(lambda);
+    }
 
-	@Override
+    @Override
     protected List<String> makeCommand() {
         List<String> command = new ArrayList<>();
 
@@ -61,17 +61,17 @@ public class StartHotspotWithAgent extends StartLambda {
     @Override
     protected OnProcessFinishCallback callback() {
         String sourceFile = Paths.get(
-                CODEBASE,
-                lambda.getFunction().getName(),
-                String.format(getLambdaDirectory(), pid),
-                RUN_LOG)
-                .toString();
+                        CODEBASE,
+                        lambda.getFunction().getName(),
+                        String.format(getLambdaDirectory(), pid),
+                        RUN_LOG)
+                        .toString();
         // Nested OnProcessFinish callbacks.
         return new HotspotWithAgentCallback(lambda, new HotspotCallback(sourceFile, outputFilename()));
     }
 
-	@Override
-	public String getLambdaDirectory() {
-		return Environment.HOTSPOT_W_AGENT;
-	}
+    @Override
+    public String getLambdaDirectory() {
+        return Environment.HOTSPOT_W_AGENT;
+    }
 }
