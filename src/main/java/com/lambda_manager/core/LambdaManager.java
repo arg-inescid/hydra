@@ -13,6 +13,7 @@ import com.lambda_manager.optimizers.FunctionStatus;
 import com.lambda_manager.optimizers.LambdaExecutionMode;
 import com.lambda_manager.utils.JsonUtils;
 import com.lambda_manager.utils.Messages;
+import com.lambda_manager.utils.MetricsProvider;
 import com.lambda_manager.utils.logger.Logger;
 import com.lambda_manager.utils.parser.ArgumentParser;
 import io.micronaut.context.BeanContext;
@@ -72,7 +73,9 @@ public class LambdaManager {
                     Logger.log(Level.INFO, "Decommisioning (failed requests) lambda " + lambda.getProcess().pid());
                     lambda.getFunction().decommissionLambda(lambda);
                 } else {
-                    Logger.log(Level.FINE, formatRequestSpentTimeMessage(lambda, System.currentTimeMillis() - start));
+                    long spentTime = System.currentTimeMillis() - start;
+                    MetricsProvider.reportRequestTime(spentTime);
+                    Logger.log(Level.FINE, formatRequestSpentTimeMessage(lambda, spentTime));
                     break;
                 }
             }
