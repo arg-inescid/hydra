@@ -10,7 +10,6 @@ import com.lambda_manager.processes.ProcessBuilder;
 import com.lambda_manager.schedulers.Scheduler;
 import com.lambda_manager.utils.NetworkUtils;
 import com.lambda_manager.utils.logger.Logger;
-
 import java.util.ArrayList;
 import java.util.logging.Level;
 
@@ -48,7 +47,7 @@ public class RoundedRobinScheduler implements Scheduler {
                 ProcessBuilder process = Configuration.optimizer.whomToSpawn(lambda).build();
                 lambda.setProcess(process);
                 process.start();
-                boolean open = NetworkUtils.waitForOpenPort(lambda.getConnectionTriplet().ip, 8080, 25);
+                boolean open = NetworkUtils.waitForOpenPort(lambda.getConnectionTriplet().ip, Configuration.argumentStorage.getLambdaPort(), 25);
                 synchronized (function) {
                     if (open) {
                         function.getIdleLambdas().add(lambda);
