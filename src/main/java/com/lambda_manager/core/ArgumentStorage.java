@@ -287,6 +287,10 @@ public class ArgumentStorage {
         return memorySpace;
     }
 
+    public int getLambdaPort() {
+        return lambdaPort;
+    }
+
     public boolean isLambdaConsoleActive() {
         return isLambdaConsoleActive;
     }

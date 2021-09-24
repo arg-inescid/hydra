@@ -1,5 +1,7 @@
 package com.lambda_manager.collectors.meta_info;
 
+import com.lambda_manager.core.Configuration;
+import com.lambda_manager.handlers.DefaultLambdaShutdownHandler;
 import com.lambda_manager.optimizers.LambdaExecutionMode;
 import com.lambda_manager.utils.ConnectionTriplet;
 import io.micronaut.http.client.RxHttpClient;
@@ -82,8 +84,16 @@ public class Lambda {
         return timer;
     }
 
-    public void setTimer(Timer timer) {
-        this.timer = timer;
+    public void resetTimer() {
+        Timer oldTimer = timer;
+        Timer newTimer = new Timer();
+        newTimer.schedule(new DefaultLambdaShutdownHandler(this),
+                Configuration.argumentStorage.getTimeout() +
+                (int)(Configuration.argumentStorage.getTimeout() * Math.random()));
+        timer = newTimer;
+        if (oldTimer != null) {
+            oldTimer.cancel();
+        }
     }
 
     public ConnectionTriplet<String, String, RxHttpClient> getConnectionTriplet() {

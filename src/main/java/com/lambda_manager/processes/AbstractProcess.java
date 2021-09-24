@@ -16,7 +16,7 @@ public abstract class AbstractProcess {
 
     public final ProcessBuilder build() {
         this.pid = Environment.pid();
-        return new ProcessBuilder(pid, makeCommand(), callback(), outputFilename());
+        return new ProcessBuilder(this.getClass().getName(), pid, makeCommand(), callback(), outputFilename());
     }
 
     protected abstract List<String> makeCommand();
