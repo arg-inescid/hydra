@@ -30,3 +30,4 @@ sudo cp ./rc.local /mnt/stretch/etc/
 sudo umount /mnt/stretch
 
 # At this point, you can delete the "stretch" directory.
+sudo rm -rf stretch
