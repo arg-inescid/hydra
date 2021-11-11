@@ -1,4 +1,4 @@
-package com.lambda_manager.collectors.function_storage;
+package com.lambda_manager.function_storage;
 
 import com.lambda_manager.core.Function;
 import com.lambda_manager.exceptions.user.FunctionNotFound;

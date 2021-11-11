@@ -1,4 +1,4 @@
-package com.lambda_manager.collectors.function_storage;
+package com.lambda_manager.function_storage;
 
 import com.lambda_manager.core.Environment;
 import com.lambda_manager.core.Function;
