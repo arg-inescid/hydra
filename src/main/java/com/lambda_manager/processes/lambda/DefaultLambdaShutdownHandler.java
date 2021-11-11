@@ -1,8 +1,8 @@
-package com.lambda_manager.handlers;
+package com.lambda_manager.processes.lambda;
 
-import com.lambda_manager.collectors.meta_info.Function;
-import com.lambda_manager.collectors.meta_info.Lambda;
 import com.lambda_manager.core.Configuration;
+import com.lambda_manager.core.Function;
+import com.lambda_manager.core.Lambda;
 import com.lambda_manager.processes.ProcessBuilder;
 
 import java.io.BufferedReader;

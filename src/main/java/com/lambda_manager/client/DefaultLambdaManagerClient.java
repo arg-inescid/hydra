@@ -1,8 +1,7 @@
-package com.lambda_manager.connectivity.client.impl;
+package com.lambda_manager.client;
 
-import com.lambda_manager.collectors.meta_info.Lambda;
-import com.lambda_manager.connectivity.client.LambdaManagerClient;
 import com.lambda_manager.core.Configuration;
+import com.lambda_manager.core.Lambda;
 import com.lambda_manager.utils.Messages;
 import com.lambda_manager.utils.logger.Logger;
 import io.micronaut.http.HttpRequest;
@@ -18,7 +17,6 @@ import java.util.logging.Level;
 @SuppressWarnings("unused")
 public class DefaultLambdaManagerClient implements LambdaManagerClient {
 
-    // TODO - This value be configurable?
     /** Number of times a request will be re-sent to a particular Lambda upon an error. */
     private static final int FAULT_TOLERANCE = 300;
 
@@ -45,7 +43,6 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
                 try {
                     return flowable.blockingFirst();
                 } catch (ReadTimeoutException readTimeoutException) {
-                    // TODO - we are giving up on this lambda. We should log this as a warning!
                     break;
                 } catch (HttpClientException httpClientException) {
                     try {

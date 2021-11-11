@@ -1,4 +1,4 @@
-package com.lambda_manager.collectors.meta_info;
+package com.lambda_manager.core;
 
 import com.lambda_manager.utils.Messages;
 

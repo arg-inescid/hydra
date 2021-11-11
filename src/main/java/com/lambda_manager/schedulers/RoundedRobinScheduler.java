@@ -1,13 +1,12 @@
-package com.lambda_manager.schedulers.impl;
+package com.lambda_manager.schedulers;
 
-import com.lambda_manager.collectors.meta_info.Function;
-import com.lambda_manager.collectors.meta_info.Lambda;
 import com.lambda_manager.core.Configuration;
 import com.lambda_manager.core.Environment;
+import com.lambda_manager.core.Function;
+import com.lambda_manager.core.Lambda;
 import com.lambda_manager.optimizers.FunctionStatus;
 import com.lambda_manager.optimizers.LambdaExecutionMode;
 import com.lambda_manager.processes.ProcessBuilder;
-import com.lambda_manager.schedulers.Scheduler;
 import com.lambda_manager.utils.NetworkUtils;
 import com.lambda_manager.utils.logger.Logger;
 import java.util.ArrayList;

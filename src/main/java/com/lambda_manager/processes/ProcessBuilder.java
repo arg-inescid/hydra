@@ -93,7 +93,6 @@ public class ProcessBuilder extends Thread {
     }
 
     public void shutdownInstance() {
-        // TODO - double check that we have descendants.
         shutdownInstance(process.descendants());
     }
 
@@ -111,7 +110,7 @@ public class ProcessBuilder extends Thread {
                     try {
                         Thread.sleep(IS_ALIVE_PAUSE);
                     } catch (InterruptedException e) {
-                        e.printStackTrace(); // TODO - properly handle this exception
+                        e.printStackTrace();
                     }
                 }
             }

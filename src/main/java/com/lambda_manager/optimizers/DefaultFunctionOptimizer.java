@@ -1,21 +1,14 @@
-package com.lambda_manager.optimizers.impl;
+package com.lambda_manager.optimizers;
 
-import com.lambda_manager.collectors.meta_info.Lambda;
-import com.lambda_manager.collectors.meta_info.Function;
-import com.lambda_manager.optimizers.FunctionStatus;
-import com.lambda_manager.optimizers.Optimizer;
+import com.lambda_manager.core.Function;
+import com.lambda_manager.core.Lambda;
 import com.lambda_manager.processes.lambda.BuildVMM;
+import com.lambda_manager.processes.lambda.StartHotspot;
+import com.lambda_manager.processes.lambda.StartHotspotWithAgent;
 import com.lambda_manager.processes.lambda.StartLambda;
-import com.lambda_manager.processes.lambda.impl.StartHotspot;
-import com.lambda_manager.processes.lambda.impl.StartHotspotWithAgent;
-import com.lambda_manager.processes.lambda.impl.StartVMM;
+import com.lambda_manager.processes.lambda.StartVMM;
 
-public class DefaultOptimizer implements Optimizer {
-
-    @Override
-    public void registerCall(Lambda lambda) {
-        // TODO - while we don't have use for it, delete it.
-    }
+public class DefaultFunctionOptimizer implements FunctionOptimizer {
 
     @Override
     public StartLambda whomToSpawn(Lambda lambda) {
@@ -38,7 +31,6 @@ public class DefaultOptimizer implements Optimizer {
             default:
                 throw new IllegalStateException("Unexpected value: " + function.getStatus());
         }
-
         return process;
     }
 }

@@ -1,4 +1,4 @@
-package com.lambda_manager.collectors.meta_info;
+package com.lambda_manager.core;
 
 import com.lambda_manager.optimizers.FunctionStatus;
 import java.util.ArrayList;
@@ -24,8 +24,8 @@ public class Function {
     private FunctionStatus status;
 
     /**
-     * There will be only one started agent per function, so we need to keep information about PID
-     * for that single lambda. We are sending this information to
+     * There will be only one started Native Image Agent per function, so we need to keep information
+     * about PID for that single lambda. We are sending this information to
      * {@link com.lambda_manager.processes.lambda.BuildVMM } because during a build, we need to have
      * access to the agent's generated configurations.
      */

@@ -1,6 +1,4 @@
-package com.lambda_manager.encoders.impl;
-
-import com.lambda_manager.encoders.Coder;
+package com.lambda_manager.encoders;
 
 @SuppressWarnings("unused")
 public class DefaultCoder implements Coder {

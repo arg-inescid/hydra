@@ -1,13 +1,11 @@
-package com.lambda_manager.processes.lambda.impl;
+package com.lambda_manager.processes.lambda;
 
+import com.lambda_manager.callbacks.HotspotCallback;
 import com.lambda_manager.callbacks.OnProcessFinishCallback;
-import com.lambda_manager.callbacks.impl.HotspotCallback;
-import com.lambda_manager.callbacks.impl.HotspotWithAgentCallback;
-import com.lambda_manager.collectors.meta_info.Lambda;
 import com.lambda_manager.core.Configuration;
 import com.lambda_manager.core.Environment;
+import com.lambda_manager.core.Lambda;
 import com.lambda_manager.optimizers.LambdaExecutionMode;
-import com.lambda_manager.processes.lambda.StartLambda;
 import com.lambda_manager.utils.ConnectionTriplet;
 import io.micronaut.http.client.RxHttpClient;
 
@@ -18,9 +16,9 @@ import java.util.List;
 
 import static com.lambda_manager.core.Environment.*;
 
-public class StartHotspotWithAgent extends StartLambda {
+public class StartHotspot extends StartLambda {
 
-    public StartHotspotWithAgent(Lambda lambda) {
+    public StartHotspot(Lambda lambda) {
         super(lambda);
     }
 
@@ -28,7 +26,7 @@ public class StartHotspotWithAgent extends StartLambda {
     protected List<String> makeCommand() {
         List<String> command = new ArrayList<>();
 
-        lambda.setExecutionMode(LambdaExecutionMode.HOTSPOT_W_AGENT);
+        lambda.setExecutionMode(LambdaExecutionMode.HOTSPOT);
         ConnectionTriplet<String, String, RxHttpClient> connectionTriplet = lambda.getConnectionTriplet();
 
         command.add("/usr/bin/time");
@@ -36,7 +34,7 @@ public class StartHotspotWithAgent extends StartLambda {
         command.add(String.format("--output=%s", memoryFilename()));
         command.add("-v");
         command.add("bash");
-        command.add("src/scripts/start_hotspot_agent.sh");
+        command.add("src/scripts/start_hotspot.sh");
         command.add(lambda.getFunction().getName());
         command.add(String.valueOf(pid));
         command.add(Configuration.argumentStorage.getMemorySpace());
@@ -49,7 +47,6 @@ public class StartHotspotWithAgent extends StartLambda {
         } else {
             command.add("--noconsole");
         }
-        command.add(String.valueOf(lambda.getFunction().getLastAgentPID()));
         command.add(String.valueOf(System.currentTimeMillis()));
         command.add(lambda.getFunction().getEntryPoint());
         if (lambda.getFunction().getArguments() != null) {
@@ -66,12 +63,11 @@ public class StartHotspotWithAgent extends StartLambda {
                         String.format(getLambdaDirectory(), pid),
                         RUN_LOG)
                         .toString();
-        // Nested OnProcessFinish callbacks.
-        return new HotspotWithAgentCallback(lambda, new HotspotCallback(sourceFile, outputFilename()));
+        return new HotspotCallback(sourceFile, outputFilename());
     }
 
     @Override
     public String getLambdaDirectory() {
-        return Environment.HOTSPOT_W_AGENT;
+        return Environment.HOTSPOT;
     }
 }

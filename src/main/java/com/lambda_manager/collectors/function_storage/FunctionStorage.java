@@ -1,6 +1,6 @@
 package com.lambda_manager.collectors.function_storage;
 
-import com.lambda_manager.collectors.meta_info.Function;
+import com.lambda_manager.core.Function;
 import com.lambda_manager.exceptions.user.FunctionNotFound;
 
 import java.util.Map;

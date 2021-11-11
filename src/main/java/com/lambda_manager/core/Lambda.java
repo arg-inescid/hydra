@@ -1,12 +1,11 @@
-package com.lambda_manager.collectors.meta_info;
+package com.lambda_manager.core;
 
-import com.lambda_manager.core.Configuration;
-import com.lambda_manager.handlers.DefaultLambdaShutdownHandler;
 import com.lambda_manager.optimizers.LambdaExecutionMode;
 import com.lambda_manager.utils.ConnectionTriplet;
 import io.micronaut.http.client.RxHttpClient;
 
 import com.lambda_manager.processes.ProcessBuilder;
+import com.lambda_manager.processes.lambda.DefaultLambdaShutdownHandler;
 
 import java.util.Timer;
 

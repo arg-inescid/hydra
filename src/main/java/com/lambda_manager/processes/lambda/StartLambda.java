@@ -6,7 +6,7 @@ import static com.lambda_manager.core.Environment.OUTPUT;
 import java.io.File;
 import java.nio.file.Paths;
 
-import com.lambda_manager.collectors.meta_info.Lambda;
+import com.lambda_manager.core.Lambda;
 import com.lambda_manager.processes.AbstractProcess;
 
 public abstract class StartLambda extends AbstractProcess {

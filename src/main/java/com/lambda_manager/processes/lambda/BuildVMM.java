@@ -1,8 +1,8 @@
 package com.lambda_manager.processes.lambda;
 
+import com.lambda_manager.callbacks.BuildVMMCallback;
 import com.lambda_manager.callbacks.OnProcessFinishCallback;
-import com.lambda_manager.callbacks.impl.BuildVMMCallback;
-import com.lambda_manager.collectors.meta_info.Function;
+import com.lambda_manager.core.Function;
 import com.lambda_manager.processes.AbstractProcess;
 import java.io.File;
 import java.nio.file.Paths;

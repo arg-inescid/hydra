@@ -1,6 +1,4 @@
-package com.lambda_manager.callbacks.impl;
-
-import com.lambda_manager.callbacks.OnProcessFinishCallback;
+package com.lambda_manager.callbacks;
 
 public class DefaultCallback implements OnProcessFinishCallback {
 

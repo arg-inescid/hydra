@@ -2,14 +2,14 @@ package com.lambda_manager.core;
 
 import com.github.maltalex.ineter.base.IPv4Address;
 import com.github.maltalex.ineter.range.IPv4Subnet;
+import com.lambda_manager.client.LambdaManagerClient;
 import com.lambda_manager.collectors.function_storage.FunctionStorage;
-import com.lambda_manager.connectivity.client.LambdaManagerClient;
 import com.lambda_manager.encoders.Coder;
 import com.lambda_manager.exceptions.argument_parser.ErrorDuringReflectiveClassCreation;
 import com.lambda_manager.exceptions.user.ErrorDuringCreatingConnectionPool;
-import com.lambda_manager.optimizers.Optimizer;
+import com.lambda_manager.optimizers.FunctionOptimizer;
 import com.lambda_manager.processes.ProcessBuilder;
-import com.lambda_manager.processes.main.CreateTaps;
+import com.lambda_manager.processes.taps.CreateTaps;
 import com.lambda_manager.schedulers.Scheduler;
 import com.lambda_manager.utils.ConnectionTriplet;
 import com.lambda_manager.utils.Messages;
@@ -188,7 +188,7 @@ public class ArgumentStorage {
     private void prepareConfiguration(LambdaManagerState lambdaManagerState)
                     throws ErrorDuringReflectiveClassCreation {
         Scheduler scheduler = (Scheduler) createObject(lambdaManagerState.getScheduler());
-        Optimizer optimizer = (Optimizer) createObject(lambdaManagerState.getOptimizer());
+        FunctionOptimizer optimizer = (FunctionOptimizer) createObject(lambdaManagerState.getOptimizer());
         Coder encoder = (Coder) createObject(lambdaManagerState.getEncoder());
         FunctionStorage storage = (FunctionStorage) createObject(lambdaManagerState.getStorage());
         LambdaManagerClient client = (LambdaManagerClient) createObject(lambdaManagerState.getClient());

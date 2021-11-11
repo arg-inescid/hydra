@@ -1,6 +1,4 @@
-package com.lambda_manager.callbacks.impl;
-
-import com.lambda_manager.callbacks.OnProcessFinishCallback;
+package com.lambda_manager.callbacks;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -24,7 +22,6 @@ public class HotspotCallback implements OnProcessFinishCallback {
             fileInputStream.read(data);
             fileWriter.write(new String(data, StandardCharsets.UTF_8));
         } catch (IOException e) {
-            // TODO: proper handle this.
             e.printStackTrace();
         }
     }

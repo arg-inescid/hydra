@@ -1,12 +1,11 @@
-package com.lambda_manager.processes.lambda.impl;
+package com.lambda_manager.processes.lambda;
 
 import com.lambda_manager.callbacks.OnProcessFinishCallback;
-import com.lambda_manager.callbacks.impl.VMMCallback;
-import com.lambda_manager.collectors.meta_info.Lambda;
+import com.lambda_manager.callbacks.VMMCallback;
 import com.lambda_manager.core.Configuration;
 import com.lambda_manager.core.Environment;
+import com.lambda_manager.core.Lambda;
 import com.lambda_manager.optimizers.LambdaExecutionMode;
-import com.lambda_manager.processes.lambda.StartLambda;
 import com.lambda_manager.utils.ConnectionTriplet;
 import io.micronaut.http.client.RxHttpClient;
 

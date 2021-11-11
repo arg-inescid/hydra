@@ -1,4 +1,4 @@
-package com.lambda_manager.processes.main;
+package com.lambda_manager.processes.taps;
 
 import java.util.ArrayList;
 import java.util.List;

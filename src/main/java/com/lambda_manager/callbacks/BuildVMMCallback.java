@@ -1,7 +1,6 @@
-package com.lambda_manager.callbacks.impl;
+package com.lambda_manager.callbacks;
 
-import com.lambda_manager.callbacks.OnProcessFinishCallback;
-import com.lambda_manager.collectors.meta_info.Function;
+import com.lambda_manager.core.Function;
 import com.lambda_manager.optimizers.FunctionStatus;
 
 public class BuildVMMCallback implements OnProcessFinishCallback {

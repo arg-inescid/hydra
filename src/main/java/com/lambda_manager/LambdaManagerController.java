@@ -1,4 +1,4 @@
-package com.lambda_manager.connectivity;
+package com.lambda_manager;
 
 import com.lambda_manager.core.LambdaManager;
 import com.lambda_manager.utils.MetricsProvider;

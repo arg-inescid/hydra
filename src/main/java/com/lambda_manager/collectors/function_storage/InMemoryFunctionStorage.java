@@ -1,11 +1,10 @@
-package com.lambda_manager.collectors.function_storage.impl;
+package com.lambda_manager.collectors.function_storage;
 
-import com.lambda_manager.collectors.meta_info.Function;
 import com.lambda_manager.core.Environment;
+import com.lambda_manager.core.Function;
 import com.lambda_manager.exceptions.user.FunctionNotFound;
 import com.lambda_manager.utils.FileUtils;
 import com.lambda_manager.utils.Messages;
-import com.lambda_manager.collectors.function_storage.FunctionStorage;
 
 import java.io.File;
 import java.nio.file.Paths;
@@ -13,7 +12,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @SuppressWarnings("unused")
-public class DefaultFunctionStorage implements FunctionStorage {
+public class InMemoryFunctionStorage implements FunctionStorage {
 
     private final ConcurrentHashMap<String, Function> functions = new ConcurrentHashMap<>();
 
