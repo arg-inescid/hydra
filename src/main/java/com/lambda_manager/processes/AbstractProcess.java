@@ -1,7 +1,7 @@
 package com.lambda_manager.processes;
 
+import com.lambda_manager.callbacks.DefaultCallback;
 import com.lambda_manager.callbacks.OnProcessFinishCallback;
-import com.lambda_manager.callbacks.impl.DefaultCallback;
 import com.lambda_manager.core.Environment;
 import java.util.List;
 

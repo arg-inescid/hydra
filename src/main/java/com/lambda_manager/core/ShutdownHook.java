@@ -1,8 +1,8 @@
 package com.lambda_manager.core;
 
 import com.lambda_manager.processes.ProcessBuilder;
-import com.lambda_manager.processes.main.RemoveTapsFromPool;
-import com.lambda_manager.processes.main.RemoveTapsOutsidePool;
+import com.lambda_manager.processes.taps.RemoveTapsFromPool;
+import com.lambda_manager.processes.taps.RemoveTapsOutsidePool;
 import com.lambda_manager.utils.Messages;
 import com.lambda_manager.utils.logger.Logger;
 import io.micronaut.context.event.ApplicationEventListener;
