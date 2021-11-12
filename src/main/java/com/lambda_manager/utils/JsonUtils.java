@@ -11,6 +11,8 @@ import io.reactivex.Single;
 
 public class JsonUtils {
 
+    public static ObjectMapper objectMapper = new ObjectMapper();
+
     public static Single<String> constructJsonResponseObject(Object response) {
         try {
             ObjectMapper mapper = new ObjectMapper();

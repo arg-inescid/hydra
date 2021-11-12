@@ -1,20 +1,17 @@
 package com.lambda_manager;
 
+import javax.inject.Inject;
+
 import com.lambda_manager.core.LambdaManager;
 import com.lambda_manager.utils.MetricsProvider;
 
 import io.micronaut.context.BeanContext;
 import io.micronaut.core.annotation.Nullable;
+import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.*;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.reactivex.Single;
-
-import javax.inject.Inject;
-
-import static io.micronaut.http.MediaType.APPLICATION_JSON;
-import static io.micronaut.http.MediaType.APPLICATION_OCTET_STREAM;
-import static io.micronaut.http.MediaType.TEXT_PLAIN;
 
 @SuppressWarnings("unused")
 @ExecuteOn(TaskExecutors.IO)
@@ -23,11 +20,11 @@ public class LambdaManagerController {
 
     @Inject private BeanContext beanContext;
 
-    @Get("/{username}/{function_name}")
+    @Post(value = "/{username}/{function_name}", consumes = MediaType.APPLICATION_JSON)
     public Single<String> processRequest(@PathVariable("username") String username,
                     @PathVariable("function_name") String functionName,
-                    @Nullable @QueryValue("parameters") String parameters) {
-        return LambdaManager.processRequest(username, functionName, parameters);
+                    @Nullable @Body String arguments) {
+        return LambdaManager.processRequest(username, functionName, arguments);
     }
 
     @Get("/get_functions")
@@ -35,7 +32,7 @@ public class LambdaManagerController {
         return LambdaManager.getFunctions();
     }
 
-    @Post(value = "/upload_function", consumes = APPLICATION_OCTET_STREAM)
+    @Post(value = "/upload_function", consumes = MediaType.APPLICATION_OCTET_STREAM)
     public Single<String> uploadFunction(@QueryValue("allocate") int allocate,
                     @QueryValue("username") String username,
                     @QueryValue("function_name") String functionName,
@@ -52,12 +49,12 @@ public class LambdaManagerController {
         return LambdaManager.removeFunction(username, functionName);
     }
 
-    @Post(value = "/configure_manager", consumes = APPLICATION_JSON)
+    @Post(value = "/configure_manager", consumes = MediaType.APPLICATION_JSON)
     public Single<String> configureManager(@Body String lambdaManagerConfiguration) {
         return LambdaManager.configureManager(lambdaManagerConfiguration, beanContext);
     }
 
-    @Get(value = "/metrics", produces = TEXT_PLAIN)
+    @Get(value = "/metrics", produces = MediaType.TEXT_PLAIN)
     public Single<String> scrapeMetrics() {
         return MetricsProvider.getFootprintAndScalability();
     }

@@ -39,6 +39,7 @@ FUNCTION_JAR=$FUNCTION_HOME/$FUNCTION_NAME.jar
 LAMBDA_HOME=$FUNCTION_HOME/pid_"$LAMBDA_ID"_hotspot_w_agent
 "$JAVA_HOME"/bin/native-image \
   --no-fallback \
+  --features=org.graalvm.argo.proxies.engine.JavaEngineSingletonFeature \
   -H:IncludeResources="logback.xml|application.yml" \
   -cp $PROXY_JAR:$FUNCTION_JAR \
   org.graalvm.argo.proxies.JavaProxy \
