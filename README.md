@@ -56,14 +56,9 @@ For plotting purposes, we will need results from the testing phase and plotting 
 
 The Lamabda Manager is written in Java using [Micronaut](https://guides.micronaut.io/index.html). Its main components are the following:
 
-- `Encoder` - Class for transforming username and lambda name to unique name, which is then used as the key for Function
-  Storage.
-- `Function Storage` - Class for storing meta-information about every registered function. Like ID, function name,
-  available instances, created instances, active instances, opened HTTP connections...
-- `Code Writer` - Class for storing binary code of servers writing them on the same disk as lambda manager.
-- `Scheduler` - Class which is deciding which instance of lambda should we call.
-- `Optimizer` - Class which is deciding whether to start a new instance of a lambda with as **Hotspot** or **VMM**.
-  Server as next step in execution pipe (after `Encoder ` and `Scheduler` and before `Client`).
-- `Client` - Class for making connections toward lambdas.
-- `Lambda Manager` - Core class which is just a template while all implementations are kept in concrete implementations
-  of Interfaces for all above classes.
+- [`Coder`](src/main/java/com/lambda_manager/encoders/Coder.java) - Class for transforming username and function name to unique name, which is then used as the key for Function
+  Storage;
+- [`In-Memory Function Cache`](src/main/java/com/lambda_manager/function_storage/FunctionStorage.java) - Stores meta-information about every registered function. Like ID, function name, available instances, created instances, active instances, opened HTTP connections;
+- [`Scheduler`](src/main/java/com/lambda_manager/schedulers/Scheduler.java) - Decides in which VM a particular function invocation should take place;
+- [`HTTP Client`](src/main/java/com/lambda_manager/client/LambdaManagerClient.java) - Prepares TCP connections to VMs executing function invocations;
+- [`Lambda Manager`](src/main/java/com/lambda_manager/core/LambdaManager.java) - Core class that handles function requests.
