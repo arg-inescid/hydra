@@ -12,6 +12,12 @@ The project includes a number of repositories:
 
 ---
 
+## Lambda Manager API
+
+The Lamabda Manager API is implemented in the [Controller](src/main/java/com/lambda_manager/LambdaManagerController.java).
+
+---
+
 ## Setup
 
 To set up project, we need to do the following things:
