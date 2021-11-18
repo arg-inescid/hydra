@@ -1,0 +1,15 @@
+micronaut:
+  application:
+    name: cluster-manager
+  server:
+    port: 9001
+    maxRequestSize: 100MB
+    max-request-size: 100MB
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+      maxFileSize: 100MB
+      maxRequestSize: 100MB
+      enabled: true
+    cors:
+      enabled: true

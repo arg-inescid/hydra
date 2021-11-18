@@ -1,0 +1,6 @@
+{
+  "rules": [
+    {"excludeClasses": "io.micronaut.**"},
+    {"excludeClasses": "io.netty.**"}
+  ]
+}
