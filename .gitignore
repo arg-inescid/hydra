@@ -1,4 +1,6 @@
 .idea/
-resources/
+resources/*
 !resources/code-formatter/
+!resources/truffle-build/
+resources/truffle-build/*
 !resources/truffle-build/.gitkeep
