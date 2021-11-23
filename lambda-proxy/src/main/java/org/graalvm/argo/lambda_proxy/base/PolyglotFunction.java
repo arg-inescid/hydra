@@ -1,25 +1,31 @@
 package org.graalvm.argo.lambda_proxy.base;
 
-import org.graalvm.polyglot.Value;
+import org.graalvm.polyglot.Source;
 
 public class PolyglotFunction {
-    private String language;
-    private String name;
-    private String sourceCode;
-    private Value evaluatedFunction;
+    private final String name;
+    private final String entryPoint;
+    private final String language;
+    private final String sourceCode;
+    private Source evaluatedSource;
 
-    public PolyglotFunction(String name, String languageCode, String sourceCode) {
-        this.language = languageCode;
+    public PolyglotFunction(String name, String entryPoint, String language, String sourceCode) {
         this.name = name;
+        this.entryPoint = entryPoint;
+        this.language = language;
         this.sourceCode = sourceCode;
     }
 
-    public Value getEvaluatedFunction() {
-        return evaluatedFunction;
+    public String getEntryPoint() {
+        return entryPoint;
     }
 
-    public void setEvaluatedFunction(Value evaluatedFunction) {
-        this.evaluatedFunction = evaluatedFunction;
+    public Source getSource() {
+        return evaluatedSource;
+    }
+
+    public void setSource(Source evaluatedSource) {
+        this.evaluatedSource = evaluatedSource;
     }
 
     public String getLanguage() {

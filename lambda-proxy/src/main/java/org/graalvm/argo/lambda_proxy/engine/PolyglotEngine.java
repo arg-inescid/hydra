@@ -7,10 +7,7 @@ import static org.graalvm.argo.lambda_proxy.utils.ProxyUtils.*;
 import java.io.IOException;
 import java.util.Map;
 
-import org.graalvm.argo.lambda_proxy.base.IsolateObjectWrapper;
-import org.graalvm.argo.lambda_proxy.base.PolyglotFunction;
-import org.graalvm.argo.lambda_proxy.base.PolyglotLanguage;
-import org.graalvm.argo.lambda_proxy.base.TruffleExecutor;
+import org.graalvm.argo.lambda_proxy.base.*;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -27,7 +24,7 @@ public class PolyglotEngine implements LanguageEngine {
     }
 
     @Override
-    public void registerFunction(String functionName, IsolateObjectWrapper targetIsolate) throws Exception {
+    public void registerFunction(String functionName, IsolateObjectWrapper targetIsolate) throws FunctionRegistrationFailure {
         if (!functionExists(functionName, targetIsolate)) {
             // register sourceCode into worker isolate
             PolyglotFunction function = getFunction(functionName);
@@ -51,11 +48,12 @@ public class PolyglotEngine implements LanguageEngine {
         public void handle(HttpExchange t) throws IOException {
             Map<String, Object> input = jsonToMap(extractRequestBody(t));
             String functionName = (String) input.get("name");
+            String functionEntryPoint = (String) input.get("entryPoint");
             String language = (String) input.get("language");
             String sourceCode = (String) input.get("sourceCode");
             try {
                 PolyglotLanguage polyglotLanguage = PolyglotLanguage.valueOf(language.toUpperCase());
-                register(functionName, polyglotLanguage.toString(), sourceCode);
+                register(functionName, functionEntryPoint, polyglotLanguage.toString(), sourceCode);
                 writeResponse(t, 200, String.format("Function %s registered successfully!", input.get("name")));
             } catch (IllegalArgumentException e) {
                 e.printStackTrace(System.err);

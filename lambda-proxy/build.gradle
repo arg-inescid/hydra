@@ -7,7 +7,7 @@ plugins {
     id "com.github.johnrengelman.shadow" version "7.1.0"
 }
 
-group = 'org.graalvm.argo.proxies'
+group = 'org.graalvm.argo.lambda_proxy'
 version = '1.0'
 description = 'lambda-proxy'
 

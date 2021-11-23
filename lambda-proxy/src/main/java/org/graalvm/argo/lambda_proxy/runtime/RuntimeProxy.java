@@ -4,9 +4,11 @@ import static org.graalvm.argo.lambda_proxy.utils.JsonUtils.jsonToMap;
 import static org.graalvm.argo.lambda_proxy.utils.ProxyUtils.errorResponse;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.InetSocketAddress;
 import java.util.Map;
 
+import org.graalvm.argo.lambda_proxy.base.FunctionRegistrationFailure;
 import org.graalvm.argo.lambda_proxy.engine.LanguageEngine;
 import org.graalvm.argo.lambda_proxy.utils.ProxyUtils;
 
@@ -29,7 +31,8 @@ public abstract class RuntimeProxy {
         server.createContext("/", new InvocationHandler());
     }
 
-    protected abstract String invoke(String functionName, String arguments) throws Exception;
+    protected abstract String invoke(String functionName, String arguments) throws IOException, ClassNotFoundException,
+            InvocationTargetException, IllegalAccessException, NoSuchMethodException, FunctionRegistrationFailure;
 
     public abstract void start();
 

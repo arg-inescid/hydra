@@ -3,6 +3,7 @@ package org.graalvm.argo.lambda_proxy.runtime;
 import static org.graalvm.argo.lambda_proxy.utils.JsonUtils.json;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -17,7 +18,7 @@ public class HotSpotProxy extends RuntimeProxy {
     }
 
     @Override
-    public String invoke(String functionName, String arguments) throws Exception {
+    public String invoke(String functionName, String arguments) throws IOException, ClassNotFoundException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         long start = System.currentTimeMillis();
         Map<String, Object> output = new HashMap<>();
         String result = languageEngine.invoke(functionName, arguments);

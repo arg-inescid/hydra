@@ -37,10 +37,10 @@ Note that `PolyglotProxy` is pre-built and only deployed in Native Image UniKern
 
 ### Code Structure
 
-[`base`](https://github.com/graalvm-argo/lambda-proxies/tree/patch-isolate-support/java/src/main/java/org/graalvm/argo/proxies/base): Helper classes to wrap function, language(enum), isolate. Isolate Factory that registers isolate into threadLocal. TruffleExecutor.
+[`base`](src/main/java/org/graalvm/argo/lambda-proxy/base): Helper classes to wrap function, language(enum), isolate. Isolate Factory that registers isolate into threadLocal. TruffleExecutor.
 
-[`engine`](https://github.com/graalvm-argo/lambda-proxies/tree/patch-isolate-support/java/src/main/java/org/graalvm/argo/proxies/engine): Language engines
+[`engine`](src/main/java/org/graalvm/argo/lambda-proxy/engine): Language engines
 
-[`runtime`](https://github.com/graalvm-argo/lambda-proxies/tree/patch-isolate-support/java/src/main/java/org/graalvm/argo/proxies/runtime): Runtime proxies: HotSpotProxy and IsolateProxy
+[`runtime`](src/main/java/org/graalvm/argo/lambda-proxy/runtime): Runtime proxies: HotSpotProxy and IsolateProxy
 
-[`utils`](https://github.com/graalvm-argo/lambda-proxies/tree/patch-isolate-support/java/src/main/java/org/graalvm/argo/proxies/utils): utilties classes
+[`utils`](src/main/java/org/graalvm/argo/lambda-proxy/utils): utilties classes

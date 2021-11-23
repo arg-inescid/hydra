@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.graalvm.argo.lambda_proxy.base.FunctionRegistrationFailure;
 import org.graalvm.argo.lambda_proxy.base.IsolateObjectWrapper;
 import org.graalvm.argo.lambda_proxy.base.IsolateThreadFactory;
 import org.graalvm.argo.lambda_proxy.engine.LanguageEngine;
@@ -20,6 +21,7 @@ import org.graalvm.nativeimage.CurrentIsolate;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.ObjectHandle;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
+import org.graalvm.polyglot.PolyglotException;
 
 /**
  * Methods for starting proxy inside Native Image, where each request is executed inside separated
@@ -35,16 +37,17 @@ public class IsolateProxy extends RuntimeProxy {
      * Entry point for workIsolate that finish the invocation
      *
      * @param processContext The context of the current thread in the isolate in which the code
-     *            should execute.
+     *                       should execute.
      * @param defaultContext The context of the current thread in the parent's isolate.
      * @param argumentHandle The parameters for invocation
      * @return An object handle within the parent isolate's context for a {@link ByteBuffer} object
-     *         containing the SVG document.
+     * containing the SVG document.
      */
     @SuppressWarnings("unused")
     @CEntryPoint
-    static ObjectHandle invoke(@CEntryPoint.IsolateThreadContext IsolateThread processContext, IsolateThread defaultContext, ObjectHandle functionHandle, ObjectHandle argumentHandle)
-                    throws InvocationTargetException, IllegalAccessException, IOException, ClassNotFoundException, NoSuchMethodException {
+    static ObjectHandle invoke(@CEntryPoint.IsolateThreadContext IsolateThread processContext, IsolateThread defaultContext,
+                               ObjectHandle functionHandle, ObjectHandle argumentHandle)
+            throws InvocationTargetException, IllegalAccessException, IOException, ClassNotFoundException, NoSuchMethodException {
         // Resolve and delete the argumentsHandle and functionHandle, deserialize request json
         String functionName = retrieveString(functionHandle);
         String argumentString = retrieveString(argumentHandle);
@@ -53,7 +56,10 @@ public class IsolateProxy extends RuntimeProxy {
     }
 
     @Override
-    protected String invoke(String functionName, String arguments) throws Exception {
+    protected String invoke(String functionName, String arguments) throws PolyglotException, IOException,
+            ClassNotFoundException, InvocationTargetException, IllegalAccessException, NoSuchMethodException,
+            FunctionRegistrationFailure {
+
         long start = System.currentTimeMillis();
         Map<String, Object> output = new HashMap<>();
         IsolateObjectWrapper isolateObjectWrapper = threadLocalIsolate.get();

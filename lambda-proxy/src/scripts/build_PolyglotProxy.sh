@@ -7,9 +7,9 @@ sudo env "PATH=$PATH" native-image \
   --no-fallback \
   --language:js \
   --language:python \
-  --features=org.graalvm.argo.proxies.engine.PolyglotEngineSingletonFeature \
+  --features=org.graalvm.argo.lambda_proxy.engine.PolyglotEngineSingletonFeature \
   -cp build/libs/lambda-proxy-1.0.jar \
-  org.graalvm.argo.proxies.PolyglotProxy \
+  org.graalvm.argo.lambda_proxy.PolyglotProxy \
   polyglot-proxy \
   -H:Virtualize="$VIRTUALIZE_PATH" \
   -H:+ReportExceptionStackTraces \
