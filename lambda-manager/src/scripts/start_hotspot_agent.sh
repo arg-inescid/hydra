@@ -19,7 +19,7 @@ if [ -z "$PREV_AGENT_PID" ]; then
   exit 1
 fi
 
-PROXY_JAR=$PROXIES_HOME/java/target/lambda-java-proxy-0.0.1.jar
+PROXY_JAR=$PROXIES_HOME/build/libs/lambda-java-proxy-0.0.1.jar
 if [ ! -f $PROXY_JAR ]; then
   echo "Proxy JAR - $PROXY_JAR - not found!"
   exit 1

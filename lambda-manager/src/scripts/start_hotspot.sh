@@ -13,7 +13,7 @@ FUNCTION_JAR=$FUNCTION_HOME/$FUNCTION_NAME.jar
 LAMBDA_HOME=$FUNCTION_HOME/pid_"$LAMBDA_ID"_hotspot
 prepare_hotspot_lambda_directory "$LAMBDA_HOME"
 
-PROXY_JAR=$PROXIES_HOME/java/target/lambda-java-proxy-0.0.1.jar
+PROXY_JAR=$PROXIES_HOME/build/libs/lambda-java-proxy-0.0.1.jar
 if [ ! -f $PROXY_JAR ]; then
   echo "Proxy JAR - $PROXY_JAR - not found!"
   exit 1

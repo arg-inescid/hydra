@@ -29,7 +29,7 @@ cd "$BUILD_OUTPUT_HOME" || {
   exit 2
 }
 
-PROXY_JAR=$PROXIES_HOME/java/target/lambda-java-proxy-0.0.1.jar
+PROXY_JAR=$PROXIES_HOME/build/libs/lambda-java-proxy-0.0.1.jar
 if [ ! -f $PROXY_JAR ]; then
   echo "Proxy JAR - $PROXY_JAR - not found!"
   exit 1
