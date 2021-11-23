@@ -4,7 +4,7 @@ plugins {
 }
 
 version = "1.0"
-group = "com.lambda_manager"
+group = "org.graalvm.argo.lambda_manager"
 
 repositories {
     mavenCentral()
@@ -16,7 +16,7 @@ micronaut {
     testRuntime("junit5")
     processing {
         incremental(true)
-        annotations("com.lambda_manager.*")
+        annotations("org.graalvm.argo.lambda_manager.*")
     }
 }
 
