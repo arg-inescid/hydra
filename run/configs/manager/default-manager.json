@@ -1,0 +1,21 @@
+{
+  "gateway": "10.0.123.179/18",
+  "maxLambdas": 100,
+  "timeout": 25000,
+  "healthCheck": 50,
+  "memory": "512M",
+  "lambdaPort": 8080,
+  "lambdaConsole": true,
+  "managerConsole": {
+    "turnOn": true,
+    "redirectToFile": true,
+    "fineGrain": true
+  },
+  "managerState": {
+    "scheduler": "com.lambda_manager.schedulers.RoundedRobinScheduler",
+    "optimizer": "com.lambda_manager.optimizers.DefaultFunctionOptimizer",
+    "encoder": "com.lambda_manager.encoders.DefaultCoder",
+    "storage": "com.lambda_manager.function_storage.InMemoryFunctionStorage",
+    "client": "com.lambda_manager.client.DefaultLambdaManagerClient"
+  }
+}
