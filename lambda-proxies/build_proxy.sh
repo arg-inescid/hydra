@@ -10,5 +10,5 @@ cd "$DIR" || {
 }
 
 echo -e "${GREEN}Building proxy...${NC}"
-mvn package
+./gradlew clean shadowJar
 echo -e "${GREEN}Building proxy...done${NC}"
