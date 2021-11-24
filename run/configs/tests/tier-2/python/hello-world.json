@@ -22,9 +22,9 @@
           "allocate": 100,
           "function_name": "hello-world",
           "function_language": "python",
-          "function_entry_point": "",
+          "function_entry_point": "main",
           "arguments": "8080",
-          "source": "../../../../../benchmarks/language/python/hello-world/main.py"
+          "source": "../../../../../../benchmarks/language/python/hello-world/main.py"
         },
         {
           "command": "send",
@@ -35,7 +35,7 @@
               "num_clients": 100,
               "function_name": "hello-world",
               "parameters": {},
-              "output": "../../../../../benchmarks/results/python/hello-world/hello-world-1.dat"
+              "output": "../../../../../../benchmarks/results/python/hello-world/hello-world-1.dat"
             }
           ]
         },
@@ -48,7 +48,7 @@
               "num_clients": 100,
               "function_name": "hello-world",
               "parameters": {},
-              "output": "../../../../../benchmarks/results/python/hello-world/hello-world-2.dat"
+              "output": "../../../../../../benchmarks/results/python/hello-world/hello-world-2.dat"
             }
           ]
         },
@@ -61,7 +61,7 @@
               "num_clients": 100,
               "function_name": "hello-world",
               "parameters": {},
-              "output": "../../../../../benchmarks/results/python/hello-world/hello-world-3.dat"
+              "output": "../../../../../../benchmarks/results/python/hello-world/hello-world-3.dat"
             }
           ]
         }

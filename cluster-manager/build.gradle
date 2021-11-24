@@ -31,7 +31,7 @@ dependencies {
 
 
 application {
-    mainClass.set("com.cluster_manager.EntryPoint")
+    mainClass.set("org.graalvm.argo.cluster_manager.EntryPoint")
 }
 
 java {

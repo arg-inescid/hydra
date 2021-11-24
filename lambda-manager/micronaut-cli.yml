@@ -1,5 +1,5 @@
 applicationType: default
-defaultPackage: com.lambda_manager
+defaultPackage: org.graalvm.argo.lambda_manager
 testFramework: junit
 sourceLanguage: java
 buildTool: gradle

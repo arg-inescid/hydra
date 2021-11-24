@@ -1,5 +1,5 @@
 applicationType: default
-defaultPackage: com.cluster_manager
+defaultPackage: org.graalvm.argo.cluster_manager
 testFramework: junit
 sourceLanguage: java
 buildTool: gradle

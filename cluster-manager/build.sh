@@ -12,7 +12,3 @@ cd "$DIR" || {
 echo -e "${GREEN}Building cluster manager...${NC}"
 ./gradlew clean assemble
 echo -e "${GREEN}Building cluster manager...done${NC}"
-
-echo -e "${GREEN}Running cluster manager...${NC}"
-java -jar build/libs/cluster-manager-1.0-all.jar
-echo -e "${GREEN}Running cluster manager...done${NC}"

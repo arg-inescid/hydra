@@ -3,9 +3,12 @@ import sys
 
 # Global settings.
 MAX_VERBOSITY_LVL = 2
+MAX_MANAGER_WAKEUP_TIME = 2
+BUILD_SCRIPT = "build.sh"
+DEPLOY_SCRIPT = "deploy.sh"
 
 # Lambda manager global variables.
-LAMBDA_MANAGER_DIR = os.path.join(os.path.dirname(sys.argv[0]), "..", "..", "core", "lambda-manager")
+LAMBDA_MANAGER_DIR = os.path.join(os.path.dirname(sys.argv[0]), "..", "..", "lambda-manager")
 LAMBDA_MANAGER_LOGS_DIR = os.path.join(LAMBDA_MANAGER_DIR, "manager_logs")
 LAMBDA_LOGS_DIR = os.path.join(LAMBDA_MANAGER_DIR, "lambda_logs")
 
@@ -14,7 +17,13 @@ SETUP_DB_VM_LOC = os.path.join(LAMBDA_MANAGER_DIR, "src", "scripts", "qemu-jvm")
 SETUP_DB_VM_FILE = "setup_debian_vm.sh"
 
 # Proxy global variables.
-PROXY_DIR = os.path.join(LAMBDA_MANAGER_DIR, "..", "lambda-proxies")
+PROXY_DIR = os.path.join(LAMBDA_MANAGER_DIR, "..", "lambda-proxy")
+
+# Cluster manage global variables.
+CLUSTER_MANAGER_DIR = os.path.join(LAMBDA_MANAGER_DIR, "..", "cluster-manager")
+
+# Load balancer global variables.
+LOAD_BALANCER_DIR = os.path.join(LAMBDA_MANAGER_DIR, "..", "load-balancer")
 
 # Testing global variables.
 CONFIG_DIR = os.path.join(os.path.dirname(sys.argv[0]), "..", "configs")

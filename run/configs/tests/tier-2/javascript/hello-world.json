@@ -22,9 +22,9 @@
           "allocate": 100,
           "function_name": "hello-world",
           "function_language": "javascript",
-          "function_entry_point": "",
+          "function_entry_point": "main",
           "arguments": "8080",
-          "source": "../../../../../benchmarks/language/javascript/hello-world/main.js"
+          "source": "../../../../../../benchmarks/language/javascript/hello-world/main.js"
         },
         {
           "command": "send",
@@ -35,7 +35,7 @@
               "num_clients": 100,
               "function_name": "hello-world",
               "parameters": {},
-              "output": "../../../../../benchmarks/results/javascript/hello-world/hello-world-1.dat"
+              "output": "../../../../../../benchmarks/results/javascript/hello-world/hello-world-1.dat"
             }
           ]
         }

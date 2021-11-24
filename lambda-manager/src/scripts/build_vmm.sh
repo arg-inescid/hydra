@@ -29,8 +29,7 @@ cd "$BUILD_OUTPUT_HOME" || {
   exit 2
 }
 
-PROXY_JAR=$PROXIES_HOME/build/libs/lambda-java-proxy-0.0.1.jar
-if [ ! -f $PROXY_JAR ]; then
+if [ ! -f "$PROXY_JAR" ]; then
   echo "Proxy JAR - $PROXY_JAR - not found!"
   exit 1
 fi
@@ -39,11 +38,11 @@ FUNCTION_JAR=$FUNCTION_HOME/$FUNCTION_NAME.jar
 LAMBDA_HOME=$FUNCTION_HOME/pid_"$LAMBDA_ID"_hotspot_w_agent
 "$JAVA_HOME"/bin/native-image \
   --no-fallback \
-  --features=org.graalvm.argo.proxies.engine.JavaEngineSingletonFeature \
+  --features=org.graalvm.argo.lambda_proxy.engine.JavaEngineSingletonFeature \
   -H:IncludeResources="logback.xml|application.yml" \
-  -cp $PROXY_JAR:$FUNCTION_JAR \
-  org.graalvm.argo.proxies.JavaProxy \
-  $FUNCTION_NAME \
+  -cp "$PROXY_JAR":"$FUNCTION_JAR" \
+  org.graalvm.argo.lambda_proxy.JavaProxy \
+  "$FUNCTION_NAME" \
   -H:Virtualize="$VIRTUALIZE_PATH" \
   -H:ConfigurationFileDirectories="$LAMBDA_HOME"/shared/config \
   -H:ExcludeResources=".*/io.micronaut.*$|io.netty.*$" \

@@ -6,7 +6,6 @@ import json
 import os
 import random
 import string
-import sys
 from json import JSONDecodeError
 
 
@@ -47,7 +46,8 @@ class ScriptType(enum.Enum):
     TESTS = "tests"
     MEASUREMENTS = "measurements"
     MONITORING = "monitoring"
-    MANAGER = "manager"
+    BUILD = "build"
+    DEPLOY = "deploy"
     HELP = "help"
 
 

@@ -12,7 +12,3 @@ cd "$DIR" || {
 echo -e "${GREEN}Building lambda manager...${NC}"
 ./gradlew clean assemble
 echo -e "${GREEN}Building lambda manager...done${NC}"
-
-echo -e "${GREEN}Running lambda manager...${NC}"
-sudo java -jar build/libs/lambda-manager-1.0-all.jar
-echo -e "${GREEN}Running lambda manager...done${NC}"

@@ -28,8 +28,11 @@ _complete() { #  By convention, the function name
   mo*)
     while IFS="" read -r line; do COMPREPLY+=("$line"); done < <(compgen -W 'monitoring' -- "$cur")
     ;;
-  ma*)
-    while IFS="" read -r line; do COMPREPLY+=("$line"); done < <(compgen -W 'manager' -- "$cur")
+  b*)
+    while IFS="" read -r line; do COMPREPLY+=("$line"); done < <(compgen -W 'build' -- "$cur")
+    ;;
+  d*)
+    while IFS="" read -r line; do COMPREPLY+=("$line"); done < <(compgen -W 'deploy' -- "$cur")
     ;;
   h*)
     while IFS="" read -r line; do COMPREPLY+=("$line"); done < <(compgen -W 'help' -- "$cur")

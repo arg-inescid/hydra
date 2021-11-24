@@ -31,7 +31,7 @@ dependencies {
 
 
 application {
-    mainClass.set("com.lambda_manager.EntryPoint")
+    mainClass.set("org.graalvm.argo.lambda_manager.EntryPoint")
 }
 
 java {

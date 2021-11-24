@@ -24,7 +24,7 @@
           "function_language": "java",
           "function_entry_point": "com.hello_world.HelloWorld",
           "arguments": "8080",
-          "source": "../../../../../benchmarks/language/java/hello-world/"
+          "source": "../../../../../../benchmarks/language/java/hello-world/"
         },
         {
           "command": "send",
@@ -35,7 +35,7 @@
               "num_clients": 100,
               "function_name": "hello-world",
               "parameters": {},
-              "output": "../../../../../benchmarks/results/java/hello-world/hello-world-1.dat"
+              "output": "../../../../../../benchmarks/results/java/hello-world/hello-world-1.dat"
             }
           ]
         },

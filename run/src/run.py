@@ -3,22 +3,23 @@ import os
 import signal
 import sys
 
+import run_build
+import run_deploy
 import run_install_deps
 import run_measurements
-import run_manager
+import run_monitoring
 import run_plot
 import run_test
 import run_tests
-import run_monitoring
 from run_utils import MessageType, print_message, ScriptType, remove_leftover_tmp_files
 
 
 def print_help_message():
     print('''
 Argo's command-line tool.
-    
+
 The Run helps you with building, testing, plotting, installing dependencies...
- 
+
     test [v|vv] <path to test configuration>
                       allow you to run test with specified verbosity level and test configuration.
     tests [v|vv] [comma-sep-filter-list]
@@ -31,8 +32,10 @@ The Run helps you with building, testing, plotting, installing dependencies...
                       collect latency and startup time metrics.
     monitoring
                       run grafana, influxdb and monitoring server.
-    manager [<path to manager configuration>]
-                      deploy lambda manager.
+    build [[lb], [lp], [cm], [lm]]
+                      build load balancer, lambda proxy, cluster manager and lambda manager (separately or together).
+    deploy [[lb], [cm], [lm]]
+                      deploy load balancer, cluster manager and lambda manager (separately or together).
     help              print help and exit.
     ''')
 
@@ -66,8 +69,11 @@ def parse_input_arguments(args):
     if args[0] == ScriptType.MONITORING.value:
         run_monitoring.main(args[1:])
         return
-    if args[0] == ScriptType.MANAGER.value:
-        run_manager.main(args[1:])
+    if args[0] == ScriptType.BUILD.value:
+        run_build.main(args[1:])
+        return
+    if args[0] == ScriptType.DEPLOY.value:
+        run_deploy.main(args[1:])
         return
     if args[0] == ScriptType.HELP.value:
         print_help_message()

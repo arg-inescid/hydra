@@ -13,9 +13,9 @@ public abstract class AbstractProcess {
      */
     protected long pid;
 
-    public final java.lang.ProcessBuilder build() {
+    public final ProcessBuilder build() {
         this.pid = Environment.pid();
-        return new java.lang.ProcessBuilder(this.getClass().getName(), pid, makeCommand(), callback(), outputFilename());
+        return new ProcessBuilder(this.getClass().getName(), pid, makeCommand(), callback(), outputFilename());
     }
 
     protected abstract List<String> makeCommand();

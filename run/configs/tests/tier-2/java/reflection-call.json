@@ -24,7 +24,7 @@
           "function_language": "Java",
           "function_entry_point": "com.reflection.Reflection",
           "arguments": "8080",
-          "source": "../../../../../benchmarks/language/java/reflection-call/"
+          "source": "../../../../../../benchmarks/language/java/reflection-call/"
         },
         {
           "command": "send",
@@ -37,7 +37,7 @@
               "parameters": {
                 "p1": "com.reflection.DummyClass"
               },
-              "output": "../../../../../benchmarks/results/java/reflection-call/reflection-call-1.dat"
+              "output": "../../../../../../benchmarks/results/java/reflection-call/reflection-call-1.dat"
             }
           ]
         },
@@ -52,7 +52,7 @@
               "parameters": {
                 "p1": "com.reflection.DummyClass"
               },
-              "output": "../../../../../benchmarks/results/java/reflection-call/reflection-call-2.dat"
+              "output": "../../../../../../benchmarks/results/java/reflection-call/reflection-call-2.dat"
             }
           ]
         },
@@ -67,7 +67,7 @@
               "parameters": {
                 "p1": "com.reflection.DummyClass"
               },
-              "output": "../../../../../benchmarks/results/java/reflection-call/reflection-call-3.dat"
+              "output": "../../../../../../benchmarks/results/java/reflection-call/reflection-call-3.dat"
             }
           ]
         },
@@ -82,7 +82,7 @@
               "parameters": {
                 "p1": "com.reflection.DummyClass"
               },
-              "output": "../../../../../benchmarks/results/java/reflection-call/reflection-call-4.dat"
+              "output": "../../../../../../benchmarks/results/java/reflection-call/reflection-call-4.dat"
             }
           ]
         },
@@ -97,7 +97,7 @@
               "parameters": {
                 "p1": "com.reflection.DummyClass"
               },
-              "output": "../../../../../benchmarks/results/java/reflection-call/reflection-call-5.dat"
+              "output": "../../../../../../benchmarks/results/java/reflection-call/reflection-call-5.dat"
             }
           ]
         },
@@ -113,7 +113,7 @@
                 "p1": "com.reflection.DummyClass",
                 "p2": "com.reflection.DummyClass1"
               },
-              "output": "../../../../../benchmarks/results/java/reflection-call/reflection-call-6.dat"
+              "output": "../../../../../../benchmarks/results/java/reflection-call/reflection-call-6.dat"
             }
           ]
         },
@@ -129,7 +129,7 @@
                 "p1": "com.reflection.DummyClass",
                 "p2": "com.reflection.DummyClass1"
               },
-              "output": "../../../../../benchmarks/results/java/reflection-call/reflection-call-7.dat"
+              "output": "../../../../../../benchmarks/results/java/reflection-call/reflection-call-7.dat"
             }
           ]
         }
