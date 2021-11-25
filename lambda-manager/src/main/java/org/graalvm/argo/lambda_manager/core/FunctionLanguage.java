@@ -3,7 +3,9 @@ package org.graalvm.argo.lambda_manager.core;
 import org.graalvm.argo.lambda_manager.utils.Messages;
 
 public enum FunctionLanguage {
-    JAVA("JAVA");
+    JAVA("JAVA"),
+    PYTHON("PYTHON"),
+    JAVASCRIPT("JAVASCRIPT");
 
     private final String language;
 
@@ -11,6 +13,7 @@ public enum FunctionLanguage {
         this.language = language;
     }
 
+    @Override
     public String toString() {
         return this.language;
     }

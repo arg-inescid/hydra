@@ -68,7 +68,7 @@ public class RoundedRobinScheduler implements Scheduler {
 
     private Lambda findLambda(ArrayList<Lambda> lambdas, LambdaExecutionMode targetMode) {
         for (Lambda lambda : lambdas) {
-            if (!lambda.isDecomissioned()) {
+            if (!lambda.isDecommissioned()) {
                 if (targetMode == null || lambda.getExecutionMode() == targetMode) {
                     return lambda;
                 }
@@ -120,8 +120,8 @@ public class RoundedRobinScheduler implements Scheduler {
 
         synchronized (function) {
             // We only one lambda to be decommissioned at a time.
-            if (function.getNumberDecommissedLambdas() == 0) {
-                if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT && function.getStatus() == FunctionStatus.BUILT && !lambda.isDecomissioned()) {
+            if (function.getNumberDecommissionedLambdas() == 0) {
+                if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT && function.getStatus() == FunctionStatus.BUILT && !lambda.isDecommissioned()) {
                     function.decommissionLambda(lambda);
                     Logger.log(Level.INFO, "Decommisioning (hotspot to native image) lambda " + lambda.getProcess().pid());
                 }

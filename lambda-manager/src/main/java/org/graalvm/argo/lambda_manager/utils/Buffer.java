@@ -10,7 +10,7 @@ public class Buffer {
 
     private static final int CAPACITY = 1000000;
 
-    private long[] buffer;
+    private final long[] buffer;
     private int end;
     
     private long failedOffers;

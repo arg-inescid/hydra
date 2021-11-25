@@ -43,7 +43,7 @@ public class Function {
     private final ArrayList<Lambda> runningLambdas = new ArrayList<>();
 
     /** Number of Lambdas that are not receiving requests. */
-    private int decommissedLambdas;
+    private int decommissionedLambdas;
 
     public Function(String name, String language, String entryPoint, String arguments) throws Exception {
         this.name = name;
@@ -89,18 +89,18 @@ public class Function {
         return runningLambdas;
     }
 
-	public int getNumberDecommissedLambdas() {
-		return decommissedLambdas;
+	public int getNumberDecommissionedLambdas() {
+		return decommissionedLambdas;
 	}
 
     public void decommissionLambda(Lambda lambda) {
-        decommissedLambdas++;
-        lambda.setDecomissioned(true);
+        decommissionedLambdas++;
+        lambda.setDecommissioned(true);
     }
 
     public void commissionLambda(Lambda lambda) {
-        decommissedLambdas--;
-        lambda.setDecomissioned(false);
+        decommissionedLambdas--;
+        lambda.setDecommissioned(false);
     }
 
     public int getTotalNumberLambdas() {

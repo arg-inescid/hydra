@@ -28,8 +28,8 @@ public class Lambda {
     private ConnectionTriplet<String, String, RxHttpClient> connectionTriplet;
     private LambdaExecutionMode executionMode;
 
-    /** Indicates whether or not this lambda should be used for future requests. */
-    private boolean decomissioned;
+    /** Indicates whether this lambda should be used for future requests. */
+    private boolean decommissioned;
 
     public Lambda(Function function) {
         this.function = function;
@@ -111,12 +111,12 @@ public class Lambda {
         this.executionMode = executionMode;
     }
 
-    public boolean isDecomissioned() {
-        return decomissioned;
+    public boolean isDecommissioned() {
+        return decommissioned;
     }
 
-    public void setDecomissioned(boolean decomissioned) {
-        this.decomissioned = decomissioned;
+    public void setDecommissioned(boolean decommissioned) {
+        this.decommissioned = decommissioned;
     }
 
 }

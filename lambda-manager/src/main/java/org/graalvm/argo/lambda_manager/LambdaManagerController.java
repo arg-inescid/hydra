@@ -1,10 +1,5 @@
 package org.graalvm.argo.lambda_manager;
 
-import javax.inject.Inject;
-
-import org.graalvm.argo.lambda_manager.core.LambdaManager;
-import org.graalvm.argo.lambda_manager.utils.MetricsProvider;
-
 import io.micronaut.context.BeanContext;
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.http.MediaType;
@@ -12,18 +7,23 @@ import io.micronaut.http.annotation.*;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.reactivex.Single;
+import org.graalvm.argo.lambda_manager.core.LambdaManager;
+import org.graalvm.argo.lambda_manager.utils.MetricsProvider;
+
+import javax.inject.Inject;
 
 @SuppressWarnings("unused")
 @ExecuteOn(TaskExecutors.IO)
 @Controller()
 public class LambdaManagerController {
 
-    @Inject private BeanContext beanContext;
+    @Inject
+    private BeanContext beanContext;
 
     @Post(value = "/{username}/{function_name}", consumes = MediaType.APPLICATION_JSON)
     public Single<String> processRequest(@PathVariable("username") String username,
-                    @PathVariable("function_name") String functionName,
-                    @Nullable @Body String arguments) {
+                                         @PathVariable("function_name") String functionName,
+                                         @Nullable @Body String arguments) {
         return LambdaManager.processRequest(username, functionName, arguments);
     }
 
@@ -34,18 +34,18 @@ public class LambdaManagerController {
 
     @Post(value = "/upload_function", consumes = MediaType.APPLICATION_OCTET_STREAM)
     public Single<String> uploadFunction(@QueryValue("allocate") int allocate,
-                    @QueryValue("username") String username,
-                    @QueryValue("function_name") String functionName,
-                    @QueryValue("function_language") String functionLanguage,
-                    @QueryValue("function_entry_point") String functionEntryPoint,
-                    @Nullable @QueryValue("arguments") String arguments,
-                    @Body byte[] functionCode) {
+                                         @QueryValue("username") String username,
+                                         @QueryValue("function_name") String functionName,
+                                         @QueryValue("function_language") String functionLanguage,
+                                         @QueryValue("function_entry_point") String functionEntryPoint,
+                                         @Nullable @QueryValue("arguments") String arguments,
+                                         @Body byte[] functionCode) {
         return LambdaManager.uploadFunction(allocate, username, functionName, functionLanguage, functionEntryPoint, arguments, functionCode);
     }
 
     @Post("/remove_function")
     public Single<String> removeFunction(@QueryValue("username") String username,
-                    @QueryValue("function_name") String functionName) {
+                                         @QueryValue("function_name") String functionName) {
         return LambdaManager.removeFunction(username, functionName);
     }
 
