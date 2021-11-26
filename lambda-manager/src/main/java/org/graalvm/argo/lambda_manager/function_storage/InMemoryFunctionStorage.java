@@ -18,7 +18,7 @@ public class InMemoryFunctionStorage implements FunctionStorage {
 
     @Override
     public Function register(String functionName, Function function, byte[] functionCode) throws Exception {
-        FileUtils.writeBytesToFile(new File(Paths.get(Environment.CODEBASE, functionName, functionName + ".jar").toString()), functionCode);
+        FileUtils.writeBytesToFile(new File(function.buildFunctionSourceCodePath().toString()), functionCode);
         return functions.put(function.getName(), function);
     }
 

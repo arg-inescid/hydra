@@ -62,23 +62,39 @@ Verbosity levels:
 
 ---
 
-## Run and build lambda manager
+## Build
 
 ### General
 
-The tool for running lambda manager `run_manager.py` will build all necessary proxies, build lambda manager and then run
-it.
+The tool for building components of the system (all at once or separately) sits inside `run_build.py`.
 
 ### Arguments
 
 ```commandline
-run manager manager_configuration_path
-run manager manager_directory_path manager_configuration_path
+run build
+run build comma-separate-list-components
 ```
 
-If the user is calling command with only one argument, RUN will take current directory as manager's directory. This
-command is building proxies, building lambda manager, uploading specified configuration (second argument) to lambda
-manager and run manager after all.
+Calling this command without arguments will build a load balancer, cluster manager, lambda manager, and lambda proxy all
+at once. The second argument is used for selecting only particular component of system (load balancer [lb], cluster
+manager [cm], lambda manager [lm] or lambda proxy [lp]).
+
+## Deploy
+
+### General
+
+The tool for deploying components of the system (all at once or separately) sits inside `run_deploy.py`.
+
+### Arguments
+
+```commandline
+run deploy
+run deploy comma-separate-list-components
+```
+
+Calling this command without arguments will deploy a load balancer, cluster manager, lambda manager, and lambda proxy
+all at once. The second argument is used for selecting only particular component of system (load balancer [lb], cluster
+manager [cm], lambda manager [lm] or lambda proxy [lp]).
 
 ## Testing
 
@@ -118,7 +134,7 @@ structure is provide bellow (value inside [ ] represents JSON data types):
     {
       "address": "[STRING] 1th lambda manager address?",
       "config_path": "[STRING] 1th lambda manager configuration path?",
-      "is_cluster_manager": "[BOOL] Is this manager managing a cluster?" 
+      "is_cluster_manager": "[BOOL] Is this manager managing a cluster?"
     }
   ],
   "users": [

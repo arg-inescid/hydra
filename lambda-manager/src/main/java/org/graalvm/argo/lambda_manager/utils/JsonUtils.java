@@ -1,17 +1,50 @@
 package org.graalvm.argo.lambda_manager.utils;
 
-import java.util.logging.Level;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.reactivex.Single;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 
-import io.reactivex.Single;
+import java.util.logging.Level;
 
 public class JsonUtils {
 
-    public static ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper mapper = new ObjectMapper();
+
+    public static String convertParametersIntoJsonObject(String arguments, String entryPoint, String functionName,
+                                                         String functionSourceCode, String functionLanguage) {
+        ObjectNode inputObject = mapper.createObjectNode();
+
+        if (arguments != null) {
+            inputObject.put("arguments", arguments);
+        }
+
+        if (entryPoint != null) {
+            inputObject.put("entryPoint", entryPoint);
+        }
+
+        if (functionName != null) {
+            inputObject.put("name", functionName);
+        }
+
+        if (functionSourceCode != null) {
+            inputObject.put("sourceCode", functionSourceCode);
+        }
+
+        if (functionLanguage != null) {
+            inputObject.put("language", functionLanguage);
+        }
+
+        String resultJSON = "";
+        try {
+            resultJSON = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(inputObject);
+        } catch (JsonProcessingException jsonProcessingException) {
+            Logger.log(Level.SEVERE, jsonProcessingException.getMessage(), jsonProcessingException);
+        }
+        return resultJSON;
+    }
 
     public static Single<String> constructJsonResponseObject(Object response) {
         try {

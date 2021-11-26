@@ -3,6 +3,8 @@ package org.graalvm.argo.lambda_manager.core;
 import org.graalvm.argo.lambda_manager.optimizers.FunctionStatus;
 import org.graalvm.argo.lambda_manager.processes.lambda.BuildVMM;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 
 public class Function {
@@ -50,7 +52,11 @@ public class Function {
         this.language = FunctionLanguage.fromString(language);
         this.entryPoint = entryPoint;
         this.arguments = arguments;
-        this.status = FunctionStatus.NOT_BUILT_NOT_CONFIGURED;
+        if (isTruffleLanguage()) {
+            this.status = FunctionStatus.BUILT;
+        } else {
+            this.status = FunctionStatus.NOT_BUILT_NOT_CONFIGURED;
+        }
     }
 
     public String getName() {
@@ -113,5 +119,14 @@ public class Function {
 
     public String getEntryPoint() {
         return entryPoint;
+    }
+
+
+    public boolean isTruffleLanguage() {
+        return language != FunctionLanguage.JAVA;
+    }
+
+    public Path buildFunctionSourceCodePath() {
+        return Paths.get(Environment.CODEBASE, name, name);
     }
 }

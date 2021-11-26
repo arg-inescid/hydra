@@ -123,12 +123,12 @@ public class RoundedRobinScheduler implements Scheduler {
             if (function.getNumberDecommissionedLambdas() == 0) {
                 if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT && function.getStatus() == FunctionStatus.BUILT && !lambda.isDecommissioned()) {
                     function.decommissionLambda(lambda);
-                    Logger.log(Level.INFO, "Decommisioning (hotspot to native image) lambda " + lambda.getProcess().pid());
+                    Logger.log(Level.INFO, "Decommissioning (hotspot to native image) lambda " + lambda.getProcess().pid());
                 }
 
                 if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT && lambda.getClosedRequestCount() > 1000) {
                     function.decommissionLambda(lambda);
-                    Logger.log(Level.INFO, "Decommisioning (wrapping agent) lambda " + lambda.getProcess().pid());
+                    Logger.log(Level.INFO, "Decommissioning (wrapping agent) lambda " + lambda.getProcess().pid());
                 }
             }
 		}

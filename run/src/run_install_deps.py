@@ -90,7 +90,7 @@ def setup_debian_vm():
 
 
 def setup_bridge():
-    print_message("Creating bridge...", MessageType.INFO)
+    print_message("Setup bridge...", MessageType.INFO)
 
     # Get default gateway.
     write_file(GET_DEF_GATEWAY_FILE, GET_DEF_GATEWAY_SCRIPT)
@@ -102,7 +102,7 @@ def setup_bridge():
     manager_config_file['gateway'] = "{}/{}".format(default_gateway[:-1], MASK)
     write_json_file(MANAGER_CONFIG_PATH, manager_config_file)
 
-    print_message("Creating bridge...done", MessageType.INFO)
+    print_message("Setup bridge...done", MessageType.INFO)
 
 
 # Main function.

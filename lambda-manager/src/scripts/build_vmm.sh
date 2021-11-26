@@ -34,13 +34,13 @@ if [ ! -f "$PROXY_JAR" ]; then
   exit 1
 fi
 
-FUNCTION_JAR=$FUNCTION_HOME/$FUNCTION_NAME.jar
+FUNCTION_CODE=$FUNCTION_HOME/$FUNCTION_NAME
 LAMBDA_HOME=$FUNCTION_HOME/pid_"$LAMBDA_ID"_hotspot_w_agent
 "$JAVA_HOME"/bin/native-image \
   --no-fallback \
   --features=org.graalvm.argo.lambda_proxy.engine.JavaEngineSingletonFeature \
   -H:IncludeResources="logback.xml|application.yml" \
-  -cp "$PROXY_JAR":"$FUNCTION_JAR" \
+  -cp "$PROXY_JAR":"$FUNCTION_CODE" \
   org.graalvm.argo.lambda_proxy.JavaProxy \
   "$FUNCTION_NAME" \
   -H:Virtualize="$VIRTUALIZE_PATH" \

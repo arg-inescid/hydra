@@ -23,7 +23,10 @@ public class Lambda {
     /** Number of processed requests since the lambda started. */
     private int closedRequestCount;
 
-    private String parameters;
+    /** Lambda status in the truffle pipeline. */
+    private volatile LambdaTruffleStatus truffleStatus;
+
+    private String arguments;
     private Timer timer;
     private ConnectionTriplet<String, String, RxHttpClient> connectionTriplet;
     private LambdaExecutionMode executionMode;
@@ -33,6 +36,11 @@ public class Lambda {
 
     public Lambda(Function function) {
         this.function = function;
+        if (function.isTruffleLanguage()) {
+            this.truffleStatus = LambdaTruffleStatus.NEED_REGISTRATION;
+        } else {
+            this.truffleStatus = LambdaTruffleStatus.NOT_TRUFFLE_LANG;
+        }
     }
 
     public Function getFunction() {
@@ -71,12 +79,12 @@ public class Lambda {
         return closedRequestCount;
     }
 
-    public String getParameters() {
-        return parameters;
+    public String getArguments() {
+        return arguments;
     }
 
-    public void setParameters(String parameters) {
-        this.parameters = parameters;
+    public void setArguments(String arguments) {
+        this.arguments = arguments;
     }
 
     public Timer getTimer() {
@@ -119,4 +127,11 @@ public class Lambda {
         this.decommissioned = decommissioned;
     }
 
+    public LambdaTruffleStatus getTruffleStatus() {
+        return truffleStatus;
+    }
+
+    public void setTruffleStatus(LambdaTruffleStatus truffleStatus) {
+        this.truffleStatus = truffleStatus;
+    }
 }

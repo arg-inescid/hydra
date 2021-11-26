@@ -2,11 +2,7 @@ package org.graalvm.argo.lambda_manager.optimizers;
 
 import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.core.Lambda;
-import org.graalvm.argo.lambda_manager.processes.lambda.BuildVMM;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspot;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotWithAgent;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartLambda;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartVMM;
+import org.graalvm.argo.lambda_manager.processes.lambda.*;
 
 public class DefaultFunctionOptimizer implements FunctionOptimizer {
 
@@ -26,7 +22,11 @@ public class DefaultFunctionOptimizer implements FunctionOptimizer {
                 process = new StartHotspot(lambda);
                 break;
             case BUILT:
-                process = new StartVMM(lambda);
+                if (function.isTruffleLanguage()) {
+                    process = new StartTruffle(lambda);
+                } else {
+                    process = new StartVMM(lambda);
+                }
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + function.getStatus());

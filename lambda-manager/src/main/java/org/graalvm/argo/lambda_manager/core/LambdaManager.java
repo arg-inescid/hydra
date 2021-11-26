@@ -22,7 +22,9 @@ import java.util.logging.Level;
 
 public class LambdaManager {
 
-    /** Number of times a request will be sent to a different Lambda upon timeout. */
+    /**
+     * Number of times a request will be sent to a different Lambda upon timeout.
+     */
     // TODO - This value should be configurable.
     private static final int LAMBDA_FAULT_TOLERANCE = 3;
 
@@ -41,7 +43,7 @@ public class LambdaManager {
         }
     }
 
-    public static Single<String> processRequest(String username, String functionName, String parameters) {
+    public static Single<String> processRequest(String username, String functionName, String arguments) {
         String responseString;
 
         if (!Configuration.isInitialized()) {
@@ -54,12 +56,19 @@ public class LambdaManager {
             String response = null;
             LambdaExecutionMode targetMode = null;
 
-            // TODO - We should strive to have a simple LambdaManager. This loop should be part of
-            // the scheduler?
+            // TODO - We should strive to have a simple LambdaManager. This loop should be part of the scheduler?
             for (int i = 0; i < LAMBDA_FAULT_TOLERANCE; i++) {
                 long start = System.currentTimeMillis();
                 Lambda lambda = Configuration.scheduler.schedule(function, targetMode);
-                lambda.setParameters(parameters);
+                lambda.setArguments(arguments);
+                if (function.isTruffleLanguage() && lambda.getTruffleStatus() == LambdaTruffleStatus.NEED_REGISTRATION) {
+                    synchronized (lambda) {
+                        if (lambda.getTruffleStatus() == LambdaTruffleStatus.NEED_REGISTRATION) {
+                            Configuration.client.sendRequest(lambda);
+                            lambda.setTruffleStatus(LambdaTruffleStatus.READY_FOR_EXECUTION);
+                        }
+                    }
+                }
                 response = Configuration.client.sendRequest(lambda);
                 Configuration.optimizer.registerCall(lambda);
                 Configuration.scheduler.reschedule(lambda);
@@ -69,7 +78,7 @@ public class LambdaManager {
                         function.setStatus(FunctionStatus.NOT_BUILT_NOT_CONFIGURED);
                         targetMode = LambdaExecutionMode.HOTSPOT_W_AGENT;
                     }
-                    Logger.log(Level.INFO, "Decommisioning (failed requests) lambda " + lambda.getProcess().pid());
+                    Logger.log(Level.INFO, "Decommissioning (failed requests) lambda " + lambda.getProcess().pid());
                     lambda.getFunction().decommissionLambda(lambda);
                 } else {
                     long spentTime = System.currentTimeMillis() - start;
@@ -91,23 +100,23 @@ public class LambdaManager {
     }
 
     public static Single<String> uploadFunction(int allocate,
-                    String username,
-                    String functionName,
-                    String functionLanguage,
-                    String functionEntryPoint,
-                    String arguments,
-                    byte[] functionCode) {
+                                                String username,
+                                                String functionName,
+                                                String functionLanguage,
+                                                String functionEntryPoint,
+                                                String arguments,
+                                                byte[] functionCode) {
         String responseString;
 
         if (!Configuration.isInitialized()) {
             Logger.log(Level.WARNING, Messages.NO_CONFIGURATION_UPLOADED);
-            JsonUtils.constructJsonResponseObject(Messages.NO_CONFIGURATION_UPLOADED);
+            return JsonUtils.constructJsonResponseObject(Messages.NO_CONFIGURATION_UPLOADED);
         }
 
         try {
-            String fname = Configuration.coder.encodeFunctionName(username, functionName);
-            Function function = new Function(fname, functionLanguage, functionEntryPoint, arguments);
-            Configuration.storage.register(fname, function, functionCode);
+            String encodeFunctionName = Configuration.coder.encodeFunctionName(username, functionName);
+            Function function = new Function(encodeFunctionName, functionLanguage, functionEntryPoint, arguments);
+            Configuration.storage.register(encodeFunctionName, function, functionCode);
             for (int i = 0; i < allocate; i++) {
                 function.getStoppedLambdas().add(new Lambda(function));
             }
@@ -132,8 +141,8 @@ public class LambdaManager {
         }
 
         try {
-            String fname = Configuration.coder.encodeFunctionName(username, functionName);
-            Configuration.storage.unregister(fname);
+            String encodeFunctionName = Configuration.coder.encodeFunctionName(username, functionName);
+            Configuration.storage.unregister(encodeFunctionName);
             Logger.log(Level.INFO, String.format(Messages.SUCCESS_FUNCTION_REMOVE, functionName));
             responseString = String.format(Messages.SUCCESS_FUNCTION_REMOVE, functionName);
         } catch (Throwable throwable) {
