@@ -6,7 +6,7 @@ The Lambda Manager is the core component of the GraalServerless (a.k.a. Argo) pr
 
 ## Lambda Manager API
 
-The Lambda Manager API is implemented in the [Controller](src/main/java/com/lambda_manager/LambdaManagerController.java).
+The Lambda Manager API is implemented in the [Controller](src/main/java/org/graalvm/argo/lambda_manager/LambdaManagerController.java).
 
 ---
 
@@ -50,14 +50,14 @@ For plotting purposes, we will need results from the testing phase and plotting 
 The Lambda Manager is written in Java using [Micronaut](https://guides.micronaut.io/index.html). Its main components
 are the following:
 
-- [`Coder`](src/main/java/com/lambda_manager/encoders/Coder.java) - Class for transforming username and function name to
+- [`Coder`](src/main/java/org/graalvm/argo/lambda_manager/encoders/Coder.java) - Class for transforming username and function name to
   unique name, which is then used as the key for Function Storage;
-- [`In-Memory Function Cache`](src/main/java/com/lambda_manager/function_storage/FunctionStorage.java) - Stores
+- [`In-Memory Function Cache`](src/main/java/org/graalvm/argo/cluster_manager/function_storage/FunctionStorage.java) - Stores
   meta-information about every registered function. Like ID, function name, available instances, created instances,
   active instances, opened HTTP connections;
-- [`Scheduler`](src/main/java/com/lambda_manager/schedulers/Scheduler.java) - Decides in which VM a particular function
+- [`Scheduler`](src/main/java/org/graalvm/argo/cluster_manager/schedulers/Scheduler.java) - Decides in which VM a particular function
   invocation should take place;
-- [`HTTP Client`](src/main/java/com/lambda_manager/client/LambdaManagerClient.java) - Prepares TCP connections to VMs
+- [`HTTP Client`](src/main/java/org/graalvm/argo/lambda_manager/client/LambdaManagerClient.java) - Prepares TCP connections to VMs
   executing function invocations;
-- [`Lambda Manager`](src/main/java/com/lambda_manager/core/LambdaManager.java) - Core class that handles function
+- [`Lambda Manager`](src/main/java/org/graalvm/argo/lambda_manager/core/LambdaManager.java) - Core class that handles function
   requests.
