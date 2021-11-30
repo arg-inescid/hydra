@@ -23,7 +23,13 @@ public class LambdaManagerController {
     @Post(value = "/{username}/{function_name}", consumes = MediaType.APPLICATION_JSON)
     public Single<String> processRequest(@PathVariable("username") String username,
                                          @PathVariable("function_name") String functionName,
-                                         @Nullable @Body String arguments) {
+                                         @Nullable @Body String arguments,
+                                         @Nullable @QueryValue("count") String warmupCount) {
+        if (warmupCount != null) {
+            for (int i = 0; i < Integer.valueOf(warmupCount); i++) {
+                LambdaManager.processRequest(username, functionName, arguments);
+            }
+        }
         return LambdaManager.processRequest(username, functionName, arguments);
     }
 

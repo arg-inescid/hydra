@@ -17,7 +17,7 @@ public class MetricsProvider {
 
     private static final String FOOTPRINT_METRIC = "function_footprint{user=\"%s\",function=\"%s\"} %.3f %d\n";
     private static final String SCALABILITY_METRIC = "function_scalability{user=\"%s\",function=\"%s\"} %d %d\n";
-    private static final String LATENCY_METRIC = "request_latency{user=\"%s\",function=\"%s\"} %d %d\n";
+    private static final String LATENCY_METRIC = "request_latency{user=\"%s\",function=\"%s\"} %.3f %d\n";
 
 
     public static Single<String> getFootprintAndScalability() {
