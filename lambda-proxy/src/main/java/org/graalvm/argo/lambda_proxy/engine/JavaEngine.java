@@ -1,6 +1,7 @@
 package org.graalvm.argo.lambda_proxy.engine;
 
 import static org.graalvm.argo.lambda_proxy.utils.JsonUtils.json;
+import static org.graalvm.argo.lambda_proxy.utils.JsonUtils.jsonToMap;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -23,7 +24,7 @@ public class JavaEngine implements LanguageEngine {
             setFunctionName(functionName);
         }
         // Current assumption is each JavaEngine has only one registered function.
-        return json.asString(method.invoke(null, new Object[]{json.mapFrom(arguments)}));
+        return json.asString(method.invoke(null, new Object[]{jsonToMap(arguments)}));
     }
 
     @Override
