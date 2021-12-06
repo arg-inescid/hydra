@@ -6,7 +6,7 @@ import org.graalvm.argo.lambda_proxy.runtime.HotSpotProxy;
 import org.graalvm.argo.lambda_proxy.runtime.IsolateProxy;
 import org.graalvm.argo.lambda_proxy.runtime.RuntimeProxy;
 
-public class PolyglotProxy {
+public class PolyglotProxy extends Proxy {
     private static final boolean runInIsolate = System.getProperty("java.vm.name").equals("Substrate VM");
 
     /**
@@ -18,11 +18,15 @@ public class PolyglotProxy {
      * @param args - expected args are: <timestamp> <service port>
      */
     public static void main(String[] args) {
-        if (args.length < 2) {
+        args = loadArguments(new String[] {TIMESTAMP_TAG, PORT_TAG});
+
+        if (args == null || args.length < 2) {
             System.err.println("Error invoking PolyglotProxy, expected at least two arguments (timestamp, service port).");
             System.exit(1);
         }
-        System.out.println("PolyglotProxy VMM boot time: " + (System.currentTimeMillis() - Long.parseLong(args[0])));
+
+        System.out.println("Polyglot Lambda boot time: " + (System.currentTimeMillis() - Long.parseLong(args[0])));
+
         try {
             LanguageEngine truffleEngine = new PolyglotEngine();
             int port = Integer.parseInt(args[1]);

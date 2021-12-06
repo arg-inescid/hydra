@@ -5,7 +5,7 @@ import org.graalvm.argo.lambda_proxy.runtime.HotSpotProxy;
 import org.graalvm.argo.lambda_proxy.runtime.IsolateProxy;
 import org.graalvm.argo.lambda_proxy.runtime.RuntimeProxy;
 
-public class JavaProxy {
+public class JavaProxy extends Proxy {
 
     public static final boolean runInIsolate = System.getProperty("java.vm.name").equals("Substrate VM");
 
@@ -15,11 +15,15 @@ public class JavaProxy {
      * @param args - expected args are: <timestamp> <target class name> <service port>
      */
     public static void main(String[] args) {
-        if (args.length < 3) {
+        args = loadArguments(new String[] {TIMESTAMP_TAG, ENTRY_POINT_TAG, PORT_TAG});
+
+        if (args == null || args.length < 3) {
             System.err.println("Error invoking JavaProxy, expected at least three arguments (timestamp, target classname and service port).");
             System.exit(1);
         }
-        System.out.println("VMM boot time: " + (System.currentTimeMillis() - Long.parseLong(args[0])));
+
+        System.out.println("Native Java Lambda boot time: " + (System.currentTimeMillis() - Long.parseLong(args[0])));
+
         try {
             JavaEngine javaEngine = new JavaEngine();
             JavaEngine.setFunctionName(args[1]);
