@@ -34,4 +34,4 @@ MANAGER_CONFIG_PATH = os.path.join(MANAGER_CONFIG_DIR, "default-manager.json")
 BENCHMARK_BUILD_SCRIPT = "build_script.sh"
 
 # Web UI global variables.
-WEB_UI_DIR = os.path.join(os.path.dirname(sys.argv[0]), "..", "..", "web-ui")
+WEB_UI_DIR = os.path.join(os.path.dirname(sys.argv[0]), "..", "..", "..", "web-ui")
