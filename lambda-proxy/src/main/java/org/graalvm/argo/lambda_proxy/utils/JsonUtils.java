@@ -24,8 +24,9 @@ public class JsonUtils {
      */
     public static Map<String, Object> jsonToMap(String jsonString) {
         try {
-            if (jsonString != null && jsonString.length() > 0)
+            if (jsonString != null && jsonString.length() > 0) {
                 return json.mapFrom(jsonString);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
