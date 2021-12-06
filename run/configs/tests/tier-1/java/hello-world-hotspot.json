@@ -1,9 +1,9 @@
 {
   "test": "hello-world-hotspot",
-  "entry_point": "http://localhost:9000",
+  "entry_point": "http://localhost:30009",
   "managers": [
     {
-      "address": "http://localhost:9000",
+      "address": "http://localhost:30009",
       "config_path": "../../../manager/default-manager.json",
       "is_cluster_manager": false
     }

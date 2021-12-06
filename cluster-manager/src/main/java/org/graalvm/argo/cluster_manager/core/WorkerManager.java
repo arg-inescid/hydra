@@ -8,7 +8,7 @@ import io.micronaut.http.client.RxHttpClient;
 
 public class WorkerManager {
 
-	private static final int WORKER_MANAGER_PORT = 9000;
+	private static final int WORKER_MANAGER_PORT = 30009;
 	
 	private final String address;
 	private RxHttpClient client;

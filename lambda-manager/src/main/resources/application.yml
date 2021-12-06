@@ -2,7 +2,7 @@ micronaut:
   application:
     name: lambda-manager
   server:
-    port: 9000
+    port: 30009
     maxRequestSize: 100MB
     max-request-size: 100MB
     multipart:

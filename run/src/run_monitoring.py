@@ -16,7 +16,7 @@ def do():
     print_message("Starting InfluxDB...done", MessageType.INFO)
 
     print_message("Starting WebUI...", MessageType.INFO)
-    os.system("cd {webui_dir} && ng serve &".format(webui_dir=WEB_UI_DIR))
+    os.system("cd {webui_dir} && ng serve --port 30001 --host 0.0.0.0 &".format(webui_dir=WEB_UI_DIR))
     print_message("Starting WebUI...done", MessageType.INFO)
 
 
