@@ -16,11 +16,11 @@ import com.sun.net.httpserver.HttpServer;
 public class PolyglotEngine implements LanguageEngine {
 
     @Override
-    public String invoke(String functionName, String jsonArguments) {
+    public String invoke(String functionName, String arguments) {
         if (!functionExists(functionName)) {
             return String.format("{'Error': 'Function %s does not exist!'}", functionName);
         }
-        return TruffleExecutor.invoke(functionName, jsonArguments);
+        return TruffleExecutor.invoke(functionName, arguments);
     }
 
     @Override
