@@ -20,7 +20,7 @@ MASK = "24"
 GET_DEF_GATEWAY_FILE = "get_default_gateway.sh"
 GET_DEF_GATEWAY_SCRIPT = '''
 #!/usr/bin/bash
-ip r | grep default | awk '{print $3}' | head -n 1
+ip a | grep `ip r | grep default | head -n 1 | awk '{print $5}'` | grep inet | awk '{print $2}'
 '''
 
 
