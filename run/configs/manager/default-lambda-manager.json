@@ -1,6 +1,6 @@
 {
-  "gateway": "10.0.123.179/18",
-  "maxLambdas": 100,
+  "gateway": "192.168.8.1/18",
+  "maxLambdas": 3,
   "timeout": 25000,
   "healthCheck": 50,
   "memory": "512M",

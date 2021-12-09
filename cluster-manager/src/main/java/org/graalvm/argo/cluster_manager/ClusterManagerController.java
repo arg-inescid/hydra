@@ -2,6 +2,7 @@ package org.graalvm.argo.cluster_manager;
 
 import io.micronaut.context.BeanContext;
 import io.micronaut.core.annotation.Nullable;
+import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.*;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.ExecuteOn;
@@ -10,7 +11,6 @@ import io.reactivex.Single;
 import javax.inject.Inject;
 
 import org.graalvm.argo.cluster_manager.utils.JsonUtils;
-
 import static io.micronaut.http.MediaType.APPLICATION_JSON;
 import static io.micronaut.http.MediaType.APPLICATION_OCTET_STREAM;
 
@@ -21,11 +21,12 @@ public class ClusterManagerController {
 
     @Inject private BeanContext beanContext;
 
-    @Get("/{username}/{function_name}")
+    @Post(value = "/{username}/{function_name}", consumes = MediaType.APPLICATION_JSON)
     public Single<String> processRequest(@PathVariable("username") String username,
-                    @PathVariable("function_name") String functionName,
-                    @Nullable @QueryValue("parameters") String parameters) {
-        return JsonUtils.constructJsonResponseObject(ClusterManager.processRequest(username, functionName, parameters, beanContext));
+                                         @PathVariable("function_name") String functionName,
+                                         @Nullable @Body String arguments,
+                                         @Nullable @QueryValue("count") String warmupCount) {
+        return JsonUtils.constructJsonResponseObject(ClusterManager.processRequest(username, functionName, arguments, warmupCount, beanContext));
     }
 
     @Post(value = "/upload_function", consumes = APPLICATION_OCTET_STREAM)

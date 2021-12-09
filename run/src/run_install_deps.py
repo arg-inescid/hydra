@@ -97,7 +97,7 @@ def setup_bridge():
     default_gateway = run("bash {file}".format(file=GET_DEF_GATEWAY_FILE))
     remove_file(GET_DEF_GATEWAY_FILE)
 
-    # Add gateway address in configs/manager/default-manager.json.
+    # Add gateway address in configs/manager/default-lambda-manager.json.
     manager_config_file = read_json_file(MANAGER_CONFIG_PATH)
     manager_config_file['gateway'] = "{}/{}".format(default_gateway[:-1], MASK)
     write_json_file(MANAGER_CONFIG_PATH, manager_config_file)

@@ -1,11 +1,16 @@
 {
   "test": "hello-world",
-  "entry_point": "http://localhost:30009",
+  "entry_point": "http://localhost:9001",
   "managers": [
     {
+      "address": "http://localhost:9001",
+      "config_path": "../../../manager/default-cluster-manager.json",
+      "register_in_load_balancer": false
+    },
+    {
       "address": "http://localhost:30009",
-      "config_path": "../../../manager/default-manager.json",
-      "is_cluster_manager": false
+      "config_path": "../../../manager/default-lambda-manager.json",
+      "register_in_load_balancer": false
     }
   ],
   "users": [

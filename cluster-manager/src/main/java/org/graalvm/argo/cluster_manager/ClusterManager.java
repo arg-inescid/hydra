@@ -15,7 +15,7 @@ import io.micronaut.http.MutableHttpRequest;
 import io.micronaut.http.client.RxHttpClient;
 
 public class ClusterManager {
-	
+
 	private static final int WORKER_ATTEMPTS = 5;
 
 	public static Set<WorkerManager> workers = new HashSet<>();
@@ -36,20 +36,18 @@ public class ClusterManager {
         return errorMessage;
 	}
 
-	public static String processRequest(String username, String functionName, String parameters, BeanContext beanContext) {
+	public static String processRequest(String username, String functionName, String arguments, String warmupCount, BeanContext beanContext) {
         if (!Configuration.isInitialized()) {
             System.err.println(Messages.NO_CONFIGURATION_UPLOADED);
             return Messages.NO_CONFIGURATION_UPLOADED;
         }
-        
+
         try {
 			WorkerManager worker = Configuration.scheduler.schedule(username, functionName);
-			MutableHttpRequest<?> request = HttpRequest.GET(String.format("/%s/%s", username, functionName));
+			MutableHttpRequest<?> request = HttpRequest.POST(String.format("/%s/%s", username, functionName), arguments == null ? "" : arguments);
 			MutableHttpParameters requestParameters = request.getParameters();
-			requestParameters.add("username", username);
-			requestParameters.add("function_name", functionName);
-			if (parameters != null) {
-				requestParameters.add("parameters", parameters);
+			if (warmupCount != null) {
+				requestParameters.add("count", warmupCount);
 			}
 			return ClusterManager.sendRequest(worker.getClient(beanContext), request, String.format(Messages.INTERNAL_ERROR, functionName));
 		} catch (Exception e) {
@@ -62,7 +60,7 @@ public class ClusterManager {
             System.err.println(Messages.NO_CONFIGURATION_UPLOADED);
             return Messages.NO_CONFIGURATION_UPLOADED;
         }
-        
+
         try {
 			Configuration.storage.register(allocate, username, functionName, functionLanguage, functionEntryPoint, arguments, functionCode, beanContext);
 			return String.format(Messages.SUCCESS_FUNCTION_UPLOAD, functionName);
@@ -71,13 +69,13 @@ public class ClusterManager {
             return Messages.INTERNAL_ERROR;
 		}
 	}
-    
+
 	public static String removeFunction(String username, String functionName, BeanContext beanContext) {
         if (!Configuration.isInitialized()) {
             System.err.println(Messages.NO_CONFIGURATION_UPLOADED);
             return Messages.NO_CONFIGURATION_UPLOADED;
         }
-        
+
         try {
 			Configuration.storage.unregister(username, functionName, beanContext);
 			return String.format(Messages.SUCCESS_FUNCTION_REMOVE, functionName);
@@ -86,7 +84,7 @@ public class ClusterManager {
             return Messages.INTERNAL_ERROR;
 		}
 	}
-	
+
 	public static String configureManager(String managerConfiguration, BeanContext beanContext) {
         String responseString;
         try {
@@ -103,5 +101,5 @@ public class ClusterManager {
         }
         return responseString;
 	}
-    
+
 }

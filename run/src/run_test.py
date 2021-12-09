@@ -58,8 +58,7 @@ def configure_managers(test_config_dir, managers):
 
 def register_managers(load_balancer, managers):
     for manager in managers:
-        if not manager['is_cluster_manager']:
-            # We don't want to register lambda manager in load balancer.
+        if not manager['register_in_load_balancer']:
             continue
         print_message(GENERAL_INFO, "Response: " +
                       requests.post("{load_balancer}/register_manager?upstream=manager_cluster&add=&server={manager}"
@@ -212,8 +211,7 @@ def create_user(test_config_dir, user_info, manager):
 
 def unregister_managers(load_balancer, managers):
     for manager in managers:
-        if not manager['is_cluster_manager']:
-            # We don't want to make a call for unregistration if its not a cluster manager.
+        if not manager['register_in_load_balancer']:
             continue
         print_message(GENERAL_INFO, "Response: " +
                       requests.post("{load_balancer}/register_manager?upstream=manager_cluster&remove=&server={manager}"

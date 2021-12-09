@@ -5,7 +5,7 @@
 Before each operation with the lambda manager, we need to specify the manager's behavior using this configuration. The
 proper description of each field in this configuration is provided below.
 
-Default value for each variable rest inside configs/manager/default-manager.json.
+Default value for each variable rest inside configs/manager/default-lambda-manager.json.
 
 ```json
 {
@@ -134,7 +134,7 @@ structure is provide bellow (value inside [ ] represents JSON data types):
     {
       "address": "[STRING] 1th lambda manager address?",
       "config_path": "[STRING] 1th lambda manager configuration path?",
-      "is_cluster_manager": "[BOOL] Is this manager managing a cluster?"
+      "register_in_load_balancer": "[BOOL] Should we register this manager into load balancer?"
     }
   ],
   "users": [
