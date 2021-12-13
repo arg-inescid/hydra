@@ -26,7 +26,7 @@ public class PolyglotProxy {
         try {
             LanguageEngine truffleEngine = new PolyglotEngine();
             int port = Integer.parseInt(args[1]);
-            RuntimeProxy proxy = runInIsolate ? new IsolateProxy(port, truffleEngine, true) : new HotSpotProxy(port, truffleEngine, false);
+            RuntimeProxy proxy = runInIsolate ? new IsolateProxy(port, truffleEngine, false) : new HotSpotProxy(port, truffleEngine, false);
             proxy.start();
         } catch (Exception e) {
             e.printStackTrace();
