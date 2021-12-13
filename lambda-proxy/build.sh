@@ -16,20 +16,20 @@ cd "$DIR" || {
 }
 
 if [[ -z "$FLAG" || "$FLAG" = "--java" ]]; then
-    echo -e "${GREEN}Building lambda proxy...${NC}"
+    echo -e "${GREEN}Building java lambda proxy...${NC}"
     ./gradlew clean shadowJar
-    echo -e "${GREEN}Building lambda proxy...done${NC}"
+    echo -e "${GREEN}Building java lambda proxy...done${NC}"
 fi
 
-if [[ -z "$FLAG" || "$FLAG" = "--truffle" ]]; then
-    echo -e "${GREEN}Building truffle engine...${NC}"
+if [[ -z "$FLAG" || "$FLAG" = "--polyglot" ]]; then
+    echo -e "${GREEN}Building polyglot lambda proxy...${NC}"
 
     cd "$TRUFFLE_HOME" || {
       echo "Redirection failed!"
       exit 1
     }
 
-    $JAVA_HOME/bin/native-image \
+    sudo $JAVA_HOME/bin/native-image \
       --no-fallback \
       --language:js \
       --language:python \
@@ -41,5 +41,5 @@ if [[ -z "$FLAG" || "$FLAG" = "--truffle" ]]; then
       -H:+ReportExceptionStackTraces \
       -H:ConfigurationFileDirectories=$TRUFFLE_HOME/META-INF/native-image/
 
-    echo -e "${GREEN}Building truffle engine...done${NC}"
+    echo -e "${GREEN}Building polyglot lambda proxy...done${NC}"
 fi

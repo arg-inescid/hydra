@@ -21,11 +21,11 @@ def build_lambda_proxy():
     print_message("Building lambda proxy...done", MessageType.INFO)
 
 
-def build_truffle_engine():
-    print_message("Building truffle engine...", MessageType.INFO)
-    os.system("bash {lambda_proxy_build_script} --truffle".format(
+def build_polyglot_proxy():
+    print_message("Building polyglot lambda proxy...", MessageType.INFO)
+    os.system("bash {lambda_proxy_build_script} --polyglot".format(
         lambda_proxy_build_script=os.path.join(PROXY_DIR, BUILD_SCRIPT)))
-    print_message("Building truffle engine...done", MessageType.INFO)
+    print_message("Building polyglot lambda proxy...done", MessageType.INFO)
 
 
 def build_cluster_manager():
@@ -49,8 +49,8 @@ def do(filter_list):
         build_load_balancer()
     if "lp" in filter_set or "lp-java" in filter_set or filter_list_empty:
         build_lambda_proxy()
-    if "lp" in filter_set or "lp-truffle" in filter_set or filter_list_empty:
-        build_truffle_engine()
+    if "lp" in filter_set or "lp-polyglot" in filter_set or filter_list_empty:
+        build_polyglot_proxy()
     if "cm" in filter_set or filter_list_empty:
         build_cluster_manager()
     if "lm" in filter_set or filter_list_empty:
