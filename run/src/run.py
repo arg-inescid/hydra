@@ -20,21 +20,21 @@ Argo's command-line tool.
 
 The Run helps you with building, testing, plotting, installing dependencies...
 
-    test [v|vv] <path to test configuration>
+    test [ v | vv ] <path to test configuration>
                       allow you to run test with specified verbosity level and test configuration.
-    tests [v|vv] [comma-sep-filter-list]
+    tests [ v | vv ] [ <comma-sep-filter-list> ]
                       allow you to run all tests for specific tiers and languages with selected verbosity.
-    plot [v|vv] <path to plot configuration>
+    plot [ v | vv ] <path to plot configuration>
                       create plots based on configuration with given verbosity.
-    install-deps [v|vv]
+    install-deps [ v | vv ]
                       install all necessary dependencies.
     measurements <path to measurements configuration>
                       collect latency and startup time metrics.
     monitoring
                       run grafana, influxdb and monitoring server.
-    build [[lb], [lp], [cm], [lm]]
+    build [ lb ] | [ lp | lp-java | lp-truffle ] | [ cm ] | [ lm ]
                       build load balancer, lambda proxy, cluster manager and lambda manager (separately or together).
-    deploy [[lb], [cm], [lm]]
+    deploy [ lb ] | [ cm ] | [ lm ]
                       deploy load balancer, cluster manager and lambda manager (separately or together).
     help              print help and exit.
     ''')
