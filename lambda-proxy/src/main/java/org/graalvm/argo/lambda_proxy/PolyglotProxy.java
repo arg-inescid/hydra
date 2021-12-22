@@ -18,7 +18,7 @@ public class PolyglotProxy extends Proxy {
      * @param args - expected args are: <timestamp> <service port>
      */
     public static void main(String[] args) {
-        args = loadArguments(new String[] {TIMESTAMP_TAG, PORT_TAG});
+        args = loadArguments(new String[]{TIMESTAMP_TAG, PORT_TAG});
 
         if (args == null || args.length < 2) {
             System.err.println("Error invoking PolyglotProxy, expected at least two arguments (timestamp, service port).");
