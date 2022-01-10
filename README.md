@@ -2,6 +2,9 @@
 
 This project aims at proposing a design and implementation of a high performance Serverless platform, empowered by technology developed by the GraalVM team. The idea is that combining the concepts of Native Image, Isolate, and Truffle, we colocate function invocations at a massive scale, resulting in both latency and memory footprint reductions compared to traditional Serverless platforms.
 
+#### Supported platforms
+The project is under development and it's supported only on Debian distribution (tested on Ubuntu 20.04.3 and Debian 10).
+
 #### Build and Deploy
 
 Argo can be easily launched locally for test and development purposes using the instructions in the [lambda-manager's](lambda-manager/README.md) page.
