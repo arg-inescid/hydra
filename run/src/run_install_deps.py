@@ -11,6 +11,7 @@ from run_globals import MAX_VERBOSITY_LVL, MANAGER_CONFIG_PATH, SETUP_DB_VM_LOC,
 # Global variables.
 VERBOSITY_LVL = 0
 
+SETUP_DB_VM_TMP = "setup_debian_vm_tmp.sh"
 SETUP_SCRIPT = '''#!/usr/bin/bash
 cd {location}
 bash {file}
@@ -77,9 +78,9 @@ def download_resources():
 
 def setup_debian_vm():
     print_message("Setup debian vm...", MessageType.INFO)
-    write_file(SETUP_DB_VM_FILE, SETUP_SCRIPT.format(location=SETUP_DB_VM_LOC, file=SETUP_DB_VM_FILE))
-    run("bash {script}".format(script=SETUP_DB_VM_FILE))
-    remove_file(SETUP_DB_VM_FILE)
+    write_file(SETUP_DB_VM_TMP, SETUP_SCRIPT.format(location=SETUP_DB_VM_LOC, file=SETUP_DB_VM_FILE))
+    os.system("bash {script}".format(script=SETUP_DB_VM_TMP))
+    remove_file(SETUP_DB_VM_TMP)
     print_message("Setup debian vm...done", MessageType.INFO)
 
 

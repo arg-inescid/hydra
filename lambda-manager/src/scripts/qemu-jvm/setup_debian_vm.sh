@@ -27,7 +27,7 @@ mkfs.ext4 -F stretch.img
 sudo mkdir -p /mnt/stretch
 sudo mount -o loop stretch.img /mnt/stretch
 sudo cp -a stretch/. /mnt/stretch/.
-sudo cp -a "$JAVA_HOME" /mnt/stretch/
+sudo cp -a "$JAVA_HOME" /mnt/stretch/graalvm
 sudo cp $DIR/startup.sh /mnt/stretch/
 sudo cp $DIR/rc.local /mnt/stretch/etc/
 sudo umount /mnt/stretch

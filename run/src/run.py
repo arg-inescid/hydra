@@ -45,7 +45,7 @@ def print_error_message():
 
 
 def cancel_execution_handler(sig, frame):
-    print_message("Execution was interrupted!", MessageType.ERROR)
+    print_message("Execution was interrupted with signal {} at frame {}!".format(sig, frame), MessageType.ERROR)
     remove_leftover_tmp_files()
     os._exit(2)
 
