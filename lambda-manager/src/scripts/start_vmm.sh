@@ -14,5 +14,5 @@ LAMBDA_HOME=$FUNCTION_HOME/pid_"$LAMBDA_ID"_vmm
 prepare_vmm_lambda_directory "$BUILD_OUTPUT_HOME" "$LAMBDA_HOME"
 
 bash "$LAMBDA_HOME"/"${FUNCTION_NAME}"_unikernel.sh --memory "$LAMBDA_MEMORY" --ip "$LAMBDA_IP" --tap "$LAMBDA_TAP" \
-  --gateway "$LAMBDA_GATEWAY" --mask "$LAMBDA_MASK" "$LAMBDA_CONSOLE" "${@:9}"
+  --gateway "$LAMBDA_GATEWAY" --mask "$LAMBDA_MASK" "$LAMBDA_CONSOLE" --no-karg-patch "${@:9}"
 # TODO - write pid and ip to disk (see start_hotspot.sh)

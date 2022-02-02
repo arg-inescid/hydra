@@ -49,8 +49,9 @@ public class StartHotspotWithAgent extends StartLambda {
             command.add("--noconsole");
         }
         command.add(String.valueOf(lambda.getFunction().getLastAgentPID()));
-        command.add(String.valueOf(System.currentTimeMillis()));
-        command.add(lambda.getFunction().getEntryPoint());
+        command.add(TIMESTAMP_TAG + System.currentTimeMillis());
+        command.add(ENTRY_POINT_TAG + lambda.getFunction().getEntryPoint());
+        command.add(PORT_TAG + Configuration.argumentStorage.getLambdaPort());
         if (lambda.getFunction().getArguments() != null) {
             Collections.addAll(command, lambda.getFunction().getArguments().split(","));
         }
