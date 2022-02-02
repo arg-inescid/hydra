@@ -29,7 +29,7 @@ if [[ -z "$FLAG" || "$FLAG" = "--polyglot" ]]; then
       exit 1
     }
 
-    sudo $JAVA_HOME/bin/native-image \
+    $JAVA_HOME/bin/native-image \
       --no-fallback \
       --language:js \
       --language:python \
