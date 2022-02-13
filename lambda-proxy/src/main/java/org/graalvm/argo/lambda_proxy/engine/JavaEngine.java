@@ -1,5 +1,7 @@
 package org.graalvm.argo.lambda_proxy.engine;
 
+import static org.graalvm.argo.lambda_proxy.utils.IsolateUtils.copyString;
+import static org.graalvm.argo.lambda_proxy.utils.IsolateUtils.retrieveString;
 import static org.graalvm.argo.lambda_proxy.utils.JsonUtils.json;
 import static org.graalvm.argo.lambda_proxy.utils.JsonUtils.jsonToMap;
 
@@ -9,6 +11,11 @@ import java.lang.reflect.Method;
 import java.util.Map;
 
 import org.graalvm.argo.lambda_proxy.base.IsolateObjectWrapper;
+import org.graalvm.argo.lambda_proxy.runtime.IsolateProxy;
+import org.graalvm.nativeimage.CurrentIsolate;
+import org.graalvm.nativeimage.Isolate;
+import org.graalvm.nativeimage.IsolateThread;
+import org.graalvm.nativeimage.Isolates;
 
 public class JavaEngine implements LanguageEngine {
     private static Method method;
@@ -28,8 +35,21 @@ public class JavaEngine implements LanguageEngine {
     }
 
     @Override
-    public void cleanUp(IsolateObjectWrapper isolateObjectWrapper) {
+    public IsolateObjectWrapper createIsolate(String functionName) {
+        // create a new isolate and setup configurations in that isolate.
+        IsolateThread isolateThread = Isolates.createIsolate(Isolates.CreateIsolateParameters.getDefault());
+        Isolate isolate = Isolates.getIsolate(isolateThread);
+        return new IsolateObjectWrapper(isolate, isolateThread);
+    }
 
+    @Override
+    public String invoke(IsolateObjectWrapper workingIsolate, String functionName, String jsonArguments)
+                    throws IOException, ClassNotFoundException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        IsolateThread workingThread = workingIsolate.getIsolateThread();
+        return retrieveString(IsolateProxy.invoke(workingThread,
+                        CurrentIsolate.getCurrentThread(),
+                        copyString(workingThread, functionName),
+                        copyString(workingThread, jsonArguments)));
     }
 
 }

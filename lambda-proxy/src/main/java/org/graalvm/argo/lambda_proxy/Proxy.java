@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 
 public abstract class Proxy {
 
+    public static final boolean runInIsolate = System.getProperty("java.vm.name").equals("Substrate VM");
     protected static String TIMESTAMP_TAG = "lambda_timestamp=";
     protected static String ENTRY_POINT_TAG = "lambda_entry_point=";
     protected static String PORT_TAG = "lambda_port=";

@@ -2,7 +2,8 @@ package org.graalvm.argo.lambda_proxy.base;
 
 public enum PolyglotLanguage {
     JAVASCRIPT("js"),
-    PYTHON("python");
+    PYTHON("python"),
+    JAVA("java");
 
     private final String language;
 

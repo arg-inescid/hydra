@@ -19,7 +19,7 @@ public class PolyglotProxy extends Proxy {
      */
     public static void main(String[] args) {
         args = loadArguments(new String[]{TIMESTAMP_TAG, PORT_TAG});
-
+        args = new String[]{"0", "8080"};
         if (args == null || args.length < 2) {
             System.err.println("Error invoking PolyglotProxy, expected at least two arguments (timestamp, service port).");
             System.exit(1);

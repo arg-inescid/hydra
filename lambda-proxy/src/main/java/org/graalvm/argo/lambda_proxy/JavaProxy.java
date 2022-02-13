@@ -7,8 +7,6 @@ import org.graalvm.argo.lambda_proxy.runtime.RuntimeProxy;
 
 public class JavaProxy extends Proxy {
 
-    public static final boolean runInIsolate = System.getProperty("java.vm.name").equals("Substrate VM");
-
     /**
      * Entry point of proxies for native java application
      * 
