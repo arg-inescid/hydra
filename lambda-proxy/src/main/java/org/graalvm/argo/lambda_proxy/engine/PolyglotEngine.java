@@ -26,6 +26,7 @@ import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.proxy.ProxyObject;
 
+import com.oracle.svm.graalvisor.types.GuestIsolateThread;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -44,29 +45,23 @@ public class PolyglotEngine implements LanguageEngine {
         functionTable.put(retrieveString(functionName), new PolyglotFunction(retrieveString(functionName), retrieveString(entryPoint), retrieveString(language), retrieveString(sourceCode)));
     }
 
-    public static boolean deregister(String functionName) throws IOException {
-        if (!functionTable.containsKey(functionName))
-            return false;
-        // functionTable.get(functionName).graalVisorAPI.close();
-        functionTable.remove(functionName);
-        return true;
-    }
-
     @Override
     public String invoke(String functionName, String arguments) {
         PolyglotFunction guestFunction = functionTable.get(functionName);
+        String resultString = "";
         if (guestFunction == null) {
             return String.format("{'Error': 'Function %s not registered!'}", functionName);
         } else if (guestFunction.getLanguage().equals(PolyglotLanguage.JAVA)) {
             // call .so to create the isolate
+            GuestIsolateThread guestThread = guestFunction.getGraalVisorAPI().createIsolate();
+            resultString = guestFunction.getGraalVisorAPI().invokeFunction(guestThread, guestFunction.getEntryPoint(), arguments);
+            guestFunction.getGraalVisorAPI().tearDownIsolate(guestThread);
         } else {
-            String resultString = "";
             String language = guestFunction.getLanguage().toString();
             String entryPoint = guestFunction.getEntryPoint();
             String sourceCode = guestFunction.getSource();
             try (Context context = Context.newBuilder().allowAllAccess(true).build()) {
                 ProxyObject args = ProxyObject.fromMap(jsonToMap(arguments));
-
                 try {
                     // evaluate source script
                     context.eval(language, sourceCode);
@@ -80,9 +75,8 @@ public class PolyglotEngine implements LanguageEngine {
                     resultString = e.getMessage();
                 }
             }
-            return resultString;
         }
-        return "";
+        return resultString;
     }
 
     @Override
@@ -92,12 +86,12 @@ public class PolyglotEngine implements LanguageEngine {
         if (guestFunction == null) {
             return String.format("{'Error': 'Function %s not registered!'}", functionName);
         } else if (guestFunction.getLanguage().equals(PolyglotLanguage.JAVA)) {
-            // invoke function using GraalVisorAPI
+            GuestIsolateThread guestThread = (GuestIsolateThread) workingIsolate.getIsolateThread();
+            return guestFunction.getGraalVisorAPI().invokeFunction(guestThread, guestFunction.getEntryPoint(), jsonArguments);
         } else {
             IsolateThread workingThread = workingIsolate.getIsolateThread();
             return retrieveString(IsolateProxy.invoke(workingThread, CurrentIsolate.getCurrentThread(), copyString(workingThread, functionName), copyString(workingThread, jsonArguments)));
         }
-        return "{}";
     }
 
     @Override
@@ -106,7 +100,8 @@ public class PolyglotEngine implements LanguageEngine {
         if (polyglotFunction == null)
             return null;
         else if (polyglotFunction.getLanguage().equals(PolyglotLanguage.JAVA)) {
-            // call .so to create the isolate
+            GuestIsolateThread guestThread = polyglotFunction.getGraalVisorAPI().createIsolate();
+            return new IsolateObjectWrapper(Isolates.getIsolate(guestThread), guestThread);
         } else {
             // create a new isolate and setup configurations in that isolate.
             IsolateThread isolateThread = Isolates.createIsolate(Isolates.CreateIsolateParameters.getDefault());
@@ -119,16 +114,13 @@ public class PolyglotEngine implements LanguageEngine {
                             copyString(isolateThread, polyglotFunction.getSource()));
             return new IsolateObjectWrapper(isolate, isolateThread);
         }
-        return null;
     }
 
     @Override
     public void tearDownIsolate(String functionName, IsolateObjectWrapper workingIsolate) {
-        if (functionName == null || workingIsolate == null || !functionTable.containsKey(functionName)) {
-            return;
-        } else {
+        if (functionName != null && workingIsolate != null && functionTable.containsKey(functionName)) {
             if (functionTable.get(functionName).getLanguage().equals(PolyglotLanguage.JAVA)) {
-                // use .so to tear down
+                functionTable.get(functionName).getGraalVisorAPI().tearDownIsolate((GuestIsolateThread) workingIsolate.getIsolateThread());
             } else {
                 Isolates.tearDownIsolate(workingIsolate.getIsolateThread());
             }
@@ -164,7 +156,7 @@ public class PolyglotEngine implements LanguageEngine {
             }
             System.out.println("File written");
             if (functionLanguage.equalsIgnoreCase("java")) {
-
+                functionTable.put(functionName, new PolyglotFunction(functionName, functionEntryPoint, functionLanguage, ""));
             } else {
                 try {
                     String sourceCode = Files.readString(Path.of(functionName));
@@ -189,7 +181,7 @@ public class PolyglotEngine implements LanguageEngine {
                     return;
                 } else {
                     if (functionTable.get(functionName).getLanguage().equals(PolyglotLanguage.JAVA)) {
-
+                        functionTable.get(functionName).getGraalVisorAPI().close();
                     }
                     functionTable.remove(functionName);
                 }
