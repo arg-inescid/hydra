@@ -1,0 +1,45 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
+plugins {
+    id 'java'
+    id "com.github.johnrengelman.shadow" version "7.1.0"
+}
+
+group 'com.oracle.svm.graalvisor'
+version '1.0'
+
+repositories {
+    mavenCentral()
+}
+
+shadowJar() {
+    minimize()
+    shadowJar.archiveFileName = rootProject.name + '-1.0-all' + '.jar'
+}
+
+task guestLib(type: ShadowJar) {
+    from sourceSets.main.output
+    minimize()
+    exclude "com/oracle/svm/graalvisor/GraalVisorImpl*"
+    exclude "com/oracle/svm/graalvisor/api/*"
+    guestLib.archiveFileName = rootProject.name + '-1.0-guest' + '.jar'
+}
+
+task hostLib(type: ShadowJar) {
+    from sourceSets.main.output
+    minimize()
+    exclude "com/oracle/svm/graalvisor/utils/file/*"
+    exclude "com/oracle/svm/graalvisor/guestapi*"
+    hostLib.archiveFileName = rootProject.name + '-1.0-host' + '.jar'
+}
+
+
+dependencies {
+    implementation 'org.graalvm.sdk:graal-sdk:22.0.0'
+    implementation 'com.fasterxml.jackson.jr:jackson-jr-objects:2.13.0-rc2'
+    compileOnly group: 'org.graalvm.nativeimage', name: 'svm', version: '22.0.0'
+}
+
+test {
+    useJUnitPlatform()
+}
