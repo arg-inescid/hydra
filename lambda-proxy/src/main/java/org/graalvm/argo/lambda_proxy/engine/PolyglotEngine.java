@@ -151,18 +151,25 @@ public class PolyglotEngine implements LanguageEngine {
             String functionEntryPoint = metaData.get("entryPoint");
             String functionLanguage = metaData.get("language");
             byte[] functionCode = t.getRequestBody().readAllBytes();
-            try (FileOutputStream fileOutputStream = new FileOutputStream(functionName)) {
-                fileOutputStream.write(functionCode);
-            }
-            System.out.println("File written");
             if (functionLanguage.equalsIgnoreCase("java")) {
+                try (FileOutputStream fileOutputStream = new FileOutputStream(functionName)) {
+                    fileOutputStream.write(functionCode);
+                }
+                System.out.println("File written");
                 functionTable.put(functionName, new PolyglotFunction(functionName, functionEntryPoint, functionLanguage, ""));
+                // remove local dynamically-linked Library file
+                try {
+                    Files.deleteIfExists(Path.of(functionName));
+                } catch (IOException e) {
+                    System.err.println(String.format("Error: Dynamically-linked File %s not found!", functionName));
+                    e.printStackTrace();
+                }
             } else {
                 try {
-                    String sourceCode = Files.readString(Path.of(functionName));
+                    String sourceCode = String.valueOf(functionCode);
                     System.out.println(functionName + functionEntryPoint + functionLanguage + sourceCode);
                     functionTable.put(functionName, new PolyglotFunction(functionName, functionEntryPoint, functionLanguage, sourceCode));
-                } catch (IOException | IllegalArgumentException e) {
+                } catch (IllegalArgumentException e) {
                     e.printStackTrace();
                 }
             }
