@@ -1,5 +1,7 @@
 package org.graalvm.argo.lambda_proxy;
 
+import java.io.File;
+
 import org.graalvm.argo.lambda_proxy.engine.LanguageEngine;
 import org.graalvm.argo.lambda_proxy.engine.PolyglotEngine;
 import org.graalvm.argo.lambda_proxy.runtime.HotSpotProxy;
@@ -7,6 +9,7 @@ import org.graalvm.argo.lambda_proxy.runtime.IsolateProxy;
 import org.graalvm.argo.lambda_proxy.runtime.RuntimeProxy;
 
 public class PolyglotProxy extends Proxy {
+    public static final String APP_DIR = "./apps/";
     private static final boolean runInIsolate = System.getProperty("java.vm.name").equals("Substrate VM");
 
     /**
@@ -19,14 +22,13 @@ public class PolyglotProxy extends Proxy {
      */
     public static void main(String[] args) {
         args = loadArguments(new String[]{TIMESTAMP_TAG, PORT_TAG});
-        args = new String[]{"0", "8080"};
+        new File(APP_DIR).mkdirs();
         if (args == null || args.length < 2) {
             System.err.println("Error invoking PolyglotProxy, expected at least two arguments (timestamp, service port).");
             System.exit(1);
         }
 
         System.out.println("Polyglot Lambda boot time: " + (System.currentTimeMillis() - Long.parseLong(args[0])));
-
         try {
             LanguageEngine truffleEngine = new PolyglotEngine();
             int port = Integer.parseInt(args[1]);

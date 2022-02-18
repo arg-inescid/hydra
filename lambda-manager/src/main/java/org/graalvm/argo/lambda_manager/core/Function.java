@@ -123,7 +123,7 @@ public class Function {
 
 
     public boolean isTruffleLanguage() {
-        return language != FunctionLanguage.JAVA;
+        return language != FunctionLanguage.NATIVE_JAVA;
     }
 
     public Path buildFunctionSourceCodePath() {

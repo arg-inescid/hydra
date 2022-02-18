@@ -1,16 +1,18 @@
 package org.graalvm.argo.lambda_proxy.engine;
 
+import static org.graalvm.argo.lambda_proxy.PolyglotProxy.APP_DIR;
 import static org.graalvm.argo.lambda_proxy.utils.IsolateUtils.copyString;
 import static org.graalvm.argo.lambda_proxy.utils.IsolateUtils.retrieveString;
 import static org.graalvm.argo.lambda_proxy.utils.JsonUtils.jsonToMap;
 import static org.graalvm.argo.lambda_proxy.utils.JsonUtils.valueToJson;
 import static org.graalvm.argo.lambda_proxy.utils.ProxyUtils.*;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -136,6 +138,8 @@ public class PolyglotEngine implements LanguageEngine {
     private static class RegisterHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange t) throws IOException {
+
+            long start = System.currentTimeMillis();
             String[] params = t.getRequestURI().getQuery().split("&");
             Map<String, String> metaData = new HashMap<>();
             for (String param : params) {
@@ -144,36 +148,45 @@ public class PolyglotEngine implements LanguageEngine {
             }
             // //check
             String functionName = metaData.get("name");
+            String soFileName = APP_DIR + functionName;
             if (functionTable.containsKey(functionName)) {
                 errorResponse(t, String.format("Function %s has been registered!", functionName));
                 return;
             }
             String functionEntryPoint = metaData.get("entryPoint");
             String functionLanguage = metaData.get("language");
-            byte[] functionCode = t.getRequestBody().readAllBytes();
+            System.out.println("Inside registration");
+            InputStream sourceInputStream = new BufferedInputStream(t.getRequestBody(), 4096);
             if (functionLanguage.equalsIgnoreCase("java")) {
-                try (FileOutputStream fileOutputStream = new FileOutputStream(functionName)) {
-                    fileOutputStream.write(functionCode);
+                System.out.println("File writing");
+                try (FileOutputStream fileOutputStream = new FileOutputStream(soFileName)) {
+                    sourceInputStream.transferTo(fileOutputStream);
+                }
+                for (String dir : new String[]{"/", "/dev"}) {
+                    File directoryPath = new File(dir);
+                    // List of all files and directories
+                    String[] contents = directoryPath.list();
+                    System.out.println(dir + " " + Arrays.toString(contents));
                 }
                 System.out.println("File written");
                 functionTable.put(functionName, new PolyglotFunction(functionName, functionEntryPoint, functionLanguage, ""));
                 // remove local dynamically-linked Library file
                 try {
-                    Files.deleteIfExists(Path.of(functionName));
+                    Files.deleteIfExists(Path.of(soFileName));
                 } catch (IOException e) {
-                    System.err.println(String.format("Error: Dynamically-linked File %s not found!", functionName));
+                    System.err.println(String.format("Error: Dynamically-linked File %s not found!", soFileName));
                     e.printStackTrace();
                 }
             } else {
                 try {
-                    String sourceCode = String.valueOf(functionCode);
+                    String sourceCode = new String(sourceInputStream.readAllBytes(), StandardCharsets.UTF_8);
                     System.out.println(functionName + functionEntryPoint + functionLanguage + sourceCode);
                     functionTable.put(functionName, new PolyglotFunction(functionName, functionEntryPoint, functionLanguage, sourceCode));
                 } catch (IllegalArgumentException e) {
                     e.printStackTrace();
                 }
             }
-            System.out.println("Function registered!");
+            System.out.println("Function registered! time took: " + (System.currentTimeMillis() - start) + "ms");
             writeResponse(t, 200, String.format("Function %s registered!", functionName));
         }
     }

@@ -1,5 +1,7 @@
 package org.graalvm.argo.lambda_proxy.base;
 
+import static org.graalvm.argo.lambda_proxy.PolyglotProxy.APP_DIR;
+
 import java.io.FileNotFoundException;
 import java.util.Locale;
 
@@ -18,7 +20,7 @@ public class PolyglotFunction {
         this.language = PolyglotLanguage.valueOf(language.toUpperCase(Locale.ROOT));
         if (this.language.equals(PolyglotLanguage.JAVA)) {
             try {
-                this.graalVisorAPI = new GraalVisorAPI(name);
+                this.graalVisorAPI = new GraalVisorAPI(APP_DIR + name);
             } catch (FileNotFoundException e) {
                 System.err.println("SO file not found.");
                 e.printStackTrace();

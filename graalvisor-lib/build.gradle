@@ -18,18 +18,22 @@ shadowJar() {
 }
 
 task guestLib(type: ShadowJar) {
+    configurations = [project.configurations.runtimeClasspath]
     from sourceSets.main.output
-    minimize()
-    exclude "com/oracle/svm/graalvisor/GraalVisorImpl*"
-    exclude "com/oracle/svm/graalvisor/api/*"
+    minimize{
+        exclude "com/oracle/svm/graalvisor/GraalVisorImpl*"
+        exclude "com/oracle/svm/graalvisor/api/**/*"
+    }
     guestLib.archiveFileName = rootProject.name + '-1.0-guest' + '.jar'
 }
 
 task hostLib(type: ShadowJar) {
+    configurations = [project.configurations.runtimeClasspath]
     from sourceSets.main.output
-    minimize()
-    exclude "com/oracle/svm/graalvisor/utils/file/*"
-    exclude "com/oracle/svm/graalvisor/guestapi*"
+    minimize{
+        exclude "com/oracle/svm/graalvisor/utils/file/*"
+        exclude "com/oracle/svm/graalvisor/guestapi/**/*"
+    }
     hostLib.archiveFileName = rootProject.name + '-1.0-host' + '.jar'
 }
 

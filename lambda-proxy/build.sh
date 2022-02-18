@@ -17,7 +17,7 @@ cd "$DIR" || {
 
 if [[ -z "$FLAG" || "$FLAG" = "--java" ]]; then
     echo -e "${GREEN}Building java lambda proxy...${NC}"
-    ./gradlew clean shadowJar
+    ./gradlew clean shadowJar javaProxy
     echo -e "${GREEN}Building java lambda proxy...done${NC}"
 fi
 
@@ -29,10 +29,12 @@ if [[ -z "$FLAG" || "$FLAG" = "--polyglot" ]]; then
       exit 1
     }
 
-    $JAVA_HOME/bin/native-image \
+    sudo env "PATH=$PATH" $JAVA_HOME/bin/native-image \
       --no-fallback \
       --language:js \
       --language:python \
+      -DGraalVisorHost \
+      -Dcom.oracle.svm.graalvisor.libraryPath=$PROXY_HOME/build/resources/main/com.oracle.svm.graalvisor.headers \
       --features=org.graalvm.argo.lambda_proxy.engine.PolyglotEngineSingletonFeature \
       -cp $PROXY_HOME/build/libs/lambda-proxy-1.0-all.jar \
       org.graalvm.argo.lambda_proxy.PolyglotProxy \

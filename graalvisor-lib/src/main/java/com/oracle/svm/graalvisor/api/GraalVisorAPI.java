@@ -47,6 +47,7 @@ public class GraalVisorAPI implements Closeable {
     public GraalVisorAPI(String soName) throws FileNotFoundException {
         dlHandle = PosixUtils.dlopen(soName, RTLD_NOW() | RTLD_DEEPBIND);
         if (dlHandle.rawValue() == 0) {
+            System.out.println(PosixUtils.dlerror());
             System.err.println(soName + " hasn't been found, please check the file name or your environment variable LD_LIBRARY_PATH.");
             throw new FileNotFoundException(soName + " hasn't been found, please check the file name or your environment variable LD_LIBRARY_PATH.");
         }
