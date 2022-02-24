@@ -1,9 +1,16 @@
 package org.graalvm.argo.lambda_proxy.utils;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import com.sun.net.httpserver.HttpExchange;
 
@@ -35,4 +42,11 @@ public class ProxyUtils {
         }
     }
 
+    public static void writeFile(String path, String content) {
+        try (PrintWriter out = new PrintWriter(path)) {
+            out.println(content);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
 }

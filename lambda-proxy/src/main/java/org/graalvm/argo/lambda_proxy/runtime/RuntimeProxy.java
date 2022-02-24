@@ -44,8 +44,15 @@ public abstract class RuntimeProxy {
                 Map<String, Object> input = jsonToMap(jsonBody);
                 String functionName = (String) input.get("name");
                 String arguments = (String) input.get("arguments");
-                String output = invoke(functionName, arguments);
-                ProxyUtils.writeResponse(t, 200, output);
+                String async = (String)input.get("async");
+                if (async != null && async.equals("true")) {
+                    ProxyUtils.writeResponse(t, 200, "Asynchronous request submitted!");
+                    String output = invoke(functionName, arguments);
+                    System.out.println(output);
+                } else {
+                    String output = invoke(functionName, arguments);
+                    ProxyUtils.writeResponse(t, 200, output);
+                }
             } catch (Exception e) {
                 e.printStackTrace(System.err);
                 errorResponse(t, "An error has occurred (see logs for details): " + e);

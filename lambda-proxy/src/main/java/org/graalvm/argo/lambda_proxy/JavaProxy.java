@@ -1,38 +1,35 @@
 package org.graalvm.argo.lambda_proxy;
 
+import java.io.IOException;
+import java.util.Arrays;
+
 import org.graalvm.argo.lambda_proxy.engine.JavaEngine;
-import org.graalvm.argo.lambda_proxy.runtime.HotSpotProxy;
-import org.graalvm.argo.lambda_proxy.runtime.IsolateProxy;
-import org.graalvm.argo.lambda_proxy.runtime.RuntimeProxy;
 
 public class JavaProxy extends Proxy {
 
-    /**
-     * Entry point of proxies for native java application
-     * 
-     * @param args - expected args are: <timestamp> <target class name> <service port>
-     */
-    public static void main(String[] args) {
-        args = loadArguments(new String[]{TIMESTAMP_TAG, ENTRY_POINT_TAG, PORT_TAG});
-
+    protected static void checkArgs(String[] args) {
         if (args == null || args.length < 3) {
             System.err.println("Error invoking JavaProxy, expected at least three arguments (timestamp, target classname and service port).");
             System.exit(1);
         }
+    }
+
+    /**
+     * Entry point of proxies for native java application
+     *
+     * @param args - expected args are: <timestamp> <target class name> <service port>
+     * @throws IOException
+     * @throws NoSuchMethodException
+     * @throws ClassNotFoundException
+     * @throws NumberFormatException
+     */
+    public static void main(String[] args) throws NumberFormatException, ClassNotFoundException, NoSuchMethodException, IOException {
+        args = loadArguments(new String[]{TIMESTAMP_TAG, ENTRY_POINT_TAG, PORT_TAG});
+        checkArgs(args);
 
         System.out.println("Java Lambda boot time: " + (System.currentTimeMillis() - Long.parseLong(args[0])));
-
-        try {
-            JavaEngine javaEngine = new JavaEngine();
-            JavaEngine.setFunctionName(args[1]);
-            int port = Integer.parseInt(args[2]);
-            RuntimeProxy proxy = runInIsolate ? new IsolateProxy(port, javaEngine, false) : new HotSpotProxy(port, javaEngine, false);
-            proxy.start();
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.err.println("Proxy server can not be started: " + e);
-            System.exit(-1);
-        }
+        JavaEngine.setFunctionName(args[1]);
+        start(new JavaEngine(), Integer.parseInt(args[2]));
     }
 
 }

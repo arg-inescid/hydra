@@ -10,9 +10,6 @@ import static org.graalvm.argo.lambda_proxy.utils.ProxyUtils.*;
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -53,11 +50,6 @@ public class PolyglotEngine implements LanguageEngine {
         String resultString = "";
         if (guestFunction == null) {
             return String.format("{'Error': 'Function %s not registered!'}", functionName);
-        } else if (guestFunction.getLanguage().equals(PolyglotLanguage.JAVA)) {
-            // call .so to create the isolate
-            GuestIsolateThread guestThread = guestFunction.getGraalVisorAPI().createIsolate();
-            resultString = guestFunction.getGraalVisorAPI().invokeFunction(guestThread, guestFunction.getEntryPoint(), arguments);
-            guestFunction.getGraalVisorAPI().tearDownIsolate(guestThread);
         } else {
             String language = guestFunction.getLanguage().toString();
             String entryPoint = guestFunction.getEntryPoint();
@@ -155,32 +147,20 @@ public class PolyglotEngine implements LanguageEngine {
             }
             String functionEntryPoint = metaData.get("entryPoint");
             String functionLanguage = metaData.get("language");
-            System.out.println("Inside registration");
-            InputStream sourceInputStream = new BufferedInputStream(t.getRequestBody(), 4096);
+
             if (functionLanguage.equalsIgnoreCase("java")) {
-                System.out.println("File writing");
-                try (FileOutputStream fileOutputStream = new FileOutputStream(soFileName)) {
-                    sourceInputStream.transferTo(fileOutputStream);
+                if (!new File(soFileName).exists()) {
+                    try (FileOutputStream fileOutputStream = new FileOutputStream(soFileName);
+                                    InputStream sourceInputStream = new BufferedInputStream(t.getRequestBody(), 4096)) {
+                        sourceInputStream.transferTo(fileOutputStream);
+                    }
                 }
-                for (String dir : new String[]{"/", "/dev"}) {
-                    File directoryPath = new File(dir);
-                    // List of all files and directories
-                    String[] contents = directoryPath.list();
-                    System.out.println(dir + " " + Arrays.toString(contents));
-                }
-                System.out.println("File written");
+                long beforeLoad = System.nanoTime();
                 functionTable.put(functionName, new PolyglotFunction(functionName, functionEntryPoint, functionLanguage, ""));
-                // remove local dynamically-linked Library file
-                try {
-                    Files.deleteIfExists(Path.of(soFileName));
-                } catch (IOException e) {
-                    System.err.println(String.format("Error: Dynamically-linked File %s not found!", soFileName));
-                    e.printStackTrace();
-                }
+                System.out.println("Loading SO takes: " + (System.nanoTime() - beforeLoad) / 1e6 + "ms");
             } else {
-                try {
+                try (InputStream sourceInputStream = new BufferedInputStream(t.getRequestBody(), 4096)) {
                     String sourceCode = new String(sourceInputStream.readAllBytes(), StandardCharsets.UTF_8);
-                    System.out.println(functionName + functionEntryPoint + functionLanguage + sourceCode);
                     functionTable.put(functionName, new PolyglotFunction(functionName, functionEntryPoint, functionLanguage, sourceCode));
                 } catch (IllegalArgumentException e) {
                     e.printStackTrace();

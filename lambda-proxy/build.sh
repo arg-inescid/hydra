@@ -39,7 +39,7 @@ if [[ -z "$FLAG" || "$FLAG" = "--polyglot" ]]; then
       -cp $PROXY_HOME/build/libs/lambda-proxy-1.0-all.jar \
       org.graalvm.argo.lambda_proxy.PolyglotProxy \
       polyglot-proxy \
-      -H:Virtualize=$RES_HOME/virtualize-polyglot.json \
+      -H:Virtualize=$VIRTUALIZE_PATH \
       -H:+ReportExceptionStackTraces \
       -H:ConfigurationFileDirectories=$TRUFFLE_HOME/META-INF/native-image/
 
