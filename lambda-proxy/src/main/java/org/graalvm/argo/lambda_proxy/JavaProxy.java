@@ -1,7 +1,6 @@
 package org.graalvm.argo.lambda_proxy;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.graalvm.argo.lambda_proxy.engine.JavaEngine;
 

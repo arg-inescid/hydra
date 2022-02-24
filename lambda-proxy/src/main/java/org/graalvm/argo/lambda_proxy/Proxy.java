@@ -4,14 +4,11 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.graalvm.argo.lambda_proxy.engine.LanguageEngine;
 import org.graalvm.argo.lambda_proxy.runtime.HotSpotProxy;
 import org.graalvm.argo.lambda_proxy.runtime.IsolateProxy;
 import org.graalvm.argo.lambda_proxy.runtime.RuntimeProxy;
-import org.graalvm.argo.lambda_proxy.utils.ProxyUtils;
 
 public abstract class Proxy {
 
