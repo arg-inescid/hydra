@@ -47,6 +47,7 @@ public class StartVMM extends StartLambda {
         command.add(TIMESTAMP_TAG + System.currentTimeMillis());
         command.add(ENTRY_POINT_TAG + lambda.getFunction().getEntryPoint());
         command.add(PORT_TAG + Configuration.argumentStorage.getLambdaPort());
+        command.add("LD_LIBRARY_PATH=/lib:/lib64:/apps:/usr/local/lib");
         if (lambda.getFunction().getArguments() != null) {
             Collections.addAll(command, lambda.getFunction().getArguments().split(","));
         }

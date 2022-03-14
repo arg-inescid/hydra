@@ -1,20 +1,21 @@
 package org.graalvm.argo.lambda_manager.utils;
 
+import java.util.logging.Level;
+
+import org.graalvm.argo.lambda_manager.utils.logger.Logger;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.reactivex.Single;
-import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 
-import java.util.logging.Level;
+import io.reactivex.Single;
 
 public class JsonUtils {
 
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    public static String convertParametersIntoJsonObject(String arguments, String entryPoint, String functionName,
-                                                         String functionSourceCode, String functionLanguage) {
+    public static String convertParametersIntoJsonObject(String arguments, String entryPoint, String functionName) {
         ObjectNode inputObject = mapper.createObjectNode();
 
         if (arguments != null) {
@@ -27,14 +28,6 @@ public class JsonUtils {
 
         if (functionName != null) {
             inputObject.put("name", functionName);
-        }
-
-        if (functionSourceCode != null) {
-            inputObject.put("sourceCode", functionSourceCode);
-        }
-
-        if (functionLanguage != null) {
-            inputObject.put("language", functionLanguage);
         }
 
         String resultJSON = "";

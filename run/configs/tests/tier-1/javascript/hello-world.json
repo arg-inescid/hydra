@@ -20,12 +20,12 @@
       "commands": [
         {
           "command": "remove",
-          "function_name": "hello-world"
+          "function_name": "hello-world-js"
         },
         {
           "command": "upload",
           "allocate": 3,
-          "function_name": "hello-world",
+          "function_name": "hello-world-js",
           "function_language": "javascript",
           "function_entry_point": "main",
           "arguments": "8080",
@@ -38,7 +38,7 @@
               "iterations": 1000,
               "num_requests": 100,
               "num_clients": 100,
-              "function_name": "hello-world",
+              "function_name": "hello-world-js",
               "parameters": {},
               "output": "../../../../../../benchmarks/results/javascript/hello-world/hello-world-1.dat"
             }

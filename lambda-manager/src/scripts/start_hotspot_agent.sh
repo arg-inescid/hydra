@@ -40,7 +40,7 @@ else
   printf "[\n]\n" > "$LAMBDA_HOME"/shared/config/serialization-config.json
 fi
 
-echo "\$JAVA_HOME/bin/java -Djava.library.path=\$JAVA_HOME/lib -agentlib:native-image-agent=config-merge-dir=config,caller-filter-file=caller-filter-config.json,report-dynamic-feature-failures -cp lambda-proxy-1.0-all.jar:$FUNCTION_NAME org.graalvm.argo.lambda_proxy.JavaProxy" >"$LAMBDA_HOME"/shared/run.sh
+echo "\$JAVA_HOME/bin/java -Djava.library.path=\$JAVA_HOME/lib -agentlib:native-image-agent=config-merge-dir=config,caller-filter-file=caller-filter-config.json,report-dynamic-feature-failures -cp lambda-proxy-1.0-java.jar:$FUNCTION_NAME org.graalvm.argo.lambda_proxy.JavaProxy" >"$LAMBDA_HOME"/shared/run.sh
 
 "$LAMBDA_HOME"/debian_vm_unikernel.sh --memory "$LAMBDA_MEMORY" --gateway "$LAMBDA_GATEWAY" --ip "$LAMBDA_IP" \
   --mask "$LAMBDA_MASK" --kernel "$KERNEL_PATH" --img "$LAMBDA_HOME"/stretch.img --shared "$LAMBDA_HOME"/shared \

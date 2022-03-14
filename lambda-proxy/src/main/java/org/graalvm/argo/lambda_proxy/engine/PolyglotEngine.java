@@ -1,40 +1,124 @@
 package org.graalvm.argo.lambda_proxy.engine;
 
-import static org.graalvm.argo.lambda_proxy.base.TruffleExecutor.*;
+import static org.graalvm.argo.lambda_proxy.PolyglotProxy.APP_DIR;
+import static org.graalvm.argo.lambda_proxy.utils.IsolateUtils.copyString;
+import static org.graalvm.argo.lambda_proxy.utils.IsolateUtils.retrieveString;
 import static org.graalvm.argo.lambda_proxy.utils.JsonUtils.jsonToMap;
+import static org.graalvm.argo.lambda_proxy.utils.JsonUtils.valueToJson;
 import static org.graalvm.argo.lambda_proxy.utils.ProxyUtils.*;
 
-import java.io.IOException;
+import java.io.*;
+import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-import org.graalvm.argo.lambda_proxy.base.*;
+import org.graalvm.argo.lambda_proxy.base.IsolateObjectWrapper;
+import org.graalvm.argo.lambda_proxy.base.PolyglotFunction;
+import org.graalvm.argo.lambda_proxy.base.PolyglotLanguage;
+import org.graalvm.argo.lambda_proxy.runtime.IsolateProxy;
+import org.graalvm.nativeimage.*;
+import org.graalvm.nativeimage.c.function.CEntryPoint;
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.PolyglotException;
+import org.graalvm.polyglot.Value;
+import org.graalvm.polyglot.proxy.ProxyObject;
 
+import com.oracle.svm.graalvisor.types.GuestIsolateThread;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
 public class PolyglotEngine implements LanguageEngine {
+    // FunctionTable is used to store registered functions inside default and worker isolates
+    private static final ConcurrentHashMap<String, PolyglotFunction> functionTable = new ConcurrentHashMap<>();
+
+    @SuppressWarnings("unused")
+    @CEntryPoint
+    private static void installSourceCode(@CEntryPoint.IsolateThreadContext IsolateThread workingThread,
+                    ObjectHandle functionName,
+                    ObjectHandle entryPoint,
+                    ObjectHandle language,
+                    ObjectHandle sourceCode) {
+        functionTable.put(retrieveString(functionName), new PolyglotFunction(retrieveString(functionName), retrieveString(entryPoint), retrieveString(language), retrieveString(sourceCode)));
+    }
 
     @Override
     public String invoke(String functionName, String arguments) {
-        if (!functionExists(functionName)) {
-            return String.format("{'Error': 'Function %s does not exist!'}", functionName);
+        PolyglotFunction guestFunction = functionTable.get(functionName);
+        String resultString = "";
+        if (guestFunction == null) {
+            return String.format("{'Error': 'Function %s not registered!'}", functionName);
+        } else {
+            String language = guestFunction.getLanguage().toString();
+            String entryPoint = guestFunction.getEntryPoint();
+            String sourceCode = guestFunction.getSource();
+            try (Context context = Context.newBuilder().allowAllAccess(true).build()) {
+                ProxyObject args = ProxyObject.fromMap(jsonToMap(arguments));
+                try {
+                    // evaluate source script
+                    context.eval(language, sourceCode);
+                    // get function handle from the script
+                    Value function = context.eval(language, entryPoint);
+                    Value res = function.execute(args);
+                    resultString = valueToJson(res);
+                } catch (IllegalArgumentException | IllegalStateException | PolyglotException | UnsupportedOperationException | NullPointerException e) {
+                    System.err.println("Error happens during parsing/invoking polyglot function: ");
+                    e.printStackTrace();
+                    resultString = e.getMessage();
+                }
+            }
         }
-        return TruffleExecutor.invoke(functionName, arguments);
+        return resultString;
     }
 
     @Override
-    public void registerFunction(String functionName, IsolateObjectWrapper targetIsolate) throws FunctionRegistrationFailure {
-        if (!functionExists(functionName, targetIsolate)) {
-            // register sourceCode into worker isolate
-            PolyglotFunction function = getFunction(functionName);
-            register(functionName, function, targetIsolate);
+    public String invoke(IsolateObjectWrapper workingIsolate, String functionName, String jsonArguments)
+                    throws IOException, ClassNotFoundException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        PolyglotFunction guestFunction = functionTable.get(functionName);
+        if (guestFunction == null) {
+            return String.format("{'Error': 'Function %s not registered!'}", functionName);
+        } else if (guestFunction.getLanguage().equals(PolyglotLanguage.JAVA)) {
+            GuestIsolateThread guestThread = (GuestIsolateThread) workingIsolate.getIsolateThread();
+            return guestFunction.getGraalVisorAPI().invokeFunction(guestThread, guestFunction.getEntryPoint(), jsonArguments);
+        } else {
+            IsolateThread workingThread = workingIsolate.getIsolateThread();
+            return retrieveString(IsolateProxy.invoke(workingThread, CurrentIsolate.getCurrentThread(), copyString(workingThread, functionName), copyString(workingThread, jsonArguments)));
         }
     }
 
     @Override
-    public void cleanUp(IsolateObjectWrapper isolateObjectWrapper) {
-        TruffleExecutor.deregisterIsolate(isolateObjectWrapper);
+    public IsolateObjectWrapper createIsolate(String functionName) {
+        PolyglotFunction polyglotFunction = functionTable.get(functionName);
+        if (polyglotFunction == null)
+            return null;
+        else if (polyglotFunction.getLanguage().equals(PolyglotLanguage.JAVA)) {
+            GuestIsolateThread guestThread = polyglotFunction.getGraalVisorAPI().createIsolate();
+            return new IsolateObjectWrapper(Isolates.getIsolate(guestThread), guestThread);
+        } else {
+            // create a new isolate and setup configurations in that isolate.
+            IsolateThread isolateThread = Isolates.createIsolate(Isolates.CreateIsolateParameters.getDefault());
+            Isolate isolate = Isolates.getIsolate(isolateThread);
+            // initialize source code into isolate
+            installSourceCode(isolateThread,
+                            copyString(isolateThread, functionName),
+                            copyString(isolateThread, polyglotFunction.getEntryPoint()),
+                            copyString(isolateThread, polyglotFunction.getLanguage().name()),
+                            copyString(isolateThread, polyglotFunction.getSource()));
+            return new IsolateObjectWrapper(isolate, isolateThread);
+        }
+    }
+
+    @Override
+    public void tearDownIsolate(String functionName, IsolateObjectWrapper workingIsolate) {
+        if (functionName != null && workingIsolate != null && functionTable.containsKey(functionName)) {
+            if (functionTable.get(functionName).getLanguage().equals(PolyglotLanguage.JAVA)) {
+                functionTable.get(functionName).getGraalVisorAPI().tearDownIsolate((GuestIsolateThread) workingIsolate.getIsolateThread());
+            } else {
+                Isolates.tearDownIsolate(workingIsolate.getIsolateThread());
+            }
+        }
     }
 
     @Override
@@ -46,22 +130,44 @@ public class PolyglotEngine implements LanguageEngine {
     private static class RegisterHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange t) throws IOException {
-            Map<String, Object> input = jsonToMap(extractRequestBody(t));
-            String functionName = (String) input.get("name");
-            String functionEntryPoint = (String) input.get("entryPoint");
-            String language = (String) input.get("language");
-            String sourceCode = (String) input.get("sourceCode");
-            try {
-                PolyglotLanguage polyglotLanguage = PolyglotLanguage.valueOf(language.toUpperCase());
-                register(functionName, functionEntryPoint, polyglotLanguage.toString(), sourceCode);
-                writeResponse(t, 200, String.format("Function %s registered successfully!", input.get("name")));
-            } catch (IllegalArgumentException e) {
-                e.printStackTrace(System.err);
-                errorResponse(t, "Unknown polyglot language: " + language);
-            } catch (Exception e) {
-                e.printStackTrace(System.err);
-                errorResponse(t, "An error has occurred (see logs for details): " + e);
+
+            long start = System.currentTimeMillis();
+            String[] params = t.getRequestURI().getQuery().split("&");
+            Map<String, String> metaData = new HashMap<>();
+            for (String param : params) {
+                String[] keyValue = param.split("=");
+                metaData.put(keyValue[0], keyValue[1]);
             }
+            // //check
+            String functionName = metaData.get("name");
+            String soFileName = APP_DIR + functionName;
+            if (functionTable.containsKey(functionName)) {
+                errorResponse(t, String.format("Function %s has been registered!", functionName));
+                return;
+            }
+            String functionEntryPoint = metaData.get("entryPoint");
+            String functionLanguage = metaData.get("language");
+
+            if (functionLanguage.equalsIgnoreCase("java")) {
+                if (!new File(soFileName).exists()) {
+                    try (FileOutputStream fileOutputStream = new FileOutputStream(soFileName);
+                                    InputStream sourceInputStream = new BufferedInputStream(t.getRequestBody(), 4096)) {
+                        sourceInputStream.transferTo(fileOutputStream);
+                    }
+                }
+                long beforeLoad = System.nanoTime();
+                functionTable.put(functionName, new PolyglotFunction(functionName, functionEntryPoint, functionLanguage, ""));
+                System.out.println("Loading SO takes: " + (System.nanoTime() - beforeLoad) / 1e6 + "ms");
+            } else {
+                try (InputStream sourceInputStream = new BufferedInputStream(t.getRequestBody(), 4096)) {
+                    String sourceCode = new String(sourceInputStream.readAllBytes(), StandardCharsets.UTF_8);
+                    functionTable.put(functionName, new PolyglotFunction(functionName, functionEntryPoint, functionLanguage, sourceCode));
+                } catch (IllegalArgumentException e) {
+                    e.printStackTrace();
+                }
+            }
+            System.out.println("Function registered! time took: " + (System.currentTimeMillis() - start) + "ms");
+            writeResponse(t, 200, String.format("Function %s registered!", functionName));
         }
     }
 
@@ -70,11 +176,16 @@ public class PolyglotEngine implements LanguageEngine {
         public void handle(HttpExchange t) throws IOException {
             try {
                 String functionName = (String) jsonToMap(extractRequestBody(t)).get("name");
-                if (!TruffleExecutor.deregister(functionName)) {
+                if (!functionTable.containsKey(functionName)) {
                     errorResponse(t, String.format("Function %s has not been registered before!", functionName));
                     return;
+                } else {
+                    if (functionTable.get(functionName).getLanguage().equals(PolyglotLanguage.JAVA)) {
+                        functionTable.get(functionName).getGraalVisorAPI().close();
+                    }
+                    functionTable.remove(functionName);
                 }
-                writeResponse(t, 200, String.format("Function %s unregistered!", functionName));
+                writeResponse(t, 200, String.format("Function %s removed!", functionName));
             } catch (Exception e) {
                 e.printStackTrace(System.err);
                 errorResponse(t, "An error has occurred (see logs for details): " + e);

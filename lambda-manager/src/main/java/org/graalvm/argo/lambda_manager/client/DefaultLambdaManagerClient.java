@@ -1,10 +1,10 @@
 package org.graalvm.argo.lambda_manager.client;
 
-import io.micronaut.http.HttpRequest;
-import io.micronaut.http.client.RxHttpClient;
-import io.micronaut.http.client.exceptions.HttpClientException;
-import io.micronaut.http.client.exceptions.ReadTimeoutException;
-import io.reactivex.Flowable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.util.logging.Level;
+
 import org.graalvm.argo.lambda_manager.core.Configuration;
 import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.core.Lambda;
@@ -12,9 +12,11 @@ import org.graalvm.argo.lambda_manager.utils.JsonUtils;
 import org.graalvm.argo.lambda_manager.utils.Messages;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.logging.Level;
+import io.micronaut.http.HttpRequest;
+import io.micronaut.http.client.RxHttpClient;
+import io.micronaut.http.client.exceptions.HttpClientException;
+import io.micronaut.http.client.exceptions.ReadTimeoutException;
+import io.reactivex.Flowable;
 
 @SuppressWarnings("unused")
 public class DefaultLambdaManagerClient implements LambdaManagerClient {
@@ -24,7 +26,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
      */
     private static final int FAULT_TOLERANCE = 300;
 
-    private String buildHTTPRequestArguments(Lambda lambda) {
+    private Object buildHTTPRequestArguments(Lambda lambda) {
         Function function = lambda.getFunction();
         String functionName = function.getName();
         String entryPoint = function.getEntryPoint();
@@ -32,19 +34,18 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
 
         switch (lambda.getTruffleStatus()) {
             case NEED_REGISTRATION:
-                try {
-                    return JsonUtils.convertParametersIntoJsonObject(arguments, entryPoint, functionName,
-                            Files.readString(function.buildFunctionSourceCodePath()), function.getLanguage().toString());
+                // TODO: optimization: read chunks of file and send it in parts.
+                try (InputStream sourceFile = Files.newInputStream(function.buildFunctionSourceCodePath())) {
+                    return sourceFile.readAllBytes();
                 } catch (IOException e) {
-                    // TODO: Handle this error!
                     e.printStackTrace();
                 }
             case READY_FOR_EXECUTION:
-                return JsonUtils.convertParametersIntoJsonObject(arguments, null, functionName, null, null);
+                return JsonUtils.convertParametersIntoJsonObject(arguments, null, functionName);
             case DEREGISTER:
-                return JsonUtils.convertParametersIntoJsonObject(null, null, functionName, null, null);
+                return JsonUtils.convertParametersIntoJsonObject(null, null, functionName);
             case NOT_TRUFFLE_LANG:
-                return JsonUtils.convertParametersIntoJsonObject(arguments, null, entryPoint,null, null);
+                return JsonUtils.convertParametersIntoJsonObject(arguments, null, entryPoint);
             default:
                 throw new IllegalStateException("Unexpected value: " + lambda.getTruffleStatus());
         }
@@ -53,7 +54,11 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
     private String buildHTTPRequestPath(Lambda lambda) {
         switch (lambda.getTruffleStatus()) {
             case NEED_REGISTRATION:
-                return "/register";
+                Function function = lambda.getFunction();
+                String functionName = function.getName();
+                String entryPoint = function.getEntryPoint();
+                String arguments = lambda.getArguments();
+                return String.format("/register?name=%s&language=%s&entryPoint=%s", functionName, function.getLanguage().toString(), entryPoint);
             case READY_FOR_EXECUTION:
             case NOT_TRUFFLE_LANG:
                 return "/";
@@ -65,11 +70,11 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
     }
 
     private HttpRequest<?> buildHTTPRequest(Lambda lambda) {
-        String argumentsJSON = buildHTTPRequestArguments(lambda);
+        Object argumentsJSON = buildHTTPRequestArguments(lambda);
         if (argumentsJSON == null) {
             argumentsJSON = "";
         }
-        return HttpRequest.<Object>POST(buildHTTPRequestPath(lambda), argumentsJSON);
+        return HttpRequest.POST(buildHTTPRequestPath(lambda), argumentsJSON);
     }
 
     @Override
