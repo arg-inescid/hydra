@@ -1,3 +1,5 @@
+*.swp
+*.local
 .idea/
 resources/*
 !resources/code-formatter/
