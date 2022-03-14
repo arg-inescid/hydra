@@ -47,9 +47,7 @@ public class GraalVisorAPI implements Closeable {
     public GraalVisorAPI(String soName) throws FileNotFoundException {
         dlHandle = PosixUtils.dlopen(soName, RTLD_NOW() | RTLD_DEEPBIND);
         if (dlHandle.rawValue() == 0) {
-            System.out.println(PosixUtils.dlerror());
-            System.err.println(soName + " hasn't been found, please check the file name or your environment variable LD_LIBRARY_PATH.");
-            throw new FileNotFoundException(soName + " hasn't been found, please check the file name or your environment variable LD_LIBRARY_PATH.");
+            throw new FileNotFoundException(String.format("%s (%s) hasn't been found, please check the file name or your environment variable LD_LIBRARY_PATH.", soName, PosixUtils.dlerror()));
         }
         /* register native function using their function pointer inside so */
         guestInstallGraalvisorFunctionPointer = PosixUtils.dlsym(dlHandle, "guest_install_graalvisor");
@@ -61,7 +59,7 @@ public class GraalVisorAPI implements Closeable {
 
     /**
      * GraalVisor API: create guest isolate and register GraalVisor into the guest isolate.
-     * 
+     *
      * @return return the GuestIsolateThread attached to the guest isolate.
      */
     public GuestIsolateThread createIsolate() {
@@ -74,7 +72,7 @@ public class GraalVisorAPI implements Closeable {
 
     /**
      * GraalVisor API: tear down guest isolate.
-     * 
+     *
      * @param thread isolate thread that created by this so.
      */
 
@@ -84,7 +82,7 @@ public class GraalVisorAPI implements Closeable {
 
     /**
      * GraalVisor API: invoke the main function inside the className
-     * 
+     *
      * @param guestIsolate working isolate
      * @param className fully-qualified class name of guest application class
      * @param arguments arguments passed the application function
