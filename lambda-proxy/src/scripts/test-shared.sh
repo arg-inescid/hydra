@@ -14,12 +14,12 @@ tmpdir=/tmp/test-proxy
 #APP_JAR=$ARGO_HOME/../benchmarks/language/java/hello-world/build/libs/hello-world-1.0.jar
 #APP_MAIN=com.hello_world.HelloWorld
 #APP_CONFIG=$(DIR)/config-hello-world
-#APP_POST=$(DIR)/hello-world.post
+APP_POST=$(DIR)/hello-world.post
 
-APP_JAR=$ARGO_HOME/../benchmarks/language/java/sleep/build/libs/sleep-1.0.jar
-APP_MAIN=com.sleep.Sleep
-APP_CONFIG=$(DIR)/config-sleep
-APP_POST=$(DIR)/sleep.post
+#APP_JAR=$ARGO_HOME/../benchmarks/language/java/sleep/build/libs/sleep-1.0.jar
+#APP_MAIN=com.sleep.Sleep
+#APP_CONFIG=$(DIR)/config-sleep
+#APP_POST=$(DIR)/sleep.post
 
 #APP_POST=$(DIR)/tf.post
 
@@ -76,27 +76,45 @@ function run_test_java {
 	time curl -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"com.sleep.Sleep","async":"false","arguments":"{\"memory\":\"128\",\"sleep\":\"1000\"}"}'
 }
 
-function run_test_polyglot {
-	curl -X POST $ip:8080/register \
+function run_test_polyglot_java {
+	curl -X POST $ip:8080/register?name=com.hello_world.HelloWorld\&entryPoint=com.hello_world.HelloWorld\&language=java \
 		-H 'Content-Type: application/json' \
-		-d '{"name":"tf","entryPoint":"x","language":"javascript","sourceCode":"function x(args) { return { result: \"Hello world from tf1!\" }; }"}'
+		--data-binary "@/home/rbruno/git/graalvm-argo/benchmarks/language/java/hello-world/build/libhelloworld.so"
+	time curl -X POST $ip:8080 \
+		-H 'Content-Type: application/json' \
+		-d '{"name":"com.hello_world.HelloWorld","arguments":""}'
+	time curl -X POST $ip:8080 \
+		-H 'Content-Type: application/json' \
+		-d '{"name":"com.hello_world.HelloWorld","arguments":""}'
 
+	curl -X POST $ip:8080/register?name=com.hello_world.HelloWorld\&entryPoint=com.hello_world.HelloWorld\&language=java \
+		-H 'Content-Type: application/json' \
+		--data-binary "@/home/rbruno/git/graalvm-argo/benchmarks/language/java/hello-world/build/libhelloworld.so"
+	time curl -X POST $ip:8080 \
+		-H 'Content-Type: application/json' \
+		-d '{"name":"com.hello_world.HelloWorld","arguments":""}'
+	time curl -X POST $ip:8080 \
+		-H 'Content-Type: application/json' \
+		-d '{"name":"com.hello_world.HelloWorld","arguments":""}'
+}
+
+function run_test_polyglot_javascript {
+	curl -X POST $ip:8080/register?name=tf\&entryPoint=x\&language=javascript \
+		-H 'Content-Type: application/json' \
+		-d 'function x(args) { return { result: "Hello world from tf1!" }; };'
+	time curl -X POST $ip:8080 \
+		-H 'Content-Type: application/json' \
+		-d '{"name":"tf","async":"true","arguments":""}'
 	time curl -X POST $ip:8080 \
 		-H 'Content-Type: application/json' \
 		-d '{"name":"tf","async":"true","arguments":""}'
 
-	time curl -X POST $ip:8080 \
+	curl -X POST $ip:8080/register?name=tf2\&entryPoint=x\&language=javascript\
 		-H 'Content-Type: application/json' \
-		-d '{"name":"tf","async":"true","arguments":""}'
-
-	curl -X POST $ip:8080/register \
-		-H 'Content-Type: application/json' \
-		-d '{"name":"tf2","entryPoint":"x","language":"javascript","sourceCode":"function x(args) { return { result: \"Hello world from tf2!\" }; }"}'
-
+		-d 'function x(args) { return { result: "Hello world from tf2!" }; };'
 	time curl -X POST $ip:8080 \
 		-H 'Content-Type: application/json' \
 		-d '{"name":"tf2","arguments":""}'
-
 	time curl -X POST $ip:8080 \
 		-H 'Content-Type: application/json' \
 		-d '{"name":"tf2","arguments":""}'
