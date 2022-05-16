@@ -1,5 +1,6 @@
 package org.graalvm.argo.lambda_proxy;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.graalvm.argo.lambda_proxy.engine.PolyglotEngine;
@@ -17,6 +18,7 @@ public class BaremetalPolyglotProxy extends PolyglotProxy {
      * @throws NumberFormatException
      */
     public static void main(String[] args) throws NumberFormatException, IOException {
+        new File(APP_DIR).mkdirs();
         checkArgs(args);
 
         System.out.println("Polyglot Lambda boot time: " + (System.currentTimeMillis() - Long.parseLong(args[0])));

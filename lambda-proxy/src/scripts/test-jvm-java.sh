@@ -23,7 +23,7 @@ function start_java_baremetal {
 setup_java_baremetal
 start_java_baremetal &> $tmpdir/lambda.log &
 sleep 5
-#run_test_java
+run_test_java
 run_workload
 stop_baremetal &>> $tmpdir/lambda.log
 echo "Check logs: $tmpdir/lambda.log"

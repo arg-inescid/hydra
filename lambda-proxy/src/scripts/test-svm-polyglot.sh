@@ -16,18 +16,23 @@ function setup_polyglot_svm {
 }
 
 function start_polyglot_svm {
-	proxy_args="$(date +%s%N | cut -b1-13) $APP_MAIN 8080"
+	proxy_args="$(date +%s%N | cut -b1-13) 8080"
 	start_svm
 }
 
 # Build ../../build.sh --polyglot-baremetal
 setup_polyglot_svm
 start_polyglot_svm &> $tmpdir/lambda.log &
-sleep 5
-#run_test_polyglot_java &> $tmpdir/lambda-java.dat
-#run_test_polyglot_javascript &> $tmpdir/lambda-javascript.dat
-run_test_polyglot_python &> $tmpdir/lambda-python.dat
 sleep 1
-#run_workload
+
+#polyglot_java_hello_world
+#run_test_polyglot_java &> $tmpdir/lambda-java.dat
+
+#polyglot_javascript_hello_world
+#run_test_polyglot_javascript &> $tmpdir/lambda-javascript.dat
+
+polyglot_python_hello_world
+run_test_polyglot_python &> $tmpdir/lambda-python.dat
+
 stop_baremetal &>> $tmpdir/lambda.log
 echo "Check logs: $tmpdir/lambda.log"

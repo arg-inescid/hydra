@@ -11,17 +11,36 @@ VMM=`grep target $VIRTUALIZE_PATH | awk -F\" '{print $4}'`
 
 tmpdir=/tmp/test-proxy
 
-#APP_JAR=$ARGO_HOME/../benchmarks/language/java/hello-world/build/libs/hello-world-1.0.jar
-#APP_MAIN=com.hello_world.HelloWorld
-#APP_CONFIG=$(DIR)/config-hello-world
-APP_POST=$(DIR)/hello-world.post
+function java_hello_world {
+	APP_JAR=$ARGO_HOME/../benchmarks/language/java/hello-world/build/libs/hello-world-1.0.jar
+	APP_MAIN=com.hello_world.HelloWorld
+	APP_CONFIG=$(DIR)/config-hello-world
+	APP_POST=$(DIR)/hello-world.post
+}
 
-#APP_JAR=$ARGO_HOME/../benchmarks/language/java/sleep/build/libs/sleep-1.0.jar
-#APP_MAIN=com.sleep.Sleep
-#APP_CONFIG=$(DIR)/config-sleep
-#APP_POST=$(DIR)/sleep.post
+function java_sleep {
+	APP_JAR=$ARGO_HOME/../benchmarks/language/java/sleep/build/libs/sleep-1.0.jar
+	APP_MAIN=com.sleep.Sleep
+	APP_CONFIG=$(DIR)/config-sleep
+	APP_POST=$(DIR)/sleep-sync.post
+	#APP_POST=$(DIR)/sleep-async.post
 
-#APP_POST=$(DIR)/tf.post
+}
+
+function polyglot_java_hello_world {
+	APP_SO=$ARGO_HOME/../benchmarks/language/java/hello-world/build/libhelloworld.so
+	APP_MAIN=com.hello_world.HelloWorld
+}
+
+function polyglot_javascript_hello_world {
+	APP_SCRIPT=$(DIR)/hello-world.js
+	APP_MAIN=x
+}
+
+function polyglot_python_hello_world {
+	APP_SCRIPT=$(DIR)/hello-world.py
+	APP_MAIN=x
+}
 
 function pretime {
 	ts=$(date +%s%N)
@@ -79,62 +98,68 @@ function start_jvm {
 function run_test_java {
 	for i in {1..10}
 	do
-		time curl -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"com.sleep.Sleep","async":"true","arguments":"{\"memory\":\"128\",\"sleep\":\"1000\"}"}'
+		pretime
+		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d @$APP_POST
+		postime
 	done
-	time curl -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"com.sleep.Sleep","async":"false","arguments":"{\"memory\":\"128\",\"sleep\":\"1000\"}"}'
+	for i in {1..10}
+	do
+		pretime
+		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d @$APP_POST
+		postime
+	done
+
 }
 
 function run_test_polyglot_java {
-	curl -X POST $ip:8080/register?name=com.hello_world.HelloWorld\&entryPoint=com.hello_world.HelloWorld\&language=java -H 'Content-Type: application/json' \
-		--data-binary "@/home/rbruno/git/graalvm-argo/benchmarks/language/java/hello-world/build/libhelloworld.so"
+	curl -s  -X POST $ip:8080/register?name=hw1\&entryPoint=$APP_MAIN\&language=java -H 'Content-Type: application/json' --data-binary @$APP_SO
 	for i in {1..10}
 	do
-		curl --no-progress-meter -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"com.hello_world.HelloWorld","arguments":""}'
+		pretime
+		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"hw1","arguments":""}'
+		postime
 	done
 
-	curl -X POST $ip:8080/register?name=com.hello_world.HelloWorld\&entryPoint=com.hello_world.HelloWorld\&language=java -H 'Content-Type: application/json' \
-		--data-binary "@/home/rbruno/git/graalvm-argo/benchmarks/language/java/hello-world/build/libhelloworld.so"
+	curl -s -X POST $ip:8080/register?name=hw2\&entryPoint=$APP_MAIN\&language=java -H 'Content-Type: application/json' --data-binary @$APP_SO
 	for i in {1..1000}
 	do
 		pretime
-		curl --no-progress-meter -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"com.hello_world.HelloWorld","arguments":""}'
+		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"hw2","arguments":""}'
 		postime
 	done
 }
 
 function run_test_polyglot_javascript {
-	curl --no-progress-meter -X POST $ip:8080/register?name=jsf1\&entryPoint=x\&language=javascript -H 'Content-Type: application/json' \
-		-d 'function x(args) { return { "result": "Hello world from js jsf1!" }; };'
+	curl -s -X POST $ip:8080/register?name=hw1\&entryPoint=$APP_MAIN\&language=javascript -H 'Content-Type: application/json' -d @$APP_SCRIPT
 	for i in {1..10}
 	do
-		time curl -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"jsf1","arguments":""}'
-	done
-
-	curl --no-progress-meter -X POST $ip:8080/register?name=jsf2\&entryPoint=x\&language=javascript -H 'Content-Type: application/json' \
-		-d 'function x(args) { return { "result": "Hello world from jsf2!" }; };'
-	for i in {1..1000}
-	do
 		pretime
-		curl --no-progress-meter -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"jsf2","arguments":""}'
-		#time curl -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"jsf2","async":"true","arguments":""}'
+		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"hw1","arguments":""}'
 		postime
 	done
 
-}
-
-function run_test_polyglot_python {
-	curl --no-progress-meter -X POST $ip:8080/register?name=pyf1\&entryPoint=x\&language=python -H 'Content-Type: application/json' \
-		-d 'def x(args): return { "result": "Hello world from pyf1!" }'
-	for i in {1..10}
-	do
-		curl --no-progress-meter -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"pyf1","arguments":""}'
-	done
-	curl --no-progress-meter -X POST $ip:8080/register?name=pyf2\&entryPoint=x\&language=python -H 'Content-Type: application/json' \
-		-d 'def x(args): return { "result": "Hello world from pyf2!" }'
+	curl -s -X POST $ip:8080/register?name=hw2\&entryPoint=$APP_MAIN\&language=javascript -H 'Content-Type: application/json' -d @$APP_SCRIPT
 	for i in {1..1000}
 	do
 		pretime
-		curl --no-progress-meter -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"pyf2","arguments":""}'
+		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"hw2","arguments":""}'
+		postime
+	done
+}
+
+function run_test_polyglot_python {
+	curl -s -X POST $ip:8080/register?name=hw1\&entryPoint=$APP_MAIN\&language=python -H 'Content-Type: application/json' -d @$APP_SCRIPT
+	for i in {1..10}
+	do
+		pretime
+		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"hw1","arguments":""}'
+		postime
+	done
+	curl -s -X POST $ip:8080/register?name=hw2\&entryPoint=$APP_MAIN\&language=python -H 'Content-Type: application/json' -d @$APP_SCRIPT
+	for i in {1..1000}
+	do
+		pretime
+		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"hw2","arguments":""}'
 		postime
 	done
 

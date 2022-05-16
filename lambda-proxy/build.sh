@@ -53,6 +53,7 @@ if [[ ! -z "$FLAG" ]]; then
         echo -e "${GREEN}Building polyglot lambda proxy...done${NC}"
     elif [[ "$FLAG" = "--polyglot-baremetal" ]]; then
         echo -e "${GREEN}Building baremetal polyglot lambda proxy...${NC}"
+        VIRTUALIZE=""
         MAINCLASS="org.graalvm.argo.lambda_proxy.BaremetalPolyglotProxy"
         build
         echo -e "${GREEN}Building baremetal polyglot lambda proxy...done${NC}"

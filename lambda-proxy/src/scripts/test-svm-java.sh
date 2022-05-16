@@ -29,10 +29,14 @@ function start_java_svm {
 }
 
 
+# Pick the application to test
+java_sleep
+#java_hello_world
+
 setup_java_svm
 start_java_svm &> $tmpdir/lambda.log &
-sleep 5
+sleep 1
 run_test_java
-run_workload_java
+run_workload
 stop_baremetal &>> $tmpdir/lambda.log
 echo "Check logs: $tmpdir/lambda.log"
