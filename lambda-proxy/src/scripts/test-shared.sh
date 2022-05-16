@@ -29,16 +29,19 @@ function java_sleep {
 
 function polyglot_java_hello_world {
 	APP_SO=$ARGO_HOME/../benchmarks/language/java/hello-world/build/libhelloworld.so
+	APP_LANG=java
 	APP_MAIN=com.hello_world.HelloWorld
 }
 
 function polyglot_javascript_hello_world {
 	APP_SCRIPT=$(DIR)/hello-world.js
+	APP_LANG=javascript
 	APP_MAIN=x
 }
 
 function polyglot_python_hello_world {
 	APP_SCRIPT=$(DIR)/hello-world.py
+	APP_LANG=python
 	APP_MAIN=x
 }
 
@@ -49,6 +52,16 @@ function pretime {
 function postime {
 	tt=$((($(date +%s%N) - $ts)/1000))
 	printf "\nTime taken: $tt us"
+}
+
+function log_rss {
+	PID=$1
+	OFILE=$2
+	rm $OFILE
+        while kill -0 $PID &> /dev/null; do
+                ps -q $PID -o rss= >> $OFILE
+                sleep .5
+        done
 }
 
 function stop_niuk {
@@ -77,7 +90,8 @@ function start_niuk {
 		--tap testtap \
 		--console \
 		--no-karg-patch \
-		$proxy_args # TODO - check the pid, make sure it is the correct one.
+		$proxy_args 
+	# TODO - check the pid, lauch rss log.
 }
 
 function start_svm {
@@ -85,6 +99,7 @@ function start_svm {
 	./app $proxy_args &
 	pid=$!
 	echo $! > $tmpdir/lambda.pid
+	log_rss $pid $tmpdir/lambda.rss &
 	wait
 }
 
@@ -92,7 +107,19 @@ function start_jvm {
 	$JAVA_HOME/bin/java -cp $PROXY_JAR:$APP_JAR $proxy_main $proxy_args &
 	pid=$!
 	echo $! > $tmpdir/lambda.pid
+	log_rss $pid $tmpdir/lambda.rss &
 	wait
+}
+
+function setup_polyglot_svm {
+	mkdir $tmpdir &> /dev/null
+	sudo ls $tmpdir &> /dev/null
+	cp $ARGO_RESOURCES/truffle-build/polyglot-proxy $tmpdir/app
+}
+
+function start_polyglot_svm {
+	proxy_args="$(date +%s%N | cut -b1-13) 8080"
+	start_svm
 }
 
 function run_test_java {
@@ -102,7 +129,7 @@ function run_test_java {
 		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d @$APP_POST
 		postime
 	done
-	for i in {1..10}
+	for i in {1..1000}
 	do
 		pretime
 		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d @$APP_POST
@@ -112,69 +139,55 @@ function run_test_java {
 }
 
 function run_test_polyglot_java {
-	curl -s  -X POST $ip:8080/register?name=hw1\&entryPoint=$APP_MAIN\&language=java -H 'Content-Type: application/json' --data-binary @$APP_SO
+	curl -s -X POST $ip:8080/register?name=jvhw1\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SO
 	for i in {1..10}
 	do
 		pretime
-		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"hw1","arguments":""}'
+		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"jvhw1","arguments":""}'
 		postime
 	done
 
-	curl -s -X POST $ip:8080/register?name=hw2\&entryPoint=$APP_MAIN\&language=java -H 'Content-Type: application/json' --data-binary @$APP_SO
+	curl -s -X POST $ip:8080/register?name=jvhw2\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SO
 	for i in {1..1000}
 	do
 		pretime
-		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"hw2","arguments":""}'
+		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"jvhw2","arguments":""}'
 		postime
 	done
 }
 
 function run_test_polyglot_javascript {
-	curl -s -X POST $ip:8080/register?name=hw1\&entryPoint=$APP_MAIN\&language=javascript -H 'Content-Type: application/json' -d @$APP_SCRIPT
+	curl -s -X POST $ip:8080/register?name=jshw1\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' -d @$APP_SCRIPT
 	for i in {1..10}
 	do
 		pretime
-		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"hw1","arguments":""}'
+		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"jshw1","arguments":""}'
 		postime
 	done
 
-	curl -s -X POST $ip:8080/register?name=hw2\&entryPoint=$APP_MAIN\&language=javascript -H 'Content-Type: application/json' -d @$APP_SCRIPT
+	curl -s -X POST $ip:8080/register?name=jshw2\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' -d @$APP_SCRIPT
 	for i in {1..1000}
 	do
 		pretime
-		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"hw2","arguments":""}'
+		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"jshw2","arguments":""}'
 		postime
 	done
 }
 
 function run_test_polyglot_python {
-	curl -s -X POST $ip:8080/register?name=hw1\&entryPoint=$APP_MAIN\&language=python -H 'Content-Type: application/json' -d @$APP_SCRIPT
+	curl -s -X POST $ip:8080/register?name=pyhw1\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' -d @$APP_SCRIPT
 	for i in {1..10}
 	do
 		pretime
-		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"hw1","arguments":""}'
+		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"pyhw1","arguments":""}'
 		postime
 	done
-	curl -s -X POST $ip:8080/register?name=hw2\&entryPoint=$APP_MAIN\&language=python -H 'Content-Type: application/json' -d @$APP_SCRIPT
+	curl -s -X POST $ip:8080/register?name=pyhw2\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' -d @$APP_SCRIPT
 	for i in {1..1000}
 	do
 		pretime
-		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"hw2","arguments":""}'
+		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"pyhw2","arguments":""}'
 		postime
 	done
 
-}
-
-function run_workload {
-	# TODO - start memory measurements
-	# TODO - replace ab with wrk
-	#ab -p $APP_POST -T application/json -c 32 -n 262144 http://$ip:8080/
-	#ab -p $APP_POST -T application/json -c 32 -n 131072 http://$ip:8080/
-	#ab -p $APP_POST -T application/json -c 32 -n 65536 http://$ip:8080/
-	#ab -p $APP_POST -T application/json -c 32 -n 32768 http://$ip:8080/
-	#ab -p $APP_POST -T application/json -c 32 -n 16384 http://$ip:8080/
-	#ab -p $APP_POST -T application/json -c 32 -n 8192 http://$ip:8080/
-	#ab -p $APP_POST -T application/json -c 32 -n 4096 http://$ip:8080/
-	#ab -p $APP_POST -T application/json -c 32 -n 2048 http://$ip:8080/
-	ab -p $APP_POST -T application/json -c 32 -n 1024 http://$ip:8080/
 }
