@@ -9,11 +9,6 @@ import org.graalvm.argo.lambda_proxy.runtime.HotSpotProxy;
 import org.graalvm.argo.lambda_proxy.runtime.IsolateProxy;
 import org.graalvm.argo.lambda_proxy.runtime.RuntimeProxy;
 
-import org.graalvm.argo.lambda_proxy.engine.LanguageEngine;
-import org.graalvm.argo.lambda_proxy.runtime.HotSpotProxy;
-import org.graalvm.argo.lambda_proxy.runtime.IsolateProxy;
-import org.graalvm.argo.lambda_proxy.runtime.RuntimeProxy;
-
 public abstract class Proxy {
 
     public static final boolean runInIsolate = System.getProperty("java.vm.name").equals("Substrate VM");
