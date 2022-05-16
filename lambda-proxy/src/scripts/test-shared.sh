@@ -23,6 +23,15 @@ APP_POST=$(DIR)/hello-world.post
 
 #APP_POST=$(DIR)/tf.post
 
+function pretime {
+	ts=$(date +%s%N)
+}
+
+function postime {
+	tt=$((($(date +%s%N) - $ts)/1000))
+	printf "\nTime taken: $tt us"
+}
+
 function stop_niuk {
 	ppid=`sudo cat $tmpdir/lambda.pid`
 	for child in $(ps -o pid --no-headers --ppid $ppid); do
@@ -60,7 +69,6 @@ function start_svm {
 	wait
 }
 
-# TODO - change name to start_jvm
 function start_jvm {
 	$JAVA_HOME/bin/java -cp $PROXY_JAR:$APP_JAR $proxy_main $proxy_args &
 	pid=$!
@@ -77,47 +85,59 @@ function run_test_java {
 }
 
 function run_test_polyglot_java {
-	curl -X POST $ip:8080/register?name=com.hello_world.HelloWorld\&entryPoint=com.hello_world.HelloWorld\&language=java \
-		-H 'Content-Type: application/json' \
+	curl -X POST $ip:8080/register?name=com.hello_world.HelloWorld\&entryPoint=com.hello_world.HelloWorld\&language=java -H 'Content-Type: application/json' \
 		--data-binary "@/home/rbruno/git/graalvm-argo/benchmarks/language/java/hello-world/build/libhelloworld.so"
-	time curl -X POST $ip:8080 \
-		-H 'Content-Type: application/json' \
-		-d '{"name":"com.hello_world.HelloWorld","arguments":""}'
-	time curl -X POST $ip:8080 \
-		-H 'Content-Type: application/json' \
-		-d '{"name":"com.hello_world.HelloWorld","arguments":""}'
+	for i in {1..10}
+	do
+		curl --no-progress-meter -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"com.hello_world.HelloWorld","arguments":""}'
+	done
 
-	curl -X POST $ip:8080/register?name=com.hello_world.HelloWorld\&entryPoint=com.hello_world.HelloWorld\&language=java \
-		-H 'Content-Type: application/json' \
+	curl -X POST $ip:8080/register?name=com.hello_world.HelloWorld\&entryPoint=com.hello_world.HelloWorld\&language=java -H 'Content-Type: application/json' \
 		--data-binary "@/home/rbruno/git/graalvm-argo/benchmarks/language/java/hello-world/build/libhelloworld.so"
-	time curl -X POST $ip:8080 \
-		-H 'Content-Type: application/json' \
-		-d '{"name":"com.hello_world.HelloWorld","arguments":""}'
-	time curl -X POST $ip:8080 \
-		-H 'Content-Type: application/json' \
-		-d '{"name":"com.hello_world.HelloWorld","arguments":""}'
+	for i in {1..1000}
+	do
+		pretime
+		curl --no-progress-meter -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"com.hello_world.HelloWorld","arguments":""}'
+		postime
+	done
 }
 
 function run_test_polyglot_javascript {
-	curl -X POST $ip:8080/register?name=tf\&entryPoint=x\&language=javascript \
-		-H 'Content-Type: application/json' \
-		-d 'function x(args) { return { result: "Hello world from tf1!" }; };'
-	time curl -X POST $ip:8080 \
-		-H 'Content-Type: application/json' \
-		-d '{"name":"tf","async":"true","arguments":""}'
-	time curl -X POST $ip:8080 \
-		-H 'Content-Type: application/json' \
-		-d '{"name":"tf","async":"true","arguments":""}'
+	curl --no-progress-meter -X POST $ip:8080/register?name=jsf1\&entryPoint=x\&language=javascript -H 'Content-Type: application/json' \
+		-d 'function x(args) { return { "result": "Hello world from js jsf1!" }; };'
+	for i in {1..10}
+	do
+		time curl -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"jsf1","arguments":""}'
+	done
 
-	curl -X POST $ip:8080/register?name=tf2\&entryPoint=x\&language=javascript\
-		-H 'Content-Type: application/json' \
-		-d 'function x(args) { return { result: "Hello world from tf2!" }; };'
-	time curl -X POST $ip:8080 \
-		-H 'Content-Type: application/json' \
-		-d '{"name":"tf2","arguments":""}'
-	time curl -X POST $ip:8080 \
-		-H 'Content-Type: application/json' \
-		-d '{"name":"tf2","arguments":""}'
+	curl --no-progress-meter -X POST $ip:8080/register?name=jsf2\&entryPoint=x\&language=javascript -H 'Content-Type: application/json' \
+		-d 'function x(args) { return { "result": "Hello world from jsf2!" }; };'
+	for i in {1..1000}
+	do
+		pretime
+		curl --no-progress-meter -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"jsf2","arguments":""}'
+		#time curl -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"jsf2","async":"true","arguments":""}'
+		postime
+	done
+
+}
+
+function run_test_polyglot_python {
+	curl --no-progress-meter -X POST $ip:8080/register?name=pyf1\&entryPoint=x\&language=python -H 'Content-Type: application/json' \
+		-d 'def x(args): return { "result": "Hello world from pyf1!" }'
+	for i in {1..10}
+	do
+		curl --no-progress-meter -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"pyf1","arguments":""}'
+	done
+	curl --no-progress-meter -X POST $ip:8080/register?name=pyf2\&entryPoint=x\&language=python -H 'Content-Type: application/json' \
+		-d 'def x(args): return { "result": "Hello world from pyf2!" }'
+	for i in {1..1000}
+	do
+		pretime
+		curl --no-progress-meter -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"pyf2","arguments":""}'
+		postime
+	done
+
 }
 
 function run_workload {

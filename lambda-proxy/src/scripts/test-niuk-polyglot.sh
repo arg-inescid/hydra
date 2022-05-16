@@ -19,6 +19,7 @@ function start_polyglot_niuk {
 	start_niuk
 }
 
+# Build ../../build.sh --polyglot
 setup_polyglot_niuk
 start_polyglot_niuk &> $tmpdir/lambda.log &
 sleep 5

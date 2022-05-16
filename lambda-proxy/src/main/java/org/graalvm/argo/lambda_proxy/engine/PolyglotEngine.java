@@ -62,7 +62,7 @@ public class PolyglotEngine implements LanguageEngine {
                     // get function handle from the script
                     Value function = context.eval(language, entryPoint);
                     Value res = function.execute(args);
-                    resultString = valueToJson(res);
+                    resultString = res.toString();
                 } catch (IllegalArgumentException | IllegalStateException | PolyglotException | UnsupportedOperationException | NullPointerException e) {
                     System.err.println("Error happens during parsing/invoking polyglot function: ");
                     e.printStackTrace();
