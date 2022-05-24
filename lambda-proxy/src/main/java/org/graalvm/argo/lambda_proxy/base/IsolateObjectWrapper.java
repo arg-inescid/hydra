@@ -5,7 +5,7 @@ import org.graalvm.nativeimage.IsolateThread;
 
 public class IsolateObjectWrapper implements Comparable<IsolateObjectWrapper> {
 
-    private Isolate isolate;
+    private final Isolate isolate;
     private IsolateThread isolateThread;
 
     public IsolateObjectWrapper(Isolate isolate, IsolateThread isolateThread) {
@@ -19,6 +19,10 @@ public class IsolateObjectWrapper implements Comparable<IsolateObjectWrapper> {
 
     public IsolateThread getIsolateThread() {
         return isolateThread;
+    }
+
+    public void setIsolateThread(IsolateThread isolateThread) {
+        this.isolateThread = isolateThread;
     }
 
     @Override
