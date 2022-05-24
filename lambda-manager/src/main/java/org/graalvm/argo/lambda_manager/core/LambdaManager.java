@@ -104,7 +104,7 @@ public class LambdaManager {
                                                 String functionName,
                                                 String functionLanguage,
                                                 String functionEntryPoint,
-                                                String arguments,
+                                                String functionMemory,
                                                 byte[] functionCode) {
         String responseString;
 
@@ -115,9 +115,10 @@ public class LambdaManager {
 
         try {
             String encodeFunctionName = Configuration.coder.encodeFunctionName(username, functionName);
-            Function function = new Function(encodeFunctionName, functionLanguage, functionEntryPoint, arguments);
+            Function function = new Function(encodeFunctionName, functionLanguage, functionEntryPoint, functionMemory);
             Configuration.storage.register(encodeFunctionName, function, functionCode);
             for (int i = 0; i < allocate; i++) {
+                // TODO - why do we need this? We just quit at this point.
                 function.getStoppedLambdas().add(new Lambda(function));
             }
             Logger.log(Level.INFO, String.format(Messages.SUCCESS_FUNCTION_UPLOAD, functionName));
@@ -141,6 +142,7 @@ public class LambdaManager {
         }
 
         try {
+            // TODO - we also need to go to all lambdas and set their function to not registered.
             String encodeFunctionName = Configuration.coder.encodeFunctionName(username, functionName);
             Configuration.storage.unregister(encodeFunctionName);
             Logger.log(Level.INFO, String.format(Messages.SUCCESS_FUNCTION_REMOVE, functionName));

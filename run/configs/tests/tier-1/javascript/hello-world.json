@@ -28,6 +28,7 @@
           "function_name": "hello-world-js",
           "function_language": "javascript",
           "function_entry_point": "main",
+          "function_memory": "512",
           "source": "../../../../../../benchmarks/language/javascript/hello-world/main.js"
         },
         {

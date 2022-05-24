@@ -25,6 +25,7 @@ public class LambdaManagerController {
                                          @PathVariable("function_name") String functionName,
                                          @Nullable @Body String arguments,
                                          @Nullable @QueryValue("count") String warmupCount) {
+        // Note: by default, warmupCount is null. Only used for demos using the web interface.
         if (warmupCount != null) {
             for (int i = 0; i < Integer.valueOf(warmupCount); i++) {
                 LambdaManager.processRequest(username, functionName, arguments);
@@ -38,15 +39,17 @@ public class LambdaManagerController {
         return LambdaManager.getFunctions();
     }
 
+    // TODO - Can we remove the 'allocate' flag? It is basically a hack to preallocate ips...
     @Post(value = "/upload_function", consumes = MediaType.APPLICATION_OCTET_STREAM)
     public Single<String> uploadFunction(@QueryValue("allocate") int allocate,
                                          @QueryValue("username") String username,
                                          @QueryValue("function_name") String functionName,
                                          @QueryValue("function_language") String functionLanguage,
                                          @QueryValue("function_entry_point") String functionEntryPoint,
-                                         @Nullable @QueryValue("arguments") String arguments,
+                                         @QueryValue("function_memory") String functionMemory,
                                          @Body byte[] functionCode) {
-        return LambdaManager.uploadFunction(allocate, username, functionName, functionLanguage, functionEntryPoint, arguments, functionCode);
+        // TODO - we need to add runtime type (niuk vs container) and runtime identifier (img with niuk, or container name)
+        return LambdaManager.uploadFunction(allocate, username, functionName, functionLanguage, functionEntryPoint, functionMemory, functionCode);
     }
 
     @Post("/remove_function")

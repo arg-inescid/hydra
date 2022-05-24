@@ -33,8 +33,7 @@ public class StartTruffle extends StartLambda {
         command.add("src/scripts/start_truffle.sh");
         command.add(lambda.getFunction().getName());
         command.add(String.valueOf(pid));
-        // TODO: Should we put separate field in config for truffle memory or should it be like proportionally bigger then regular?
-        command.add(String.valueOf(512 * 3));
+        command.add(lambda.getFunction().getMemory());
         command.add(connectionTriplet.ip);
         command.add(connectionTriplet.tap);
         command.add(Configuration.argumentStorage.getGateway());

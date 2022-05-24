@@ -44,16 +44,12 @@ public class ArgumentStorage {
     private String gateway;
     private String mask;
     private Iterator<IPv4Address> iPv4AddressIterator;
-
     private int maxLambdas;
     private final ArrayList<ConnectionTriplet<String, String, RxHttpClient>> connectionPool = new ArrayList<>();
-
     private int timeout;
     private int healthCheck;
-    private String memorySpace;
     private int lambdaPort;
     private boolean isLambdaConsoleActive;
-
     private LambdaManagerConsole cachedConsoleInfo;
 
     private ArgumentStorage() {
@@ -71,7 +67,6 @@ public class ArgumentStorage {
 
         this.timeout = lambdaManagerConfiguration.getTimeout();
         this.healthCheck = lambdaManagerConfiguration.getHealthCheck();
-        this.memorySpace = lambdaManagerConfiguration.getMemory();
         this.lambdaPort = lambdaManagerConfiguration.getLambdaPort();
         this.isLambdaConsoleActive = lambdaManagerConfiguration.isLambdaConsole();
     }
@@ -278,10 +273,6 @@ public class ArgumentStorage {
 
     public int getHealthCheck() {
         return healthCheck;
-    }
-
-    public String getMemorySpace() {
-        return memorySpace;
     }
 
     public int getLambdaPort() {

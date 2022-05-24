@@ -93,13 +93,15 @@ def upload_function(test_config_dir, username, entry_point, command_info):
                                 "username={username}&"
                                 "function_name={function_name}&"
                                 "function_language={function_language}&"
-                                "function_entry_point={function_entry_point}"
+                                "function_entry_point={function_entry_point}&"
+                                "function_memory={function_memory}"
                                 .format(allocate=command_info['allocate'],
                                         entry_point=entry_point,
                                         username=username,
                                         function_name=command_info['function_name'],
                                         function_language=command_info['function_language'],
-                                        function_entry_point=command_info['function_entry_point']),
+                                        function_entry_point=command_info['function_entry_point'],
+                                        function_memory=command_info['function_memory']),
                                 headers={'Content-type': 'application/octet-stream'},
                                 data=read_file(username, benchmark_path)).text, MessageType.INFO)
 

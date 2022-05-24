@@ -12,7 +12,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
                 "maxLambdas",
                 "timeout",
                 "healthCheck",
-                "memory",
                 "lambdaPort",
                 "lambdaConsole",
                 "managerConsole",
@@ -23,7 +22,6 @@ public class LambdaManagerConfiguration implements Serializable {
     @JsonProperty("maxLambdas") private int maxLambdas;
     @JsonProperty("timeout") private int timeout;
     @JsonProperty("healthCheck") private int healthCheck;
-    @JsonProperty("memory") private String memory;
     @JsonProperty("lambdaPort") private int lambdaPort;
     @JsonProperty("lambdaConsole") private boolean lambdaConsole;
     @JsonProperty("managerConsole") private LambdaManagerConsole lambdaManagerConsole;
@@ -50,14 +48,13 @@ public class LambdaManagerConfiguration implements Serializable {
      * @param lambdaManagerConsole - The class with information about manager logging.
      * @param lambdaManagerState - The class that represent state of one manager's instance.
      */
-    public LambdaManagerConfiguration(String gateway, int maxLambdas, int timeout, int healthCheck, String memory, int lambdaPort,
+    public LambdaManagerConfiguration(String gateway, int maxLambdas, int timeout, int healthCheck, int lambdaPort,
                     boolean lambdaConsole, LambdaManagerConsole lambdaManagerConsole, LambdaManagerState lambdaManagerState) {
         super();
         this.gateway = gateway;
         this.maxLambdas = maxLambdas;
         this.timeout = timeout;
         this.healthCheck = healthCheck;
-        this.memory = memory;
         this.lambdaPort = lambdaPort;
         this.lambdaConsole = lambdaConsole;
         this.lambdaManagerConsole = lambdaManagerConsole;
@@ -102,16 +99,6 @@ public class LambdaManagerConfiguration implements Serializable {
     @JsonProperty("healthCheck")
     public void setHealthCheck(int healthCheck) {
         this.healthCheck = healthCheck;
-    }
-
-    @JsonProperty("memory")
-    public String getMemory() {
-        return memory;
-    }
-
-    @JsonProperty("memory")
-    public void setMemory(String memory) {
-        this.memory = memory;
     }
 
     @JsonProperty("lambdaPort")

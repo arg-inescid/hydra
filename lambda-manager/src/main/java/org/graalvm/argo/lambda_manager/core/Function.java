@@ -18,11 +18,8 @@ public class Function {
     /** Function entry point (how should we invoke the function). */
     private final String entryPoint;
 
-    /**
-     * Arguments passed to the function code when it is launched. Not to be confused with lambda
-     * invocation arguments.
-     */
-    private final String arguments;
+    /** Memory required to run a function invocation (in MBs). */
+    private final String memory;
 
     /** Function status in the optimization pipeline. */
     private FunctionStatus status;
@@ -47,11 +44,11 @@ public class Function {
     /** Number of Lambdas that are not receiving requests. */
     private int decommissionedLambdas;
 
-    public Function(String name, String language, String entryPoint, String arguments) throws Exception {
+    public Function(String name, String language, String entryPoint, String memory) throws Exception {
         this.name = name;
         this.language = FunctionLanguage.fromString(language);
         this.entryPoint = entryPoint;
-        this.arguments = arguments;
+        this.memory = memory;
         if (isTruffleLanguage()) {
             this.status = FunctionStatus.BUILT;
         } else {
@@ -69,10 +66,6 @@ public class Function {
 
     public void setStatus(FunctionStatus status) {
         this.status = status;
-    }
-
-    public String getArguments() {
-        return arguments;
     }
 
     public long getLastAgentPID() {
@@ -119,6 +112,10 @@ public class Function {
 
     public String getEntryPoint() {
         return entryPoint;
+    }
+
+    public String getMemory() {
+        return memory;
     }
 
 
