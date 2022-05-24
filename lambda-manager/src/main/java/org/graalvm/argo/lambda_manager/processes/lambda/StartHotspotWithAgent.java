@@ -12,7 +12,6 @@ import io.micronaut.http.client.RxHttpClient;
 
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import static org.graalvm.argo.lambda_manager.core.Environment.*;
@@ -52,9 +51,6 @@ public class StartHotspotWithAgent extends StartLambda {
         command.add(TIMESTAMP_TAG + System.currentTimeMillis());
         command.add(ENTRY_POINT_TAG + lambda.getFunction().getEntryPoint());
         command.add(PORT_TAG + Configuration.argumentStorage.getLambdaPort());
-        if (lambda.getFunction().getArguments() != null) {
-            Collections.addAll(command, lambda.getFunction().getArguments().split(","));
-        }
         return command;
     }
 

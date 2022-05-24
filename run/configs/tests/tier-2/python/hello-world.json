@@ -28,7 +28,6 @@
           "function_name": "hello-world",
           "function_language": "python",
           "function_entry_point": "main",
-          "arguments": "8080",
           "source": "../../../../../../benchmarks/language/python/hello-world/main.py"
         },
         {

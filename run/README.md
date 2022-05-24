@@ -150,7 +150,6 @@ structure is provide bellow (value inside [ ] represents JSON data types):
           "command": "upload",
           "allocate": "[INTEGER] How many instances the user wants allocate for this function?",
           "function_name": "[STRING] Function name?",
-          "arguments": "[STRING] Comma separated lambda arguments",
           "source": "[STRING] Function source code path (root directory)?"
         },
         {

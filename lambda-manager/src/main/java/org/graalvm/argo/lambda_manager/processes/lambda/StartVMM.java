@@ -10,7 +10,6 @@ import org.graalvm.argo.lambda_manager.utils.ConnectionTriplet;
 import io.micronaut.http.client.RxHttpClient;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class StartVMM extends StartLambda {
@@ -48,9 +47,6 @@ public class StartVMM extends StartLambda {
         command.add(ENTRY_POINT_TAG + lambda.getFunction().getEntryPoint());
         command.add(PORT_TAG + Configuration.argumentStorage.getLambdaPort());
         command.add("LD_LIBRARY_PATH=/lib:/lib64:/apps:/usr/local/lib");
-        if (lambda.getFunction().getArguments() != null) {
-            Collections.addAll(command, lambda.getFunction().getArguments().split(","));
-        }
         return command;
     }
 
