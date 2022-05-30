@@ -4,7 +4,6 @@ import static org.graalvm.argo.lambda_proxy.PolyglotProxy.APP_DIR;
 import static org.graalvm.argo.lambda_proxy.utils.IsolateUtils.copyString;
 import static org.graalvm.argo.lambda_proxy.utils.IsolateUtils.retrieveString;
 import static org.graalvm.argo.lambda_proxy.utils.JsonUtils.jsonToMap;
-import static org.graalvm.argo.lambda_proxy.utils.JsonUtils.valueToJson;
 import static org.graalvm.argo.lambda_proxy.utils.ProxyUtils.*;
 
 import java.io.*;
@@ -62,7 +61,7 @@ public class PolyglotEngine implements LanguageEngine {
                     // get function handle from the script
                     Value function = context.eval(language, entryPoint);
                     Value res = function.execute(args);
-                    resultString = valueToJson(res);
+                    resultString = res.toString();
                 } catch (IllegalArgumentException | IllegalStateException | PolyglotException | UnsupportedOperationException | NullPointerException e) {
                     System.err.println("Error happens during parsing/invoking polyglot function: ");
                     e.printStackTrace();

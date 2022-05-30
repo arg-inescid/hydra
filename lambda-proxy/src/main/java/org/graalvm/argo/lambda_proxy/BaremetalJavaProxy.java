@@ -4,14 +4,7 @@ import java.io.IOException;
 
 import org.graalvm.argo.lambda_proxy.engine.JavaEngine;
 
-public class JavaProxy extends Proxy {
-
-    protected static void checkArgs(String[] args) {
-        if (args == null || args.length < 3) {
-            System.err.println("Error invoking JavaProxy, expected at least three arguments (timestamp, target classname and service port).");
-            System.exit(1);
-        }
-    }
+public class BaremetalJavaProxy extends JavaProxy {
 
     /**
      * Entry point of proxies for native java application
@@ -23,7 +16,6 @@ public class JavaProxy extends Proxy {
      * @throws NumberFormatException
      */
     public static void main(String[] args) throws NumberFormatException, ClassNotFoundException, NoSuchMethodException, IOException {
-        args = loadArguments(new String[]{TIMESTAMP_TAG, ENTRY_POINT_TAG, PORT_TAG});
         checkArgs(args);
 
         System.out.println("Java Lambda boot time: " + (System.currentTimeMillis() - Long.parseLong(args[0])));

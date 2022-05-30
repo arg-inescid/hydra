@@ -28,7 +28,6 @@ public class PolyglotFunction {
         } else {
             this.source = source;
         }
-        System.out.println("PolyglotFunction created");
     }
 
     public GraalVisorAPI getGraalVisorAPI() {

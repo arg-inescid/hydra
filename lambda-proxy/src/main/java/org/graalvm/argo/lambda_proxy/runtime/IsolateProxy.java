@@ -55,13 +55,13 @@ public class IsolateProxy extends RuntimeProxy {
     protected String invoke(String functionName, String arguments) throws PolyglotException, IOException,
                     ClassNotFoundException, InvocationTargetException, IllegalAccessException, NoSuchMethodException,
                     FunctionRegistrationFailure {
-        long start = System.currentTimeMillis();
+        long start = System.nanoTime();
         Map<String, Object> output = new HashMap<>();
         IsolateObjectWrapper isolateObjectWrapper = languageEngine.createIsolate(functionName);
         // copy serialized input into heap space of the process isolate
         String outputString = languageEngine.invoke(isolateObjectWrapper, functionName, arguments);
         output.put("result", outputString);
-        output.put("process time", System.currentTimeMillis() - start);
+        output.put("process time (us)", (System.nanoTime() - start) / 1000);
         String ret = null;
         try {
             ret = json.asString(output);

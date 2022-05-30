@@ -5,15 +5,7 @@ import java.io.IOException;
 
 import org.graalvm.argo.lambda_proxy.engine.PolyglotEngine;
 
-public class PolyglotProxy extends Proxy {
-    public static final String APP_DIR = "./apps/";
-
-    protected static void checkArgs(String[] args) {
-        if (args == null || args.length < 2) {
-            System.err.println("Error invoking PolyglotProxy, expected at least two arguments (timestamp, service port).");
-            System.exit(1);
-        }
-    }
+public class BaremetalPolyglotProxy extends PolyglotProxy {
 
     /**
      * Entry point of proxies for all truffle functions Difference between JavaProxy and
@@ -26,7 +18,6 @@ public class PolyglotProxy extends Proxy {
      * @throws NumberFormatException
      */
     public static void main(String[] args) throws NumberFormatException, IOException {
-        args = loadArguments(new String[]{TIMESTAMP_TAG, PORT_TAG});
         new File(APP_DIR).mkdirs();
         checkArgs(args);
 

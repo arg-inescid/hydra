@@ -1,0 +1,14 @@
+[
+{
+  "name":"com.sleep.Sleep",
+  "methods":[{"name":"main","parameterTypes":["java.util.Map"] }]
+},
+{
+  "name":"java.security.MessageDigestSpi"
+},
+{
+  "name":"sun.security.provider.SHA",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+}
+]
+
