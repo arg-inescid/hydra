@@ -9,7 +9,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
                 "gateway",
-                "maxLambdas",
+                "maxMemory",
                 "timeout",
                 "healthCheck",
                 "lambdaPort",
@@ -19,7 +19,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 })
 public class LambdaManagerConfiguration implements Serializable {
     @JsonProperty("gateway") private String gateway;
-    @JsonProperty("maxLambdas") private int maxLambdas;
+    @JsonProperty("maxMemory") private int maxMemory;
     @JsonProperty("timeout") private int timeout;
     @JsonProperty("healthCheck") private int healthCheck;
     @JsonProperty("lambdaPort") private int lambdaPort;
@@ -38,21 +38,20 @@ public class LambdaManagerConfiguration implements Serializable {
     /**
      *
      * @param gateway - The default PC's gateway address.
-     * @param maxLambdas - How many lambdas can be started in total by this manager.
+     * @param maxMemory - Maximum memory that can be used by lambdas in total (MBs).
      * @param timeout - Time during which lambda can stay inactive.
      * @param healthCheck - Lambda's health will be checked in this time-span, after the first
      *            health response, no more checks are made.
-     * @param memory - Maximum memory consumption per active lambda.
      * @param lambdaPort - In which port the lambda will receive its requests.
      * @param lambdaConsole - Is console active during qemu's run.
      * @param lambdaManagerConsole - The class with information about manager logging.
      * @param lambdaManagerState - The class that represent state of one manager's instance.
      */
-    public LambdaManagerConfiguration(String gateway, int maxLambdas, int timeout, int healthCheck, int lambdaPort,
+    public LambdaManagerConfiguration(String gateway, int maxMemory, int timeout, int healthCheck, int lambdaPort,
                     boolean lambdaConsole, LambdaManagerConsole lambdaManagerConsole, LambdaManagerState lambdaManagerState) {
         super();
         this.gateway = gateway;
-        this.maxLambdas = maxLambdas;
+        this.maxMemory = maxMemory;
         this.timeout = timeout;
         this.healthCheck = healthCheck;
         this.lambdaPort = lambdaPort;
@@ -71,14 +70,14 @@ public class LambdaManagerConfiguration implements Serializable {
         this.gateway = gateway;
     }
 
-    @JsonProperty("maxLambdas")
-    public int getMaxLambdas() {
-        return maxLambdas;
+    @JsonProperty("maxMemory")
+    public int getMaxMemory() {
+        return maxMemory;
     }
 
-    @JsonProperty("maxLambdas")
-    public void setMaxLambdas(int maxLambdas) {
-        this.maxLambdas = maxLambdas;
+    @JsonProperty("maxMemory")
+    public void setMaxMemory(int maxMemory) {
+        this.maxMemory = maxMemory;
     }
 
     @JsonProperty("timeout")

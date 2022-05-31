@@ -10,7 +10,7 @@ Default value for each variable rest inside configs/manager/default-lambda-manag
 ```json
 {
   "gateway": "[STRING] The default PC's gateway address with mask?",
-  "maxLambdas": "[INTEGER] How many lambdas can be started in total by this manager?",
+  "maxMemory": "[INTEGER] Maximum memory available for all lambdas (in MBs)",
   "timeout": "[INTEGER] Time during which lambda can stay inactive?",
   "healthCheck": "[INTEGER] Lambda's health will be checked in this time-span, after the first health response, no more checks are made.",
   "memory": "[STRING] Maximum memory consumption per active lambda?",

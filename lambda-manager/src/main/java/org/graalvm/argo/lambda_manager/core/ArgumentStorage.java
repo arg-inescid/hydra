@@ -44,7 +44,7 @@ public class ArgumentStorage {
     private String gateway;
     private String mask;
     private Iterator<IPv4Address> iPv4AddressIterator;
-    private int maxLambdas;
+    private int maxMemory;
     private final ArrayList<ConnectionTriplet<String, String, RxHttpClient>> connectionPool = new ArrayList<>();
     private int timeout;
     private int healthCheck;
@@ -63,7 +63,7 @@ public class ArgumentStorage {
         this.iPv4AddressIterator = gatewayWithMask.iterator();
         this.iPv4AddressIterator.next();
 
-        this.maxLambdas = lambdaManagerConfiguration.getMaxLambdas();
+        this.maxMemory = lambdaManagerConfiguration.getMaxMemory();
 
         this.timeout = lambdaManagerConfiguration.getTimeout();
         this.healthCheck = lambdaManagerConfiguration.getHealthCheck();
@@ -103,7 +103,7 @@ public class ArgumentStorage {
 
     private void prepareConnectionPool(BeanContext beanContext) throws ErrorDuringCreatingConnectionPool {
         try {
-            for (int i = 0; i < maxLambdas; i++) {
+            for (int i = 0; i < maxMemory; i++) { // TODO - we should have a maxTaps limit.
                 String ip = getNextIPAddress();
                 String tap = String.format("%s-%s", Environment.TAP_PREFIX, generateRandomString());
                 RxHttpClient client = beanContext.createBean(RxHttpClient.class,
@@ -247,8 +247,8 @@ public class ArgumentStorage {
         return gateway;
     }
 
-    public int getMaxLambdas() {
-        return maxLambdas;
+    public int getMaxMemory() {
+        return maxMemory;
     }
 
     public ArrayList<ConnectionTriplet<String, String, RxHttpClient>> getConnectionPool() {
