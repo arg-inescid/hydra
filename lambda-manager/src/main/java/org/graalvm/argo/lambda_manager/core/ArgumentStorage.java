@@ -41,11 +41,13 @@ import java.util.logging.Level;
 
 public class ArgumentStorage {
 
+    // TODO - could we just keep the LambdaManagerConfiguration and avoid most of these fields?
     private String gateway;
     private String mask;
     private Iterator<IPv4Address> iPv4AddressIterator;
     private int maxMemory;
-    private final ArrayList<ConnectionTriplet<String, String, RxHttpClient>> connectionPool = new ArrayList<>();
+    private int maxTaps;
+    private final ArrayList<ConnectionTriplet<String, String, RxHttpClient>> connectionPool;
     private int timeout;
     private int healthCheck;
     private int lambdaPort;
@@ -53,18 +55,17 @@ public class ArgumentStorage {
     private LambdaManagerConsole cachedConsoleInfo;
 
     private ArgumentStorage() {
+        this.connectionPool = new ArrayList<>();
     }
 
     private void initClassFields(LambdaManagerConfiguration lambdaManagerConfiguration) {
-        String gatewayString = lambdaManagerConfiguration.getGateway();
-        this.gateway = gatewayString.split("/")[0];
-        IPv4Subnet gatewayWithMask = IPv4Subnet.of(gatewayString);
+        this.gateway = lambdaManagerConfiguration.getGateway().split("/")[0];
+        IPv4Subnet gatewayWithMask = IPv4Subnet.of(lambdaManagerConfiguration.getGateway());
         this.mask = gatewayWithMask.getNetworkMask().toString();
         this.iPv4AddressIterator = gatewayWithMask.iterator();
         this.iPv4AddressIterator.next();
-
         this.maxMemory = lambdaManagerConfiguration.getMaxMemory();
-
+        this.maxTaps = lambdaManagerConfiguration.getMaxTaps();
         this.timeout = lambdaManagerConfiguration.getTimeout();
         this.healthCheck = lambdaManagerConfiguration.getHealthCheck();
         this.lambdaPort = lambdaManagerConfiguration.getLambdaPort();
@@ -103,7 +104,7 @@ public class ArgumentStorage {
 
     private void prepareConnectionPool(BeanContext beanContext) throws ErrorDuringCreatingConnectionPool {
         try {
-            for (int i = 0; i < maxMemory; i++) { // TODO - we should have a maxTaps limit.
+            for (int i = 0; i < maxTaps; i++) {
                 String ip = getNextIPAddress();
                 String tap = String.format("%s-%s", Environment.TAP_PREFIX, generateRandomString());
                 RxHttpClient client = beanContext.createBean(RxHttpClient.class,

@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
                 "gateway",
                 "maxMemory",
+                "maxTaps",
                 "timeout",
                 "healthCheck",
                 "lambdaPort",
@@ -20,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class LambdaManagerConfiguration implements Serializable {
     @JsonProperty("gateway") private String gateway;
     @JsonProperty("maxMemory") private int maxMemory;
+    @JsonProperty("maxTaps") private int maxTaps;
     @JsonProperty("timeout") private int timeout;
     @JsonProperty("healthCheck") private int healthCheck;
     @JsonProperty("lambdaPort") private int lambdaPort;
@@ -39,6 +41,7 @@ public class LambdaManagerConfiguration implements Serializable {
      *
      * @param gateway - The default PC's gateway address.
      * @param maxMemory - Maximum memory that can be used by lambdas in total (MBs).
+     * @param maxTaps- Maximum number of taps available for lambdas.
      * @param timeout - Time during which lambda can stay inactive.
      * @param healthCheck - Lambda's health will be checked in this time-span, after the first
      *            health response, no more checks are made.
@@ -47,11 +50,12 @@ public class LambdaManagerConfiguration implements Serializable {
      * @param lambdaManagerConsole - The class with information about manager logging.
      * @param lambdaManagerState - The class that represent state of one manager's instance.
      */
-    public LambdaManagerConfiguration(String gateway, int maxMemory, int timeout, int healthCheck, int lambdaPort,
+    public LambdaManagerConfiguration(String gateway, int maxMemory, int maxTaps, int timeout, int healthCheck, int lambdaPort,
                     boolean lambdaConsole, LambdaManagerConsole lambdaManagerConsole, LambdaManagerState lambdaManagerState) {
         super();
         this.gateway = gateway;
         this.maxMemory = maxMemory;
+        this.maxTaps = maxTaps;
         this.timeout = timeout;
         this.healthCheck = healthCheck;
         this.lambdaPort = lambdaPort;
@@ -78,6 +82,16 @@ public class LambdaManagerConfiguration implements Serializable {
     @JsonProperty("maxMemory")
     public void setMaxMemory(int maxMemory) {
         this.maxMemory = maxMemory;
+    }
+
+    @JsonProperty("maxTaps")
+    public int getMaxTaps() {
+        return maxTaps;
+    }
+
+    @JsonProperty("maxTaps")
+    public void setMaxTaps(int maxTaps) {
+        this.maxTaps = maxTaps;
     }
 
     @JsonProperty("timeout")

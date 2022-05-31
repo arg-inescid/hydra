@@ -11,6 +11,7 @@ Default value for each variable rest inside configs/manager/default-lambda-manag
 {
   "gateway": "[STRING] The default PC's gateway address with mask?",
   "maxMemory": "[INTEGER] Maximum memory available for all lambdas (in MBs)",
+  "maxTaps": "[INTEGER] Maximum number of taps created for lambdas",
   "timeout": "[INTEGER] Time during which lambda can stay inactive?",
   "healthCheck": "[INTEGER] Lambda's health will be checked in this time-span, after the first health response, no more checks are made.",
   "memory": "[STRING] Maximum memory consumption per active lambda?",
