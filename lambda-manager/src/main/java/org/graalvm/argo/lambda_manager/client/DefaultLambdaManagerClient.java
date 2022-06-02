@@ -26,11 +26,10 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
      */
     private static final int FAULT_TOLERANCE = 300;
 
-    private Object buildHTTPRequestArguments(Lambda lambda) {
+    private Object buildHTTPRequestArguments(Lambda lambda, String arguments) {
         Function function = lambda.getFunction();
         String functionName = function.getName();
         String entryPoint = function.getEntryPoint();
-        String arguments = lambda.getArguments();
 
         switch (lambda.getTruffleStatus()) {
             case NEED_REGISTRATION:
@@ -51,13 +50,12 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         }
     }
 
-    private String buildHTTPRequestPath(Lambda lambda) {
+    private String buildHTTPRequestPath(Lambda lambda, String arguments) {
         switch (lambda.getTruffleStatus()) {
             case NEED_REGISTRATION:
                 Function function = lambda.getFunction();
                 String functionName = function.getName();
                 String entryPoint = function.getEntryPoint();
-                String arguments = lambda.getArguments();
                 return String.format("/register?name=%s&language=%s&entryPoint=%s", functionName, function.getLanguage().toString(), entryPoint);
             case READY_FOR_EXECUTION:
             case NOT_TRUFFLE_LANG:
@@ -69,17 +67,17 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         }
     }
 
-    private HttpRequest<?> buildHTTPRequest(Lambda lambda) {
-        Object argumentsJSON = buildHTTPRequestArguments(lambda);
+    private HttpRequest<?> buildHTTPRequest(Lambda lambda, String arguments) {
+        Object argumentsJSON = buildHTTPRequestArguments(lambda, arguments);
         if (argumentsJSON == null) {
             argumentsJSON = "";
         }
-        return HttpRequest.POST(buildHTTPRequestPath(lambda), argumentsJSON);
+        return HttpRequest.POST(buildHTTPRequestPath(lambda, arguments), argumentsJSON);
     }
 
     @Override
-    public String sendRequest(Lambda lambda) {
-        HttpRequest<?> request = buildHTTPRequest(lambda);
+    public String sendRequest(Lambda lambda, String arguments) {
+        HttpRequest<?> request = buildHTTPRequest(lambda, arguments);
         try (RxHttpClient client = lambda.getConnectionTriplet().client) {
             Flowable<String> flowable = client.retrieve(request);
             for (int failures = 0; failures < FAULT_TOLERANCE; failures++) {

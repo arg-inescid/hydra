@@ -26,7 +26,6 @@ public class Lambda {
     /** Lambda status in the truffle pipeline. */
     private volatile LambdaTruffleStatus truffleStatus;
 
-    private String arguments;
     private Timer timer;
     private ConnectionTriplet<String, String, RxHttpClient> connectionTriplet;
     private LambdaExecutionMode executionMode;
@@ -77,14 +76,6 @@ public class Lambda {
 
     public int getClosedRequestCount() {
         return closedRequestCount;
-    }
-
-    public String getArguments() {
-        return arguments;
-    }
-
-    public void setArguments(String arguments) {
-        this.arguments = arguments;
     }
 
     public Timer getTimer() {

@@ -47,6 +47,7 @@ public class ArgumentStorage {
     private Iterator<IPv4Address> iPv4AddressIterator;
     private int maxMemory;
     private int maxTaps;
+    // TODO - we should synchronize access to the connection pool.
     private final ArrayList<ConnectionTriplet<String, String, RxHttpClient>> connectionPool;
     private int timeout;
     private int healthCheck;
@@ -261,7 +262,9 @@ public class ArgumentStorage {
     }
 
     public void returnConnectionTriplet(ConnectionTriplet<String, String, RxHttpClient> connectionTriplet) {
-        connectionPool.add(connectionTriplet);
+        if (!connectionPool.contains(connectionTriplet)) {
+            connectionPool.add(connectionTriplet);
+        }
     }
 
     public String getMask() {

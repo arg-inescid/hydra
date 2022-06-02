@@ -88,18 +88,22 @@ public class Function {
         return runningLambdas;
     }
 
-	public int getNumberDecommissionedLambdas() {
-		return decommissionedLambdas;
-	}
+    public int getNumberDecommissionedLambdas() {
+        return decommissionedLambdas;
+    }
 
     public void decommissionLambda(Lambda lambda) {
-        decommissionedLambdas++;
-        lambda.setDecommissioned(true);
+        if (!lambda.isDecommissioned()) {
+            decommissionedLambdas++;
+            lambda.setDecommissioned(true);
+        }
     }
 
     public void commissionLambda(Lambda lambda) {
-        decommissionedLambdas--;
-        lambda.setDecommissioned(false);
+        if (lambda.isDecommissioned()) {
+            decommissionedLambdas--;
+            lambda.setDecommissioned(false);
+        }
     }
 
     public int getTotalNumberLambdas() {

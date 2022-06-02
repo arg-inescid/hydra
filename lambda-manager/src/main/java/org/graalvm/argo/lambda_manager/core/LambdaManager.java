@@ -60,16 +60,15 @@ public class LambdaManager {
             for (int i = 0; i < LAMBDA_FAULT_TOLERANCE; i++) {
                 long start = System.currentTimeMillis();
                 Lambda lambda = Configuration.scheduler.schedule(function, targetMode);
-                lambda.setArguments(arguments);
                 if (function.isTruffleLanguage() && lambda.getTruffleStatus() == LambdaTruffleStatus.NEED_REGISTRATION) {
                     synchronized (lambda) {
                         if (lambda.getTruffleStatus() == LambdaTruffleStatus.NEED_REGISTRATION) {
-                            Configuration.client.sendRequest(lambda);
+                            Configuration.client.sendRequest(lambda, arguments);
                             lambda.setTruffleStatus(LambdaTruffleStatus.READY_FOR_EXECUTION);
                         }
                     }
                 }
-                response = Configuration.client.sendRequest(lambda);
+                response = Configuration.client.sendRequest(lambda, arguments);
                 Configuration.optimizer.registerCall(lambda);
                 Configuration.scheduler.reschedule(lambda);
 

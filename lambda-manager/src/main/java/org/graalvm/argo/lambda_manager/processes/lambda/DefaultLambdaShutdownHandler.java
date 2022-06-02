@@ -4,21 +4,20 @@ import org.graalvm.argo.lambda_manager.core.Configuration;
 import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.core.Lambda;
 import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
-
+import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.TimerTask;
 import java.util.logging.Level;
-import java.util.logging.Logger;
+
 
 public class DefaultLambdaShutdownHandler extends TimerTask {
 
     private final Lambda lambda;
     private final Function function;
     private final ProcessBuilder process;
-    private final Logger logger = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 
     public DefaultLambdaShutdownHandler(Lambda lambda) {
         this.lambda = lambda;
@@ -31,7 +30,7 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
         String line;
 
         while ((line = is.readLine()) != null) {
-            logger.log(level, line);
+            Logger.log(level, line);
         }
     }
 
@@ -39,7 +38,16 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
         Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_hotspot.sh", lambdaPath).start();
         p.waitFor();
         if (p.exitValue() != 0) {
-            logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", process.pid()));
+            Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", process.pid()));
+            printStream(Level.WARNING, p.getErrorStream());
+        }
+    }
+
+    private void shutdownVMMLambda(String lambdaPath) throws Throwable {
+        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_vmm.sh", lambdaPath).start();
+        p.waitFor();
+        if (p.exitValue() != 0) {
+            Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", process.pid()));
             printStream(Level.WARNING, p.getErrorStream());
         }
     }
@@ -55,35 +63,30 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
                     shutdownHotSpotLambda(String.format("codebase/%s/pid_%d_hotspot_w_agent", function.getName(), process.pid()));
                     break;
                 case NATIVE_IMAGE:
-                    // Currently, we don't shut down lambdas running in Native Image.
+                    shutdownVMMLambda(String.format("codebase/%s/pid_%d_vmm", function.getName(), process.pid()));
                     break;
                 default:
-                    logger.log(Level.WARNING, String.format("Lambda ID=%d has no known execution mode: %s", process.pid(), lambda.getExecutionMode()));
+                    Logger.log(Level.WARNING, String.format("Lambda ID=%d has no known execution mode: %s", process.pid(), lambda.getExecutionMode()));
             }
         } catch (Throwable t) {
-            logger.log(Level.SEVERE, String.format("Lambda ID=%d failed to shutdown: %s", process.pid(), t.getMessage()));
+            Logger.log(Level.SEVERE, String.format("Lambda ID=%d failed to shutdown: %s", process.pid(), t.getMessage()));
             t.printStackTrace();
         }
     }
 
     @Override
     public void run() {
-
         synchronized (function) {
-            if (!function.getIdleLambdas().remove(lambda)) {
-                return;
-            }
-            lambda.getTimer().cancel();
+            function.getIdleLambdas().remove(lambda);
         }
 
+        lambda.getTimer().cancel();
         function.commissionLambda(lambda);
         lambda.resetClosedRequestCount();
-
         shutdownLambda();
-        process.shutdownInstance();
+        Configuration.argumentStorage.returnConnectionTriplet(lambda.getConnectionTriplet());
 
         synchronized (function) {
-            Configuration.argumentStorage.returnConnectionTriplet(lambda.getConnectionTriplet());
             function.getStoppedLambdas().add(lambda);
             function.notify();
         }

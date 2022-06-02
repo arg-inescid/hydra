@@ -90,34 +90,4 @@ public class ProcessBuilder extends Thread {
         logProcessStart();
         return processBuilder;
     }
-
-    public void shutdownInstance() {
-        shutdownInstance(process.descendants());
-    }
-
-    private void shutdownInstance(Stream<ProcessHandle> descendants) {
-        if (descendants == null) {
-            return;
-        }
-
-        descendants.forEach(new Stream.Builder<>() {
-            @Override
-            public void accept(ProcessHandle processHandle) {
-                shutdownInstance(processHandle.descendants());
-                processHandle.destroy();
-                while (processHandle.isAlive()) {
-                    try {
-                        Thread.sleep(Environment.IS_ALIVE_PAUSE);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-
-            @Override
-            public Stream<ProcessHandle> build() {
-                return null;
-            }
-        });
-    }
 }
