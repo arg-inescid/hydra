@@ -53,7 +53,7 @@ public class RoundedRobinScheduler implements Scheduler {
                         function.getIdleLambdas().add(lambda);
                         Logger.log(Level.INFO, "Added new lambda for " + function.getName() + " with mode " + lambda.getExecutionMode());
                     } else {
-                        function.getStoppedLambdas().add(lambda);
+                        Configuration.argumentStorage.deallocateMemoryLambda(function);
                         Logger.log(Level.SEVERE, "Failed to add new lambda for " + function.getName() + " with mode " + lambda.getExecutionMode());
                     }
                     lambda.resetTimer();
@@ -85,19 +85,17 @@ public class RoundedRobinScheduler implements Scheduler {
 
             synchronized (function) {
                 if ((lambda = findLambda(function.getIdleLambdas(), targetMode)) == null) {
-                    if ((lambda = findLambda(function.getStoppedLambdas())) == null) {
+                    if (Configuration.argumentStorage.allocateMemoryLambda(function)) {
+                        Logger.log(Level.INFO, "Requesting new lambda for " + function.getName() + " with mode " + targetMode);
+                        lambda = new Lambda(function);
+                        startLambda(function, lambda);
+                        continue;
+                    } else {
                         // TODO - this target mode is a hard rule meaning that we might drastically change the load towards one single VM.
-                        // We should slowly transition the load to the VMs with target load.
                         if ((lambda = findLambda(function.getRunningLambdas(), targetMode)) != null) {
                             // We remove the lambda so that it can be inserted at the end of the list.
                             function.getRunningLambdas().remove(lambda);
                         }
-                    } else {
-                        // We remove from stopped and start the lambda in the background.
-                        function.getStoppedLambdas().remove(lambda);
-                        Logger.log(Level.INFO, "Requesting new lambda for " + function.getName() + " with mode " + targetMode);
-                        startLambda(function, lambda);
-                        continue;
                     }
                 } else {
                     function.getIdleLambdas().remove(lambda);

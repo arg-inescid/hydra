@@ -98,8 +98,7 @@ public class LambdaManager {
         return JsonUtils.constructJsonResponseObject(responseString);
     }
 
-    public static Single<String> uploadFunction(int allocate,
-                                                String username,
+    public static Single<String> uploadFunction(String username,
                                                 String functionName,
                                                 String functionLanguage,
                                                 String functionEntryPoint,
@@ -116,10 +115,6 @@ public class LambdaManager {
             String encodeFunctionName = Configuration.coder.encodeFunctionName(username, functionName);
             Function function = new Function(encodeFunctionName, functionLanguage, functionEntryPoint, functionMemory);
             Configuration.storage.register(encodeFunctionName, function, functionCode);
-            for (int i = 0; i < allocate; i++) {
-                // TODO - why do we need this? We just quit at this point.
-                function.getStoppedLambdas().add(new Lambda(function));
-            }
             Logger.log(Level.INFO, String.format(Messages.SUCCESS_FUNCTION_UPLOAD, functionName));
             responseString = String.format(Messages.SUCCESS_FUNCTION_UPLOAD, functionName);
         } catch (Exception e) {

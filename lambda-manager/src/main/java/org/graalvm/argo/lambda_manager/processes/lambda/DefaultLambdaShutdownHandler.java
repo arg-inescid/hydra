@@ -87,7 +87,7 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
         Configuration.argumentStorage.returnConnectionTriplet(lambda.getConnectionTriplet());
 
         synchronized (function) {
-            function.getStoppedLambdas().add(lambda);
+            Configuration.argumentStorage.deallocateMemoryLambda(function);
             function.notify();
         }
     }

@@ -19,7 +19,7 @@ public class Function {
     private final String entryPoint;
 
     /** Memory required to run a function invocation (in MBs). */
-    private final String memory;
+    private final long memory;
 
     /** Function status in the optimization pipeline. */
     private FunctionStatus status;
@@ -31,9 +31,6 @@ public class Function {
      * access to the agent's generated configurations.
      */
     private long lastAgentPID;
-
-    /** Unallocated lambdas. */
-    private final ArrayList<Lambda> stoppedLambdas = new ArrayList<>();
 
     /** Idle lambdas, waiting for requests. */
     private final ArrayList<Lambda> idleLambdas = new ArrayList<>();
@@ -48,7 +45,7 @@ public class Function {
         this.name = name;
         this.language = FunctionLanguage.fromString(language);
         this.entryPoint = entryPoint;
-        this.memory = memory;
+        this.memory = Long.parseLong(memory);
         if (isTruffleLanguage()) {
             this.status = FunctionStatus.BUILT;
         } else {
@@ -74,10 +71,6 @@ public class Function {
 
     public void setLastAgentPID(long lastAgentPID) {
         this.lastAgentPID = lastAgentPID;
-    }
-
-    public ArrayList<Lambda> getStoppedLambdas() {
-        return stoppedLambdas;
     }
 
     public ArrayList<Lambda> getIdleLambdas() {
@@ -107,7 +100,7 @@ public class Function {
     }
 
     public int getTotalNumberLambdas() {
-        return stoppedLambdas.size() + idleLambdas.size() + runningLambdas.size();
+        return idleLambdas.size() + runningLambdas.size();
     }
 
     public FunctionLanguage getLanguage() {
@@ -118,7 +111,7 @@ public class Function {
         return entryPoint;
     }
 
-    public String getMemory() {
+    public long getMemory() {
         return memory;
     }
 

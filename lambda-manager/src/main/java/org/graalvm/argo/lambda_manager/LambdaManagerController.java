@@ -39,9 +39,8 @@ public class LambdaManagerController {
         return LambdaManager.getFunctions();
     }
 
-    // TODO - Can we remove the 'allocate' flag? It is basically a hack to preallocate ips...
     @Post(value = "/upload_function", consumes = MediaType.APPLICATION_OCTET_STREAM)
-    public Single<String> uploadFunction(@QueryValue("allocate") int allocate,
+    public Single<String> uploadFunction(@QueryValue("allocate") int allocate,     // TODO - remove
                                          @QueryValue("username") String username,
                                          @QueryValue("function_name") String functionName,
                                          @QueryValue("function_language") String functionLanguage,
@@ -49,7 +48,7 @@ public class LambdaManagerController {
                                          @QueryValue("function_memory") String functionMemory,
                                          @Body byte[] functionCode) {
         // TODO - we need to add runtime type (niuk vs container) and runtime identifier (img with niuk, or container name)
-        return LambdaManager.uploadFunction(allocate, username, functionName, functionLanguage, functionEntryPoint, functionMemory, functionCode);
+        return LambdaManager.uploadFunction(username, functionName, functionLanguage, functionEntryPoint, functionMemory, functionCode);
     }
 
     @Post("/remove_function")

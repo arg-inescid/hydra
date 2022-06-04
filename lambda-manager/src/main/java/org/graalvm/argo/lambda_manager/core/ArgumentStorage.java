@@ -45,7 +45,7 @@ public class ArgumentStorage {
     private String gateway;
     private String mask;
     private Iterator<IPv4Address> iPv4AddressIterator;
-    private int maxMemory;
+    private int freeMemory;
     private int maxTaps;
     // TODO - we should synchronize access to the connection pool.
     private final ArrayList<ConnectionTriplet<String, String, RxHttpClient>> connectionPool;
@@ -65,7 +65,7 @@ public class ArgumentStorage {
         this.mask = gatewayWithMask.getNetworkMask().toString();
         this.iPv4AddressIterator = gatewayWithMask.iterator();
         this.iPv4AddressIterator.next();
-        this.maxMemory = lambdaManagerConfiguration.getMaxMemory();
+        this.freeMemory = lambdaManagerConfiguration.getMaxMemory();
         this.maxTaps = lambdaManagerConfiguration.getMaxTaps();
         this.timeout = lambdaManagerConfiguration.getTimeout();
         this.healthCheck = lambdaManagerConfiguration.getHealthCheck();
@@ -249,8 +249,30 @@ public class ArgumentStorage {
         return gateway;
     }
 
-    public int getMaxMemory() {
-        return maxMemory;
+    private synchronized boolean updateMemory(long delta) {
+        return delta < 0 ? allocateMemoryLambda(Math.abs(delta)) : deallocateMemoryLambda(delta);
+    }
+
+    private boolean allocateMemoryLambda(long delta) {
+        if (freeMemory >= delta) {
+            freeMemory -= delta;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private boolean deallocateMemoryLambda(long delta) {
+        freeMemory += delta;
+        return true;
+    }
+
+    public boolean allocateMemoryLambda(Function f) {
+        return updateMemory(Math.negateExact(f.getMemory()));
+    }
+
+    public boolean deallocateMemoryLambda(Function f) {
+        return updateMemory(f.getMemory());
     }
 
     public ArrayList<ConnectionTriplet<String, String, RxHttpClient>> getConnectionPool() {
@@ -258,6 +280,7 @@ public class ArgumentStorage {
     }
 
     public ConnectionTriplet<String, String, RxHttpClient> nextConnectionTriplet() {
+        // TODO - may throw exception if no more connections are available.
         return connectionPool.remove(0);
     }
 

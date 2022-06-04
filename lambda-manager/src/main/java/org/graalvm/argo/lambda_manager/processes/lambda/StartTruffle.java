@@ -33,7 +33,7 @@ public class StartTruffle extends StartLambda {
         command.add("src/scripts/start_truffle.sh");
         command.add(lambda.getFunction().getName());
         command.add(String.valueOf(pid));
-        command.add(lambda.getFunction().getMemory());
+        command.add(String.valueOf(lambda.getFunction().getMemory()));
         command.add(connectionTriplet.ip);
         command.add(connectionTriplet.tap);
         command.add(Configuration.argumentStorage.getGateway());
