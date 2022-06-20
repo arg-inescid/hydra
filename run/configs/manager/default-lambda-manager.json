@@ -12,7 +12,6 @@
   },
   "managerState": {
     "scheduler": "org.graalvm.argo.lambda_manager.schedulers.RoundedRobinScheduler",
-    "optimizer": "org.graalvm.argo.lambda_manager.optimizers.DefaultFunctionOptimizer",
     "encoder": "org.graalvm.argo.lambda_manager.encoders.DefaultCoder",
     "storage": "org.graalvm.argo.lambda_manager.function_storage.InMemoryFunctionStorage",
     "client": "org.graalvm.argo.lambda_manager.client.DefaultLambdaManagerClient"

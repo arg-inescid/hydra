@@ -24,7 +24,6 @@ Default value for each variable rest inside configs/manager/default-lambda-manag
   },
   "managerState": {
     "scheduler": "[STRING] Fully qualified name of chosen Scheduler?",
-    "optimizer": "[STRING] Fully qualified name of chosen Optimizer?",
     "encoder": "[STRING] Fully qualified name of chosen Encoder?",
     "storage": "[STRING] Fully qualified name of chosen Storage?",
     "client": "[STRING] Fully qualified name of chosen Client?",

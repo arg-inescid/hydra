@@ -7,6 +7,12 @@ import org.graalvm.argo.lambda_manager.core.Lambda;
 import org.graalvm.argo.lambda_manager.optimizers.FunctionStatus;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
+import org.graalvm.argo.lambda_manager.processes.lambda.BuildVMM;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspot;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotWithAgent;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartLambda;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartTruffle;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartVMM;
 import org.graalvm.argo.lambda_manager.utils.NetworkUtils;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 
@@ -38,13 +44,43 @@ public class RoundedRobinScheduler implements Scheduler {
         }
     }
 
+    private StartLambda whomToSpawn(Lambda lambda) {
+        // TODO - rething this logic.
+        Function function = lambda.getFunction();
+        StartLambda process;
+        switch (function.getStatus()) {
+            case NOT_BUILT_NOT_CONFIGURED:
+                process = new StartHotspotWithAgent(lambda);
+                function.setStatus(FunctionStatus.CONFIGURING_OR_BUILDING);
+                break;
+            case NOT_BUILT_CONFIGURED:
+                new BuildVMM(function).build().start();
+                function.setStatus(FunctionStatus.CONFIGURING_OR_BUILDING);
+            case CONFIGURING_OR_BUILDING:
+                process = new StartHotspot(lambda);
+                break;
+            case BUILT:
+                if (function.isTruffleLanguage()) {
+                    process = new StartTruffle(lambda);
+                } else {
+                    process = new StartVMM(lambda);
+                }
+                break;
+            // TODO - there might exist a new case here which is for custom runtimes.
+            // For these, the start and stop will be through firecracker scripts.
+            default:
+                throw new IllegalStateException("Unexpected value: " + function.getStatus());
+        }
+        return process;
+    }
+
     private void startLambda(Function function, Lambda lambda) {
         new Thread() {
             @Override
             public void run() {
                 gate();
                 lambda.setConnectionTriplet(Configuration.argumentStorage.nextConnectionTriplet());
-                ProcessBuilder process = Configuration.optimizer.whomToSpawn(lambda).build();
+                ProcessBuilder process = whomToSpawn(lambda).build();
                 lambda.setProcess(process);
                 process.start();
                 boolean open = NetworkUtils.waitForOpenPort(lambda.getConnectionTriplet().ip, Configuration.argumentStorage.getLambdaPort(), 25);

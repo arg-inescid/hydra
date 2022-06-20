@@ -69,7 +69,6 @@ public class LambdaManager {
                     }
                 }
                 response = Configuration.client.sendRequest(lambda, arguments);
-                Configuration.optimizer.registerCall(lambda);
                 Configuration.scheduler.reschedule(lambda);
 
                 if (response.equals(Messages.HTTP_TIMEOUT)) {

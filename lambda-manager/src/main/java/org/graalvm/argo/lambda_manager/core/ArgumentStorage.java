@@ -7,7 +7,6 @@ import org.graalvm.argo.lambda_manager.encoders.Coder;
 import org.graalvm.argo.lambda_manager.exceptions.argument_parser.ErrorDuringReflectiveClassCreation;
 import org.graalvm.argo.lambda_manager.exceptions.user.ErrorDuringCreatingConnectionPool;
 import org.graalvm.argo.lambda_manager.function_storage.FunctionStorage;
-import org.graalvm.argo.lambda_manager.optimizers.FunctionOptimizer;
 import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
 import org.graalvm.argo.lambda_manager.processes.taps.CreateTaps;
 import org.graalvm.argo.lambda_manager.schedulers.Scheduler;
@@ -182,11 +181,10 @@ public class ArgumentStorage {
     private void prepareConfiguration(LambdaManagerState lambdaManagerState)
                     throws ErrorDuringReflectiveClassCreation {
         Scheduler scheduler = (Scheduler) createObject(lambdaManagerState.getScheduler());
-        FunctionOptimizer optimizer = (FunctionOptimizer) createObject(lambdaManagerState.getOptimizer());
         Coder encoder = (Coder) createObject(lambdaManagerState.getEncoder());
         FunctionStorage storage = (FunctionStorage) createObject(lambdaManagerState.getStorage());
         LambdaManagerClient client = (LambdaManagerClient) createObject(lambdaManagerState.getClient());
-        Configuration.initFields(scheduler, optimizer, encoder, storage, client, this);
+        Configuration.initFields(scheduler, encoder, storage, client, this);
     }
 
     public void doInitialize(LambdaManagerConfiguration lambdaManagerConfiguration, BeanContext beanContext)
