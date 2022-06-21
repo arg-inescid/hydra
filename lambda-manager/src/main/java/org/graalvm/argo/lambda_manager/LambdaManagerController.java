@@ -40,14 +40,14 @@ public class LambdaManagerController {
     }
 
     @Post(value = "/upload_function", consumes = MediaType.APPLICATION_OCTET_STREAM)
-    public Single<String> uploadFunction(@QueryValue("allocate") int allocate,     // TODO - remove
-                                         @QueryValue("username") String username,
+    public Single<String> uploadFunction(@QueryValue("username") String username,
                                          @QueryValue("function_name") String functionName,
                                          @QueryValue("function_language") String functionLanguage,
                                          @QueryValue("function_entry_point") String functionEntryPoint,
                                          @QueryValue("function_memory") String functionMemory,
+                                         @Nullable @QueryValue("function_runtime") String functionRuntime,
                                          @Body byte[] functionCode) {
-        // TODO - we need to add runtime type (niuk vs container) and runtime identifier (img with niuk, or container name)
+        System.out.println("Function runtime: " + functionRuntime); // TODO - finish...
         return LambdaManager.uploadFunction(username, functionName, functionLanguage, functionEntryPoint, functionMemory, functionCode);
     }
 
