@@ -12,7 +12,7 @@ import java.util.Timer;
 public class Lambda {
 
     /** The Function that this Lambda is executing. */
-    private final Function function;
+    private final Function function; // TODO - we need to have multiple functions here
 
     /** The process that is hosting the lambda execution. */
     private ProcessBuilder process;
@@ -37,8 +37,6 @@ public class Lambda {
         this.function = function;
         if (function.isTruffleLanguage()) {
             this.truffleStatus = LambdaTruffleStatus.NEED_REGISTRATION;
-        } else {
-            this.truffleStatus = LambdaTruffleStatus.NOT_TRUFFLE_LANG;
         }
     }
 

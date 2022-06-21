@@ -18,7 +18,6 @@ import io.micronaut.http.client.exceptions.HttpClientException;
 import io.micronaut.http.client.exceptions.ReadTimeoutException;
 import io.reactivex.Flowable;
 
-@SuppressWarnings("unused")
 public class DefaultLambdaManagerClient implements LambdaManagerClient {
 
     /**
@@ -26,58 +25,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
      */
     private static final int FAULT_TOLERANCE = 300;
 
-    private Object buildHTTPRequestArguments(Lambda lambda, String arguments) {
-        Function function = lambda.getFunction();
-        String functionName = function.getName();
-        String entryPoint = function.getEntryPoint();
-
-        switch (lambda.getTruffleStatus()) {
-            case NEED_REGISTRATION:
-                // TODO: optimization: read chunks of file and send it in parts.
-                try (InputStream sourceFile = Files.newInputStream(function.buildFunctionSourceCodePath())) {
-                    return sourceFile.readAllBytes();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            case READY_FOR_EXECUTION:
-                return JsonUtils.convertParametersIntoJsonObject(arguments, null, functionName);
-            case DEREGISTER:
-                return JsonUtils.convertParametersIntoJsonObject(null, null, functionName);
-            case NOT_TRUFFLE_LANG:
-                return JsonUtils.convertParametersIntoJsonObject(arguments, null, entryPoint);
-            default:
-                throw new IllegalStateException("Unexpected value: " + lambda.getTruffleStatus());
-        }
-    }
-
-    private String buildHTTPRequestPath(Lambda lambda, String arguments) {
-        switch (lambda.getTruffleStatus()) {
-            case NEED_REGISTRATION:
-                Function function = lambda.getFunction();
-                String functionName = function.getName();
-                String entryPoint = function.getEntryPoint();
-                return String.format("/register?name=%s&language=%s&entryPoint=%s", functionName, function.getLanguage().toString(), entryPoint);
-            case READY_FOR_EXECUTION:
-            case NOT_TRUFFLE_LANG:
-                return "/";
-            case DEREGISTER:
-                return "/deregister";
-            default:
-                throw new IllegalStateException("Unexpected value: " + lambda.getTruffleStatus());
-        }
-    }
-
-    private HttpRequest<?> buildHTTPRequest(Lambda lambda, String arguments) {
-        Object argumentsJSON = buildHTTPRequestArguments(lambda, arguments);
-        if (argumentsJSON == null) {
-            argumentsJSON = "";
-        }
-        return HttpRequest.POST(buildHTTPRequestPath(lambda, arguments), argumentsJSON);
-    }
-
-    @Override
-    public String sendRequest(Lambda lambda, String arguments) {
-        HttpRequest<?> request = buildHTTPRequest(lambda, arguments);
+    private String sendRequest(HttpRequest<?> request, Lambda lambda) {
         try (RxHttpClient client = lambda.getConnectionTriplet().client) {
             Flowable<String> flowable = client.retrieve(request);
             for (int failures = 0; failures < FAULT_TOLERANCE; failures++) {
@@ -96,5 +44,42 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
             Logger.log(Level.WARNING, Messages.HTTP_TIMEOUT);
             return Messages.HTTP_TIMEOUT;
         }
+    }
+
+    @Override
+    public String registerFunction(Lambda lambda, Function function) {
+        String path = String.format("/register?name=%s&language=%s&entryPoint=%s",
+                function.getName(),
+                function.getLanguage().toString(),
+                function.getEntryPoint());
+
+        // TODO: optimization: read chunks of file and send it in parts.
+        try (InputStream sourceFile = Files.newInputStream(function.buildFunctionSourceCodePath())) {
+            return sendRequest(HttpRequest.POST(path, sourceFile.readAllBytes()), lambda);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return Messages.ERROR_FUNCTION_UPLOAD;
+        }
+    }
+
+    @Override
+    public String deregisterFunction(Lambda lambda, Function function) {
+        String path ="/deregister";
+        String argumentsJSON = JsonUtils.convertParametersIntoJsonObject(null, null, function.getName());
+        return sendRequest(HttpRequest.POST(path, argumentsJSON), lambda);
+    }
+
+    @Override
+    public String invokeFunction(Lambda lambda, Function function, String arguments) {
+        String path ="/";
+        String argumentsJSON = "";
+
+        if (!function.isTruffleLanguage()) {
+            argumentsJSON = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getEntryPoint());
+        } else {
+            argumentsJSON = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getName());
+        }
+
+        return sendRequest(HttpRequest.POST(path, argumentsJSON), lambda);
     }
 }

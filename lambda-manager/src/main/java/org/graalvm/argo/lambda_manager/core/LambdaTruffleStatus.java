@@ -1,9 +1,7 @@
 package org.graalvm.argo.lambda_manager.core;
 
-// TODO - I don't think we need the deregister method. If a function is deregistered, it goes immediately back to need_registration.
+// TODO - we should get rid of this status. This should be state stored in the lambda. Most likely a map.
 public enum LambdaTruffleStatus {
-    NOT_TRUFFLE_LANG,
     NEED_REGISTRATION,
-    READY_FOR_EXECUTION,
-    DEREGISTER
+    READY_FOR_EXECUTION
 }

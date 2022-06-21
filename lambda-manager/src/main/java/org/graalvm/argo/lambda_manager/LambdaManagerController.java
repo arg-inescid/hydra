@@ -47,8 +47,7 @@ public class LambdaManagerController {
                                          @QueryValue("function_memory") String functionMemory,
                                          @Nullable @QueryValue("function_runtime") String functionRuntime,
                                          @Body byte[] functionCode) {
-        System.out.println("Function runtime: " + functionRuntime); // TODO - finish...
-        return LambdaManager.uploadFunction(username, functionName, functionLanguage, functionEntryPoint, functionMemory, functionCode);
+        return LambdaManager.uploadFunction(username, functionName, functionLanguage, functionEntryPoint, functionMemory, functionRuntime, functionCode);
     }
 
     @Post("/remove_function")

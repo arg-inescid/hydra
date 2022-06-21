@@ -44,7 +44,7 @@ public class LambdaManager {
     }
 
     public static Single<String> processRequest(String username, String functionName, String arguments) {
-        String responseString;
+        String response = null;
 
         if (!Configuration.isInitialized()) {
             Logger.log(Level.WARNING, Messages.NO_CONFIGURATION_UPLOADED);
@@ -53,22 +53,19 @@ public class LambdaManager {
 
         try {
             Function function = Configuration.storage.get(Configuration.coder.encodeFunctionName(username, functionName));
-            String response = null;
             LambdaExecutionMode targetMode = null;
 
-            // TODO - We should strive to have a simple LambdaManager. This loop should be part of the scheduler?
             for (int i = 0; i < LAMBDA_FAULT_TOLERANCE; i++) {
                 long start = System.currentTimeMillis();
                 Lambda lambda = Configuration.scheduler.schedule(function, targetMode);
+
                 if (function.isTruffleLanguage() && lambda.getTruffleStatus() == LambdaTruffleStatus.NEED_REGISTRATION) {
-                    synchronized (lambda) {
-                        if (lambda.getTruffleStatus() == LambdaTruffleStatus.NEED_REGISTRATION) {
-                            Configuration.client.sendRequest(lambda, arguments);
-                            lambda.setTruffleStatus(LambdaTruffleStatus.READY_FOR_EXECUTION);
-                        }
-                    }
+                    // TODO - check if concurrency could be a problem on the lambda side.
+                    Configuration.client.registerFunction(lambda, function);
+                    lambda.setTruffleStatus(LambdaTruffleStatus.READY_FOR_EXECUTION);
                 }
-                response = Configuration.client.sendRequest(lambda, arguments);
+
+                response = Configuration.client.invokeFunction(lambda, function, arguments);
                 Configuration.scheduler.reschedule(lambda);
 
                 if (response.equals(Messages.HTTP_TIMEOUT)) {
@@ -86,15 +83,14 @@ public class LambdaManager {
                 }
             }
 
-            responseString = response;
         } catch (FunctionNotFound functionNotFound) {
             Logger.log(Level.WARNING, functionNotFound.getMessage(), functionNotFound);
-            responseString = functionNotFound.getMessage();
+            response = functionNotFound.getMessage();
         } catch (Throwable throwable) {
             Logger.log(Level.SEVERE, throwable.getMessage(), throwable);
-            responseString = Messages.INTERNAL_ERROR;
+            response = Messages.INTERNAL_ERROR;
         }
-        return JsonUtils.constructJsonResponseObject(responseString);
+        return JsonUtils.constructJsonResponseObject(response);
     }
 
     public static Single<String> uploadFunction(String username,
@@ -102,6 +98,7 @@ public class LambdaManager {
                                                 String functionLanguage,
                                                 String functionEntryPoint,
                                                 String functionMemory,
+                                                String functionRuntime,
                                                 byte[] functionCode) {
         String responseString;
 
@@ -112,6 +109,7 @@ public class LambdaManager {
 
         try {
             String encodeFunctionName = Configuration.coder.encodeFunctionName(username, functionName);
+            // TODO - pass fRt to Function
             Function function = new Function(encodeFunctionName, functionLanguage, functionEntryPoint, functionMemory);
             Configuration.storage.register(encodeFunctionName, function, functionCode);
             Logger.log(Level.INFO, String.format(Messages.SUCCESS_FUNCTION_UPLOAD, functionName));
