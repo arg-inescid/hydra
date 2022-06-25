@@ -5,6 +5,7 @@ import org.graalvm.argo.lambda_manager.callbacks.VMMCallback;
 import org.graalvm.argo.lambda_manager.core.Configuration;
 import org.graalvm.argo.lambda_manager.core.Environment;
 import org.graalvm.argo.lambda_manager.core.Lambda;
+import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.utils.ConnectionTriplet;
 import io.micronaut.http.client.RxHttpClient;
@@ -14,8 +15,8 @@ import java.util.List;
 
 public class StartVMM extends StartLambda {
 
-    public StartVMM(Lambda lambda) {
-        super(lambda);
+    public StartVMM(Lambda lambda, Function function) {
+        super(lambda, function);
     }
 
     @Override
@@ -31,9 +32,9 @@ public class StartVMM extends StartLambda {
         command.add("-v");
         command.add("bash");
         command.add("src/scripts/start_vmm.sh");
-        command.add(lambda.getFunction().getName());
+        command.add(function.getName());
         command.add(String.valueOf(pid));
-        command.add(String.valueOf(lambda.getFunction().getMemory()));
+        command.add(String.valueOf(function.getMemory()));
         command.add(connectionTriplet.ip);
         command.add(connectionTriplet.tap);
         command.add(Configuration.argumentStorage.getGateway());
@@ -44,7 +45,7 @@ public class StartVMM extends StartLambda {
             command.add("--noconsole");
         }
         command.add(TIMESTAMP_TAG + System.currentTimeMillis());
-        command.add(ENTRY_POINT_TAG + lambda.getFunction().getEntryPoint());
+        command.add(ENTRY_POINT_TAG + function.getEntryPoint());
         command.add(PORT_TAG + Configuration.argumentStorage.getLambdaPort());
         command.add("LD_LIBRARY_PATH=/lib:/lib64:/apps:/usr/local/lib");
         return command;
@@ -52,7 +53,7 @@ public class StartVMM extends StartLambda {
 
     @Override
     protected OnProcessFinishCallback callback() {
-        return new VMMCallback(lambda);
+        return new VMMCallback(lambda, function);
     }
 
     @Override

@@ -6,6 +6,7 @@ import org.graalvm.argo.lambda_manager.callbacks.TruffleCallback;
 import org.graalvm.argo.lambda_manager.core.Configuration;
 import org.graalvm.argo.lambda_manager.core.Environment;
 import org.graalvm.argo.lambda_manager.core.Lambda;
+import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.utils.ConnectionTriplet;
 
@@ -14,8 +15,8 @@ import java.util.List;
 
 public class StartTruffle extends StartLambda {
 
-    public StartTruffle(Lambda lambda) {
-        super(lambda);
+    public StartTruffle(Lambda lambda, Function function) {
+        super(lambda, function);
     }
 
     @Override
@@ -31,9 +32,9 @@ public class StartTruffle extends StartLambda {
         command.add("-v");
         command.add("bash");
         command.add("src/scripts/start_truffle.sh");
-        command.add(lambda.getFunction().getName());
+        command.add(function.getName());
         command.add(String.valueOf(pid));
-        command.add(String.valueOf(lambda.getFunction().getMemory()));
+        command.add(String.valueOf(function.getMemory()));
         command.add(connectionTriplet.ip);
         command.add(connectionTriplet.tap);
         command.add(Configuration.argumentStorage.getGateway());

@@ -8,11 +8,13 @@ import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
 import org.graalvm.argo.lambda_manager.processes.lambda.DefaultLambdaShutdownHandler;
 
 import java.util.Timer;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Lambda {
 
     /** The Function that this Lambda is executing. */
-    private final Function function; // TODO - we need to have multiple functions here
+    private final Function function; // TODO - remove, we should no longer have a single function.
+    private final ConcurrentHashMap<String, Function> registeredFunctions; // TODO - we need to have multiple functions here
 
     /** The process that is hosting the lambda execution. */
     private ProcessBuilder process;
@@ -23,9 +25,6 @@ public class Lambda {
     /** Number of processed requests since the lambda started. */
     private int closedRequestCount;
 
-    /** Lambda status in the truffle pipeline. */
-    private volatile LambdaTruffleStatus truffleStatus;
-
     private Timer timer;
     private ConnectionTriplet<String, String, RxHttpClient> connectionTriplet;
     private LambdaExecutionMode executionMode;
@@ -35,13 +34,10 @@ public class Lambda {
 
     public Lambda(Function function) {
         this.function = function;
-        if (function.isTruffleLanguage()) {
-            this.truffleStatus = LambdaTruffleStatus.NEED_REGISTRATION;
+        this.registeredFunctions = new ConcurrentHashMap<>();
+        if (!function.requiresRegistration()) {
+            this.registeredFunctions.put(function.getName(), function);
         }
-    }
-
-    public Function getFunction() {
-        return this.function;
     }
 
     public ProcessBuilder getProcess() {
@@ -83,7 +79,7 @@ public class Lambda {
     public void resetTimer() {
         Timer oldTimer = timer;
         Timer newTimer = new Timer();
-        newTimer.schedule(new DefaultLambdaShutdownHandler(this),
+        newTimer.schedule(new DefaultLambdaShutdownHandler(this, function),
                 Configuration.argumentStorage.getTimeout() +
                 (int)(Configuration.argumentStorage.getTimeout() * Math.random()));
         timer = newTimer;
@@ -108,6 +104,19 @@ public class Lambda {
         this.executionMode = executionMode;
     }
 
+    public String getLambdaPath() throws Exception {
+        switch (executionMode) {
+        case HOTSPOT:
+            return String.format("codebase/%s/pid_%d_hotspot", function.getName(), process.pid());
+        case HOTSPOT_W_AGENT:
+            return String.format("codebase/%s/pid_%d_hotspot_w_agent", function.getName(), process.pid());
+        case NATIVE_IMAGE:
+            return String.format("codebase/%s/pid_%d_vmm", function.getName(), process.pid());
+        default:
+            throw new Exception("Uknown lambda execution mode: " + executionMode);
+        }
+    }
+
     public boolean isDecommissioned() {
         return decommissioned;
     }
@@ -116,11 +125,23 @@ public class Lambda {
         this.decommissioned = decommissioned;
     }
 
-    public LambdaTruffleStatus getTruffleStatus() {
-        return truffleStatus;
+    public boolean isRegisteredInLambda(Function function) {
+        return this.registeredFunctions.containsValue(function);
     }
 
-    public void setTruffleStatus(LambdaTruffleStatus truffleStatus) {
-        this.truffleStatus = truffleStatus;
+    public void setRegisteredInLambda(Function function) {
+        this.registeredFunctions.putIfAbsent(function.getName(), function);
+    }
+
+    public void resetRegisteredInLambda(Function function) {
+        if (function.requiresRegistration()) {
+            this.registeredFunctions.remove(function.getName());
+        }
+    }
+
+    public void resetRegisteredInLambda() {
+        for (Function function : registeredFunctions.values()) {
+            resetRegisteredInLambda(function);
+        }
     }
 }

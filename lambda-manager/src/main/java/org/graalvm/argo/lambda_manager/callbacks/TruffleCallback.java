@@ -1,7 +1,6 @@
 package org.graalvm.argo.lambda_manager.callbacks;
 
 import org.graalvm.argo.lambda_manager.core.Lambda;
-import org.graalvm.argo.lambda_manager.core.LambdaTruffleStatus;
 
 public class TruffleCallback implements OnProcessFinishCallback {
 
@@ -13,6 +12,6 @@ public class TruffleCallback implements OnProcessFinishCallback {
 
     @Override
     public void finish(int exitCode) {
-        lambda.setTruffleStatus(LambdaTruffleStatus.NEED_REGISTRATION);
+        lambda.resetRegisteredInLambda();
     }
 }

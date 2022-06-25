@@ -22,15 +22,9 @@ import java.util.logging.Level;
 
 public class LambdaManager {
 
-    /**
-     * Number of times a request will be sent to a different Lambda upon timeout.
-     */
-    // TODO - This value should be configurable.
-    private static final int LAMBDA_FAULT_TOLERANCE = 3;
-
-    private static String formatRequestSpentTimeMessage(Lambda lambda, long spentTime) {
-        String username = Configuration.coder.decodeUsername(lambda.getFunction().getName());
-        String functionName = Configuration.coder.decodeFunctionName(lambda.getFunction().getName());
+    private static String formatRequestSpentTimeMessage(Lambda lambda, Function function, long spentTime) {
+        String username = Configuration.coder.decodeUsername(function.getName());
+        String functionName = Configuration.coder.decodeFunctionName(function.getName());
         switch (lambda.getExecutionMode()) {
             case HOTSPOT_W_AGENT:
                 return String.format(Messages.TIME_HOTSPOT_W_AGENT, username, functionName, lambda.getProcess().pid(), spentTime);
@@ -55,18 +49,18 @@ public class LambdaManager {
             Function function = Configuration.storage.get(Configuration.coder.encodeFunctionName(username, functionName));
             LambdaExecutionMode targetMode = null;
 
-            for (int i = 0; i < LAMBDA_FAULT_TOLERANCE; i++) {
+            for (int i = 0; i < Configuration.LAMBDA_FAULT_TOLERANCE; i++) {
                 long start = System.currentTimeMillis();
                 Lambda lambda = Configuration.scheduler.schedule(function, targetMode);
 
-                if (function.isTruffleLanguage() && lambda.getTruffleStatus() == LambdaTruffleStatus.NEED_REGISTRATION) {
+                if (!lambda.isRegisteredInLambda(function)) {
                     // TODO - check if concurrency could be a problem on the lambda side.
                     Configuration.client.registerFunction(lambda, function);
-                    lambda.setTruffleStatus(LambdaTruffleStatus.READY_FOR_EXECUTION);
+                    lambda.setRegisteredInLambda(function);
                 }
 
                 response = Configuration.client.invokeFunction(lambda, function, arguments);
-                Configuration.scheduler.reschedule(lambda);
+                Configuration.scheduler.reschedule(lambda, function);
 
                 if (response.equals(Messages.HTTP_TIMEOUT)) {
                     if (lambda.getExecutionMode() == LambdaExecutionMode.NATIVE_IMAGE) {
@@ -74,11 +68,11 @@ public class LambdaManager {
                         targetMode = LambdaExecutionMode.HOTSPOT_W_AGENT;
                     }
                     Logger.log(Level.INFO, "Decommissioning (failed requests) lambda " + lambda.getProcess().pid());
-                    lambda.getFunction().decommissionLambda(lambda);
+                    function.decommissionLambda(lambda);
                 } else {
                     long spentTime = System.currentTimeMillis() - start;
                     MetricsProvider.reportRequestTime(spentTime);
-                    Logger.log(Level.FINE, formatRequestSpentTimeMessage(lambda, spentTime));
+                    Logger.log(Level.FINE, formatRequestSpentTimeMessage(lambda, function, spentTime));
                     break;
                 }
             }
@@ -109,8 +103,7 @@ public class LambdaManager {
 
         try {
             String encodeFunctionName = Configuration.coder.encodeFunctionName(username, functionName);
-            // TODO - pass fRt to Function
-            Function function = new Function(encodeFunctionName, functionLanguage, functionEntryPoint, functionMemory);
+            Function function = new Function(encodeFunctionName, functionLanguage, functionEntryPoint, functionMemory, functionRuntime);
             Configuration.storage.register(encodeFunctionName, function, functionCode);
             Logger.log(Level.INFO, String.format(Messages.SUCCESS_FUNCTION_UPLOAD, functionName));
             responseString = String.format(Messages.SUCCESS_FUNCTION_UPLOAD, functionName);

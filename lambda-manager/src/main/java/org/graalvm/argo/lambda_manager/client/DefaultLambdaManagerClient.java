@@ -8,6 +8,7 @@ import java.util.logging.Level;
 import org.graalvm.argo.lambda_manager.core.Configuration;
 import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.core.Lambda;
+import org.graalvm.argo.lambda_manager.core.FunctionLanguage;
 import org.graalvm.argo.lambda_manager.utils.JsonUtils;
 import org.graalvm.argo.lambda_manager.utils.Messages;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
@@ -20,15 +21,10 @@ import io.reactivex.Flowable;
 
 public class DefaultLambdaManagerClient implements LambdaManagerClient {
 
-    /**
-     * Number of times a request will be re-sent to a particular Lambda upon an error.
-     */
-    private static final int FAULT_TOLERANCE = 300;
-
     private String sendRequest(HttpRequest<?> request, Lambda lambda) {
         try (RxHttpClient client = lambda.getConnectionTriplet().client) {
             Flowable<String> flowable = client.retrieve(request);
-            for (int failures = 0; failures < FAULT_TOLERANCE; failures++) {
+            for (int failures = 0; failures < Configuration.FAULT_TOLERANCE; failures++) {
                 try {
                     return flowable.blockingFirst();
                 } catch (ReadTimeoutException readTimeoutException) {
@@ -74,7 +70,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         String path ="/";
         String argumentsJSON = "";
 
-        if (!function.isTruffleLanguage()) {
+        if (function.getLanguage() == FunctionLanguage.NATIVE_JAVA) {
             argumentsJSON = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getEntryPoint());
         } else {
             argumentsJSON = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getName());

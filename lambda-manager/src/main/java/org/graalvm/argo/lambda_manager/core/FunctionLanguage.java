@@ -2,10 +2,15 @@ package org.graalvm.argo.lambda_manager.core;
 
 import org.graalvm.argo.lambda_manager.utils.Messages;
 
+// TODO - we should have a single Java. The rest depends on the runtime.
 public enum FunctionLanguage {
+	// App deployed as a Jar (to be built into a Native Image).
     NATIVE_JAVA("NATIVE_JAVA"),
+    // App deployed as a Java Native Image Library. Exclusive to GraalVisor.
     JAVA("JAVA"),
+    // App deployed as a Python script.
     PYTHON("PYTHON"),
+    // App deployed as a Javascript script.
     JAVASCRIPT("JAVASCRIPT");
 
     private final String language;

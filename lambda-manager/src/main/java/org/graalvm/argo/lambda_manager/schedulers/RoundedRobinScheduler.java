@@ -15,6 +15,7 @@ import org.graalvm.argo.lambda_manager.processes.lambda.StartTruffle;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartVMM;
 import org.graalvm.argo.lambda_manager.utils.NetworkUtils;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
+import org.graalvm.argo.lambda_manager.core.FunctionLanguage;
 
 import java.util.ArrayList;
 import java.util.logging.Level;
@@ -44,26 +45,25 @@ public class RoundedRobinScheduler implements Scheduler {
         }
     }
 
-    private StartLambda whomToSpawn(Lambda lambda) {
+    private StartLambda whomToSpawn(Lambda lambda, Function function) {
         // TODO - rething this logic.
-        Function function = lambda.getFunction();
         StartLambda process;
         switch (function.getStatus()) {
             case NOT_BUILT_NOT_CONFIGURED:
-                process = new StartHotspotWithAgent(lambda);
+                process = new StartHotspotWithAgent(lambda, function);
                 function.setStatus(FunctionStatus.CONFIGURING_OR_BUILDING);
                 break;
             case NOT_BUILT_CONFIGURED:
                 new BuildVMM(function).build().start();
                 function.setStatus(FunctionStatus.CONFIGURING_OR_BUILDING);
             case CONFIGURING_OR_BUILDING:
-                process = new StartHotspot(lambda);
+                process = new StartHotspot(lambda, function);
                 break;
-            case BUILT:
-                if (function.isTruffleLanguage()) {
-                    process = new StartTruffle(lambda);
+            case READY:
+                if (function.getLanguage() != FunctionLanguage.NATIVE_JAVA) {
+                    process = new StartTruffle(lambda, function);
                 } else {
-                    process = new StartVMM(lambda);
+                    process = new StartVMM(lambda, function);
                 }
                 break;
             // TODO - there might exist a new case here which is for custom runtimes.
@@ -80,7 +80,7 @@ public class RoundedRobinScheduler implements Scheduler {
             public void run() {
                 gate();
                 lambda.setConnectionTriplet(Configuration.argumentStorage.nextConnectionTriplet());
-                ProcessBuilder process = whomToSpawn(lambda).build();
+                ProcessBuilder process = whomToSpawn(lambda, function).build();
                 lambda.setProcess(process);
                 process.start();
                 boolean open = NetworkUtils.waitForOpenPort(lambda.getConnectionTriplet().ip, Configuration.argumentStorage.getLambdaPort(), 25);
@@ -155,7 +155,7 @@ public class RoundedRobinScheduler implements Scheduler {
         synchronized (function) {
             // We only one lambda to be decommissioned at a time.
             if (function.getNumberDecommissionedLambdas() == 0) {
-                if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT && function.getStatus() == FunctionStatus.BUILT && !lambda.isDecommissioned()) {
+                if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT && function.getStatus() == FunctionStatus.READY && !lambda.isDecommissioned()) {
                     function.decommissionLambda(lambda);
                     Logger.log(Level.INFO, "Decommissioning (hotspot to native image) lambda " + lambda.getProcess().pid());
                 }
@@ -171,8 +171,7 @@ public class RoundedRobinScheduler implements Scheduler {
     }
 
     @Override
-    public void reschedule(Lambda lambda) {
-        Function function = lambda.getFunction();
+    public void reschedule(Lambda lambda, Function function) {
         synchronized (function) {
             int openRequestCount = lambda.decOpenRequestCount();
             lambda.incClosedRequestCount();

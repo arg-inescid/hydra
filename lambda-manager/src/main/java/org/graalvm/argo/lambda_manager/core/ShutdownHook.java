@@ -32,17 +32,17 @@ public class ShutdownHook implements ApplicationEventListener<ApplicationShutdow
 
     private void shutdownLambdas() {
         Map<String, Function> functionsMap = Configuration.storage.getAll();
-        for (Function f : functionsMap.values()) {
-            synchronized (f) {
+        for (Function function : functionsMap.values()) {
+            synchronized (function) {
                 // First, move all lambdas to the idle list, ignoring that some requests might be still running.
-                f.getIdleLambdas().addAll(f.getRunningLambdas());
+                function.getIdleLambdas().addAll(function.getRunningLambdas());
                 // Clear running lambdas.
-                f.getRunningLambdas().clear();
+                function.getRunningLambdas().clear();
             }
             // Then, for each idle lambda, force a shutdown.
-            while(!f.getIdleLambdas().isEmpty()) {
-                Lambda toshutdown = f.getIdleLambdas().get(0);
-                new DefaultLambdaShutdownHandler(toshutdown).run();
+            while(!function.getIdleLambdas().isEmpty()) {
+                Lambda lambda = function.getIdleLambdas().get(0);
+                new DefaultLambdaShutdownHandler(lambda, function).run();
             }
         }
     }

@@ -19,9 +19,9 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
     private final Function function;
     private final ProcessBuilder process;
 
-    public DefaultLambdaShutdownHandler(Lambda lambda) {
+    public DefaultLambdaShutdownHandler(Lambda lambda, Function function) {
         this.lambda = lambda;
-        this.function = lambda.getFunction();
+        this.function = function;
         this.process = lambda.getProcess();
     }
 
@@ -54,16 +54,15 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
 
     private void shutdownLambda() {
         try {
-
             switch (lambda.getExecutionMode()) {
                 case HOTSPOT:
-                    shutdownHotSpotLambda(String.format("codebase/%s/pid_%d_hotspot", function.getName(), process.pid()));
+                    shutdownHotSpotLambda(lambda.getLambdaPath());
                     break;
                 case HOTSPOT_W_AGENT:
-                    shutdownHotSpotLambda(String.format("codebase/%s/pid_%d_hotspot_w_agent", function.getName(), process.pid()));
+                    shutdownHotSpotLambda(lambda.getLambdaPath());
                     break;
                 case NATIVE_IMAGE:
-                    shutdownVMMLambda(String.format("codebase/%s/pid_%d_vmm", function.getName(), process.pid()));
+                    shutdownVMMLambda(lambda.getLambdaPath());
                     break;
                 default:
                     Logger.log(Level.WARNING, String.format("Lambda ID=%d has no known execution mode: %s", process.pid(), lambda.getExecutionMode()));

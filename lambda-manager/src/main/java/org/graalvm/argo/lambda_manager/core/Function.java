@@ -21,6 +21,9 @@ public class Function {
     /** Memory required to run a function invocation (in MBs). */
     private final long memory;
 
+    /** The runtime where this function should be executed. */
+    private final String runtime;
+
     /** Function status in the optimization pipeline. */
     private FunctionStatus status;
 
@@ -32,6 +35,7 @@ public class Function {
      */
     private long lastAgentPID;
 
+    // TODO - functions should not keep these lists anymore. A Lambda will have multiple functions.
     /** Idle lambdas, waiting for requests. */
     private final ArrayList<Lambda> idleLambdas = new ArrayList<>();
 
@@ -41,15 +45,16 @@ public class Function {
     /** Number of Lambdas that are not receiving requests. */
     private int decommissionedLambdas;
 
-    public Function(String name, String language, String entryPoint, String memory) throws Exception {
+    public Function(String name, String language, String entryPoint, String memory, String runtime) throws Exception {
         this.name = name;
         this.language = FunctionLanguage.fromString(language);
         this.entryPoint = entryPoint;
         this.memory = Long.parseLong(memory);
-        if (isTruffleLanguage()) {
-            this.status = FunctionStatus.BUILT;
-        } else {
+        this.runtime = runtime;
+        if (this.language == FunctionLanguage.NATIVE_JAVA) {
             this.status = FunctionStatus.NOT_BUILT_NOT_CONFIGURED;
+        } else {
+            this.status = FunctionStatus.READY;
         }
     }
 
@@ -115,12 +120,15 @@ public class Function {
         return memory;
     }
 
-
-    public boolean isTruffleLanguage() {
+    public boolean requiresRegistration() {
         return language != FunctionLanguage.NATIVE_JAVA;
     }
 
     public Path buildFunctionSourceCodePath() {
         return Paths.get(Environment.CODEBASE, name, name);
+    }
+
+    public String getRuntime() {
+        return this.runtime;
     }
 }

@@ -13,6 +13,6 @@ public class BuildVMMCallback implements OnProcessFinishCallback {
 
     @Override
     public void finish(int exitCode) {
-        function.setStatus(FunctionStatus.BUILT);
+        function.setStatus(FunctionStatus.READY);
     }
 }
