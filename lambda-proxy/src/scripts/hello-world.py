@@ -1,1 +1,1 @@
-def x(args): return { "result": "Hello world from py!" }
+def main(args): return { "result": "Hello world from py!" }

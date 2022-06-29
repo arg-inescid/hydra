@@ -10,6 +10,7 @@ source $ARGO_HOME/lambda-manager/src/scripts/environment.sh
 VMM=`grep target $VIRTUALIZE_PATH | awk -F\" '{print $4}'`
 
 tmpdir=/tmp/test-proxy
+mkdir $tmpdir &> /dev/null
 
 function java_hello_world {
 	APP_JAR=$ARGO_HOME/../benchmarks/language/java/hello-world/build/libs/hello-world-1.0.jar
@@ -36,13 +37,13 @@ function polyglot_java_hello_world {
 function polyglot_javascript_hello_world {
 	APP_SCRIPT=$(DIR)/hello-world.js
 	APP_LANG=javascript
-	APP_MAIN=x
+	APP_MAIN=main
 }
 
 function polyglot_python_hello_world {
 	APP_SCRIPT=$(DIR)/hello-world.py
 	APP_LANG=python
-	APP_MAIN=x
+	APP_MAIN=main
 }
 
 function pretime {
