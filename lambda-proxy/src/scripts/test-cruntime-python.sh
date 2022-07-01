@@ -19,11 +19,11 @@ function start_python {
 
 # Note: inspired by https://github.com/apache/openwhisk-runtime-python/blob/master/tutorials/local_build.md
 function run_test_python {
-	curl --no-progress-meter -X POST $ip:8080/init -H 'Content-Type: application/json' -d @test-cruntime-python/init.json
+	curl --no-progress-meter --max-time 5 -X POST $ip:8080/init -H 'Content-Type: application/json' -d @test-cruntime-python/init.json
 	for i in {1..3}
 	do
 		pretime
-		curl --no-progress-meter --max-time 5 -X POST $ip:8080/run -H "Content-Type: application/json" -d @test-cruntime-python/run.json
+		curl --no-progress-meter --max-time 5 -X POST $ip:8080/run -H "Content-Type: application/json" -d @test-cruntime-python/run2.json
 		postime
 		done
 }

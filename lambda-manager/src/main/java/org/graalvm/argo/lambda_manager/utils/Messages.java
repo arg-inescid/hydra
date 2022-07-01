@@ -18,6 +18,7 @@ public class Messages {
     public static final String SUCCESS_FUNCTION_UPLOAD = "Successfully uploaded function - %s!";
     public static final String ERROR_FUNCTION_LANG = "Function language not found - %s!";
     public static final String ERROR_FUNCTION_UPLOAD = "Error during uploading new function - %s!";
+    public static final String ERROR_FUNCTION_DELETE = "Error during removing function - %s!";
 
     // Remove function messages.
     public static final String SUCCESS_FUNCTION_REMOVE = "Successfully removed function - %s!";
@@ -27,6 +28,7 @@ public class Messages {
     public static final String TIME_HOTSPOT_W_AGENT = "Time (user=%s,function_name=%s,state=hotspot-w-agent,id=%d): %d\t[ms]";
     public static final String TIME_HOTSPOT = "Time (user=%s,function_name=%s,state=hotspot,id=%d): %d\t[ms]";
     public static final String TIME_NATIVE_IMAGE = "Time (user=%s,function_name=%s,state=vmm,id=%d): %d\t[ms]";
+    public static final String TIME_CUSTOM_RUNTIME = "Time (user=%s,function_name=%s,state=cruntime,id=%d): %d\t[ms]";
 
     // Tap messages.
     public static final String ERROR_TAP_REMOVAL = "Error during cleaning taps!";

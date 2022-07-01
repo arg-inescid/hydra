@@ -29,8 +29,11 @@ public class Environment {
     // Lambda log directories.
     public static final String HOTSPOT = "pid_%d_hotspot";
     public static final String HOTSPOT_W_AGENT = "pid_%d_hotspot_w_agent";
+    // TODO - rename to BUILD_NI
     public static final String BUILD_VMM = "build_vmm";
+    // TODO - rename to graalvisor
     public static final String VMM = "pid_%d_vmm";
+    public static final String CRUNTIME = "pid_%d_cruntime";
 
     // Filenames.
     public static final String DEFAULT_FILENAME = "default_filename.log";

@@ -21,7 +21,10 @@ public class Function {
     /** Memory required to run a function invocation (in MBs). */
     private final long memory;
 
-    /** The runtime where this function should be executed. */
+    /** The runtime where this function should be executed. Accepted values include:
+     * - graalvisor (any truffle language, java_lib, and java_native)
+     * - <docker image> (e.g., docker.io/openwhisk/action-python-v3.9:latest)
+     * */
     private final String runtime;
 
     /** Function status in the optimization pipeline. */

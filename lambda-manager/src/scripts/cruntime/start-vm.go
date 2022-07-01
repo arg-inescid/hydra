@@ -87,9 +87,9 @@ func start(containerdAddr string, ttrpcCAddr string, namespace string, vmID stri
 	log.Printf("Successfully pulled %s image with %s\n", image.Name(), snapshotter)
 	container, err := client.NewContainer(
 		ctx,
-		"demo",
+		vmID+"-container",
 		containerd.WithSnapshotter(snapshotter),
-		containerd.WithNewSnapshot("demo-snapshot", image),
+		containerd.WithNewSnapshot(vmID+"-snapshot", image),
 		containerd.WithNewSpec(
 			oci.WithImageConfig(image),
 			firecrackeroci.WithVMID(vmID),

@@ -43,7 +43,7 @@ func stop(containerdAddr string, ttrpcCAddr string, namespace string, vmid strin
 		return err
 	}
 
-	container, err := client.LoadContainer(ctx, "demo")
+	container, err := client.LoadContainer(ctx, vmid+"-container")
 	if err != nil {
 		return errors.Wrapf(err, "error loading container")
 	}

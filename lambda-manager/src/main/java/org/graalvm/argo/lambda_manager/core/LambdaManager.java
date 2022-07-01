@@ -31,7 +31,10 @@ public class LambdaManager {
             case HOTSPOT:
                 return String.format(Messages.TIME_HOTSPOT, username, functionName, lambda.getProcess().pid(), spentTime);
             case NATIVE_IMAGE:
+            case GRAALVISOR:
                 return String.format(Messages.TIME_NATIVE_IMAGE, username, functionName, lambda.getProcess().pid(), spentTime);
+            case CUSTOM:
+                return String.format(Messages.TIME_CUSTOM_RUNTIME, username, functionName, lambda.getProcess().pid(), spentTime);
             default:
                 throw new UnsupportedOperationException();
         }
@@ -55,7 +58,8 @@ public class LambdaManager {
 
                 if (!lambda.isRegisteredInLambda(function)) {
                     // TODO - check if concurrency could be a problem on the lambda side.
-                    Configuration.client.registerFunction(lambda, function);
+                    response = Configuration.client.registerFunction(lambda, function);
+                    Logger.log(Level.FINE, String.format("Function %s registration in lambda %s returned %s", function.getName(), lambda.getLambdaPath(), response));
                     lambda.setRegisteredInLambda(function);
                 }
 

@@ -8,6 +8,7 @@ import java.util.logging.Level;
 import org.graalvm.argo.lambda_manager.core.Configuration;
 import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.core.Lambda;
+import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.core.FunctionLanguage;
 import org.graalvm.argo.lambda_manager.utils.JsonUtils;
 import org.graalvm.argo.lambda_manager.utils.Messages;
@@ -44,38 +45,56 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
 
     @Override
     public String registerFunction(Lambda lambda, Function function) {
-        String path = String.format("/register?name=%s&language=%s&entryPoint=%s",
-                function.getName(),
-                function.getLanguage().toString(),
-                function.getEntryPoint());
-
         // TODO: optimization: read chunks of file and send it in parts.
         try (InputStream sourceFile = Files.newInputStream(function.buildFunctionSourceCodePath())) {
+            String path = null;
+            if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
+                path = String.format("/register?name=%s&language=%s&entryPoint=%s", function.getName(), function.getLanguage().toString(), function.getEntryPoint());
+            } else if (lambda.getExecutionMode() == LambdaExecutionMode.CUSTOM) {
+                path = "/init";
+            } else {
+                Logger.log(Level.WARNING, String.format("Unexpected lambda mode (%s) when registering function %s!", lambda.getExecutionMode(), function.getName()));
+            }
             return sendRequest(HttpRequest.POST(path, sourceFile.readAllBytes()), lambda);
         } catch (IOException e) {
-            e.printStackTrace();
+            Logger.log(Level.WARNING, String.format("Failed load function %s source file %s", function.getName(), function.buildFunctionSourceCodePath()));
             return Messages.ERROR_FUNCTION_UPLOAD;
         }
     }
 
     @Override
     public String deregisterFunction(Lambda lambda, Function function) {
-        String path ="/deregister";
-        String argumentsJSON = JsonUtils.convertParametersIntoJsonObject(null, null, function.getName());
-        return sendRequest(HttpRequest.POST(path, argumentsJSON), lambda);
+        String path = null;
+        String payload = null;
+
+        if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
+            path ="/deregister";
+            payload = JsonUtils.convertParametersIntoJsonObject(null, null, function.getName());
+        } else if (lambda.getExecutionMode() == LambdaExecutionMode.CUSTOM) {
+            Logger.log(Level.WARNING, String.format("Deregistering functions (%s) is not yet supported for custom runtimes!", function.getName()));
+        } else {
+            Logger.log(Level.WARNING, String.format("Unexpected lambda mode (%s) when registering function %s!", lambda.getExecutionMode(), function.getName()));
+        }
+
+        return sendRequest(HttpRequest.POST(path, payload), lambda);
     }
 
     @Override
     public String invokeFunction(Lambda lambda, Function function, String arguments) {
         String path ="/";
-        String argumentsJSON = "";
+        String payload = "";
 
         if (function.getLanguage() == FunctionLanguage.NATIVE_JAVA) {
-            argumentsJSON = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getEntryPoint());
+            payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getEntryPoint());
+        } else if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
+            payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getName());
+        } else if (lambda.getExecutionMode() == LambdaExecutionMode.CUSTOM) {
+            path = "/run";
+            payload = "{ }"; // TODO - receive from arguments
         } else {
-            argumentsJSON = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getName());
+            Logger.log(Level.WARNING, String.format("Unexpected lambda mode (%s) when invoking function %s!", lambda.getExecutionMode(), function.getName()));
         }
 
-        return sendRequest(HttpRequest.POST(path, argumentsJSON), lambda);
+        return sendRequest(HttpRequest.POST(path, payload), lambda);
     }
 }

@@ -19,3 +19,8 @@ function prepare_vmm_lambda_directory() {
   mkdir "$LAMBDA_HOME" &> /dev/null
   cp -r "$BUILD_OUTPUT_HOME"/* "$LAMBDA_HOME"
 }
+
+function prepare_cruntime_lambda_directory() {
+  LAMBDA_HOME=$1
+  mkdir "$LAMBDA_HOME" &> /dev/null
+}

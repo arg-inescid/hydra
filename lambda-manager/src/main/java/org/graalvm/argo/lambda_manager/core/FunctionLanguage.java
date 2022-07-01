@@ -7,7 +7,7 @@ public enum FunctionLanguage {
 	// App deployed as a Jar (to be built into a Native Image).
     NATIVE_JAVA("NATIVE_JAVA"),
     // App deployed as a Java Native Image Library. Exclusive to GraalVisor.
-    JAVA("JAVA"),
+    JAVA("JAVA"), // TODO - rename to JAVA_LIB and JAVA_NI?
     // App deployed as a Python script.
     PYTHON("PYTHON"),
     // App deployed as a Javascript script.

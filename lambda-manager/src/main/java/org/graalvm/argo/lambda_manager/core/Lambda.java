@@ -111,7 +111,10 @@ public class Lambda {
         case HOTSPOT_W_AGENT:
             return String.format("codebase/%s/pid_%d_hotspot_w_agent", function.getName(), process.pid());
         case NATIVE_IMAGE:
+        case GRAALVISOR:
             return String.format("codebase/%s/pid_%d_vmm", function.getName(), process.pid());
+        case CUSTOM:
+            return String.format("codebase/%s/pid_%d_cruntime", function.getName(), process.pid());
         default:
             throw new Exception("Uknown lambda execution mode: " + executionMode);
         }

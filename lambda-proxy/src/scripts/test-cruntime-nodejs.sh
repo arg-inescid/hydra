@@ -10,7 +10,7 @@ source $(DIR)/test-shared.local
 CRUNTIME_HOME=$(DIR)/../../../lambda-manager/src/scripts/cruntime/
 
 TAP=nodejstap
-VMID=nodejsvm
+VMID=nodejsvm1
 
 function start_node {
 	sudo bash $ARGO_HOME/lambda-manager/src/scripts/create_taps.sh $TAP $ip
@@ -18,11 +18,11 @@ function start_node {
 }
 
 function run_test_node {
-	curl --no-progress-meter -X POST $ip:8080/init -H 'Content-Type: application/json' -d @test-cruntime-nodejs/init.json
+	curl --no-progress-meter --max-time 5 -X POST $ip:8080/init -H 'Content-Type: application/json' -d @test-cruntime-nodejs/init.json
 	for i in {1..3}
 	do
 		pretime
-		curl --no-progress-meter --max-time 5 -X POST $ip:8080/run -H 'Content-Type: application/json' -d @test-cruntime-nodejs/run.json
+		curl --no-progress-meter --max-time 5 -X POST $ip:8080/run -H 'Content-Type: application/json' -d @test-cruntime-nodejs/run2.json
 		postime
 		done
 }

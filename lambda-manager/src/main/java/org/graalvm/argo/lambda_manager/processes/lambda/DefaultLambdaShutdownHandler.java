@@ -52,6 +52,15 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
         }
     }
 
+    private void shutdownCustomLambda(String lambdaPath) throws Throwable {
+        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_cruntime.sh", lambdaPath).start();
+        p.waitFor();
+        if (p.exitValue() != 0) {
+            Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", process.pid()));
+            printStream(Level.WARNING, p.getErrorStream());
+        }
+    }
+
     private void shutdownLambda() {
         try {
             switch (lambda.getExecutionMode()) {
@@ -62,7 +71,11 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
                     shutdownHotSpotLambda(lambda.getLambdaPath());
                     break;
                 case NATIVE_IMAGE:
+                case GRAALVISOR:
                     shutdownVMMLambda(lambda.getLambdaPath());
+                    break;
+                case CUSTOM:
+                    shutdownCustomLambda(lambda.getLambdaPath());
                     break;
                 default:
                     Logger.log(Level.WARNING, String.format("Lambda ID=%d has no known execution mode: %s", process.pid(), lambda.getExecutionMode()));

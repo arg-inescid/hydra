@@ -13,6 +13,7 @@ import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotWithAgent;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartLambda;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartTruffle;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartVMM;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartCustomRuntime;
 import org.graalvm.argo.lambda_manager.utils.NetworkUtils;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 import org.graalvm.argo.lambda_manager.core.FunctionLanguage;
@@ -46,7 +47,6 @@ public class RoundedRobinScheduler implements Scheduler {
     }
 
     private StartLambda whomToSpawn(Lambda lambda, Function function) {
-        // TODO - rething this logic.
         StartLambda process;
         switch (function.getStatus()) {
             case NOT_BUILT_NOT_CONFIGURED:
@@ -60,14 +60,14 @@ public class RoundedRobinScheduler implements Scheduler {
                 process = new StartHotspot(lambda, function);
                 break;
             case READY:
-                if (function.getLanguage() != FunctionLanguage.NATIVE_JAVA) {
+                if (function.getLanguage() == FunctionLanguage.NATIVE_JAVA) {
+                    process = new StartVMM(lambda, function);
+                } else if (function.getRuntime().equals("graalvisor")) {
                     process = new StartTruffle(lambda, function);
                 } else {
-                    process = new StartVMM(lambda, function);
+                    process = new StartCustomRuntime(lambda, function);
                 }
                 break;
-            // TODO - there might exist a new case here which is for custom runtimes.
-            // For these, the start and stop will be through firecracker scripts.
             default:
                 throw new IllegalStateException("Unexpected value: " + function.getStatus());
         }
