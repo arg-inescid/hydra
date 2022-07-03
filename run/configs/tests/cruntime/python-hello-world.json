@@ -31,7 +31,7 @@
           "sending_info": [
             {
               "iterations": 1,
-              "num_requests": 3,
+              "num_requests": 1000,
               "num_clients": 1,
               "function_name": "hw-python-cruntime",
               "parameters": {},

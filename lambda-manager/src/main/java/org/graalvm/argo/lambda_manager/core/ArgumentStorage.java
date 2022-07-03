@@ -63,7 +63,8 @@ public class ArgumentStorage {
         IPv4Subnet gatewayWithMask = IPv4Subnet.of(lambdaManagerConfiguration.getGateway());
         this.mask = gatewayWithMask.getNetworkMask().toString();
         this.iPv4AddressIterator = gatewayWithMask.iterator();
-        this.iPv4AddressIterator.next();
+        this.iPv4AddressIterator.next(); // Note: skip *.*.*.0
+        this.iPv4AddressIterator.next(); // Note: skip *.*.*.1
         this.freeMemory = lambdaManagerConfiguration.getMaxMemory();
         this.maxTaps = lambdaManagerConfiguration.getMaxTaps();
         this.timeout = lambdaManagerConfiguration.getTimeout();

@@ -24,7 +24,6 @@ RUNTIME=$9
 prepare_cruntime_lambda_directory "$LAMBDA_HOME"
 
 # TODO - select memory for the VM.
-cd "$LAMBDA_HOME"
-sudo echo "$VMID" > "$LAMBDA_HOME"/lambda.id
+sudo echo "$VMID"    > "$LAMBDA_HOME"/lambda.id
 sudo echo "$RUNTIME" > "$LAMBDA_HOME"/lambda.runtime
 sudo $CRUNTIME_HOME/start-vm -ip $LAMBDA_IP/$(IPprefix_by_netmask $LAMBDA_MASK) -gw $LAMBDA_GATEWAY -tap $LAMBDA_TAP -id $VMID -img $RUNTIME

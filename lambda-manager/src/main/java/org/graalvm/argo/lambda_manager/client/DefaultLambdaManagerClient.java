@@ -90,7 +90,11 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
             payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getName());
         } else if (lambda.getExecutionMode() == LambdaExecutionMode.CUSTOM) {
             path = "/run";
-            payload = "{ }"; // TODO - receive from arguments
+            if (function.getLanguage() == FunctionLanguage.JAVA) {
+                payload = "{ \"value\" : { \"name\" : \"rbruno!\" } }"; // TODO - receive from arguments
+            } else {
+                payload = "{ }"; // TODO - receive from arguments
+            }
         } else {
             Logger.log(Level.WARNING, String.format("Unexpected lambda mode (%s) when invoking function %s!", lambda.getExecutionMode(), function.getName()));
         }

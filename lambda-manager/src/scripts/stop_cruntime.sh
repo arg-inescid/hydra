@@ -11,4 +11,4 @@ if [ -z "$LAMBDA_HOME" ]; then
   exit 1
 fi
 
-sudo $CRUNTIME_HOME/stop-vm -id $(cat $LAMBDA_HOME/lambda.id) &> "$LAMBDA_HOME"/stop_cruntime.log
+sudo $CRUNTIME_HOME/stop-vm -id "$(cat "$LAMBDA_HOME"/lambda.id)" &> "$LAMBDA_HOME"/stop_cruntime.log
