@@ -1,6 +1,7 @@
 {
-  "gateway": "192.168.1.83/24",
-  "maxMemory": 3,
+  "gateway": "194.210.228.242/23",
+  "maxMemory": 2048,
+  "maxTaps": 5,
   "timeout": 25000,
   "healthCheck": 50,
   "lambdaPort": 8080,

@@ -4,6 +4,18 @@ function DIR {
 	echo "$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 }
 
+function cidr_to_netmask() {
+    value=$(( 0xffffffff ^ ((1 << (32 - $1)) - 1) ))
+    echo "$(( (value >> 24) & 0xff )).$(( (value >> 16) & 0xff )).$(( (value >> 8) & 0xff )).$(( value & 0xff ))"
+}
+
+function next_ip(){
+    IP_HEX=$(printf '%.2X%.2X%.2X%.2X\n' `echo $1 | sed -e 's/\./ /g'`)
+    NEXT_IP_HEX=$(printf %.8X `echo $(( 0x$IP_HEX + 1 ))`)
+    NEXT_IP=$(printf '%d.%d.%d.%d\n' `echo $NEXT_IP_HEX | sed -r 's/(..)/0x\1 /g'`)
+    echo "$NEXT_IP"
+}
+
 ARGO_HOME=$(DIR)/../../../
 ARGO_RESOURCES=$ARGO_HOME/resources
 source $ARGO_HOME/lambda-manager/src/scripts/environment.sh
@@ -11,6 +23,12 @@ VMM=`grep target $VIRTUALIZE_PATH | awk -F\" '{print $4}'`
 
 tmpdir=/tmp/test-proxy
 mkdir $tmpdir &> /dev/null
+
+# Network setup for the test. Gateway is the ip of the host. The guest will have the next ip.
+gateway=$(ip route get 8.8.8.8 | grep -oP  'src \K\S+')
+smask=$(ip r | grep $gateway | awk '{print $1}' | awk -F / '{print $2}')
+mask=$(cidr_to_netmask $smask)
+ip=$(next_ip $gateway)
 
 function java_hello_world {
 	APP_JAR=$ARGO_HOME/../benchmarks/language/java/hello-world/build/libs/hello-world-1.0.jar

@@ -8,4 +8,5 @@ resources/*
 resources/truffle-build/*
 !resources/truffle-build/.gitkeep
 !resources/truffle-build/META-INF/
-
+start-vm
+stop-vm

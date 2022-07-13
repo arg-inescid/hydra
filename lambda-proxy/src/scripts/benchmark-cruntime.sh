@@ -5,7 +5,6 @@ function DIR {
 }
 
 source $(DIR)/test-shared.sh
-source $(DIR)/test-shared.local
 
 TAP=benchtap
 VMID=benchvm

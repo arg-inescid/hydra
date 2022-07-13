@@ -5,7 +5,6 @@ function DIR {
 }
 
 source $(DIR)/test-shared.sh
-source $(DIR)/test-shared.local
 
 function java_hw {
 	polyglot_java_hello_world

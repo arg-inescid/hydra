@@ -5,7 +5,6 @@ function DIR {
 }
 
 source $(DIR)/test-shared.sh
-source $(DIR)/test-shared.local
 
 function setup_java_niuk {
 	mkdir $tmpdir &> /dev/null
