@@ -1,12 +1,7 @@
 {
   "test": "reflection-call",
-  "entry_point": "http://localhost:9001",
+  "entry_point": "http://localhost:30009",
   "managers": [
-    {
-      "address": "http://localhost:9001",
-      "config_path": "../../../manager/default-cluster-manager.json",
-      "register_in_load_balancer": false
-    },
     {
       "address": "http://localhost:30009",
       "config_path": "../../../manager/default-lambda-manager.json",
