@@ -19,7 +19,7 @@ function start_node {
 
 function run_test_node {
 	curl --no-progress-meter --max-time 5 -X POST $ip:8080/init -H 'Content-Type: application/json' -d @test-cruntime-nodejs/init.json
-	for i in {1..3}
+	for i in {1..1000}
 	do
 		pretime
 		curl --no-progress-meter --max-time 5 -X POST $ip:8080/run -H 'Content-Type: application/json' -d @test-cruntime-nodejs/run2.json

@@ -3,6 +3,10 @@
 .classpath
 .settings
 
+# Ignore java binary files
+*.class
+*.jar
+
 # Ignore Gradle project-specific cache directory
 .gradle
 

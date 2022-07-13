@@ -59,7 +59,7 @@ function log_rss {
 	PID=$1
 	OFILE=$2
 	rm $OFILE
-        while kill -0 $PID &> /dev/null; do
+        while sudo kill -0 $PID &> /dev/null; do
                 ps -q $PID -o rss= >> $OFILE
                 sleep .5
         done
@@ -84,7 +84,7 @@ function start_niuk {
 	cd $tmpdir
 	sudo bash $ARGO_HOME/lambda-manager/src/scripts/create_taps.sh testtap $ip
 	sudo bash app_unikernel.sh \
-		--memory 16384 \
+		--memory 2048 \
 		--ip $ip \
 		--gateway $gateway \
 		--mask $mask \
@@ -92,7 +92,11 @@ function start_niuk {
 		--console \
 		--no-karg-patch \
 		$proxy_args 
-	# TODO - check the pid, lauch rss log.
+}
+
+function start_polyglot_niuk {
+	proxy_args="lambda_timestamp=$(date +%s%N | cut -b1-13) lambda_port=8080 LD_LIBRARY_PATH=/lib:/lib64:/apps:/usr/local/lib"
+	start_niuk
 }
 
 function start_svm {
@@ -116,6 +120,13 @@ function setup_polyglot_svm {
 	mkdir $tmpdir &> /dev/null
 	sudo ls $tmpdir &> /dev/null
 	cp $ARGO_RESOURCES/truffle-build/polyglot-proxy $tmpdir/app
+}
+
+function setup_polyglot_niuk {
+	mkdir $tmpdir &> /dev/null
+	sudo ls $tmpdir &> /dev/null
+	cp $ARGO_RESOURCES/truffle-build/polyglot-proxy.img $tmpdir
+	cp $ARGO_RESOURCES/truffle-build/polyglot-proxy_unikernel.sh $tmpdir/app_unikernel.sh
 }
 
 function start_polyglot_svm {
@@ -149,7 +160,7 @@ function run_test_polyglot_java {
 	done
 
 	curl -s -X POST $ip:8080/register?name=jvhw2\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SO
-	for i in {1..1000}
+	for i in {1..10}
 	do
 		pretime
 		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"jvhw2","arguments":""}'

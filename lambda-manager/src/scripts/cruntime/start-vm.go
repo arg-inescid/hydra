@@ -24,7 +24,7 @@ func main() {
 	var macAddr = flag.String("mac", "AA:FC:00:00:00:01", "tap. Example: -mac AA:FC:00:00:00:01")
 	var ttrpcCAddr = *containerdAddr + ".ttrpc"
 	var ctnImage = flag.String("img", "docker.io/library/nginx:1.17-alpine", "img. Example: -img docker.io/library/nginx:1.17-alpine")
-
+	// TODO - add memory and cpu count!
 	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds)
 	flag.Parse()
 
@@ -63,7 +63,7 @@ func start(containerdAddr string, ttrpcCAddr string, namespace string, vmID stri
 		VMID: vmID,
 		// Enabling Go Race Detector makes in-microVM binaries heavy in terms of CPU and memory.
 		MachineCfg: &proto.FirecrackerMachineConfiguration{
-			VcpuCount:  2,
+			VcpuCount:  1,
 			MemSizeMib: 2048,
 		},
 	}
