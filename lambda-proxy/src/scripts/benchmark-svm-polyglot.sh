@@ -61,8 +61,3 @@ done
 # Stopping VM.
 stop_baremetal &>> $tmpdir/lambda.log
 echo "Check logs: $tmpdir/lambda.log"
-
-# Plotting.
-paste -d ' ' $tmpdir/ab-concurrency.dat $tmpdir/ab-latency.dat | ~/git/helper-scripts/plotting/plotter.py -x Concurrency -y 'Mean Latency (ms)' -o $tmpdir/latency.png
-paste -d ' ' $tmpdir/ab-concurrency.dat $tmpdir/ab-tput.dat    | ~/git/helper-scripts/plotting/plotter.py -x Concurrency -y Throughput -o $tmpdir/tput.png
-cat $tmpdir/lambda.rss | ~/git/helper-scripts/plotting/plotter.py -y 'Memory (KBs)' -o $tmpdir/mem.png
