@@ -24,7 +24,7 @@
           "function_entry_point": "main",
           "function_memory": "512",
           "function_runtime": "docker.io/openwhisk/java8action:latest",
-          "source": "/home/rbruno/git/graalvm-argo/argo/lambda-proxy/src/scripts/test-cruntime-java/init.json"
+          "source": "../../../../lambda-proxy/src/scripts/test-cruntime-java/init.json"
         },
         {
           "command": "send",

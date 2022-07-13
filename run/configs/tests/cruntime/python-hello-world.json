@@ -24,7 +24,7 @@
           "function_entry_point": "main",
           "function_memory": "512",
           "function_runtime": "docker.io/openwhisk/action-python-v3.9:latest",
-          "source": "/home/rbruno/git/graalvm-argo/argo/lambda-proxy/src/scripts/test-cruntime-python/init.json"
+          "source": "../../../../lambda-proxy/src/scripts/test-cruntime-python/init.json"
         },
         {
           "command": "send",
