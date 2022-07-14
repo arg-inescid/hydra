@@ -5,21 +5,21 @@ import org.graalvm.argo.lambda_manager.callbacks.OnProcessFinishCallback;
 import org.graalvm.argo.lambda_manager.core.Configuration;
 import org.graalvm.argo.lambda_manager.core.Environment;
 import org.graalvm.argo.lambda_manager.core.Lambda;
+import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.utils.ConnectionTriplet;
 import io.micronaut.http.client.RxHttpClient;
 
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import static org.graalvm.argo.lambda_manager.core.Environment.*;
 
 public class StartHotspot extends StartLambda {
 
-    public StartHotspot(Lambda lambda) {
-        super(lambda);
+    public StartHotspot(Lambda lambda, Function function) {
+        super(lambda, function);
     }
 
     @Override
@@ -35,9 +35,9 @@ public class StartHotspot extends StartLambda {
         command.add("-v");
         command.add("bash");
         command.add("src/scripts/start_hotspot.sh");
-        command.add(lambda.getFunction().getName());
+        command.add(function.getName());
         command.add(String.valueOf(pid));
-        command.add(Configuration.argumentStorage.getMemorySpace());
+        command.add(String.valueOf(function.getMemory()));
         command.add(connectionTriplet.ip);
         command.add(connectionTriplet.tap);
         command.add(Configuration.argumentStorage.getGateway());
@@ -48,11 +48,8 @@ public class StartHotspot extends StartLambda {
             command.add("--noconsole");
         }
         command.add(TIMESTAMP_TAG + System.currentTimeMillis());
-        command.add(ENTRY_POINT_TAG + lambda.getFunction().getEntryPoint());
+        command.add(ENTRY_POINT_TAG + function.getEntryPoint());
         command.add(PORT_TAG + Configuration.argumentStorage.getLambdaPort());
-        if (lambda.getFunction().getArguments() != null) {
-            Collections.addAll(command, lambda.getFunction().getArguments().split(","));
-        }
         return command;
     }
 
@@ -60,7 +57,7 @@ public class StartHotspot extends StartLambda {
     protected OnProcessFinishCallback callback() {
         String sourceFile = Paths.get(
                         CODEBASE,
-                        lambda.getFunction().getName(),
+                        function.getName(),
                         String.format(getLambdaDirectory(), pid),
                         RUN_LOG)
                         .toString();

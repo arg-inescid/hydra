@@ -1,12 +1,7 @@
 {
   "test": "hello-world",
-  "entry_point": "http://localhost:9001",
+  "entry_point": "http://localhost:30009",
   "managers": [
-    {
-      "address": "http://localhost:9001",
-      "config_path": "../../../manager/default-cluster-manager.json",
-      "register_in_load_balancer": false
-    },
     {
       "address": "http://localhost:30009",
       "config_path": "../../../manager/default-lambda-manager.json",
@@ -28,7 +23,7 @@
           "function_name": "hello-world",
           "function_language": "javascript",
           "function_entry_point": "main",
-          "arguments": "8080",
+          "function_memory": "512",
           "source": "../../../../../../benchmarks/language/javascript/hello-world/main.js"
         },
         {

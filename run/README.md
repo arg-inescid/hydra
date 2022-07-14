@@ -10,7 +10,8 @@ Default value for each variable rest inside configs/manager/default-lambda-manag
 ```json
 {
   "gateway": "[STRING] The default PC's gateway address with mask?",
-  "maxLambdas": "[INTEGER] How many lambdas can be started in total by this manager?",
+  "maxMemory": "[INTEGER] Maximum memory available for all lambdas (in MBs)",
+  "maxTaps": "[INTEGER] Maximum number of taps created for lambdas",
   "timeout": "[INTEGER] Time during which lambda can stay inactive?",
   "healthCheck": "[INTEGER] Lambda's health will be checked in this time-span, after the first health response, no more checks are made.",
   "memory": "[STRING] Maximum memory consumption per active lambda?",
@@ -23,7 +24,6 @@ Default value for each variable rest inside configs/manager/default-lambda-manag
   },
   "managerState": {
     "scheduler": "[STRING] Fully qualified name of chosen Scheduler?",
-    "optimizer": "[STRING] Fully qualified name of chosen Optimizer?",
     "encoder": "[STRING] Fully qualified name of chosen Encoder?",
     "storage": "[STRING] Fully qualified name of chosen Storage?",
     "client": "[STRING] Fully qualified name of chosen Client?",
@@ -150,7 +150,6 @@ structure is provide bellow (value inside [ ] represents JSON data types):
           "command": "upload",
           "allocate": "[INTEGER] How many instances the user wants allocate for this function?",
           "function_name": "[STRING] Function name?",
-          "arguments": "[STRING] Comma separated lambda arguments",
           "source": "[STRING] Function source code path (root directory)?"
         },
         {

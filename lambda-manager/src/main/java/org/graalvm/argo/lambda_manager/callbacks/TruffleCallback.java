@@ -1,8 +1,8 @@
 package org.graalvm.argo.lambda_manager.callbacks;
 
 import org.graalvm.argo.lambda_manager.core.Lambda;
-import org.graalvm.argo.lambda_manager.core.LambdaTruffleStatus;
 
+// TODO - change the name. We need to do this for all Graalvisor and CustomRT
 public class TruffleCallback implements OnProcessFinishCallback {
 
     private final Lambda lambda;
@@ -13,6 +13,6 @@ public class TruffleCallback implements OnProcessFinishCallback {
 
     @Override
     public void finish(int exitCode) {
-        lambda.setTruffleStatus(LambdaTruffleStatus.NEED_REGISTRATION);
+        lambda.resetRegisteredInLambda();
     }
 }

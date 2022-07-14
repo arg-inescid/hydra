@@ -1,9 +1,9 @@
 {
-  "gateway": "192.168.8.1/18",
-  "maxLambdas": 3,
+  "gateway": "194.210.228.242/23",
+  "maxMemory": 2048,
+  "maxTaps": 5,
   "timeout": 25000,
   "healthCheck": 50,
-  "memory": "512M",
   "lambdaPort": 8080,
   "lambdaConsole": true,
   "managerConsole": {
@@ -13,7 +13,6 @@
   },
   "managerState": {
     "scheduler": "org.graalvm.argo.lambda_manager.schedulers.RoundedRobinScheduler",
-    "optimizer": "org.graalvm.argo.lambda_manager.optimizers.DefaultFunctionOptimizer",
     "encoder": "org.graalvm.argo.lambda_manager.encoders.DefaultCoder",
     "storage": "org.graalvm.argo.lambda_manager.function_storage.InMemoryFunctionStorage",
     "client": "org.graalvm.argo.lambda_manager.client.DefaultLambdaManagerClient"

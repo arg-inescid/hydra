@@ -12,4 +12,5 @@ if [ -z "$LAMBDA_HOME" ]; then
 fi
 
 sudo ssh -o StrictHostKeyChecking=no -i "$LAMBDA_HOME"/id_rsa root@"$(cat "$LAMBDA_HOME"/lambda.ip)" pkill java
-sudo kill "$(cat "$LAMBDA_HOME"/lambda.pid)"
+sudo pkill -TERM -P "$(cat "$LAMBDA_HOME"/lambda.pid)"
+sudo kill -TERM "$(cat "$LAMBDA_HOME"/lambda.pid)"

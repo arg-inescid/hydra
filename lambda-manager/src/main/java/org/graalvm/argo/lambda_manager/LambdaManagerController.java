@@ -25,6 +25,7 @@ public class LambdaManagerController {
                                          @PathVariable("function_name") String functionName,
                                          @Nullable @Body String arguments,
                                          @Nullable @QueryValue("count") String warmupCount) {
+        // Note: by default, warmupCount is null. Only used for demos using the web interface.
         if (warmupCount != null) {
             for (int i = 0; i < Integer.valueOf(warmupCount); i++) {
                 LambdaManager.processRequest(username, functionName, arguments);
@@ -39,14 +40,14 @@ public class LambdaManagerController {
     }
 
     @Post(value = "/upload_function", consumes = MediaType.APPLICATION_OCTET_STREAM)
-    public Single<String> uploadFunction(@QueryValue("allocate") int allocate,
-                                         @QueryValue("username") String username,
+    public Single<String> uploadFunction(@QueryValue("username") String username,
                                          @QueryValue("function_name") String functionName,
                                          @QueryValue("function_language") String functionLanguage,
                                          @QueryValue("function_entry_point") String functionEntryPoint,
-                                         @Nullable @QueryValue("arguments") String arguments,
+                                         @QueryValue("function_memory") String functionMemory,
+                                         @Nullable @QueryValue("function_runtime") String functionRuntime,
                                          @Body byte[] functionCode) {
-        return LambdaManager.uploadFunction(allocate, username, functionName, functionLanguage, functionEntryPoint, arguments, functionCode);
+        return LambdaManager.uploadFunction(username, functionName, functionLanguage, functionEntryPoint, functionMemory, functionRuntime, functionCode);
     }
 
     @Post("/remove_function")

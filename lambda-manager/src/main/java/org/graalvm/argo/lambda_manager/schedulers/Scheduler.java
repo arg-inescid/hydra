@@ -25,5 +25,5 @@ public interface Scheduler {
      * Reschedules the Lambda after executing the lambda invocation.
      * @param lambda
      */
-    void reschedule(Lambda lambda);
+    void reschedule(Lambda lambda, Function function);
 }

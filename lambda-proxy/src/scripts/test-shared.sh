@@ -4,12 +4,31 @@ function DIR {
 	echo "$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 }
 
+function cidr_to_netmask() {
+    value=$(( 0xffffffff ^ ((1 << (32 - $1)) - 1) ))
+    echo "$(( (value >> 24) & 0xff )).$(( (value >> 16) & 0xff )).$(( (value >> 8) & 0xff )).$(( value & 0xff ))"
+}
+
+function next_ip(){
+    IP_HEX=$(printf '%.2X%.2X%.2X%.2X\n' `echo $1 | sed -e 's/\./ /g'`)
+    NEXT_IP_HEX=$(printf %.8X `echo $(( 0x$IP_HEX + 1 ))`)
+    NEXT_IP=$(printf '%d.%d.%d.%d\n' `echo $NEXT_IP_HEX | sed -r 's/(..)/0x\1 /g'`)
+    echo "$NEXT_IP"
+}
+
 ARGO_HOME=$(DIR)/../../../
 ARGO_RESOURCES=$ARGO_HOME/resources
 source $ARGO_HOME/lambda-manager/src/scripts/environment.sh
 VMM=`grep target $VIRTUALIZE_PATH | awk -F\" '{print $4}'`
 
 tmpdir=/tmp/test-proxy
+mkdir $tmpdir &> /dev/null
+
+# Network setup for the test. Gateway is the ip of the host. The guest will have the next ip.
+gateway=$(ip route get 8.8.8.8 | grep -oP  'src \K\S+')
+smask=$(ip r | grep $gateway | awk '{print $1}' | awk -F / '{print $2}')
+mask=$(cidr_to_netmask $smask)
+ip=$(next_ip $gateway)
 
 function java_hello_world {
 	APP_JAR=$ARGO_HOME/../benchmarks/language/java/hello-world/build/libs/hello-world-1.0.jar
@@ -36,13 +55,13 @@ function polyglot_java_hello_world {
 function polyglot_javascript_hello_world {
 	APP_SCRIPT=$(DIR)/hello-world.js
 	APP_LANG=javascript
-	APP_MAIN=x
+	APP_MAIN=main
 }
 
 function polyglot_python_hello_world {
 	APP_SCRIPT=$(DIR)/hello-world.py
 	APP_LANG=python
-	APP_MAIN=x
+	APP_MAIN=main
 }
 
 function pretime {
@@ -58,7 +77,7 @@ function log_rss {
 	PID=$1
 	OFILE=$2
 	rm $OFILE
-        while kill -0 $PID &> /dev/null; do
+        while sudo kill -0 $PID &> /dev/null; do
                 ps -q $PID -o rss= >> $OFILE
                 sleep .5
         done
@@ -83,7 +102,7 @@ function start_niuk {
 	cd $tmpdir
 	sudo bash $ARGO_HOME/lambda-manager/src/scripts/create_taps.sh testtap $ip
 	sudo bash app_unikernel.sh \
-		--memory 16384 \
+		--memory 2048 \
 		--ip $ip \
 		--gateway $gateway \
 		--mask $mask \
@@ -91,7 +110,11 @@ function start_niuk {
 		--console \
 		--no-karg-patch \
 		$proxy_args 
-	# TODO - check the pid, lauch rss log.
+}
+
+function start_polyglot_niuk {
+	proxy_args="lambda_timestamp=$(date +%s%N | cut -b1-13) lambda_port=8080 LD_LIBRARY_PATH=/lib:/lib64:/apps:/usr/local/lib"
+	start_niuk
 }
 
 function start_svm {
@@ -115,6 +138,13 @@ function setup_polyglot_svm {
 	mkdir $tmpdir &> /dev/null
 	sudo ls $tmpdir &> /dev/null
 	cp $ARGO_RESOURCES/truffle-build/polyglot-proxy $tmpdir/app
+}
+
+function setup_polyglot_niuk {
+	mkdir $tmpdir &> /dev/null
+	sudo ls $tmpdir &> /dev/null
+	cp $ARGO_RESOURCES/truffle-build/polyglot-proxy.img $tmpdir
+	cp $ARGO_RESOURCES/truffle-build/polyglot-proxy_unikernel.sh $tmpdir/app_unikernel.sh
 }
 
 function start_polyglot_svm {
@@ -148,7 +178,7 @@ function run_test_polyglot_java {
 	done
 
 	curl -s -X POST $ip:8080/register?name=jvhw2\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SO
-	for i in {1..1000}
+	for i in {1..10}
 	do
 		pretime
 		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"jvhw2","arguments":""}'

@@ -87,22 +87,21 @@ def build_benchmark(username, source):
 
 def upload_function(test_config_dir, username, entry_point, command_info):
     benchmark_path = build_benchmark(username, os.path.join(test_config_dir, command_info['source']))
-    arguments = "&arguments=" + command_info['arguments'] if len(command_info['arguments']) > 0 else ""
     print_message(username, "Response: " +
                   requests.post("{entry_point}/upload_function?"
-                                "allocate={allocate}&"
                                 "username={username}&"
                                 "function_name={function_name}&"
                                 "function_language={function_language}&"
-                                "function_entry_point={function_entry_point}"
-                                "{arguments}"
-                                .format(allocate=command_info['allocate'],
-                                        entry_point=entry_point,
+                                "function_entry_point={function_entry_point}&"
+                                "function_memory={function_memory}&"
+                                "function_runtime={function_runtime}"
+                                .format(entry_point=entry_point,
                                         username=username,
                                         function_name=command_info['function_name'],
                                         function_language=command_info['function_language'],
                                         function_entry_point=command_info['function_entry_point'],
-                                        arguments=arguments),
+                                        function_memory=command_info['function_memory'],
+                                        function_runtime=command_info['function_runtime']),
                                 headers={'Content-type': 'application/octet-stream'},
                                 data=read_file(username, benchmark_path)).text, MessageType.INFO)
 

@@ -7,6 +7,7 @@ import java.io.File;
 import java.nio.file.Paths;
 
 import org.graalvm.argo.lambda_manager.core.Lambda;
+import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.processes.AbstractProcess;
 
 public abstract class StartLambda extends AbstractProcess {
@@ -15,9 +16,11 @@ public abstract class StartLambda extends AbstractProcess {
     protected static String ENTRY_POINT_TAG = "lambda_entry_point=";
     protected static String PORT_TAG = "lambda_port=";
     protected final Lambda lambda;
+    protected final Function function;
 
-    public StartLambda(Lambda lambda) {
+    public StartLambda(Lambda lambda, Function function) {
         this.lambda = lambda;
+        this.function = function;
     }
 
     public abstract String getLambdaDirectory();
@@ -26,7 +29,7 @@ public abstract class StartLambda extends AbstractProcess {
     protected String outputFilename() {
         String dirPath = Paths.get(
                         LAMBDA_LOGS,
-                        lambda.getFunction().getName(),
+                        function.getName(),
                         String.format(getLambdaDirectory(), pid))
                         .toString();
         new File(dirPath).mkdirs();
@@ -37,7 +40,7 @@ public abstract class StartLambda extends AbstractProcess {
     protected String memoryFilename() {
         String dirPath = Paths.get(
                         LAMBDA_LOGS,
-                        lambda.getFunction().getName(),
+                        function.getName(),
                         String.format(getLambdaDirectory(), pid))
                         .toString();
         new File(dirPath).mkdirs();

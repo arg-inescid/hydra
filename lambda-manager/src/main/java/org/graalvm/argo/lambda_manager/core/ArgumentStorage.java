@@ -7,7 +7,6 @@ import org.graalvm.argo.lambda_manager.encoders.Coder;
 import org.graalvm.argo.lambda_manager.exceptions.argument_parser.ErrorDuringReflectiveClassCreation;
 import org.graalvm.argo.lambda_manager.exceptions.user.ErrorDuringCreatingConnectionPool;
 import org.graalvm.argo.lambda_manager.function_storage.FunctionStorage;
-import org.graalvm.argo.lambda_manager.optimizers.FunctionOptimizer;
 import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
 import org.graalvm.argo.lambda_manager.processes.taps.CreateTaps;
 import org.graalvm.argo.lambda_manager.schedulers.Scheduler;
@@ -41,37 +40,35 @@ import java.util.logging.Level;
 
 public class ArgumentStorage {
 
+    // TODO - could we just keep the LambdaManagerConfiguration and avoid most of these fields?
     private String gateway;
     private String mask;
     private Iterator<IPv4Address> iPv4AddressIterator;
-
-    private int maxLambdas;
-    private final ArrayList<ConnectionTriplet<String, String, RxHttpClient>> connectionPool = new ArrayList<>();
-
+    private int freeMemory;
+    private int maxTaps;
+    // TODO - we should synchronize access to the connection pool.
+    private final ArrayList<ConnectionTriplet<String, String, RxHttpClient>> connectionPool;
     private int timeout;
     private int healthCheck;
-    private String memorySpace;
     private int lambdaPort;
     private boolean isLambdaConsoleActive;
-
     private LambdaManagerConsole cachedConsoleInfo;
 
     private ArgumentStorage() {
+        this.connectionPool = new ArrayList<>();
     }
 
     private void initClassFields(LambdaManagerConfiguration lambdaManagerConfiguration) {
-        String gatewayString = lambdaManagerConfiguration.getGateway();
-        this.gateway = gatewayString.split("/")[0];
-        IPv4Subnet gatewayWithMask = IPv4Subnet.of(gatewayString);
+        this.gateway = lambdaManagerConfiguration.getGateway().split("/")[0];
+        IPv4Subnet gatewayWithMask = IPv4Subnet.of(lambdaManagerConfiguration.getGateway());
         this.mask = gatewayWithMask.getNetworkMask().toString();
         this.iPv4AddressIterator = gatewayWithMask.iterator();
-        this.iPv4AddressIterator.next();
-
-        this.maxLambdas = lambdaManagerConfiguration.getMaxLambdas();
-
+        this.iPv4AddressIterator.next(); // Note: skip *.*.*.0
+        this.iPv4AddressIterator.next(); // Note: skip *.*.*.1
+        this.freeMemory = lambdaManagerConfiguration.getMaxMemory();
+        this.maxTaps = lambdaManagerConfiguration.getMaxTaps();
         this.timeout = lambdaManagerConfiguration.getTimeout();
         this.healthCheck = lambdaManagerConfiguration.getHealthCheck();
-        this.memorySpace = lambdaManagerConfiguration.getMemory();
         this.lambdaPort = lambdaManagerConfiguration.getLambdaPort();
         this.isLambdaConsoleActive = lambdaManagerConfiguration.isLambdaConsole();
     }
@@ -108,7 +105,7 @@ public class ArgumentStorage {
 
     private void prepareConnectionPool(BeanContext beanContext) throws ErrorDuringCreatingConnectionPool {
         try {
-            for (int i = 0; i < maxLambdas; i++) {
+            for (int i = 0; i < maxTaps; i++) {
                 String ip = getNextIPAddress();
                 String tap = String.format("%s-%s", Environment.TAP_PREFIX, generateRandomString());
                 RxHttpClient client = beanContext.createBean(RxHttpClient.class,
@@ -185,11 +182,10 @@ public class ArgumentStorage {
     private void prepareConfiguration(LambdaManagerState lambdaManagerState)
                     throws ErrorDuringReflectiveClassCreation {
         Scheduler scheduler = (Scheduler) createObject(lambdaManagerState.getScheduler());
-        FunctionOptimizer optimizer = (FunctionOptimizer) createObject(lambdaManagerState.getOptimizer());
         Coder encoder = (Coder) createObject(lambdaManagerState.getEncoder());
         FunctionStorage storage = (FunctionStorage) createObject(lambdaManagerState.getStorage());
         LambdaManagerClient client = (LambdaManagerClient) createObject(lambdaManagerState.getClient());
-        Configuration.initFields(scheduler, optimizer, encoder, storage, client, this);
+        Configuration.initFields(scheduler, encoder, storage, client, this);
     }
 
     public void doInitialize(LambdaManagerConfiguration lambdaManagerConfiguration, BeanContext beanContext)
@@ -252,8 +248,30 @@ public class ArgumentStorage {
         return gateway;
     }
 
-    public int getMaxLambdas() {
-        return maxLambdas;
+    private synchronized boolean updateMemory(long delta) {
+        return delta < 0 ? allocateMemoryLambda(Math.abs(delta)) : deallocateMemoryLambda(delta);
+    }
+
+    private boolean allocateMemoryLambda(long delta) {
+        if (freeMemory >= delta) {
+            freeMemory -= delta;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private boolean deallocateMemoryLambda(long delta) {
+        freeMemory += delta;
+        return true;
+    }
+
+    public boolean allocateMemoryLambda(Function f) {
+        return updateMemory(Math.negateExact(f.getMemory()));
+    }
+
+    public boolean deallocateMemoryLambda(Function f) {
+        return updateMemory(f.getMemory());
     }
 
     public ArrayList<ConnectionTriplet<String, String, RxHttpClient>> getConnectionPool() {
@@ -261,11 +279,14 @@ public class ArgumentStorage {
     }
 
     public ConnectionTriplet<String, String, RxHttpClient> nextConnectionTriplet() {
+        // TODO - may throw exception if no more connections are available.
         return connectionPool.remove(0);
     }
 
     public void returnConnectionTriplet(ConnectionTriplet<String, String, RxHttpClient> connectionTriplet) {
-        connectionPool.add(connectionTriplet);
+        if (!connectionPool.contains(connectionTriplet)) {
+            connectionPool.add(connectionTriplet);
+        }
     }
 
     public String getMask() {
@@ -278,10 +299,6 @@ public class ArgumentStorage {
 
     public int getHealthCheck() {
         return healthCheck;
-    }
-
-    public String getMemorySpace() {
-        return memorySpace;
     }
 
     public int getLambdaPort() {

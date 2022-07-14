@@ -9,7 +9,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
                 "scheduler",
-                "optimizer",
                 "encoder",
                 "storage",
                 "client",
@@ -19,7 +18,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class LambdaManagerState implements Serializable {
 
     @JsonProperty("scheduler") private String scheduler;
-    @JsonProperty("optimizer") private String optimizer;
     @JsonProperty("encoder") private String encoder;
     @JsonProperty("storage") private String storage;
     @JsonProperty("client") private String client;
@@ -36,7 +34,6 @@ public class LambdaManagerState implements Serializable {
     /**
      *
      * @param scheduler - The Scheduler class which will be used by the Manager.
-     * @param optimizer - The Optimizer class which will be used by the Manager.
      * @param encoder - The Encoder class which will be used by the Manager.
      * @param storage - The Lambda Storage class which will be used by the Manager.
      * @param client - The Client class which will be used by the Manager.
@@ -46,7 +43,6 @@ public class LambdaManagerState implements Serializable {
                     String codeWriter) {
         super();
         this.scheduler = scheduler;
-        this.optimizer = optimizer;
         this.encoder = encoder;
         this.storage = storage;
         this.client = client;
@@ -61,16 +57,6 @@ public class LambdaManagerState implements Serializable {
     @JsonProperty("scheduler")
     public void setScheduler(String scheduler) {
         this.scheduler = scheduler;
-    }
-
-    @JsonProperty("optimizer")
-    public String getOptimizer() {
-        return optimizer;
-    }
-
-    @JsonProperty("optimizer")
-    public void setOptimizer(String optimizer) {
-        this.optimizer = optimizer;
     }
 
     @JsonProperty("encoder")

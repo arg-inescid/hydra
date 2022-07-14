@@ -7,8 +7,16 @@ import org.graalvm.argo.lambda_manager.core.Lambda;
 import org.graalvm.argo.lambda_manager.optimizers.FunctionStatus;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
+import org.graalvm.argo.lambda_manager.processes.lambda.BuildVMM;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspot;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotWithAgent;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartLambda;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartTruffle;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartVMM;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartCustomRuntime;
 import org.graalvm.argo.lambda_manager.utils.NetworkUtils;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
+import org.graalvm.argo.lambda_manager.core.FunctionLanguage;
 
 import java.util.ArrayList;
 import java.util.logging.Level;
@@ -38,13 +46,41 @@ public class RoundedRobinScheduler implements Scheduler {
         }
     }
 
+    private StartLambda whomToSpawn(Lambda lambda, Function function) {
+        StartLambda process;
+        switch (function.getStatus()) {
+            case NOT_BUILT_NOT_CONFIGURED:
+                process = new StartHotspotWithAgent(lambda, function);
+                function.setStatus(FunctionStatus.CONFIGURING_OR_BUILDING);
+                break;
+            case NOT_BUILT_CONFIGURED:
+                new BuildVMM(function).build().start();
+                function.setStatus(FunctionStatus.CONFIGURING_OR_BUILDING);
+            case CONFIGURING_OR_BUILDING:
+                process = new StartHotspot(lambda, function);
+                break;
+            case READY:
+                if (function.getLanguage() == FunctionLanguage.NATIVE_JAVA) {
+                    process = new StartVMM(lambda, function);
+                } else if (function.getRuntime().equals("graalvisor")) {
+                    process = new StartTruffle(lambda, function);
+                } else {
+                    process = new StartCustomRuntime(lambda, function);
+                }
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + function.getStatus());
+        }
+        return process;
+    }
+
     private void startLambda(Function function, Lambda lambda) {
         new Thread() {
             @Override
             public void run() {
                 gate();
                 lambda.setConnectionTriplet(Configuration.argumentStorage.nextConnectionTriplet());
-                ProcessBuilder process = Configuration.optimizer.whomToSpawn(lambda).build();
+                ProcessBuilder process = whomToSpawn(lambda, function).build();
                 lambda.setProcess(process);
                 process.start();
                 boolean open = NetworkUtils.waitForOpenPort(lambda.getConnectionTriplet().ip, Configuration.argumentStorage.getLambdaPort(), 25);
@@ -53,7 +89,7 @@ public class RoundedRobinScheduler implements Scheduler {
                         function.getIdleLambdas().add(lambda);
                         Logger.log(Level.INFO, "Added new lambda for " + function.getName() + " with mode " + lambda.getExecutionMode());
                     } else {
-                        function.getStoppedLambdas().add(lambda);
+                        Configuration.argumentStorage.deallocateMemoryLambda(function);
                         Logger.log(Level.SEVERE, "Failed to add new lambda for " + function.getName() + " with mode " + lambda.getExecutionMode());
                     }
                     lambda.resetTimer();
@@ -85,19 +121,17 @@ public class RoundedRobinScheduler implements Scheduler {
 
             synchronized (function) {
                 if ((lambda = findLambda(function.getIdleLambdas(), targetMode)) == null) {
-                    if ((lambda = findLambda(function.getStoppedLambdas())) == null) {
+                    if (Configuration.argumentStorage.allocateMemoryLambda(function)) {
+                        Logger.log(Level.INFO, "Requesting new lambda for " + function.getName() + " with mode " + targetMode);
+                        lambda = new Lambda(function);
+                        startLambda(function, lambda);
+                        continue;
+                    } else {
                         // TODO - this target mode is a hard rule meaning that we might drastically change the load towards one single VM.
-                        // We should slowly transition the load to the VMs with target load.
                         if ((lambda = findLambda(function.getRunningLambdas(), targetMode)) != null) {
                             // We remove the lambda so that it can be inserted at the end of the list.
                             function.getRunningLambdas().remove(lambda);
                         }
-                    } else {
-                        // We remove from stopped and start the lambda in the background.
-                        function.getStoppedLambdas().remove(lambda);
-                        Logger.log(Level.INFO, "Requesting new lambda for " + function.getName() + " with mode " + targetMode);
-                        startLambda(function, lambda);
-                        continue;
                     }
                 } else {
                     function.getIdleLambdas().remove(lambda);
@@ -121,7 +155,7 @@ public class RoundedRobinScheduler implements Scheduler {
         synchronized (function) {
             // We only one lambda to be decommissioned at a time.
             if (function.getNumberDecommissionedLambdas() == 0) {
-                if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT && function.getStatus() == FunctionStatus.BUILT && !lambda.isDecommissioned()) {
+                if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT && function.getStatus() == FunctionStatus.READY && !lambda.isDecommissioned()) {
                     function.decommissionLambda(lambda);
                     Logger.log(Level.INFO, "Decommissioning (hotspot to native image) lambda " + lambda.getProcess().pid());
                 }
@@ -137,8 +171,7 @@ public class RoundedRobinScheduler implements Scheduler {
     }
 
     @Override
-    public void reschedule(Lambda lambda) {
-        Function function = lambda.getFunction();
+    public void reschedule(Lambda lambda, Function function) {
         synchronized (function) {
             int openRequestCount = lambda.decOpenRequestCount();
             lambda.incClosedRequestCount();

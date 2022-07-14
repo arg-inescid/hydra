@@ -1,12 +1,7 @@
 {
   "test": "hello-world",
-  "entry_point": "http://localhost:9001",
+  "entry_point": "http://localhost:30009",
   "managers": [
-    {
-      "address": "http://localhost:9001",
-      "config_path": "../../../manager/default-cluster-manager.json",
-      "register_in_load_balancer": false
-    },
     {
       "address": "http://localhost:30009",
       "config_path": "../../../manager/default-lambda-manager.json",
@@ -24,20 +19,20 @@
         },
         {
           "command": "upload",
-          "allocate": 3,
           "function_name": "hello-world-js",
           "function_language": "javascript",
           "function_entry_point": "main",
-          "arguments": "8080",
+          "function_memory": "512",
+          "function_runtime": "graalvisor",
           "source": "../../../../../../benchmarks/language/javascript/hello-world/main.js"
         },
         {
           "command": "send",
           "sending_info": [
             {
-              "iterations": 1000,
-              "num_requests": 100,
-              "num_clients": 100,
+              "iterations": 1,
+              "num_requests": 1000,
+              "num_clients": 1,
               "function_name": "hello-world-js",
               "parameters": {},
               "output": "../../../../../../benchmarks/results/javascript/hello-world/hello-world-1.dat"

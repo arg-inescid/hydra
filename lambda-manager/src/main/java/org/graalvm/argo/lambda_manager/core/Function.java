@@ -18,11 +18,14 @@ public class Function {
     /** Function entry point (how should we invoke the function). */
     private final String entryPoint;
 
-    /**
-     * Arguments passed to the function code when it is launched. Not to be confused with lambda
-     * invocation arguments.
-     */
-    private final String arguments;
+    /** Memory required to run a function invocation (in MBs). */
+    private final long memory;
+
+    /** The runtime where this function should be executed. Accepted values include:
+     * - graalvisor (any truffle language, java_lib, and java_native)
+     * - <docker image> (e.g., docker.io/openwhisk/action-python-v3.9:latest)
+     * */
+    private final String runtime;
 
     /** Function status in the optimization pipeline. */
     private FunctionStatus status;
@@ -35,9 +38,7 @@ public class Function {
      */
     private long lastAgentPID;
 
-    /** Unallocated lambdas. */
-    private final ArrayList<Lambda> stoppedLambdas = new ArrayList<>();
-
+    // TODO - functions should not keep these lists anymore. A Lambda will have multiple functions.
     /** Idle lambdas, waiting for requests. */
     private final ArrayList<Lambda> idleLambdas = new ArrayList<>();
 
@@ -47,15 +48,16 @@ public class Function {
     /** Number of Lambdas that are not receiving requests. */
     private int decommissionedLambdas;
 
-    public Function(String name, String language, String entryPoint, String arguments) throws Exception {
+    public Function(String name, String language, String entryPoint, String memory, String runtime) throws Exception {
         this.name = name;
         this.language = FunctionLanguage.fromString(language);
         this.entryPoint = entryPoint;
-        this.arguments = arguments;
-        if (isTruffleLanguage()) {
-            this.status = FunctionStatus.BUILT;
-        } else {
+        this.memory = Long.parseLong(memory);
+        this.runtime = runtime;
+        if (this.language == FunctionLanguage.NATIVE_JAVA) {
             this.status = FunctionStatus.NOT_BUILT_NOT_CONFIGURED;
+        } else {
+            this.status = FunctionStatus.READY;
         }
     }
 
@@ -71,20 +73,12 @@ public class Function {
         this.status = status;
     }
 
-    public String getArguments() {
-        return arguments;
-    }
-
     public long getLastAgentPID() {
         return lastAgentPID;
     }
 
     public void setLastAgentPID(long lastAgentPID) {
         this.lastAgentPID = lastAgentPID;
-    }
-
-    public ArrayList<Lambda> getStoppedLambdas() {
-        return stoppedLambdas;
     }
 
     public ArrayList<Lambda> getIdleLambdas() {
@@ -95,22 +89,26 @@ public class Function {
         return runningLambdas;
     }
 
-	public int getNumberDecommissionedLambdas() {
-		return decommissionedLambdas;
-	}
+    public int getNumberDecommissionedLambdas() {
+        return decommissionedLambdas;
+    }
 
     public void decommissionLambda(Lambda lambda) {
-        decommissionedLambdas++;
-        lambda.setDecommissioned(true);
+        if (!lambda.isDecommissioned()) {
+            decommissionedLambdas++;
+            lambda.setDecommissioned(true);
+        }
     }
 
     public void commissionLambda(Lambda lambda) {
-        decommissionedLambdas--;
-        lambda.setDecommissioned(false);
+        if (lambda.isDecommissioned()) {
+            decommissionedLambdas--;
+            lambda.setDecommissioned(false);
+        }
     }
 
     public int getTotalNumberLambdas() {
-        return stoppedLambdas.size() + idleLambdas.size() + runningLambdas.size();
+        return idleLambdas.size() + runningLambdas.size();
     }
 
     public FunctionLanguage getLanguage() {
@@ -121,12 +119,19 @@ public class Function {
         return entryPoint;
     }
 
+    public long getMemory() {
+        return memory;
+    }
 
-    public boolean isTruffleLanguage() {
+    public boolean requiresRegistration() {
         return language != FunctionLanguage.NATIVE_JAVA;
     }
 
     public Path buildFunctionSourceCodePath() {
         return Paths.get(Environment.CODEBASE, name, name);
+    }
+
+    public String getRuntime() {
+        return this.runtime;
     }
 }

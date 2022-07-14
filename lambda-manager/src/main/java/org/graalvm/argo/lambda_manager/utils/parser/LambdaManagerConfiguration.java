@@ -9,10 +9,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
                 "gateway",
-                "maxLambdas",
+                "maxMemory",
+                "maxTaps",
                 "timeout",
                 "healthCheck",
-                "memory",
                 "lambdaPort",
                 "lambdaConsole",
                 "managerConsole",
@@ -20,10 +20,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 })
 public class LambdaManagerConfiguration implements Serializable {
     @JsonProperty("gateway") private String gateway;
-    @JsonProperty("maxLambdas") private int maxLambdas;
+    @JsonProperty("maxMemory") private int maxMemory;
+    @JsonProperty("maxTaps") private int maxTaps;
     @JsonProperty("timeout") private int timeout;
     @JsonProperty("healthCheck") private int healthCheck;
-    @JsonProperty("memory") private String memory;
     @JsonProperty("lambdaPort") private int lambdaPort;
     @JsonProperty("lambdaConsole") private boolean lambdaConsole;
     @JsonProperty("managerConsole") private LambdaManagerConsole lambdaManagerConsole;
@@ -40,24 +40,24 @@ public class LambdaManagerConfiguration implements Serializable {
     /**
      *
      * @param gateway - The default PC's gateway address.
-     * @param maxLambdas - How many lambdas can be started in total by this manager.
+     * @param maxMemory - Maximum memory that can be used by lambdas in total (MBs).
+     * @param maxTaps- Maximum number of taps available for lambdas.
      * @param timeout - Time during which lambda can stay inactive.
      * @param healthCheck - Lambda's health will be checked in this time-span, after the first
      *            health response, no more checks are made.
-     * @param memory - Maximum memory consumption per active lambda.
      * @param lambdaPort - In which port the lambda will receive its requests.
      * @param lambdaConsole - Is console active during qemu's run.
      * @param lambdaManagerConsole - The class with information about manager logging.
      * @param lambdaManagerState - The class that represent state of one manager's instance.
      */
-    public LambdaManagerConfiguration(String gateway, int maxLambdas, int timeout, int healthCheck, String memory, int lambdaPort,
+    public LambdaManagerConfiguration(String gateway, int maxMemory, int maxTaps, int timeout, int healthCheck, int lambdaPort,
                     boolean lambdaConsole, LambdaManagerConsole lambdaManagerConsole, LambdaManagerState lambdaManagerState) {
         super();
         this.gateway = gateway;
-        this.maxLambdas = maxLambdas;
+        this.maxMemory = maxMemory;
+        this.maxTaps = maxTaps;
         this.timeout = timeout;
         this.healthCheck = healthCheck;
-        this.memory = memory;
         this.lambdaPort = lambdaPort;
         this.lambdaConsole = lambdaConsole;
         this.lambdaManagerConsole = lambdaManagerConsole;
@@ -74,14 +74,24 @@ public class LambdaManagerConfiguration implements Serializable {
         this.gateway = gateway;
     }
 
-    @JsonProperty("maxLambdas")
-    public int getMaxLambdas() {
-        return maxLambdas;
+    @JsonProperty("maxMemory")
+    public int getMaxMemory() {
+        return maxMemory;
     }
 
-    @JsonProperty("maxLambdas")
-    public void setMaxLambdas(int maxLambdas) {
-        this.maxLambdas = maxLambdas;
+    @JsonProperty("maxMemory")
+    public void setMaxMemory(int maxMemory) {
+        this.maxMemory = maxMemory;
+    }
+
+    @JsonProperty("maxTaps")
+    public int getMaxTaps() {
+        return maxTaps;
+    }
+
+    @JsonProperty("maxTaps")
+    public void setMaxTaps(int maxTaps) {
+        this.maxTaps = maxTaps;
     }
 
     @JsonProperty("timeout")
@@ -102,16 +112,6 @@ public class LambdaManagerConfiguration implements Serializable {
     @JsonProperty("healthCheck")
     public void setHealthCheck(int healthCheck) {
         this.healthCheck = healthCheck;
-    }
-
-    @JsonProperty("memory")
-    public String getMemory() {
-        return memory;
-    }
-
-    @JsonProperty("memory")
-    public void setMemory(String memory) {
-        this.memory = memory;
     }
 
     @JsonProperty("lambdaPort")

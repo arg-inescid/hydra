@@ -5,7 +5,6 @@ function DIR {
 }
 
 source $(DIR)/test-shared.sh
-source $(DIR)/test-shared.local
 
 ip=127.0.0.1
 
@@ -44,16 +43,15 @@ start_polyglot_svm &> $tmpdir/lambda.log &
 sleep 1
 
 # Load function to benchmark
-javascript_hw
-#java_hw
+#javascript_hw
+java_hw
 #python_hw
 
 #for c in 1 2 4 8 16 32 64 128 256 512 1024
 for c in 1 2 4 8
 do
 	echo "Running with $c concurrent isolates..."
-	#ab -p $APP_POST -T application/json -c $c -n $((c * 25000))  http://$ip:8080/ &> $tmpdir/ab-$c.log
-	ab -p $APP_POST -T application/json -c $c -n $((c * 5000))  http://$ip:8080/ &> $tmpdir/ab-$c.log
+	ab -p $APP_POST -T application/json -c $c -n $((c * 50000))  http://$ip:8080/ &> $tmpdir/ab-$c.log
 	cat $tmpdir/ab-$c.log | grep "Time per request" | grep "(mean)" | awk '{print $4}' >> $tmpdir/ab-latency.dat
 	cat $tmpdir/ab-$c.log | grep Requests | awk '{print $4}'  >> $tmpdir/ab-tput.dat
 	cat $tmpdir/ab-$c.log | grep Concurrency | awk '{print $3}'  >> $tmpdir/ab-concurrency.dat
