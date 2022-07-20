@@ -5,6 +5,7 @@ import java.util.Map;
 import org.graalvm.argo.lambda_manager.core.Configuration;
 import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.core.Lambda;
+import org.graalvm.argo.lambda_manager.core.LambdaManager;
 
 import io.reactivex.Single;
 
@@ -27,19 +28,14 @@ public class MetricsProvider {
             for (Map.Entry<String, Function> entry : functionsMap.entrySet()) {
                 Function function = entry.getValue();
                 double functionFootprint = 0;
-                synchronized (function) {
-                    for (Lambda lambda : function.getRunningLambdas()) {
-                        functionFootprint += LambdaMemoryUtils.getProcessMemory(function, lambda);
-                    }
-                    for (Lambda lambda : function.getIdleLambdas()) {
-                        functionFootprint += LambdaMemoryUtils.getProcessMemory(function, lambda);
-                    }
+                for (Lambda lambda : LambdaManager.lambdasFunction.get(function)) {
+                    functionFootprint += LambdaMemoryUtils.getProcessMemory(function, lambda);
                 }
                 String username = Configuration.coder.decodeUsername(function.getName());
                 String functionName = Configuration.coder.decodeFunctionName(function.getName());
                 long timestamp = System.currentTimeMillis();
                 responseBuilder.append(String.format(FOOTPRINT_METRIC, username, functionName, functionFootprint, timestamp));
-                int allocatedLambdas = function.getRunningLambdas().size() + function.getIdleLambdas().size();
+                int allocatedLambdas = LambdaManager.lambdasFunction.get(function).size();
                 responseBuilder.append(String.format(SCALABILITY_METRIC, username, functionName, allocatedLambdas, timestamp));
                 responseBuilder.append(String.format(LATENCY_METRIC, username, functionName, buffer.max(), timestamp));
             }

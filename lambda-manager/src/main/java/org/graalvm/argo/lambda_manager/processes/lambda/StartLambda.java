@@ -21,28 +21,19 @@ public abstract class StartLambda extends AbstractProcess {
     public StartLambda(Lambda lambda, Function function) {
         this.lambda = lambda;
         this.function = function;
+        lambda.setLambdaID(pid);
     }
-
-    public abstract String getLambdaDirectory();
 
     @Override
     protected String outputFilename() {
-        String dirPath = Paths.get(
-                        LAMBDA_LOGS,
-                        function.getName(),
-                        String.format(getLambdaDirectory(), pid))
-                        .toString();
+        String dirPath = Paths.get(LAMBDA_LOGS, lambda.getLambdaName()).toString();
         new File(dirPath).mkdirs();
         return Paths.get(dirPath, OUTPUT).toString();
     }
 
     @Override
     protected String memoryFilename() {
-        String dirPath = Paths.get(
-                        LAMBDA_LOGS,
-                        function.getName(),
-                        String.format(getLambdaDirectory(), pid))
-                        .toString();
+        String dirPath = Paths.get(LAMBDA_LOGS, lambda.getLambdaName()).toString();
         new File(dirPath).mkdirs();
         return Paths.get(dirPath, MEMORY).toString();
     }

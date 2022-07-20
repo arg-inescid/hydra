@@ -4,10 +4,12 @@ import org.graalvm.argo.lambda_manager.core.Configuration;
 import org.graalvm.argo.lambda_manager.core.Environment;
 import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.core.Lambda;
+import org.graalvm.argo.lambda_manager.core.LambdaManager;
 import org.graalvm.argo.lambda_manager.optimizers.FunctionStatus;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
 import org.graalvm.argo.lambda_manager.processes.lambda.BuildVMM;
+import org.graalvm.argo.lambda_manager.processes.lambda.DefaultLambdaShutdownHandler;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspot;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotWithAgent;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartLambda;
@@ -19,12 +21,20 @@ import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 import org.graalvm.argo.lambda_manager.core.FunctionLanguage;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 @SuppressWarnings("unused")
 public class RoundedRobinScheduler implements Scheduler {
 
     private long prevLambdaStartTimestamp;
+
+    // Wether a lambda is being decommissioned.
+    public static volatile boolean hasDecommissionedLambdas;
 
     private synchronized void gate() {
         try {
@@ -46,106 +56,129 @@ public class RoundedRobinScheduler implements Scheduler {
         }
     }
 
-    private StartLambda whomToSpawn(Lambda lambda, Function function) {
+    private StartLambda whomToSpawn(Lambda lambda, Function function, LambdaExecutionMode targetMode) {
         StartLambda process;
-        switch (function.getStatus()) {
-            case NOT_BUILT_NOT_CONFIGURED:
+        switch (targetMode) {
+            case HOTSPOT_W_AGENT:
                 process = new StartHotspotWithAgent(lambda, function);
-                function.setStatus(FunctionStatus.CONFIGURING_OR_BUILDING);
                 break;
-            case NOT_BUILT_CONFIGURED:
-                new BuildVMM(function).build().start();
-                function.setStatus(FunctionStatus.CONFIGURING_OR_BUILDING);
-            case CONFIGURING_OR_BUILDING:
+            case HOTSPOT:
+                if (function.getStatus() == FunctionStatus.NOT_BUILT_CONFIGURED) {
+                    new BuildVMM(function).build().start();
+                    Logger.log(Level.INFO, "Starting new vmm build for function " + function.getName());
+                }
                 process = new StartHotspot(lambda, function);
                 break;
-            case READY:
-                if (function.getLanguage() == FunctionLanguage.NATIVE_JAVA) {
-                    process = new StartVMM(lambda, function);
-                } else if (function.getRuntime().equals("graalvisor")) {
-                    process = new StartTruffle(lambda, function);
-                } else {
-                    process = new StartCustomRuntime(lambda, function);
-                }
+            case NATIVE_IMAGE:
+                process = new StartVMM(lambda, function);
+                break;
+            case GRAALVISOR:
+                process = new StartTruffle(lambda, function);
+                break;
+            case CUSTOM:
+                process = new StartCustomRuntime(lambda, function);
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + function.getStatus());
         }
+        Logger.log(Level.INFO, "Starting new " + targetMode + " lambda for function " + function.getName());
         return process;
     }
 
-    private void startLambda(Function function, Lambda lambda) {
+    private void startLambda(Function function, LambdaExecutionMode targetMode) {
+        Lambda lambda = new Lambda(function);
+        LambdaManager.startingLambdas.get(targetMode).add(lambda);
         new Thread() {
             @Override
             public void run() {
                 gate();
                 lambda.setConnectionTriplet(Configuration.argumentStorage.nextConnectionTriplet());
-                ProcessBuilder process = whomToSpawn(lambda, function).build();
-                lambda.setProcess(process);
+                ProcessBuilder process = whomToSpawn(lambda, function, targetMode).build();
                 process.start();
-                boolean open = NetworkUtils.waitForOpenPort(lambda.getConnectionTriplet().ip, Configuration.argumentStorage.getLambdaPort(), 25);
-                synchronized (function) {
-                    if (open) {
-                        function.getIdleLambdas().add(lambda);
-                        Logger.log(Level.INFO, "Added new lambda for " + function.getName() + " with mode " + lambda.getExecutionMode());
-                    } else {
-                        Configuration.argumentStorage.deallocateMemoryLambda(function);
-                        Logger.log(Level.SEVERE, "Failed to add new lambda for " + function.getName() + " with mode " + lambda.getExecutionMode());
-                    }
-                    lambda.resetTimer();
+                if (NetworkUtils.waitForOpenPort(lambda.getConnectionTriplet().ip, Configuration.argumentStorage.getLambdaPort(), 25)) {
+                    LambdaManager.lambdas.add(lambda);
+                    Logger.log(Level.INFO, "Added new lambda for " + function.getName() + " with mode " + lambda.getExecutionMode());
+                } else {
+                    Configuration.argumentStorage.getMemoryPool().deallocateMemoryLambda(function.getMemory());
+                    new DefaultLambdaShutdownHandler(lambda);
+                    Logger.log(Level.SEVERE, "Failed to add new lambda for " + function.getName() + " with mode " + lambda.getExecutionMode());
                 }
+                LambdaManager.startingLambdas.get(targetMode).remove(lambda);
+                lambda.resetTimer();
             }
         }.start();
     }
 
-    private Lambda findLambda(ArrayList<Lambda> lambdas) {
-        return findLambda(lambdas, null);
-    }
-
-    private Lambda findLambda(ArrayList<Lambda> lambdas, LambdaExecutionMode targetMode) {
+    private Lambda findLambda(Function function, LambdaExecutionMode targetMode, Set<Lambda> lambdas) {
         for (Lambda lambda : lambdas) {
-            if (!lambda.isDecommissioned()) {
-                if (targetMode == null || lambda.getExecutionMode() == targetMode) {
+
+            // If lambda is decomissioned, not of the correct target, or cannot register this function, skip.
+            if (lambda.isDecommissioned() || lambda.getExecutionMode() != targetMode || !lambda.canRegisterInLambda(function)) {
+                continue;
+            }
+
+            // If we have a runtime with multiple isolates.
+            if (function.getRuntime().equals("graalvisor")) {
+                // Acquire memory for a new isolate inside the lambda.
+                if (lambda.getMemoryPool().allocateMemoryLambda(function.getMemory())) {
+                    // We successfully allocated memory!
+                    return lambda;
+                }
+            }
+            // If we have a runtime with a single isolate.
+            else {
+                // If lambda if overloaded, skip.
+                if (lambda.getOpenRequestCount() < Environment.LAMBDA_MAX_OPEN_REQ_COUNT) {
+                    // Lambda is not overloaded!
                     return lambda;
                 }
             }
         }
+
+        // Couldn't find a suitable lambda.
         return null;
     }
 
     @Override
     public Lambda schedule(Function function, LambdaExecutionMode targetMode) {
-        Lambda lambda;
+        Lambda lambda = null;
 
-        while (true) {
+        while (Environment.notShutdownHookActive()) {
+            // For each lambda running this function...
+            lambda = findLambda(function, targetMode, LambdaManager.lambdasFunction.getOrDefault(function, new HashSet<>()));
 
-            synchronized (function) {
-                if ((lambda = findLambda(function.getIdleLambdas(), targetMode)) == null) {
-                    if (Configuration.argumentStorage.allocateMemoryLambda(function)) {
-                        Logger.log(Level.INFO, "Requesting new lambda for " + function.getName() + " with mode " + targetMode);
-                        lambda = new Lambda(function);
-                        startLambda(function, lambda);
-                        continue;
-                    } else {
-                        // TODO - this target mode is a hard rule meaning that we might drastically change the load towards one single VM.
-                        if ((lambda = findLambda(function.getRunningLambdas(), targetMode)) != null) {
-                            // We remove the lambda so that it can be inserted at the end of the list.
-                            function.getRunningLambdas().remove(lambda);
+            if (lambda == null) {
+                // Let's try to find another lambda that still hasn't been registered for this function...
+                lambda = findLambda(function, targetMode, LambdaManager.lambdas);
+            }
+
+            // If we didn't find a lambda, try to allocate a new one.
+            if (lambda == null) {
+                // This sync block protects from concurrent requests trying to allocate one lambda at the same time.
+                synchronized (LambdaManager.lambdas) {
+                    // Check if there are lambdas already starting with the execution mode.
+                    if (LambdaManager.startingLambdas.get(targetMode).isEmpty()) {
+                        // Acquire memory for a new lambda.
+                        if (Configuration.argumentStorage.getMemoryPool().allocateMemoryLambda(function.getMemory())) {
+                            // We successfully allocated memory!
+                            startLambda(function, targetMode);
+                        } else {
+                            Logger.log(Level.FINE, String.format("[function=%s, mode=%s]: No memory available to launch a new lambda, waiting.", function.getName(), targetMode));
                         }
+                    } else {
+                        Logger.log(Level.FINE, String.format("[function=%s, mode=%s]: Already starting a new lambda, waiting.", function.getName(), targetMode));
                     }
-                } else {
-                    function.getIdleLambdas().remove(lambda);
-                    lambda.getTimer().cancel();
                 }
-                if (lambda != null) {
-                    function.getRunningLambdas().add(lambda);
-                    lambda.incOpenRequestCount();
-                    break;
-                }
+            } else {
+                // Cancel the lambda timeout timer.
+                lambda.getTimer().cancel(); // TODO - can we avoid this? It may have a sync...
+                // Increment the open request count.
+                lambda.incOpenRequestCount();
+                // Break the while true.
+                break;
             }
 
             try {
-                Logger.log(Level.WARNING, "No suitable Lambda to execute request for " + function.getName() + " with mode " + targetMode);
                 Thread.sleep(100);
             } catch (InterruptedException e) {
                 // Ignored.
@@ -154,18 +187,20 @@ public class RoundedRobinScheduler implements Scheduler {
 
         synchronized (function) {
             // We only one lambda to be decommissioned at a time.
-            if (function.getNumberDecommissionedLambdas() == 0) {
+            if (!hasDecommissionedLambdas) {
                 if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT && function.getStatus() == FunctionStatus.READY && !lambda.isDecommissioned()) {
-                    function.decommissionLambda(lambda);
-                    Logger.log(Level.INFO, "Decommissioning (hotspot to native image) lambda " + lambda.getProcess().pid());
+                    hasDecommissionedLambdas = true;
+                    lambda.setDecommissioned(true);
+                    Logger.log(Level.INFO, "Decommissioning (hotspot to native image) lambda " + lambda.getLambdaID());
                 }
 
-                if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT && lambda.getClosedRequestCount() > 1000) {
-                    function.decommissionLambda(lambda);
-                    Logger.log(Level.INFO, "Decommissioning (wrapping agent) lambda " + lambda.getProcess().pid());
+                if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT && lambda.getClosedRequestCount() > 1000 && !lambda.isDecommissioned()) {
+                    hasDecommissionedLambdas = true;
+                    lambda.setDecommissioned(true);
+                    Logger.log(Level.INFO, "Decommissioning (wrapping agent) lambda " + lambda.getLambdaID());
                 }
             }
-		}
+        }
 
         return lambda;
     }
@@ -176,10 +211,11 @@ public class RoundedRobinScheduler implements Scheduler {
             int openRequestCount = lambda.decOpenRequestCount();
             lambda.incClosedRequestCount();
             if (openRequestCount == 0) {
-                function.getRunningLambdas().remove(lambda);
-                function.getIdleLambdas().add(lambda);
                 lambda.resetTimer();
             }
+        }
+        if (function.getRuntime().equals("graalvisor")) {
+            lambda.getMemoryPool().deallocateMemoryLambda(function.getMemory());
         }
     }
 }

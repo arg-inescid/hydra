@@ -7,8 +7,7 @@ source "$DIR"/export_lambda_arguments.sh
 source "$DIR"/prepare_lambda_directories.sh
 
 export_lambda_arguments "${@:1:9}"
-FUNCTION_HOME=$CODEBASE_HOME/"$FUNCTION_NAME"
-LAMBDA_HOME=$FUNCTION_HOME/pid_"$LAMBDA_ID"_vmm
+LAMBDA_HOME=$CODEBASE_HOME/lambda_"$LAMBDA_ID"_GRAALVISOR
 prepare_vmm_lambda_directory "$TRUFFLE_HOME" "$LAMBDA_HOME"
 
 cd "$LAMBDA_HOME"

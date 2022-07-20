@@ -1,10 +1,12 @@
 package org.graalvm.argo.lambda_manager.core;
 
+import org.graalvm.argo.lambda_manager.memory.ElasticMemoryPool;
+import org.graalvm.argo.lambda_manager.memory.FixedMemoryPool;
+import org.graalvm.argo.lambda_manager.memory.MemoryPool;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.utils.ConnectionTriplet;
 import io.micronaut.http.client.RxHttpClient;
 
-import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
 import org.graalvm.argo.lambda_manager.processes.lambda.DefaultLambdaShutdownHandler;
 
 import java.util.Timer;
@@ -12,139 +14,143 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class Lambda {
 
-    /** The Function that this Lambda is executing. */
-    private final Function function; // TODO - remove, we should no longer have a single function.
-    private final ConcurrentHashMap<String, Function> registeredFunctions; // TODO - we need to have multiple functions here
+	/** Map of registered functions in this lambda. */
+	private final ConcurrentHashMap<String, Function> registeredFunctions;
 
-    /** The process that is hosting the lambda execution. */
-    private ProcessBuilder process;
+	/** The lambda id. */
+	private long lid;
 
-    /** Number of requests currently being executed. */
-    private int openRequestCount;
+	/** Number of requests currently being executed. */
+	private int openRequestCount;
 
-    /** Number of processed requests since the lambda started. */
-    private int closedRequestCount;
+	/** Number of processed requests since the lambda started. */
+	private int closedRequestCount;
 
-    private Timer timer;
-    private ConnectionTriplet<String, String, RxHttpClient> connectionTriplet;
-    private LambdaExecutionMode executionMode;
+	private Timer timer;
+	private ConnectionTriplet<String, String, RxHttpClient> connectionTriplet;
+	private LambdaExecutionMode executionMode;
 
-    /** Indicates whether this lambda should be used for future requests. */
-    private boolean decommissioned;
+	/** Indicates whether this lambda should be used for future requests. */
+	private boolean decommissioned;
 
-    public Lambda(Function function) {
-        this.function = function;
-        this.registeredFunctions = new ConcurrentHashMap<>();
-        if (!function.requiresRegistration()) {
-            this.registeredFunctions.put(function.getName(), function);
-        }
-    }
+	/** Memory pool that registers the memory utilized by the lambda. */
+	private final MemoryPool memoryPool;
 
-    public ProcessBuilder getProcess() {
-        return this.process;
-    }
+	// TODO - rething if we should use a function in the constructor.
+	public Lambda(Function function) {
+		this.registeredFunctions = new ConcurrentHashMap<>();
+		this.memoryPool = function.getRuntime().equals("graalvisor")
+				? new ElasticMemoryPool(Configuration.argumentStorage.getMemoryPool())
+				: new FixedMemoryPool(function.getMemory(), function.getMemory());
+		if (!function.requiresRegistration()) {
+			this.registeredFunctions.put(function.getName(), function);
+		}
+	}
 
-    public void setProcess(ProcessBuilder process) {
-        this.process = process;
-    }
+	public long setLambdaID(long lid) {
+		return this.lid = lid;
+	}
 
-    public int incOpenRequestCount() {
-        return ++openRequestCount;
-    }
+	public long getLambdaID() {
+		return this.lid;
+	}
 
-    public int decOpenRequestCount() {
-        return --openRequestCount;
-    }
+	public int incOpenRequestCount() {
+		return ++openRequestCount;
+	}
 
-    public int incClosedRequestCount() {
-        return ++closedRequestCount;
-    }
+	public int decOpenRequestCount() {
+		return --openRequestCount;
+	}
 
-    public int decClosedRequestCount() {
-        return --closedRequestCount;
-    }
+	public int incClosedRequestCount() {
+		return ++closedRequestCount;
+	}
 
-    public void resetClosedRequestCount() {
-        closedRequestCount = 0;
-    }
+	public int decClosedRequestCount() {
+		return --closedRequestCount;
+	}
 
-    public int getClosedRequestCount() {
-        return closedRequestCount;
-    }
+	public void resetClosedRequestCount() {
+		closedRequestCount = 0;
+	}
 
-    public Timer getTimer() {
-        return timer;
-    }
+	public int getClosedRequestCount() {
+		return closedRequestCount;
+	}
 
-    public void resetTimer() {
-        Timer oldTimer = timer;
-        Timer newTimer = new Timer();
-        newTimer.schedule(new DefaultLambdaShutdownHandler(this, function),
-                Configuration.argumentStorage.getTimeout() +
-                (int)(Configuration.argumentStorage.getTimeout() * Math.random()));
-        timer = newTimer;
-        if (oldTimer != null) {
-            oldTimer.cancel();
-        }
-    }
+	public int getOpenRequestCount() {
+		return openRequestCount;
+	}
 
-    public ConnectionTriplet<String, String, RxHttpClient> getConnectionTriplet() {
-        return connectionTriplet;
-    }
+	public Timer getTimer() {
+		return timer;
+	}
 
-    public void setConnectionTriplet(ConnectionTriplet<String, String, RxHttpClient> connectionTriplet) {
-        this.connectionTriplet = connectionTriplet;
-    }
+	public void resetTimer() {
+		Timer oldTimer = timer;
+		Timer newTimer = new Timer();
+		newTimer.schedule(new DefaultLambdaShutdownHandler(this), Configuration.argumentStorage.getTimeout()
+				+ (int) (Configuration.argumentStorage.getTimeout() * Math.random()));
+		timer = newTimer;
+		if (oldTimer != null) {
+			oldTimer.cancel();
+		}
+	}
 
-    public LambdaExecutionMode getExecutionMode() {
-        return executionMode;
-    }
+	public ConnectionTriplet<String, String, RxHttpClient> getConnectionTriplet() {
+		return connectionTriplet;
+	}
 
-    public void setExecutionMode(LambdaExecutionMode executionMode) {
-        this.executionMode = executionMode;
-    }
+	public void setConnectionTriplet(ConnectionTriplet<String, String, RxHttpClient> connectionTriplet) {
+		this.connectionTriplet = connectionTriplet;
+	}
 
-    public String getLambdaPath() throws Exception {
-        switch (executionMode) {
-        case HOTSPOT:
-            return String.format("codebase/%s/pid_%d_hotspot", function.getName(), process.pid());
-        case HOTSPOT_W_AGENT:
-            return String.format("codebase/%s/pid_%d_hotspot_w_agent", function.getName(), process.pid());
-        case NATIVE_IMAGE:
-        case GRAALVISOR:
-            return String.format("codebase/%s/pid_%d_vmm", function.getName(), process.pid());
-        case CUSTOM:
-            return String.format("codebase/%s/pid_%d_cruntime", function.getName(), process.pid());
-        default:
-            throw new Exception("Uknown lambda execution mode: " + executionMode);
-        }
-    }
+	public LambdaExecutionMode getExecutionMode() {
+		return executionMode;
+	}
 
-    public boolean isDecommissioned() {
-        return decommissioned;
-    }
+	public void setExecutionMode(LambdaExecutionMode executionMode) {
+		this.executionMode = executionMode;
+	}
 
-    public void setDecommissioned(boolean decommissioned) {
-        this.decommissioned = decommissioned;
-    }
+	public String getLambdaName() {
+		return String.format("lambda_%d_%s", lid, executionMode);
+	}
 
-    public boolean isRegisteredInLambda(Function function) {
-        return this.registeredFunctions.containsValue(function);
-    }
+	public boolean isDecommissioned() {
+		return decommissioned;
+	}
 
-    public void setRegisteredInLambda(Function function) {
-        this.registeredFunctions.putIfAbsent(function.getName(), function);
-    }
+	public void setDecommissioned(boolean decommissioned) {
+		this.decommissioned = decommissioned;
+	}
 
-    public void resetRegisteredInLambda(Function function) {
-        if (function.requiresRegistration()) {
-            this.registeredFunctions.remove(function.getName());
-        }
-    }
+	public boolean isRegisteredInLambda(Function function) {
+		return this.registeredFunctions.containsValue(function);
+	}
 
-    public void resetRegisteredInLambda() {
-        for (Function function : registeredFunctions.values()) {
-            resetRegisteredInLambda(function);
-        }
-    }
+	public void setRegisteredInLambda(Function function) {
+		this.registeredFunctions.putIfAbsent(function.getName(), function);
+	}
+
+	public boolean canRegisterInLambda(Function function) {
+		return this.executionMode == LambdaExecutionMode.GRAALVISOR ? true : (registeredFunctions.isEmpty() || registeredFunctions.contains(function));
+	}
+
+	public void resetRegisteredInLambda(Function function) {
+		if (function.requiresRegistration()) {
+			this.registeredFunctions.remove(function.getName());
+		}
+	}
+
+	public void resetRegisteredInLambda() {
+		for (Function function : registeredFunctions.values()) {
+			resetRegisteredInLambda(function);
+		}
+	}
+
+	public MemoryPool getMemoryPool() {
+		return memoryPool;
+	}
 }

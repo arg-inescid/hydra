@@ -25,10 +25,7 @@ public class Messages {
 
     // Request messages.
     public static final String FUNCTION_NOT_FOUND = "Function - %s - has not been uploaded!";
-    public static final String TIME_HOTSPOT_W_AGENT = "Time (user=%s,function_name=%s,state=hotspot-w-agent,id=%d): %d\t[ms]";
-    public static final String TIME_HOTSPOT = "Time (user=%s,function_name=%s,state=hotspot,id=%d): %d\t[ms]";
-    public static final String TIME_NATIVE_IMAGE = "Time (user=%s,function_name=%s,state=vmm,id=%d): %d\t[ms]";
-    public static final String TIME_CUSTOM_RUNTIME = "Time (user=%s,function_name=%s,state=cruntime,id=%d): %d\t[ms]";
+    public static final String TIME_REQUEST = "Time (user=%s, function_name=%s, mode=%s, id=%d): %d\t[ms]";
 
     // Tap messages.
     public static final String ERROR_TAP_REMOVAL = "Error during cleaning taps!";

@@ -1,11 +1,9 @@
 package org.graalvm.argo.lambda_manager.processes.lambda;
 
-import org.graalvm.argo.lambda_manager.callbacks.OnProcessFinishCallback;
-import org.graalvm.argo.lambda_manager.callbacks.VMMCallback;
 import org.graalvm.argo.lambda_manager.core.Configuration;
-import org.graalvm.argo.lambda_manager.core.Environment;
 import org.graalvm.argo.lambda_manager.core.Lambda;
 import org.graalvm.argo.lambda_manager.core.Function;
+import org.graalvm.argo.lambda_manager.optimizers.FunctionStatus;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.utils.ConnectionTriplet;
 import io.micronaut.http.client.RxHttpClient;
@@ -13,6 +11,7 @@ import io.micronaut.http.client.RxHttpClient;
 import java.util.ArrayList;
 import java.util.List;
 
+// TODO - we need to deprecate this mode. All Jars will be compiled to SOs (and ran in graalvisor).
 public class StartVMM extends StartLambda {
 
     public StartVMM(Lambda lambda, Function function) {
@@ -34,7 +33,7 @@ public class StartVMM extends StartLambda {
         command.add("src/scripts/start_vmm.sh");
         command.add(function.getName());
         command.add(String.valueOf(pid));
-        command.add(String.valueOf(function.getMemory()));
+        command.add(String.valueOf(Configuration.argumentStorage.getMemoryPool().getMaxMemory()));
         command.add(connectionTriplet.ip);
         command.add(connectionTriplet.tap);
         command.add(Configuration.argumentStorage.getGateway());
@@ -53,11 +52,18 @@ public class StartVMM extends StartLambda {
 
     @Override
     protected OnProcessFinishCallback callback() {
-        return new VMMCallback(lambda, function);
-    }
+        return new OnProcessFinishCallback() {
 
-    @Override
-    public String getLambdaDirectory() {
-        return Environment.VMM;
+			@Override
+			public void finish(int exitCode) {
+				if (exitCode != 0) {
+		            // Need fallback to execution with Hotspot with agent.
+		            lambda.getTimer().cancel();
+		            if (function.getStatus() == FunctionStatus.READY) {
+		                function.setStatus(FunctionStatus.NOT_BUILT_NOT_CONFIGURED);
+		            }
+		        }
+			}
+		};
     }
 }

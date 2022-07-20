@@ -10,7 +10,7 @@ export_lambda_arguments "${@:1:9}"
 # shellcheck disable=SC2153
 FUNCTION_HOME=$CODEBASE_HOME/"$FUNCTION_NAME"
 BUILD_OUTPUT_HOME="$FUNCTION_HOME"/build_vmm
-LAMBDA_HOME=$FUNCTION_HOME/pid_"$LAMBDA_ID"_vmm
+LAMBDA_HOME=$CODEBASE_HOME/lambda_"$LAMBDA_ID"_NATIVE_IMAGE
 prepare_vmm_lambda_directory "$BUILD_OUTPUT_HOME" "$LAMBDA_HOME"
 
 bash "$LAMBDA_HOME"/"${FUNCTION_NAME}"_unikernel.sh --memory "$LAMBDA_MEMORY" --ip "$LAMBDA_IP" --tap "$LAMBDA_TAP" \

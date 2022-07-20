@@ -35,7 +35,7 @@ if [ ! -f "$PROXY_JAR" ]; then
 fi
 
 FUNCTION_CODE=$FUNCTION_HOME/$FUNCTION_NAME
-LAMBDA_HOME=$FUNCTION_HOME/pid_"$LAMBDA_ID"_hotspot_w_agent
+LAMBDA_HOME=$CODEBASE_HOME/lambda_"$LAMBDA_ID"_HOTSPOT_W_AGENT
 "$JAVA_HOME"/bin/native-image \
   --no-fallback \
   --features=org.graalvm.argo.lambda_proxy.engine.JavaEngineSingletonFeature \

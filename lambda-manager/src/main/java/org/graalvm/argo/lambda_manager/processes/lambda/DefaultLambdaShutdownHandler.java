@@ -1,14 +1,18 @@
 package org.graalvm.argo.lambda_manager.processes.lambda;
 
 import org.graalvm.argo.lambda_manager.core.Configuration;
+import org.graalvm.argo.lambda_manager.core.Environment;
 import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.core.Lambda;
-import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
+import org.graalvm.argo.lambda_manager.core.LambdaManager;
+import org.graalvm.argo.lambda_manager.schedulers.RoundedRobinScheduler;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.Map;
+import java.util.Set;
 import java.util.TimerTask;
 import java.util.logging.Level;
 
@@ -16,13 +20,9 @@ import java.util.logging.Level;
 public class DefaultLambdaShutdownHandler extends TimerTask {
 
     private final Lambda lambda;
-    private final Function function;
-    private final ProcessBuilder process;
 
-    public DefaultLambdaShutdownHandler(Lambda lambda, Function function) {
+    public DefaultLambdaShutdownHandler(Lambda lambda) {
         this.lambda = lambda;
-        this.function = function;
-        this.process = lambda.getProcess();
     }
 
     public void printStream(Level level, InputStream stream) throws IOException {
@@ -38,7 +38,7 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
         Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_hotspot.sh", lambdaPath).start();
         p.waitFor();
         if (p.exitValue() != 0) {
-            Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", process.pid()));
+            Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", lambda.getLambdaID()));
             printStream(Level.WARNING, p.getErrorStream());
         }
     }
@@ -47,7 +47,7 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
         Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_vmm.sh", lambdaPath).start();
         p.waitFor();
         if (p.exitValue() != 0) {
-            Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", process.pid()));
+            Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", lambda.getLambdaID()));
             printStream(Level.WARNING, p.getErrorStream());
         }
     }
@@ -56,7 +56,7 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
         Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_cruntime.sh", lambdaPath).start();
         p.waitFor();
         if (p.exitValue() != 0) {
-            Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", process.pid()));
+            Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", lambda.getLambdaID()));
             printStream(Level.WARNING, p.getErrorStream());
         }
     }
@@ -65,43 +65,55 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
         try {
             switch (lambda.getExecutionMode()) {
                 case HOTSPOT:
-                    shutdownHotSpotLambda(lambda.getLambdaPath());
-                    break;
                 case HOTSPOT_W_AGENT:
-                    shutdownHotSpotLambda(lambda.getLambdaPath());
+                    shutdownHotSpotLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());
                     break;
                 case NATIVE_IMAGE:
                 case GRAALVISOR:
-                    shutdownVMMLambda(lambda.getLambdaPath());
+                    shutdownVMMLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());
                     break;
                 case CUSTOM:
-                    shutdownCustomLambda(lambda.getLambdaPath());
+                    shutdownCustomLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());
                     break;
                 default:
-                    Logger.log(Level.WARNING, String.format("Lambda ID=%d has no known execution mode: %s", process.pid(), lambda.getExecutionMode()));
+                    Logger.log(Level.WARNING, String.format("Lambda ID=%d has no known execution mode: %s", lambda.getLambdaID(), lambda.getExecutionMode()));
             }
         } catch (Throwable t) {
-            Logger.log(Level.SEVERE, String.format("Lambda ID=%d failed to shutdown: %s", process.pid(), t.getMessage()));
+            Logger.log(Level.SEVERE, String.format("Lambda ID=%d failed to shutdown: %s", lambda.getLambdaID(), t.getMessage()));
             t.printStackTrace();
         }
     }
 
     @Override
     public void run() {
-        synchronized (function) {
-            function.getIdleLambdas().remove(lambda);
+        // Remove lambda form global state.
+        LambdaManager.lambdas.remove(lambda);
+        for (Map.Entry<Function, Set<Lambda>> pair : LambdaManager.lambdasFunction.entrySet()) {
+            pair.getValue().remove(lambda);
         }
 
-        lambda.getTimer().cancel();
-        function.commissionLambda(lambda);
-        lambda.resetClosedRequestCount();
+        // Reset the auto-shutdown timer.
+        if (lambda.getTimer() != null) {
+            lambda.getTimer().cancel();
+        }
+
+        // Shutdown lambda.
         shutdownLambda();
+
+        // TODO - we need to rething this...
+        if (lambda.isDecommissioned()) {
+            RoundedRobinScheduler.hasDecommissionedLambdas = false;
+        }
+
+        // Reset request counts.
+        lambda.resetClosedRequestCount();
+
+        // Return connection to connection pool.
         Configuration.argumentStorage.returnConnectionTriplet(lambda.getConnectionTriplet());
 
-        synchronized (function) {
-            Configuration.argumentStorage.deallocateMemoryLambda(function);
-            function.notify();
-        }
+        // Return all memory to the memory pool.
+        Configuration.argumentStorage.getMemoryPool().deallocateMemoryLambda(lambda.getMemoryPool().getMaxMemory());
+        lambda.getMemoryPool().reset();
     }
 
 }

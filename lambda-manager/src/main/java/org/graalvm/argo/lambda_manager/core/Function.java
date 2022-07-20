@@ -1,11 +1,11 @@
 package org.graalvm.argo.lambda_manager.core;
 
 import org.graalvm.argo.lambda_manager.optimizers.FunctionStatus;
+import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.processes.lambda.BuildVMM;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 
 public class Function {
 
@@ -37,16 +37,6 @@ public class Function {
      * access to the agent's generated configurations.
      */
     private long lastAgentPID;
-
-    // TODO - functions should not keep these lists anymore. A Lambda will have multiple functions.
-    /** Idle lambdas, waiting for requests. */
-    private final ArrayList<Lambda> idleLambdas = new ArrayList<>();
-
-    /** Busy lambdas, running requests. */
-    private final ArrayList<Lambda> runningLambdas = new ArrayList<>();
-
-    /** Number of Lambdas that are not receiving requests. */
-    private int decommissionedLambdas;
 
     public Function(String name, String language, String entryPoint, String memory, String runtime) throws Exception {
         this.name = name;
@@ -81,36 +71,6 @@ public class Function {
         this.lastAgentPID = lastAgentPID;
     }
 
-    public ArrayList<Lambda> getIdleLambdas() {
-        return idleLambdas;
-    }
-
-    public ArrayList<Lambda> getRunningLambdas() {
-        return runningLambdas;
-    }
-
-    public int getNumberDecommissionedLambdas() {
-        return decommissionedLambdas;
-    }
-
-    public void decommissionLambda(Lambda lambda) {
-        if (!lambda.isDecommissioned()) {
-            decommissionedLambdas++;
-            lambda.setDecommissioned(true);
-        }
-    }
-
-    public void commissionLambda(Lambda lambda) {
-        if (lambda.isDecommissioned()) {
-            decommissionedLambdas--;
-            lambda.setDecommissioned(false);
-        }
-    }
-
-    public int getTotalNumberLambdas() {
-        return idleLambdas.size() + runningLambdas.size();
-    }
-
     public FunctionLanguage getLanguage() {
         return language;
     }
@@ -133,5 +93,25 @@ public class Function {
 
     public String getRuntime() {
         return this.runtime;
+    }
+
+    public LambdaExecutionMode getLambdaExecutionMode() {
+        switch (getStatus()) {
+        case NOT_BUILT_NOT_CONFIGURED:
+            return LambdaExecutionMode.HOTSPOT_W_AGENT;
+        case NOT_BUILT_CONFIGURED:
+        case CONFIGURING_OR_BUILDING:
+            return LambdaExecutionMode.HOTSPOT;
+        case READY:
+            if (getLanguage() == FunctionLanguage.NATIVE_JAVA) {
+                return LambdaExecutionMode.NATIVE_IMAGE;
+            } else if (getRuntime().equals("graalvisor")) {
+                return LambdaExecutionMode.GRAALVISOR;
+            } else {
+                return LambdaExecutionMode.CUSTOM;
+            }
+        default:
+            throw new IllegalStateException("Unexpected value: " + getStatus());
+        }
     }
 }
