@@ -137,14 +137,14 @@ function start_jvm {
 function setup_polyglot_svm {
 	mkdir $tmpdir &> /dev/null
 	sudo ls $tmpdir &> /dev/null
-	cp $ARGO_RESOURCES/truffle-build/polyglot-proxy $tmpdir/app
+	cp $ARGO_RESOURCES/graalvisor-build/polyglot-proxy $tmpdir/app
 }
 
 function setup_polyglot_niuk {
 	mkdir $tmpdir &> /dev/null
 	sudo ls $tmpdir &> /dev/null
-	cp $ARGO_RESOURCES/truffle-build/polyglot-proxy.img $tmpdir
-	cp $ARGO_RESOURCES/truffle-build/polyglot-proxy_unikernel.sh $tmpdir/app_unikernel.sh
+	cp $ARGO_RESOURCES/graalvisor-build/polyglot-proxy.img $tmpdir
+	cp $ARGO_RESOURCES/graalvisor-build/polyglot-proxy_unikernel.sh $tmpdir/app_unikernel.sh
 }
 
 function start_polyglot_svm {

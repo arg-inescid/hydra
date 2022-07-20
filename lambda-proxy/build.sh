@@ -26,7 +26,7 @@ function build {
       polyglot-proxy \
       $VIRTUALIZE \
       -H:+ReportExceptionStackTraces \
-      -H:ConfigurationFileDirectories=$TRUFFLE_HOME/META-INF/native-image/
+      -H:ConfigurationFileDirectories=$GRAALVISOR_HOME/META-INF/native-image/
 }
 
 cd "$DIR" || {
@@ -40,7 +40,7 @@ echo -e "${GREEN}Building java lambda proxy...done${NC}"
 
 if [[ ! -z "$FLAG" ]]; then
 
-    cd "$TRUFFLE_HOME" || {
+    cd "$GRAALVISOR_HOME" || {
       echo "Redirection failed!"
       exit 1
     }

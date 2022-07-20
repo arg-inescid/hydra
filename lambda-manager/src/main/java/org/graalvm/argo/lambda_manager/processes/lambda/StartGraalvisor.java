@@ -11,10 +11,9 @@ import org.graalvm.argo.lambda_manager.utils.ConnectionTriplet;
 import java.util.ArrayList;
 import java.util.List;
 
-// TODO - Rename to start Graalvisor
-public class StartTruffle extends StartLambda {
+public class StartGraalvisor extends StartLambda {
 
-    public StartTruffle(Lambda lambda, Function function) {
+    public StartGraalvisor(Lambda lambda, Function function) {
         super(lambda, function);
     }
 
@@ -30,7 +29,7 @@ public class StartTruffle extends StartLambda {
         command.add(String.format("--output=%s", memoryFilename()));
         command.add("-v");
         command.add("bash");
-        command.add("src/scripts/start_truffle.sh");
+        command.add("src/scripts/start_graalvisor.sh");
         command.add(function.getName());
         command.add(String.valueOf(pid));
         command.add(String.valueOf(function.getMemory()));

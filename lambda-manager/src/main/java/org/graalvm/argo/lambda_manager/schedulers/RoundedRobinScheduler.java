@@ -13,7 +13,7 @@ import org.graalvm.argo.lambda_manager.processes.lambda.DefaultLambdaShutdownHan
 import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspot;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotWithAgent;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartLambda;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartTruffle;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalvisor;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartVMM;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartCustomRuntime;
 import org.graalvm.argo.lambda_manager.utils.NetworkUtils;
@@ -73,7 +73,7 @@ public class RoundedRobinScheduler implements Scheduler {
                 process = new StartVMM(lambda, function);
                 break;
             case GRAALVISOR:
-                process = new StartTruffle(lambda, function);
+                process = new StartGraalvisor(lambda, function);
                 break;
             case CUSTOM:
                 process = new StartCustomRuntime(lambda, function);
