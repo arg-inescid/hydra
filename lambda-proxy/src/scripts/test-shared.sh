@@ -18,51 +18,19 @@ function next_ip(){
 
 ARGO_HOME=$(DIR)/../../../
 ARGO_RESOURCES=$ARGO_HOME/resources
+ARGO_BENCHMARKS=$ARGO_HOME/../benchmarks
 source $ARGO_HOME/lambda-manager/src/scripts/environment.sh
 VMM=`grep target $VIRTUALIZE_PATH | awk -F\" '{print $4}'`
 
 tmpdir=/tmp/test-proxy
 mkdir $tmpdir &> /dev/null
 
+# TODO - make this a function?
 # Network setup for the test. Gateway is the ip of the host. The guest will have the next ip.
 gateway=$(ip route get 8.8.8.8 | grep -oP  'src \K\S+')
 smask=$(ip r | grep $gateway | awk '{print $1}' | awk -F / '{print $2}')
 mask=$(cidr_to_netmask $smask)
 ip=$(next_ip $gateway)
-
-function java_hello_world {
-	APP_JAR=$ARGO_HOME/../benchmarks/language/java/hello-world/build/libs/hello-world-1.0.jar
-	APP_MAIN=com.hello_world.HelloWorld
-	APP_CONFIG=$(DIR)/config-hello-world
-	APP_POST=$(DIR)/hello-world.post
-}
-
-function java_sleep {
-	APP_JAR=$ARGO_HOME/../benchmarks/language/java/sleep/build/libs/sleep-1.0.jar
-	APP_MAIN=com.sleep.Sleep
-	APP_CONFIG=$(DIR)/config-sleep
-	APP_POST=$(DIR)/sleep-sync.post
-	#APP_POST=$(DIR)/sleep-async.post
-
-}
-
-function polyglot_java_hello_world {
-	APP_SO=$ARGO_HOME/../benchmarks/language/java/hello-world/build/libhelloworld.so
-	APP_LANG=java
-	APP_MAIN=com.hello_world.HelloWorld
-}
-
-function polyglot_javascript_hello_world {
-	APP_SCRIPT=$(DIR)/hello-world.js
-	APP_LANG=javascript
-	APP_MAIN=main
-}
-
-function polyglot_python_hello_world {
-	APP_SCRIPT=$(DIR)/hello-world.py
-	APP_LANG=python
-	APP_MAIN=main
-}
 
 function pretime {
 	ts=$(date +%s%N)
@@ -96,7 +64,6 @@ function stop_baremetal {
 	pid=`sudo cat $tmpdir/lambda.pid`
 	sudo kill $pid
 }
-
 
 function start_niuk {
 	cd $tmpdir
@@ -150,74 +117,4 @@ function setup_polyglot_niuk {
 function start_polyglot_svm {
 	proxy_args="$(date +%s%N | cut -b1-13) 8080"
 	start_svm
-}
-
-function run_test_java {
-	for i in {1..10}
-	do
-		pretime
-		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d @$APP_POST
-		postime
-	done
-	for i in {1..1000}
-	do
-		pretime
-		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d @$APP_POST
-		postime
-	done
-
-}
-
-function run_test_polyglot_java {
-	curl -s -X POST $ip:8080/register?name=jvhw1\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SO
-	for i in {1..10}
-	do
-		pretime
-		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"jvhw1","arguments":""}'
-		postime
-	done
-
-	curl -s -X POST $ip:8080/register?name=jvhw2\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SO
-	for i in {1..10}
-	do
-		pretime
-		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"jvhw2","arguments":""}'
-		postime
-	done
-}
-
-function run_test_polyglot_javascript {
-	curl -s -X POST $ip:8080/register?name=jshw1\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' -d @$APP_SCRIPT
-	for i in {1..10}
-	do
-		pretime
-		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"jshw1","arguments":""}'
-		postime
-	done
-
-	curl -s -X POST $ip:8080/register?name=jshw2\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' -d @$APP_SCRIPT
-	for i in {1..1000}
-	do
-		pretime
-		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"jshw2","arguments":""}'
-		postime
-	done
-}
-
-function run_test_polyglot_python {
-	curl -s -X POST $ip:8080/register?name=pyhw1\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' -d @$APP_SCRIPT
-	for i in {1..10}
-	do
-		pretime
-		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"pyhw1","arguments":""}'
-		postime
-	done
-	curl -s -X POST $ip:8080/register?name=pyhw2\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' -d @$APP_SCRIPT
-	for i in {1..1000}
-	do
-		pretime
-		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d '{"name":"pyhw2","arguments":""}'
-		postime
-	done
-
 }
