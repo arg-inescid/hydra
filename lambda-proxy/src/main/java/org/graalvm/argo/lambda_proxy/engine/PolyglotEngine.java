@@ -21,8 +21,8 @@ import org.graalvm.nativeimage.*;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
+import org.graalvm.polyglot.SourceSection;
 import org.graalvm.polyglot.Value;
-import org.graalvm.polyglot.proxy.ProxyObject;
 
 import com.oracle.svm.graalvisor.types.GuestIsolateThread;
 import com.sun.net.httpserver.HttpExchange;
@@ -53,19 +53,27 @@ public class PolyglotEngine implements LanguageEngine {
             String language = guestFunction.getLanguage().toString();
             String entryPoint = guestFunction.getEntryPoint();
             String sourceCode = guestFunction.getSource();
-            try (Context context = Context.newBuilder().allowAllAccess(true).build()) {
-                ProxyObject args = ProxyObject.fromMap(jsonToMap(arguments));
+            Map<String, String> options = new HashMap<>();
+            options.put("python.ForceImportSite", "true");
+
+            try (Context context = Context.newBuilder().allowAllAccess(true).options(options).build()) {
                 try {
                     // evaluate source script
                     context.eval(language, sourceCode);
                     // get function handle from the script
                     Value function = context.eval(language, entryPoint);
-                    Value res = function.execute(args);
-                    resultString = res.toString();
-                } catch (IllegalArgumentException | IllegalStateException | PolyglotException | UnsupportedOperationException | NullPointerException e) {
-                    System.err.println("Error happens during parsing/invoking polyglot function: ");
-                    e.printStackTrace();
-                    resultString = e.getMessage();
+                    // call the function
+                    resultString = function.execute(arguments).toString();
+                }
+                catch (PolyglotException pe) {
+                    if (pe.isSyntaxError()) {
+                         SourceSection location = pe.getSourceLocation();
+                         resultString = String.format("Error happens during parsing/ polyglot function at line %s: %s", location, pe.getMessage());
+                    }
+                }
+                catch (IllegalArgumentException | IllegalStateException | UnsupportedOperationException | NullPointerException e) {
+                    System.err.println("Error happens during invoking polyglot function: ");
+                    resultString = String.format("Error happens during invoking polyglot function:: %s", e.getMessage());
                 }
             }
         }

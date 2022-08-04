@@ -94,6 +94,7 @@ function start_svm {
 }
 
 function start_jvm {
+	echo "$JAVA_HOME/bin/java -cp $PROXY_JAR:$APP_JAR $proxy_main $proxy_args"
 	$JAVA_HOME/bin/java -cp $PROXY_JAR:$APP_JAR $proxy_main $proxy_args &
 	pid=$!
 	echo $! > $tmpdir/lambda.pid
@@ -118,3 +119,10 @@ function start_polyglot_svm {
 	proxy_args="$(date +%s%N | cut -b1-13) 8080"
 	start_svm
 }
+
+function start_polyglot_jvm {
+	proxy_args="$(date +%s%N | cut -b1-13) $APP_MAIN 8080"
+	proxy_main=org.graalvm.argo.lambda_proxy.BaremetalPolyglotProxy
+	start_jvm
+}
+

@@ -8,7 +8,7 @@ source $(DIR)/test-shared.sh
 source $(DIR)/test-benchmark.sh
 
 if [ "$#" -ne 3 ]; then
-	echo "Syntax: <svm|niuk> <gv_java_hw|gv_javascript_hw|gv_python_hw> <test|benchmark>"
+	echo "Syntax: <jvm|svm|niuk> <gv_java_hw|gv_javascript_hw|gv_python_hw> <test|benchmark>"
 	exit 1
 else
 	backend=$1
@@ -29,7 +29,7 @@ function benchmark {
 }
 
 function test {
-	for i in {1..10}
+	for i in {1..3}
 	do
 		pretime
 		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d $(cat $APP_POST)
@@ -44,7 +44,11 @@ APP_POST=$tmpdir/payload.post
 rm $tmpdir/*.dat &> /dev/null
 
 # Setting up environment.
-if [ "$backend" == "svm" ]; then
+if [ "$backend" == "jvm" ]; then
+	ip=127.0.0.1
+	# TODO - jvm does not support so apps (Java built as Native Library). We should instead send a Jar.
+	start_polyglot_jvm &> $tmpdir/lambda.log &
+elif [ "$backend" == "svm" ]; then
 	ip=127.0.0.1
 	setup_polyglot_svm
 	start_polyglot_svm &> $tmpdir/lambda.log &
@@ -67,7 +71,9 @@ $app
 $mode
 
 # Teardown environment.
-if [ "$backend" == "svm" ]; then
+if [ "$backend" == "jvm" ]; then
+	stop_baremetal &>> $tmpdir/lambda.log
+elif [ "$backend" == "svm" ]; then
 	stop_baremetal &>> $tmpdir/lambda.log
 elif [ "$backend" == "niuk" ]; then
 	stop_niuk &>> $tmpdir/lambda.log
