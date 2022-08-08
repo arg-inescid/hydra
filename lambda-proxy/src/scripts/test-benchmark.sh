@@ -30,7 +30,6 @@ function gv_python_hw {
 
 function gv_python_thumbnail {
 	# TODO - need to launch a webserver with the image available
-	# TODO - it will be important to pre-load an environment with the packages already ready to go.
 	APP_SCRIPT=$ARGO_BENCHMARKS/language/python/gv-thumbnail/main.py
 	APP_LANG=python
 	APP_MAIN=main
@@ -64,6 +63,80 @@ function cr_python_hw {
 	RUN_POST=$ARGO_BENCHMARKS/language/python/cr-hello-world/run2.json
 }
 
+function gv_java_sleep {
+	APP_SO=$ARGO_BENCHMARKS/language/java/gv-sleep/build/libsleep.so
+	APP_LANG=java
+	APP_MAIN=com.sleep.Sleep
+	curl -s -X POST $ip:8080/register?name=sleep\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SO
+	echo '{"name":"sleep","async":"false","arguments":"{\"memory\":\"128\",\"sleep\":\"1000\"}"}' > $APP_POST
+}
+
+function gv_python_sleep {
+	APP_SCRIPT=$ARGO_BENCHMARKS/language/python/gv-sleep/sleep.py
+	APP_LANG=python
+	APP_MAIN=main
+	curl -s -X POST $ip:8080/register?name=sleep\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SCRIPT
+	echo '{"name":"sleep","async":"false","arguments":"1"}' > $APP_POST
+}
+
+function gv_javascript_sleep {
+	APP_SCRIPT=$ARGO_BENCHMARKS/language/javascript/gv-sleep/sleep.js
+	APP_LANG=javascript
+	APP_MAIN=main
+	curl -s -X POST $ip:8080/register?name=sleep\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SCRIPT
+	echo '{"name":"sleep","async":"false","arguments":"1000"}' > $APP_POST
+}
+
+function gv_java_filehashing {
+	APP_SO=$ARGO_BENCHMARKS/language/java/gv-file-hashing/build/libfilehashing.so
+	APP_LANG=java
+	APP_MAIN=com.filehashing.FileHashing
+	curl -s -X POST $ip:8080/register?name=filehashing\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SO
+	echo '{"name":"filehashing","async":"false","arguments":"{\"url\":\"http://127.0.0.1:8000/snap.png\"}"}' > $APP_POST
+}
+
+function gv_java_httprequest {
+	APP_SO=$ARGO_BENCHMARKS/language/java/gv-httprequest/build/libhttprequest.so
+	APP_LANG=java
+	APP_MAIN=com.httprequest.HttpRequest
+	curl -s -X POST $ip:8080/register?name=httprequest\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SO
+	echo '{"name":"httprequest","async":"false","arguments":"{\"url\":\"http://127.0.0.1:8000/snap.png\"}"}' > $APP_POST
+}
+
+function gv_java_videoprocessing {
+	APP_SO=$ARGO_BENCHMARKS/language/java/gv-video-processing/build/libvideoprocessing.so
+	APP_LANG=java
+	APP_MAIN=com.videoprocessing.VideoProcessing
+	curl -s -X POST $ip:8080/register?name=videoprocessing\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SO
+	echo '{"name":"videoprocessing","async":"false","arguments":"{\"video\":\"http://127.0.0.1:8000/file_example_MP4_480_1_5MG.mp4\",\"ffmpeg\":\"http://127.0.0.1:8000/ffmpeg\"}"}' > $APP_POST
+}
+
+function gv_python_videoprocessing {
+	APP_SCRIPT=$ARGO_BENCHMARKS/language/python/gv-video-processing/main.py
+	APP_LANG=python
+	APP_MAIN=main
+	curl -s -X POST $ip:8080/register?name=videoprocessing\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SCRIPT
+	echo '{"name":"videoprocessing","async":"false","arguments":"http://127.0.0.1:8000/ffmpeg;http://127.0.0.1:8000/file_example_MP4_480_1_5MG.mp4"}' > $APP_POST
+}
+
+function gv_python_compression {
+	APP_SCRIPT=$ARGO_BENCHMARKS/language/python/gv-compression/main.py
+	APP_LANG=python
+	APP_MAIN=main
+	curl -s -X POST $ip:8080/register?name=compression\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SCRIPT
+	echo '{"name":"compression","async":"false","arguments":"http://127.0.0.1:8000/file_example_MP4_480_1_5MG.mp4"}' > $APP_POST
+}
+
+function gv_javascript_dynamichtml {
+	APP_SCRIPT=$ARGO_BENCHMARKS/language/javascript/gv-dynamic-html/main.js
+	APP_LANG=javascript
+	APP_MAIN=main
+	curl -s -X POST $ip:8080/register?name=dynamichtml\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SCRIPT
+	echo '{"name":"dynamichtml","async":"false","arguments":"http://127.0.0.1:8000/template.html;rbruno;1000"}' > $APP_POST
+}
+
+
+# Old, Jar-based benchmarks.
 function java_hw {
 	APP_JAR=$ARGO_BENCHMARKS/language/java/gv-hello-world/build/libs/hello-world-1.0.jar
 	APP_MAIN=com.hello_world.HelloWorld
