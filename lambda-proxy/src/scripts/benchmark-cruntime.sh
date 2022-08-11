@@ -23,7 +23,7 @@ function test {
 	for i in {1..3}
 	do
 		pretime
-		curl --no-progress-meter --max-time 5 -X POST $ip:8080/run -H 'Content-Type: application/json' -d @$RUN_POST
+		curl --no-progress-meter --max-time 60 -X POST $ip:8080/run -H 'Content-Type: application/json' -d @$RUN_POST
 		postime
 	done
 }

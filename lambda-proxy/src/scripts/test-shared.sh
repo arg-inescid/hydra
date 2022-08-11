@@ -95,7 +95,8 @@ function start_svm {
 
 function start_jvm {
 	echo "$JAVA_HOME/bin/java -cp $PROXY_JAR:$APP_JAR $proxy_main $proxy_args"
-	$JAVA_HOME/bin/java -cp $PROXY_JAR:$APP_JAR $proxy_main $proxy_args &
+	#NI_AGENT="-agentlib:native-image-agent=config-output-dir=$tmpdir/agent-output"
+	$JAVA_HOME/bin/java $NI_AGENT -cp $PROXY_JAR:$APP_JAR $proxy_main $proxy_args &
 	pid=$!
 	echo $! > $tmpdir/lambda.pid
 	log_rss $pid $tmpdir/lambda.rss &
