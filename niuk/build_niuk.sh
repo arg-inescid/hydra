@@ -23,14 +23,17 @@ mkdir -p $DISK/proc
 mkdir -p $DISK/dev
 mkdir -p $DISK/lib64
 mkdir -p $DISK/lib/x86_64-linux-gnu 
+mkdir -p $DISK/usr/lib/x86_64-linux-gnu
 
-# Copy necessary libraries.
-cp /lib64/ld-linux-x86-64.so.2           $DISK/lib64/ld-linux-x86-64.so.2
-cp /lib/x86_64-linux-gnu/libpthread.so.0 $DISK/lib/x86_64-linux-gnu/libpthread.so.0
-cp /lib/x86_64-linux-gnu/libdl.so.2      $DISK/lib/x86_64-linux-gnu/libdl.so.2
-cp /lib/x86_64-linux-gnu/libc.so.6       $DISK/lib/x86_64-linux-gnu/libc.so.6
-cp /lib/x86_64-linux-gnu/libz.so.1       $DISK/lib/x86_64-linux-gnu/libz.so.1
-
+# Copy necessary libraries (check with ldd ../lambda-proxy/build/native-image/polyglot-proxy).
+cp /lib64/ld-linux-x86-64.so.2               $DISK/lib64/ld-linux-x86-64.so.2
+cp /lib/x86_64-linux-gnu/libpthread.so.0     $DISK/lib/x86_64-linux-gnu/libpthread.so.0
+cp /lib/x86_64-linux-gnu/libdl.so.2          $DISK/lib/x86_64-linux-gnu/libdl.so.2
+cp /lib/x86_64-linux-gnu/libc.so.6           $DISK/lib/x86_64-linux-gnu/libc.so.6
+cp /lib/x86_64-linux-gnu/libz.so.1           $DISK/lib/x86_64-linux-gnu/libz.so.1
+cp /usr/lib/x86_64-linux-gnu/libstdc++.so.6  $DISK/usr/lib/x86_64-linux-gnu/libstdc++.so.6
+cp /usr/lib/x86_64-linux-gnu/libm.so.6       $DISK/usr/lib/x86_64-linux-gnu/libm.so.6
+cp /usr/lib/x86_64-linux-gnu/libgcc_s.so.1   $DISK/usr/lib/x86_64-linux-gnu/libgcc_s.so.1
 # Copy graalvisor and init.
 cp $gvbinary $DIR/init $DISK
 
