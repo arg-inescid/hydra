@@ -14,9 +14,14 @@ LANGS=""
 LANGS="$LANGS --language:js"
 LANGS="$LANGS --language:python"
 
+# Note: NI config had to be updated with:
+# - $GRAALVISOR_HOME/META-INF/native-image/reflect-config.json to add { "name": "org.graalvm.argo.lambda_proxy.engine.PolyglotHostAccess", "allPublicMethods": true }
+# - $GRAALVISOR_HOME/META-INF/native-image-jvips
+
 function build {
     sudo -E $JAVA_HOME/bin/native-image \
       --no-fallback \
+	--enable-url-protocols=http \
       -DGraalVisorHost \
       -Dcom.oracle.svm.graalvisor.libraryPath=$PROXY_HOME/build/resources/main/com.oracle.svm.graalvisor.headers \
       $LANGS \
@@ -26,7 +31,7 @@ function build {
       polyglot-proxy \
       $VIRTUALIZE \
       -H:+ReportExceptionStackTraces \
-      -H:ConfigurationFileDirectories=$GRAALVISOR_HOME/META-INF/native-image/
+      -H:ConfigurationFileDirectories=$GRAALVISOR_HOME/META-INF/native-image,$GRAALVISOR_HOME/META-INF/native-image-jvips
 }
 
 cd "$DIR" || {

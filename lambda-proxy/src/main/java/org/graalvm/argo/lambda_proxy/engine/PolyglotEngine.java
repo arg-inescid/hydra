@@ -54,10 +54,18 @@ public class PolyglotEngine implements LanguageEngine {
             String entryPoint = guestFunction.getEntryPoint();
             String sourceCode = guestFunction.getSource();
             Map<String, String> options = new HashMap<>();
-            options.put("python.ForceImportSite", "true");
 
+            if (guestFunction.getLanguage() == PolyglotLanguage.PYTHON) {
+                // Allow python imports.
+                options.put("python.ForceImportSite", "true");
+            }
+
+            // TODO - only allow the language? Measure performance.
             try (Context context = Context.newBuilder().allowAllAccess(true).options(options).build()) {
                 try {
+                    // Host access to implement IO.
+                    context.getBindings("js").putMember("polyHostAccess", new PolyglotHostAccess());
+                    context.getBindings("python").putMember("polyHostAccess", new PolyglotHostAccess());
                     // evaluate source script
                     context.eval(language, sourceCode);
                     // get function handle from the script

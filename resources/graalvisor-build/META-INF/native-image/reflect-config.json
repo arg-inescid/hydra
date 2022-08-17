@@ -16,5 +16,8 @@
 {
   "name":"sun.security.provider.SHA",
   "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{ 
+  "name": "org.graalvm.argo.lambda_proxy.engine.PolyglotHostAccess", "allPublicMethods": true 
 }
 ]
