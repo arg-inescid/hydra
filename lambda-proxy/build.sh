@@ -19,6 +19,7 @@ LANGS="$LANGS --language:python"
 # - $GRAALVISOR_HOME/META-INF/native-image-jvips
 
 function build_ni {
+    mkdir -p $GRAALVISOR_HOME &> /dev/null
     cd $GRAALVISOR_HOME
     $JAVA_HOME/bin/native-image \
         --no-fallback \
@@ -31,7 +32,7 @@ function build_ni {
         org.graalvm.argo.lambda_proxy.PolyglotProxy \
         polyglot-proxy \
         -H:+ReportExceptionStackTraces \
-        -H:ConfigurationFileDirectories=$GRAALVISOR_HOME/META-INF/native-image,$GRAALVISOR_HOME/META-INF/native-image-jvips
+        -H:ConfigurationFileDirectories=$PROXY_HOME/ni-agent-config/native-image,$PROXY_HOME/ni-agent-config/native-image-jvips
 }
 
 function build_niuk {

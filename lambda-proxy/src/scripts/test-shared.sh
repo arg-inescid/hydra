@@ -16,10 +16,7 @@ function next_ip(){
     echo "$NEXT_IP"
 }
 
-ARGO_HOME=$(DIR)/../../../
-ARGO_RESOURCES=$ARGO_HOME/resources
-ARGO_BENCHMARKS=$ARGO_HOME/../benchmarks
-source $ARGO_HOME/lambda-manager/src/scripts/environment.sh
+source $(DIR)/../../../lambda-manager/src/scripts/environment.sh
 
 tmpdir=/tmp/test-proxy
 mkdir $tmpdir &> /dev/null
@@ -55,7 +52,7 @@ function stop_niuk {
 	for child in $(ps -o pid --no-headers --ppid $ppid); do
 		sudo kill $child 
 	done
-	sudo bash $ARGO_HOME/lambda-manager/src/scripts/remove_taps.sh testtap
+	sudo bash $MANAGER_HOME/src/scripts/remove_taps.sh testtap
 	sudo rm -f $tmpdir/*.socket
 }
 
@@ -66,7 +63,7 @@ function stop_baremetal {
 
 function start_niuk {
 	cd $tmpdir
-	sudo bash $ARGO_HOME/lambda-manager/src/scripts/create_taps.sh testtap $ip
+	sudo bash $MANAGER_HOME/src/scripts/create_taps.sh testtap $ip
 	sudo bash $NIUK_HOME/run_niuk.sh \
 		--vmm firecracker \
 		--disk $tmpdir/polyglot-proxy.img \
@@ -106,14 +103,13 @@ function start_jvm {
 function setup_polyglot_svm {
 	mkdir $tmpdir &> /dev/null
 	sudo ls $tmpdir &> /dev/null
-	cp $ARGO_RESOURCES/graalvisor-build/polyglot-proxy $tmpdir/app
+	cp $GRAALVISOR_HOME/polyglot-proxy $tmpdir/app
 }
 
 function setup_polyglot_niuk {
 	mkdir $tmpdir &> /dev/null
 	sudo ls $tmpdir &> /dev/null
-	cp $ARGO_RESOURCES/graalvisor-build/polyglot-proxy.img $tmpdir
-	cp $ARGO_RESOURCES/graalvisor-build/polyglot-proxy_unikernel.sh $tmpdir/app_unikernel.sh
+	cp $GRAALVISOR_HOME/polyglot-proxy.img $tmpdir
 }
 
 function start_polyglot_svm {

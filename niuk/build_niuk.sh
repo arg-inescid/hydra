@@ -10,9 +10,7 @@ if [ "$#" -ne 2 ]; then
     exit 1
 fi
 
-#gvbinary=../resources/graalvisor-build/polyglot-proxy
 gvbinary=$1
-#gvdisk=../resources/graalvisor-build/polyglot-proxy.img
 gvdisk=$2
 
 # Build out init program.
