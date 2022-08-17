@@ -26,7 +26,7 @@ repositories {
 }
 
 processResources {
-    from(zipTree('../graalvisor-lib/build/libs/graalvisor-1.0-host.jar')) {
+    from(zipTree('../graalvisor-lib/build/libs/graalvisor-lib-1.0-host.jar')) {
         include("com.oracle.svm.graalvisor.headers/")
     }
 }
@@ -47,8 +47,8 @@ task javaProxy(type: ShadowJar) {
 dependencies {
     implementation 'com.fasterxml.jackson.jr:jackson-jr-objects:2.13.0-rc2'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.0'
-    implementation 'org.graalvm.sdk:graal-sdk:21.2.0'
-    implementation(files('../graalvisor-lib/build/libs/graalvisor-1.0-host.jar'))
+    implementation 'org.graalvm.sdk:graal-sdk:22.1.0'
+    implementation(files('../graalvisor-lib/build/libs/graalvisor-lib-1.0-host.jar'))
     // benchmark support
     implementation(files('../../benchmarks/language/javascript/gv-thumbnail/jvips/JVips.jar'))
     implementation 'com.github.spullara.mustache.java:compiler:0.9.10'

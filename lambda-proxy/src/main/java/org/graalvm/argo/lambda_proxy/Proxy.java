@@ -1,9 +1,6 @@
 package org.graalvm.argo.lambda_proxy;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import org.graalvm.argo.lambda_proxy.engine.LanguageEngine;
 import org.graalvm.argo.lambda_proxy.runtime.HotSpotProxy;
 import org.graalvm.argo.lambda_proxy.runtime.IsolateProxy;

@@ -20,7 +20,6 @@ ARGO_HOME=$(DIR)/../../../
 ARGO_RESOURCES=$ARGO_HOME/resources
 ARGO_BENCHMARKS=$ARGO_HOME/../benchmarks
 source $ARGO_HOME/lambda-manager/src/scripts/environment.sh
-VMM=`grep target $VIRTUALIZE_PATH | awk -F\" '{print $4}'`
 
 tmpdir=/tmp/test-proxy
 mkdir $tmpdir &> /dev/null
@@ -68,14 +67,16 @@ function stop_baremetal {
 function start_niuk {
 	cd $tmpdir
 	sudo bash $ARGO_HOME/lambda-manager/src/scripts/create_taps.sh testtap $ip
-	sudo bash app_unikernel.sh \
+	sudo bash $NIUK_HOME/run_niuk.sh \
+		--vmm firecracker \
+		--disk $tmpdir/polyglot-proxy.img \
+		--kernel $RES_HOME/hello-vmlinux.bin \
 		--memory 2048 \
 		--ip $ip \
 		--gateway $gateway \
 		--mask $mask \
 		--tap testtap \
 		--console \
-		--no-karg-patch \
 		$proxy_args 
 }
 

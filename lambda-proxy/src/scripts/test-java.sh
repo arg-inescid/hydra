@@ -48,6 +48,7 @@ function start_java_svm {
 	start_svm
 }
 
+# TODO - merge with setup_java_svm.
 function setup_java_niuk {
 	mkdir $tmpdir &> /dev/null
 	sudo ls $tmpdir &> /dev/null
@@ -59,8 +60,8 @@ function setup_java_niuk {
 		--features=org.graalvm.argo.lambda_proxy.engine.JavaEngineSingletonFeature \
 		org.graalvm.argo.lambda_proxy.JavaProxy \
 		app \
-		-H:Virtualize=$VIRTUALIZE_PATH \
 		-H:ConfigurationFileDirectories=$APP_CONFIG
+	$NIUK_HOME/build_niuk.sh app app.img
 }
 
 function start_java_niuk {
