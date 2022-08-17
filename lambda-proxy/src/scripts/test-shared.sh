@@ -86,7 +86,7 @@ function start_polyglot_niuk {
 
 function start_svm {
 	cd $tmpdir
-	./app $proxy_args &
+	./app &
 	pid=$!
 	echo $! > $tmpdir/lambda.pid
 	log_rss $pid $tmpdir/lambda.rss &
@@ -94,9 +94,8 @@ function start_svm {
 }
 
 function start_jvm {
-	echo "$JAVA_HOME/bin/java -cp $PROXY_JAR:$APP_JAR $proxy_main $proxy_args"
 	#NI_AGENT="-agentlib:native-image-agent=config-output-dir=$tmpdir/agent-output"
-	$JAVA_HOME/bin/java $NI_AGENT -cp $PROXY_JAR:$APP_JAR $proxy_main $proxy_args &
+	$JAVA_HOME/bin/java $NI_AGENT -cp $PROXY_JAR:$APP_JAR $proxy_main &
 	pid=$!
 	echo $! > $tmpdir/lambda.pid
 	log_rss $pid $tmpdir/lambda.rss &
@@ -117,13 +116,16 @@ function setup_polyglot_niuk {
 }
 
 function start_polyglot_svm {
-	proxy_args="$(date +%s%N | cut -b1-13) 8080"
+	export lambda_timestamp="$(date +%s%N | cut -b1-13)"
+	export lambda_port="8080"
 	start_svm
 }
 
 function start_polyglot_jvm {
-	proxy_args="$(date +%s%N | cut -b1-13) $APP_MAIN 8080"
-	proxy_main=org.graalvm.argo.lambda_proxy.BaremetalPolyglotProxy
+	export lambda_timestamp="$(date +%s%N | cut -b1-13)"
+	export lambda_port="8080"
+	export lambda_entry_point="$APP_MAIN"
+	export proxy_main="org.graalvm.argo.lambda_proxy.PolyglotProxy"
 	start_jvm
 }
 

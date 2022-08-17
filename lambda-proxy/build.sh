@@ -27,7 +27,7 @@ function build {
       $LANGS \
       --features=org.graalvm.argo.lambda_proxy.engine.PolyglotEngineSingletonFeature \
       -cp $PROXY_HOME/build/libs/lambda-proxy-1.0-all.jar \
-      $MAINCLASS \
+      org.graalvm.argo.lambda_proxy.PolyglotProxy \
       polyglot-proxy \
       $VIRTUALIZE \
       -H:+ReportExceptionStackTraces \
@@ -53,13 +53,11 @@ if [[ ! -z "$FLAG" ]]; then
     if [[ "$FLAG" = "--polyglot" ]]; then
         echo -e "${GREEN}Building polyglot lambda proxy...${NC}"
         VIRTUALIZE="-H:Virtualize=$VIRTUALIZE_PATH"
-        MAINCLASS="org.graalvm.argo.lambda_proxy.PolyglotProxy"
         build
         echo -e "${GREEN}Building polyglot lambda proxy...done${NC}"
     elif [[ "$FLAG" = "--polyglot-baremetal" ]]; then
         echo -e "${GREEN}Building baremetal polyglot lambda proxy...${NC}"
         VIRTUALIZE=""
-        MAINCLASS="org.graalvm.argo.lambda_proxy.BaremetalPolyglotProxy"
         build
         echo -e "${GREEN}Building baremetal polyglot lambda proxy...done${NC}"
     fi

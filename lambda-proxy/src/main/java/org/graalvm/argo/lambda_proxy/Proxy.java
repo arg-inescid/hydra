@@ -17,24 +17,6 @@ public abstract class Proxy {
     protected static String ENTRY_POINT_TAG = "lambda_entry_point=";
     protected static String PORT_TAG = "lambda_port=";
 
-    public static String[] loadArguments(String[] expectedArgumentTags) {
-        try {
-            String[] args = new String[expectedArgumentTags.length];
-            String cmdline = Files.readString(Paths.get("/proc/cmdline"), StandardCharsets.US_ASCII);
-
-            for (int i = 0; i < expectedArgumentTags.length; i++) {
-                int start = cmdline.indexOf(expectedArgumentTags[i]) + expectedArgumentTags[i].length();
-                int finish = cmdline.indexOf(' ', start);
-                args[i] = cmdline.substring(start, finish);
-            }
-
-            return args;
-        } catch (IOException e) {
-            // Ignore.
-        }
-        return null;
-    }
-
     public static void start(LanguageEngine engine, int port) throws IOException {
         RuntimeProxy proxy = runInIsolate ? new IsolateProxy(port, engine, true) : new HotSpotProxy(port, engine, true);
         proxy.start();
