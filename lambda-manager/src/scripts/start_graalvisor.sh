@@ -11,12 +11,14 @@ LAMBDA_HOME=$CODEBASE_HOME/lambda_"$LAMBDA_ID"_GRAALVISOR
 prepare_vmm_lambda_directory "$GRAALVISOR_HOME" "$LAMBDA_HOME"
 
 cd "$LAMBDA_HOME"
-bash "$LAMBDA_HOME"/polyglot-proxy_unikernel.sh \
+bash $NIUK_HOME/run_niuk.sh \
+	--vmm firecracker \
+	--disk "$LAMBDA_HOME"/polyglot-proxy.img \
+	--kernel "$RES_HOME"/hello-vmlinux.bin \
 	--memory "$LAMBDA_MEMORY" \
 	--ip "$LAMBDA_IP" \
 	--tap "$LAMBDA_TAP" \
 	--gateway "$LAMBDA_GATEWAY" \
 	--mask "$LAMBDA_MASK" \
 	"$LAMBDA_CONSOLE" \
-	--no-karg-patch \
 	"${@:9}"

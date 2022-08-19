@@ -96,6 +96,7 @@ public class RoundedRobinScheduler implements Scheduler {
                 ProcessBuilder process = whomToSpawn(lambda, function, targetMode).build();
                 process.start();
                 if (NetworkUtils.waitForOpenPort(lambda.getConnectionTriplet().ip, Configuration.argumentStorage.getLambdaPort(), 25)) {
+                    lambda.resetTimer();
                     LambdaManager.lambdas.add(lambda);
                     Logger.log(Level.INFO, "Added new lambda for " + function.getName() + " with mode " + lambda.getExecutionMode());
                 } else {
@@ -104,7 +105,6 @@ public class RoundedRobinScheduler implements Scheduler {
                     Logger.log(Level.SEVERE, "Failed to add new lambda for " + function.getName() + " with mode " + lambda.getExecutionMode());
                 }
                 LambdaManager.startingLambdas.get(targetMode).remove(lambda);
-                lambda.resetTimer();
             }
         }.start();
     }

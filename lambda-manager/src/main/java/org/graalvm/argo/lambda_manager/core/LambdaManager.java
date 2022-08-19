@@ -68,7 +68,6 @@ public class LambdaManager {
                 Lambda lambda = Configuration.scheduler.schedule(function, targetMode);
 
                 if (!lambda.isRegisteredInLambda(function)) {
-                    // TODO - check if concurrency could be a problem on the lambda side.
                     response = Configuration.client.registerFunction(lambda, function);
                     Logger.log(Level.FINE, String.format("Function %s registration in lambda %s returned %s", function.getName(), lambda.getLambdaName(), response));
                     if (!lambdasFunction.containsKey(function)) {

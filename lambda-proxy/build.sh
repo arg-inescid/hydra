@@ -14,10 +14,6 @@ LANGS=""
 LANGS="$LANGS --language:js"
 LANGS="$LANGS --language:python"
 
-# Note: NI config had to be updated with:
-# - $GRAALVISOR_HOME/META-INF/native-image/reflect-config.json to add { "name": "org.graalvm.argo.lambda_proxy.engine.PolyglotHostAccess", "allPublicMethods": true }
-# - $GRAALVISOR_HOME/META-INF/native-image-jvips
-
 function build_ni {
     mkdir -p $GRAALVISOR_HOME &> /dev/null
     cd $GRAALVISOR_HOME
