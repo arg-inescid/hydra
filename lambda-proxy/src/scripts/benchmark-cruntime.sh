@@ -46,7 +46,7 @@ rm $tmpdir/{*.dat,*.log,*.png} &> /dev/null
 $app
 
 # Create tap.
-sudo bash $ARGO_HOME/lambda-manager/src/scripts/create_taps.sh $TAP $ip
+sudo bash $MANAGER_HOME/src/scripts/create_taps.sh $TAP $ip
 
 # Launch runtime.
 sudo $CRUNTIME_HOME/start-vm -ip $ip/$smask -gw $gateway -tap $TAP -id $VMID -img $IMG
@@ -65,7 +65,7 @@ $mode
 
 # Stopping VM.
 sudo $CRUNTIME_HOME/stop-vm -id $VMID
-sudo bash $ARGO_HOME/lambda-manager/src/scripts/remove_taps.sh $TAP
+sudo bash $MANAGER_HOME/src/scripts/remove_taps.sh $TAP
 
 # Wait for log_rss.
 wait
