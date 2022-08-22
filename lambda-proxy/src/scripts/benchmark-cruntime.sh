@@ -20,10 +20,10 @@ function benchmark {
 }
 
 function test {
-	for i in {1..3}
+	for i in {1..10}
 	do
 		pretime
-		curl --no-progress-meter --max-time 60 -X POST $ip:8080/run -H 'Content-Type: application/json' -d @$RUN_POST
+		curl -s --max-time 60 -X POST $ip:8080/run -H 'Content-Type: application/json' -d @$RUN_POST
 		postime
 	done
 }
@@ -61,7 +61,7 @@ log_rss $(ps aux | grep firecracker | grep $VMID | awk '{print $2}') $tmpdir/lam
 curl -s -X POST $ip:8080/init -H 'Content-Type: application/json' -d @$INIT_POST
 
 # Run test/benchmark.
-$mode
+$mode | tee -a $tmpdir/app.log
 
 # Stopping VM.
 sudo $CRUNTIME_HOME/stop-vm -id $VMID
@@ -69,3 +69,9 @@ sudo bash $MANAGER_HOME/src/scripts/remove_taps.sh $TAP
 
 # Wait for log_rss.
 wait
+
+# Copy output to app's privde result dir.
+RESULT_DIR=$BENCHMARKS_HOME/results/$APP_LANG/$APP_NAME
+mkdir -p $RESULT_DIR
+cp $tmpdir/lambda.* $tmpdir/app.log $RESULT_DIR
+echo "Check logs: $RESULT_DIR/lambda.log"

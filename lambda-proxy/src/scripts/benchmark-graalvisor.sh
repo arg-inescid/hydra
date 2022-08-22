@@ -29,7 +29,7 @@ function benchmark {
 }
 
 function test {
-	for i in {1..3}
+	for i in {1..10}
 	do
 		pretime
 		curl -s -X POST $ip:8080 -H 'Content-Type: application/json' -d $(cat $APP_POST)
@@ -40,8 +40,8 @@ function test {
 # Writing post file to disk
 APP_POST=$tmpdir/payload.post
 
-# Deleting old dat files
-rm $tmpdir/*.dat &> /dev/null
+# Deleting old dat and log files
+rm $tmpdir/{*.dat,*.log} &> /dev/null
 
 # Setting up environment.
 if [ "$backend" == "jvm" ]; then
@@ -68,7 +68,7 @@ sleep 1
 $app
 
 # Run test/benchmark.
-$mode
+$mode | tee -a $tmpdir/app.log
 
 # Teardown environment.
 if [ "$backend" == "jvm" ]; then
@@ -80,4 +80,8 @@ elif [ "$backend" == "niuk" ]; then
 fi
 wait
 
-echo "Check logs: $tmpdir/lambda.log"
+# Copy output to app's privde result dir.
+RESULT_DIR=$BENCHMARKS_HOME/results/$APP_LANG/$APP_NAME-$backend
+mkdir -p $RESULT_DIR
+cp $tmpdir/lambda.* $tmpdir/app.log $RESULT_DIR
+echo "Check logs: $RESULT_DIR/lambda.log"

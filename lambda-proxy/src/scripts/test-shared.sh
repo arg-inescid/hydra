@@ -34,7 +34,7 @@ function pretime {
 
 function postime {
 	tt=$((($(date +%s%N) - $ts)/1000))
-	printf "\nTime taken: $tt us"
+	printf "\nTime taken: $tt us\n"
 }
 
 function log_rss {
