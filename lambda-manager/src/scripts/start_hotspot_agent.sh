@@ -10,7 +10,7 @@ export_lambda_arguments "${@:1:9}"
 # shellcheck disable=SC2153
 FUNCTION_HOME=$CODEBASE_HOME/"$FUNCTION_NAME"
 FUNCTION_CODE=$FUNCTION_HOME/$FUNCTION_NAME
-LAMBDA_HOME=$FUNCTION_HOME/pid_"$LAMBDA_ID"_hotspot_w_agent
+LAMBDA_HOME=$CODEBASE_HOME/lambda_"$LAMBDA_ID"_HOTSPOT_W_AGENT
 prepare_hotspot_lambda_directory "$LAMBDA_HOME"
 
 PREV_AGENT_PID=$9

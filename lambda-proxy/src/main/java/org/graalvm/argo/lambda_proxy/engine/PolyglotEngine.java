@@ -21,8 +21,8 @@ import org.graalvm.nativeimage.*;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
+import org.graalvm.polyglot.SourceSection;
 import org.graalvm.polyglot.Value;
-import org.graalvm.polyglot.proxy.ProxyObject;
 
 import com.oracle.svm.graalvisor.types.GuestIsolateThread;
 import com.sun.net.httpserver.HttpExchange;
@@ -53,19 +53,35 @@ public class PolyglotEngine implements LanguageEngine {
             String language = guestFunction.getLanguage().toString();
             String entryPoint = guestFunction.getEntryPoint();
             String sourceCode = guestFunction.getSource();
-            try (Context context = Context.newBuilder().allowAllAccess(true).build()) {
-                ProxyObject args = ProxyObject.fromMap(jsonToMap(arguments));
+            Map<String, String> options = new HashMap<>();
+
+            if (guestFunction.getLanguage() == PolyglotLanguage.PYTHON) {
+                // Allow python imports.
+                options.put("python.ForceImportSite", "true");
+            }
+
+            // TODO - only allow the language? Measure performance.
+            try (Context context = Context.newBuilder().allowAllAccess(true).options(options).build()) {
                 try {
+                    // Host access to implement IO.
+                    context.getBindings("js").putMember("polyHostAccess", new PolyglotHostAccess());
+                    context.getBindings("python").putMember("polyHostAccess", new PolyglotHostAccess());
                     // evaluate source script
                     context.eval(language, sourceCode);
                     // get function handle from the script
                     Value function = context.eval(language, entryPoint);
-                    Value res = function.execute(args);
-                    resultString = res.toString();
-                } catch (IllegalArgumentException | IllegalStateException | PolyglotException | UnsupportedOperationException | NullPointerException e) {
-                    System.err.println("Error happens during parsing/invoking polyglot function: ");
-                    e.printStackTrace();
-                    resultString = e.getMessage();
+                    // call the function
+                    resultString = function.execute(arguments).toString();
+                }
+                catch (PolyglotException pe) {
+                    if (pe.isSyntaxError()) {
+                         SourceSection location = pe.getSourceLocation();
+                         resultString = String.format("Error happens during parsing/ polyglot function at line %s: %s", location, pe.getMessage());
+                    }
+                }
+                catch (IllegalArgumentException | IllegalStateException | UnsupportedOperationException | NullPointerException e) {
+                    System.err.println("Error happens during invoking polyglot function: ");
+                    resultString = String.format("Error happens during invoking polyglot function:: %s", e.getMessage());
                 }
             }
         }
@@ -140,29 +156,31 @@ public class PolyglotEngine implements LanguageEngine {
             // //check
             String functionName = metaData.get("name");
             String soFileName = APP_DIR + functionName;
-            if (functionTable.containsKey(functionName)) {
-                errorResponse(t, String.format("Function %s has been registered!", functionName));
-                return;
-            }
-            String functionEntryPoint = metaData.get("entryPoint");
-            String functionLanguage = metaData.get("language");
-
-            if (functionLanguage.equalsIgnoreCase("java")) {
-                if (!new File(soFileName).exists()) {
-                    try (FileOutputStream fileOutputStream = new FileOutputStream(soFileName);
-                                    InputStream sourceInputStream = new BufferedInputStream(t.getRequestBody(), 4096)) {
-                        sourceInputStream.transferTo(fileOutputStream);
-                    }
+            synchronized (functionTable) {
+                if (functionTable.containsKey(functionName)) {
+                    writeResponse(t, 200, String.format("Function %s has already been registered!", functionName));
+                    return;
                 }
-                long beforeLoad = System.nanoTime();
-                functionTable.put(functionName, new PolyglotFunction(functionName, functionEntryPoint, functionLanguage, ""));
-                System.out.println("Loading SO takes: " + (System.nanoTime() - beforeLoad) / 1e6 + "ms");
-            } else {
-                try (InputStream sourceInputStream = new BufferedInputStream(t.getRequestBody(), 4096)) {
-                    String sourceCode = new String(sourceInputStream.readAllBytes(), StandardCharsets.UTF_8);
-                    functionTable.put(functionName, new PolyglotFunction(functionName, functionEntryPoint, functionLanguage, sourceCode));
-                } catch (IllegalArgumentException e) {
-                    e.printStackTrace();
+                String functionEntryPoint = metaData.get("entryPoint");
+                String functionLanguage = metaData.get("language");
+
+                if (functionLanguage.equalsIgnoreCase("java")) {
+                    if (!new File(soFileName).exists()) {
+                        try (FileOutputStream fileOutputStream = new FileOutputStream(soFileName);
+                                        InputStream sourceInputStream = new BufferedInputStream(t.getRequestBody(), 4096)) {
+                            sourceInputStream.transferTo(fileOutputStream);
+                        }
+                    }
+                    long beforeLoad = System.nanoTime();
+                    functionTable.put(functionName, new PolyglotFunction(functionName, functionEntryPoint, functionLanguage, ""));
+                    System.out.println("Loading SO takes: " + (System.nanoTime() - beforeLoad) / 1e6 + "ms");
+                } else {
+                    try (InputStream sourceInputStream = new BufferedInputStream(t.getRequestBody(), 4096)) {
+                        String sourceCode = new String(sourceInputStream.readAllBytes(), StandardCharsets.UTF_8);
+                        functionTable.put(functionName, new PolyglotFunction(functionName, functionEntryPoint, functionLanguage, sourceCode));
+                    } catch (IllegalArgumentException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
             System.out.println("Function registered! time took: " + (System.currentTimeMillis() - start) + "ms");

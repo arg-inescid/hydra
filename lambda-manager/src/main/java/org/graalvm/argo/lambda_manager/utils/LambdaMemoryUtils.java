@@ -1,10 +1,6 @@
 package org.graalvm.argo.lambda_manager.utils;
 
 import static org.graalvm.argo.lambda_manager.core.Environment.CODEBASE;
-import static org.graalvm.argo.lambda_manager.core.Environment.HOTSPOT;
-import static org.graalvm.argo.lambda_manager.core.Environment.HOTSPOT_W_AGENT;
-import static org.graalvm.argo.lambda_manager.core.Environment.VMM;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -47,19 +43,7 @@ public class LambdaMemoryUtils {
     }
 
     private static long getLambdaPid(Function function, Lambda lambda) throws IOException, InterruptedException {
-        String lambdaMode = null;
-        switch (lambda.getExecutionMode()) {
-            case HOTSPOT_W_AGENT:
-                lambdaMode = HOTSPOT_W_AGENT;
-                break;
-            case HOTSPOT:
-                lambdaMode = HOTSPOT;
-                break;
-            case NATIVE_IMAGE:
-                lambdaMode = VMM;
-                break;
-        }
-        File pidFile = Paths.get(CODEBASE, function.getName(), String.format(lambdaMode, lambda.getProcess().pid()), LAMBDA_PID_FILE).toFile();
+        File pidFile = Paths.get(CODEBASE, lambda.getLambdaName(), LAMBDA_PID_FILE).toFile();
         BufferedReader reader = new BufferedReader(new FileReader(pidFile));
         String parentPid = readToString(reader);
 

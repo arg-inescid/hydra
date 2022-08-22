@@ -35,7 +35,7 @@ if [ ! -f "$PROXY_JAR" ]; then
 fi
 
 FUNCTION_CODE=$FUNCTION_HOME/$FUNCTION_NAME
-LAMBDA_HOME=$FUNCTION_HOME/pid_"$LAMBDA_ID"_hotspot_w_agent
+LAMBDA_HOME=$CODEBASE_HOME/lambda_"$LAMBDA_ID"_HOTSPOT_W_AGENT
 "$JAVA_HOME"/bin/native-image \
   --no-fallback \
   --features=org.graalvm.argo.lambda_proxy.engine.JavaEngineSingletonFeature \
@@ -43,7 +43,7 @@ LAMBDA_HOME=$FUNCTION_HOME/pid_"$LAMBDA_ID"_hotspot_w_agent
   -cp "$PROXY_JAR":"$FUNCTION_CODE" \
   org.graalvm.argo.lambda_proxy.JavaProxy \
   "$FUNCTION_NAME" \
-  -H:Virtualize="$VIRTUALIZE_PATH" \
   -H:ConfigurationFileDirectories="$LAMBDA_HOME"/shared/config \
-  -H:ExcludeResources=".*/io.micronaut.*$|io.netty.*$" \
-  -H:+InterceptReflectiveOperationException
+  -H:ExcludeResources=".*/io.micronaut.*$|io.netty.*$"
+# TODO - we need to call niuk/build_niuk.sh
+# TODO - we need to reintroduce the fallback feature (-H:+InterceptReflectiveOperationException)

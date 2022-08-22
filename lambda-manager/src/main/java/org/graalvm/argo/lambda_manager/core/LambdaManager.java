@@ -17,27 +17,38 @@ import org.graalvm.argo.lambda_manager.utils.parser.ArgumentParser;
 import io.micronaut.context.BeanContext;
 import io.reactivex.Single;
 
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 public class LambdaManager {
 
+    /**
+     * This map keeps a set of Lambdas (value) that have a particular function (key) registered.
+     */
+    public static final Map<Function, Set<Lambda>> lambdasFunction = new ConcurrentHashMap<>();
+
+    /**
+     * This set contains all the lambdas tracked by the lambda manager.
+     */
+    public static final Set<Lambda> lambdas = Collections.newSetFromMap(new ConcurrentHashMap<Lambda, Boolean>());
+
+    /*
+     * Map of starting Lambdas per execution mode.
+     */
+    public static final Map<LambdaExecutionMode, Set<Lambda>> startingLambdas = Map.ofEntries(
+            Map.entry(LambdaExecutionMode.HOTSPOT_W_AGENT, Collections.newSetFromMap(new ConcurrentHashMap<Lambda, Boolean>())),
+            Map.entry(LambdaExecutionMode.HOTSPOT, Collections.newSetFromMap(new ConcurrentHashMap<Lambda, Boolean>())),
+            Map.entry(LambdaExecutionMode.NATIVE_IMAGE, Collections.newSetFromMap(new ConcurrentHashMap<Lambda, Boolean>())),
+            Map.entry(LambdaExecutionMode.GRAALVISOR, Collections.newSetFromMap(new ConcurrentHashMap<Lambda, Boolean>())),
+            Map.entry(LambdaExecutionMode.CUSTOM, Collections.newSetFromMap(new ConcurrentHashMap<Lambda, Boolean>())));
+
     private static String formatRequestSpentTimeMessage(Lambda lambda, Function function, long spentTime) {
         String username = Configuration.coder.decodeUsername(function.getName());
         String functionName = Configuration.coder.decodeFunctionName(function.getName());
-        switch (lambda.getExecutionMode()) {
-            case HOTSPOT_W_AGENT:
-                return String.format(Messages.TIME_HOTSPOT_W_AGENT, username, functionName, lambda.getProcess().pid(), spentTime);
-            case HOTSPOT:
-                return String.format(Messages.TIME_HOTSPOT, username, functionName, lambda.getProcess().pid(), spentTime);
-            case NATIVE_IMAGE:
-            case GRAALVISOR:
-                return String.format(Messages.TIME_NATIVE_IMAGE, username, functionName, lambda.getProcess().pid(), spentTime);
-            case CUSTOM:
-                return String.format(Messages.TIME_CUSTOM_RUNTIME, username, functionName, lambda.getProcess().pid(), spentTime);
-            default:
-                throw new UnsupportedOperationException();
-        }
+        return String.format(Messages.TIME_REQUEST, username, functionName, lambda.getExecutionMode(), lambda.getLambdaID(), spentTime);
     }
 
     public static Single<String> processRequest(String username, String functionName, String arguments) {
@@ -50,16 +61,19 @@ public class LambdaManager {
 
         try {
             Function function = Configuration.storage.get(Configuration.coder.encodeFunctionName(username, functionName));
-            LambdaExecutionMode targetMode = null;
+            LambdaExecutionMode targetMode = function.getLambdaExecutionMode();
 
             for (int i = 0; i < Configuration.LAMBDA_FAULT_TOLERANCE; i++) {
                 long start = System.currentTimeMillis();
                 Lambda lambda = Configuration.scheduler.schedule(function, targetMode);
 
                 if (!lambda.isRegisteredInLambda(function)) {
-                    // TODO - check if concurrency could be a problem on the lambda side.
                     response = Configuration.client.registerFunction(lambda, function);
-                    Logger.log(Level.FINE, String.format("Function %s registration in lambda %s returned %s", function.getName(), lambda.getLambdaPath(), response));
+                    Logger.log(Level.FINE, String.format("Function %s registration in lambda %s returned %s", function.getName(), lambda.getLambdaName(), response));
+                    if (!lambdasFunction.containsKey(function)) {
+                        lambdasFunction.put(function, Collections.newSetFromMap(new ConcurrentHashMap<Lambda, Boolean>()));
+                    }
+                    lambdasFunction.get(function).add(lambda);
                     lambda.setRegisteredInLambda(function);
                 }
 
@@ -71,8 +85,8 @@ public class LambdaManager {
                         function.setStatus(FunctionStatus.NOT_BUILT_NOT_CONFIGURED);
                         targetMode = LambdaExecutionMode.HOTSPOT_W_AGENT;
                     }
-                    Logger.log(Level.INFO, "Decommissioning (failed requests) lambda " + lambda.getProcess().pid());
-                    function.decommissionLambda(lambda);
+                    Logger.log(Level.INFO, "Decommissioning (failed requests) lambda " + lambda.getLambdaID());
+                    lambda.setDecommissioned(true);
                 } else {
                     long spentTime = System.currentTimeMillis() - start;
                     MetricsProvider.reportRequestTime(spentTime);
@@ -85,7 +99,9 @@ public class LambdaManager {
             Logger.log(Level.WARNING, functionNotFound.getMessage(), functionNotFound);
             response = functionNotFound.getMessage();
         } catch (Throwable throwable) {
-            Logger.log(Level.SEVERE, throwable.getMessage(), throwable);
+            if (Environment.notShutdownHookActive()) {
+                Logger.log(Level.SEVERE, throwable.getMessage(), throwable);
+            }
             response = Messages.INTERNAL_ERROR;
         }
         return JsonUtils.constructJsonResponseObject(response);
@@ -180,7 +196,7 @@ public class LambdaManager {
                 String functionName = Configuration.coder.decodeFunctionName(entry.getValue().getName());
                 functionNode.put("user", username);
                 functionNode.put("name", functionName);
-                functionNode.put("maxLambdas", entry.getValue().getTotalNumberLambdas());
+                functionNode.put("maxLambdas", LambdaManager.lambdasFunction.get(entry.getValue()).size());
                 functionsArrayNode.add(functionNode);
             }
             response = functionsArrayNode;

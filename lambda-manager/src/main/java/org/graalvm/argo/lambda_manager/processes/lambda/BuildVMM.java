@@ -1,15 +1,13 @@
 package org.graalvm.argo.lambda_manager.processes.lambda;
 
-import org.graalvm.argo.lambda_manager.callbacks.BuildVMMCallback;
-import org.graalvm.argo.lambda_manager.callbacks.OnProcessFinishCallback;
 import org.graalvm.argo.lambda_manager.core.Function;
+import org.graalvm.argo.lambda_manager.optimizers.FunctionStatus;
 import org.graalvm.argo.lambda_manager.processes.AbstractProcess;
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.graalvm.argo.lambda_manager.core.Environment.BUILD_VMM;
 import static org.graalvm.argo.lambda_manager.core.Environment.LAMBDA_LOGS;
 
 public class BuildVMM extends AbstractProcess {
@@ -22,6 +20,7 @@ public class BuildVMM extends AbstractProcess {
 
     @Override
     protected List<String> makeCommand() {
+        function.setStatus(FunctionStatus.CONFIGURING_OR_BUILDING);
         List<String> command = new ArrayList<>();
         command.add("bash");
         command.add("src/scripts/build_vmm.sh");
@@ -32,12 +31,18 @@ public class BuildVMM extends AbstractProcess {
 
     @Override
     protected OnProcessFinishCallback callback() {
-        return new BuildVMMCallback(function);
+        return new OnProcessFinishCallback() {
+
+			@Override
+			public void finish(int exitCode) {
+				function.setStatus(FunctionStatus.READY);
+			}
+		};
     }
 
     @Override
     protected String outputFilename() {
-        String dirPath = Paths.get(LAMBDA_LOGS, function.getName(), BUILD_VMM).toString();
+        String dirPath = Paths.get(LAMBDA_LOGS, "build_ni_" + function.getName()).toString();
         new File(dirPath).mkdir();
         return Paths.get(dirPath, "output.log").toString();
     }

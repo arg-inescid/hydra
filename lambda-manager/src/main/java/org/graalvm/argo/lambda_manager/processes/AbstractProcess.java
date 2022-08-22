@@ -1,8 +1,7 @@
 package org.graalvm.argo.lambda_manager.processes;
 
-import org.graalvm.argo.lambda_manager.callbacks.DefaultCallback;
-import org.graalvm.argo.lambda_manager.callbacks.OnProcessFinishCallback;
 import org.graalvm.argo.lambda_manager.core.Environment;
+import org.graalvm.argo.lambda_manager.processes.lambda.OnProcessFinishCallback;
 
 import java.util.List;
 
@@ -11,17 +10,24 @@ public abstract class AbstractProcess {
     /**
      * The process identifier (not to be confused with OS pid).
      */
-    protected long pid;
+    protected final long pid;
+
+    public AbstractProcess() {
+        this.pid = Environment.pid();
+    }
 
     public final ProcessBuilder build() {
-        this.pid = Environment.pid();
         return new ProcessBuilder(this.getClass().getName(), pid, makeCommand(), callback(), outputFilename());
     }
 
     protected abstract List<String> makeCommand();
 
     protected OnProcessFinishCallback callback() {
-        return new DefaultCallback();
+        return new OnProcessFinishCallback() {
+
+			@Override
+			public void finish(int exitCode) { }
+		};
     }
 
     protected abstract String outputFilename();

@@ -14,19 +14,25 @@ LANGS=""
 LANGS="$LANGS --language:js"
 LANGS="$LANGS --language:python"
 
-function build {
-    sudo -E $JAVA_HOME/bin/native-image \
-      --no-fallback \
-      -DGraalVisorHost \
-      -Dcom.oracle.svm.graalvisor.libraryPath=$PROXY_HOME/build/resources/main/com.oracle.svm.graalvisor.headers \
-      $LANGS \
-      --features=org.graalvm.argo.lambda_proxy.engine.PolyglotEngineSingletonFeature \
-      -cp $PROXY_HOME/build/libs/lambda-proxy-1.0-all.jar \
-      $MAINCLASS \
-      polyglot-proxy \
-      $VIRTUALIZE \
-      -H:+ReportExceptionStackTraces \
-      -H:ConfigurationFileDirectories=$TRUFFLE_HOME/META-INF/native-image/
+function build_ni {
+    mkdir -p $GRAALVISOR_HOME &> /dev/null
+    cd $GRAALVISOR_HOME
+    $JAVA_HOME/bin/native-image \
+        --no-fallback \
+        --enable-url-protocols=http \
+        -DGraalVisorHost \
+        -Dcom.oracle.svm.graalvisor.libraryPath=$PROXY_HOME/build/resources/main/com.oracle.svm.graalvisor.headers \
+        $LANGS \
+        --features=org.graalvm.argo.lambda_proxy.engine.PolyglotEngineSingletonFeature \
+        -cp $PROXY_HOME/build/libs/lambda-proxy-1.0-all.jar \
+        org.graalvm.argo.lambda_proxy.PolyglotProxy \
+        polyglot-proxy \
+        -H:+ReportExceptionStackTraces \
+        -H:ConfigurationFileDirectories=$PROXY_HOME/ni-agent-config/native-image,$PROXY_HOME/ni-agent-config/native-image-jvips
+}
+
+function build_niuk {
+    $NIUK_HOME/build_niuk.sh $GRAALVISOR_HOME/polyglot-proxy $GRAALVISOR_HOME/polyglot-proxy.img
 }
 
 cd "$DIR" || {
@@ -34,28 +40,14 @@ cd "$DIR" || {
   exit 1
 }
 
-echo -e "${GREEN}Building java lambda proxy...${NC}"
+echo -e "${GREEN}Building lambda proxy Jar...${NC}"
 ./gradlew clean shadowJar javaProxy
-echo -e "${GREEN}Building java lambda proxy...done${NC}"
+echo -e "${GREEN}Building lambda proxy Jar... done!${NC}"
 
-if [[ ! -z "$FLAG" ]]; then
+echo -e "${GREEN}Building lambda proxy Native Image...${NC}"
+build_ni
+echo -e "${GREEN}Building lambda proxy Native Image... done!${NC}"
 
-    cd "$TRUFFLE_HOME" || {
-      echo "Redirection failed!"
-      exit 1
-    }
-
-    if [[ "$FLAG" = "--polyglot" ]]; then
-        echo -e "${GREEN}Building polyglot lambda proxy...${NC}"
-        VIRTUALIZE="-H:Virtualize=$VIRTUALIZE_PATH"
-        MAINCLASS="org.graalvm.argo.lambda_proxy.PolyglotProxy"
-        build
-        echo -e "${GREEN}Building polyglot lambda proxy...done${NC}"
-    elif [[ "$FLAG" = "--polyglot-baremetal" ]]; then
-        echo -e "${GREEN}Building baremetal polyglot lambda proxy...${NC}"
-        VIRTUALIZE=""
-        MAINCLASS="org.graalvm.argo.lambda_proxy.BaremetalPolyglotProxy"
-        build
-        echo -e "${GREEN}Building baremetal polyglot lambda proxy...done${NC}"
-    fi
-fi
+echo -e "${GREEN}Building lambda proxy Native Image Unikernel...${NC}"
+build_niuk
+echo -e "${GREEN}Building lambda proxy Native Image Unikernel... done!${NC}"

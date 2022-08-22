@@ -10,7 +10,7 @@ export_lambda_arguments "${@:1:9}"
 # shellcheck disable=SC2153
 FUNCTION_HOME=$CODEBASE_HOME/"$FUNCTION_NAME"
 FUNCTION_CODE=$FUNCTION_HOME/$FUNCTION_NAME
-LAMBDA_HOME=$FUNCTION_HOME/pid_"$LAMBDA_ID"_hotspot
+LAMBDA_HOME=$CODEBASE_HOME/lambda_"$LAMBDA_ID"_HOTSPOT
 prepare_hotspot_lambda_directory "$LAMBDA_HOME"
 
 if [ ! -f "$PROXY_JAR" ]; then

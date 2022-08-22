@@ -7,6 +7,8 @@ import org.graalvm.argo.lambda_manager.encoders.Coder;
 import org.graalvm.argo.lambda_manager.exceptions.argument_parser.ErrorDuringReflectiveClassCreation;
 import org.graalvm.argo.lambda_manager.exceptions.user.ErrorDuringCreatingConnectionPool;
 import org.graalvm.argo.lambda_manager.function_storage.FunctionStorage;
+import org.graalvm.argo.lambda_manager.memory.FixedMemoryPool;
+import org.graalvm.argo.lambda_manager.memory.MemoryPool;
 import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
 import org.graalvm.argo.lambda_manager.processes.taps.CreateTaps;
 import org.graalvm.argo.lambda_manager.schedulers.Scheduler;
@@ -33,7 +35,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Random;
-import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -44,16 +45,23 @@ public class ArgumentStorage {
     private String gateway;
     private String mask;
     private Iterator<IPv4Address> iPv4AddressIterator;
-    private int freeMemory;
+
+    /**
+     * Memory pool that controls memory allocation.
+     */
+    private MemoryPool memoryPool;
+
+    /**
+     * Maximum number of network taps that will be setup by the Lambda Manager.
+     */
     private int maxTaps;
+
     // TODO - we should synchronize access to the connection pool.
     private final ArrayList<ConnectionTriplet<String, String, RxHttpClient>> connectionPool;
     private int timeout;
     private int healthCheck;
     private int lambdaPort;
     private boolean isLambdaConsoleActive;
-    private LambdaManagerConsole cachedConsoleInfo;
-
     private ArgumentStorage() {
         this.connectionPool = new ArrayList<>();
     }
@@ -65,7 +73,7 @@ public class ArgumentStorage {
         this.iPv4AddressIterator = gatewayWithMask.iterator();
         this.iPv4AddressIterator.next(); // Note: skip *.*.*.0
         this.iPv4AddressIterator.next(); // Note: skip *.*.*.1
-        this.freeMemory = lambdaManagerConfiguration.getMaxMemory();
+        this.memoryPool = new FixedMemoryPool(lambdaManagerConfiguration.getMaxMemory(), lambdaManagerConfiguration.getMaxMemory());
         this.maxTaps = lambdaManagerConfiguration.getMaxTaps();
         this.timeout = lambdaManagerConfiguration.getTimeout();
         this.healthCheck = lambdaManagerConfiguration.getHealthCheck();
@@ -160,7 +168,6 @@ public class ArgumentStorage {
     }
 
     private void cacheConsoleInfo(LambdaManagerConsole lambdaManagerConsole) {
-        this.cachedConsoleInfo = lambdaManagerConsole;
     }
 
     private void prepareLogging(LambdaManagerConsole lambdaManagerConsole) {
@@ -204,31 +211,6 @@ public class ArgumentStorage {
         argumentStorage.doInitialize(lambdaManagerConfiguration, beanContext);
     }
 
-    public void prepareHandler() {
-        LambdaManagerFormatter formatter = new LambdaManagerFormatter();
-        Handler handler = new ConsoleHandler();
-        handler.setFormatter(formatter);
-
-        if (cachedConsoleInfo.isTurnOn()) {
-            if (cachedConsoleInfo.isRedirectToFile()) {
-                try {
-                    handler = new FileHandler(Environment.MANAGER_LOG_FILENAME, true);
-                    handler.setFormatter(formatter);
-                } catch (IOException ioException) {
-                    ioException.printStackTrace();
-                }
-            }
-
-            if (cachedConsoleInfo.isFineGrain()) {
-                handler.setLevel(Level.FINE);
-            }
-        } else {
-            handler.setLevel(Level.OFF);
-        }
-
-        Logger.setHandler(handler);
-    }
-
     public void cleanupStorage() {
         for (ConnectionTriplet<String, String, RxHttpClient> connectionTriplet : connectionPool) {
             connectionTriplet.client.close();   // Close http client if it's not closed yet.
@@ -248,30 +230,8 @@ public class ArgumentStorage {
         return gateway;
     }
 
-    private synchronized boolean updateMemory(long delta) {
-        return delta < 0 ? allocateMemoryLambda(Math.abs(delta)) : deallocateMemoryLambda(delta);
-    }
-
-    private boolean allocateMemoryLambda(long delta) {
-        if (freeMemory >= delta) {
-            freeMemory -= delta;
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    private boolean deallocateMemoryLambda(long delta) {
-        freeMemory += delta;
-        return true;
-    }
-
-    public boolean allocateMemoryLambda(Function f) {
-        return updateMemory(Math.negateExact(f.getMemory()));
-    }
-
-    public boolean deallocateMemoryLambda(Function f) {
-        return updateMemory(f.getMemory());
+    public MemoryPool getMemoryPool() {
+        return this.memoryPool;
     }
 
     public ArrayList<ConnectionTriplet<String, String, RxHttpClient>> getConnectionPool() {

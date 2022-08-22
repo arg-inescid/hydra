@@ -1,10 +1,8 @@
 package org.graalvm.argo.lambda_manager.processes.lambda;
 
 import io.micronaut.http.client.RxHttpClient;
-import org.graalvm.argo.lambda_manager.callbacks.OnProcessFinishCallback;
-import org.graalvm.argo.lambda_manager.callbacks.TruffleCallback;
+
 import org.graalvm.argo.lambda_manager.core.Configuration;
-import org.graalvm.argo.lambda_manager.core.Environment;
 import org.graalvm.argo.lambda_manager.core.Lambda;
 import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
@@ -50,11 +48,12 @@ public class StartCustomRuntime extends StartLambda {
 
     @Override
     protected OnProcessFinishCallback callback() {
-        return new TruffleCallback(lambda);
-    }
+        return new OnProcessFinishCallback() {
 
-    @Override
-    public String getLambdaDirectory() {
-        return Environment.CRUNTIME;
+			@Override
+			public void finish(int exitCode) {
+				lambda.resetRegisteredInLambda();
+			}
+		};
     }
 }

@@ -1,5 +1,6 @@
 package org.graalvm.argo.lambda_manager.core;
 
+import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
 import org.graalvm.argo.lambda_manager.processes.lambda.DefaultLambdaShutdownHandler;
 import org.graalvm.argo.lambda_manager.processes.taps.RemoveTapsFromPool;
@@ -11,7 +12,10 @@ import io.micronaut.runtime.event.ApplicationShutdownEvent;
 
 import javax.inject.Singleton;
 
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 @SuppressWarnings("unused")
@@ -31,28 +35,30 @@ public class ShutdownHook implements ApplicationEventListener<ApplicationShutdow
     }
 
     private void shutdownLambdas() {
-        Map<String, Function> functionsMap = Configuration.storage.getAll();
-        for (Function function : functionsMap.values()) {
-            synchronized (function) {
-                // First, move all lambdas to the idle list, ignoring that some requests might be still running.
-                function.getIdleLambdas().addAll(function.getRunningLambdas());
-                // Clear running lambdas.
-                function.getRunningLambdas().clear();
-            }
-            // Then, for each idle lambda, force a shutdown.
-            while(!function.getIdleLambdas().isEmpty()) {
-                Lambda lambda = function.getIdleLambdas().get(0);
-                new DefaultLambdaShutdownHandler(lambda, function).run();
+        for (Lambda lambda : LambdaManager.lambdas) {
+            new DefaultLambdaShutdownHandler(lambda).run();
+        }
+        for (Set<Lambda> set : LambdaManager.startingLambdas.values()) {
+            for (Lambda lambda : set) {
+                new DefaultLambdaShutdownHandler(lambda).run();
             }
         }
+        LambdaManager.lambdas.clear();
+        LambdaManager.lambdasFunction.clear();
+        LambdaManager.startingLambdas.get(LambdaExecutionMode.HOTSPOT_W_AGENT).clear();
+        LambdaManager.startingLambdas.get(LambdaExecutionMode.HOTSPOT).clear();
+        LambdaManager.startingLambdas.get(LambdaExecutionMode.NATIVE_IMAGE).clear();
+        LambdaManager.startingLambdas.get(LambdaExecutionMode.GRAALVISOR).clear();
+        LambdaManager.startingLambdas.get(LambdaExecutionMode.CUSTOM).clear();
     }
 
     @Override
     public void onApplicationEvent(ApplicationShutdownEvent event) {
         try {
             Environment.setShutdownHookActive(true);
+            // This sleep is used to allow other threads to react to the active shutdown hook flag.
+            Thread.sleep(500);
             if (Configuration.isInitialized()) {
-                Configuration.argumentStorage.prepareHandler();
                 shutdownLambdas();
                 removeTapsFromPool();
                 removeTapsOutsidePool();
@@ -60,8 +66,6 @@ public class ShutdownHook implements ApplicationEventListener<ApplicationShutdow
             }
         } catch (InterruptedException interruptedException) {
             Logger.log(Level.WARNING, Messages.ERROR_TAP_REMOVAL, interruptedException);
-        } finally {
-            Logger.close();
         }
     }
 }

@@ -16,9 +16,7 @@ source "$DIR"/export_lambda_arguments.sh
 source "$DIR"/prepare_lambda_directories.sh
 
 export_lambda_arguments "${@:1:9}"
-FUNCTION_HOME=$CODEBASE_HOME/"$FUNCTION_NAME"
-LAMBDA_NAME=pid_"$LAMBDA_ID"_cruntime
-LAMBDA_HOME=$FUNCTION_HOME/"$LAMBDA_NAME"
+LAMBDA_HOME=$CODEBASE_HOME/lambda_"$LAMBDA_ID"_CUSTOM
 VMID=$(cat /dev/random | head -c 32 | md5sum | head -c 32)
 RUNTIME=$9
 prepare_cruntime_lambda_directory "$LAMBDA_HOME"
