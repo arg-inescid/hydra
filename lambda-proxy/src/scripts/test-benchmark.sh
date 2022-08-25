@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Getting the local default ip used to connect to the internet.
+IP=$(ip route get 8.8.8.8 | grep -oP  'src \K\S+')
+
 function gv_java_hw {
 	APP_LANG=java
 	APP_NAME=gv-hello-world
@@ -57,7 +60,7 @@ function gv_python_thumbnail {
 	APP_MAIN=main
 	APP_SCRIPT=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/main.py
 	curl -s -X POST $ip:8080/register?name=thumbnail\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SCRIPT
-	echo '{"name":"thumbnail","async":"false","arguments":"http://127.0.0.1:8000/snap.png"}' > $APP_POST
+	echo '{"name":"thumbnail","async":"false","arguments":"http://'$IP':8000/snap.png"}' > $APP_POST
 }
 
 function cr_python_thumbnail {
@@ -66,6 +69,7 @@ function cr_python_thumbnail {
 	APP_NAME=cr-thumbnail
 	INIT_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/init.json
 	RUN_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/run.json
+	echo '{ "value": { "url": "http://'$IP':8000/snap.png" } }' > $RUN_POST
 }
 function gv_javascript_thumbnail {
 	APP_LANG=javascript
@@ -73,7 +77,7 @@ function gv_javascript_thumbnail {
 	APP_MAIN=main
 	APP_SCRIPT=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/main.js
 	curl -s -X POST $ip:8080/register?name=thumbnail\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SCRIPT
-	echo '{"name":"thumbnail","async":"false","arguments":"http://127.0.0.1:8000/snap.png"}' > $APP_POST
+	echo '{"name":"thumbnail","async":"false","arguments":"http://'$IP':8000/snap.png"}' > $APP_POST
 }
 
 function cr_javascript_thumbnail {
@@ -82,6 +86,7 @@ function cr_javascript_thumbnail {
 	APP_NAME=cr-thumbnail
 	INIT_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/init.json
 	RUN_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/run.json
+	echo '{ "value": { "url": "http://'$IP':8000/snap.png" } }' > $RUN_POST
 }
 
 function gv_java_sleep {
@@ -141,7 +146,7 @@ function gv_java_filehashing {
 	APP_MAIN=com.filehashing.FileHashing
 	APP_SO=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/build/libfilehashing.so
 	curl -s -X POST $ip:8080/register?name=filehashing\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SO
-	echo '{"name":"filehashing","async":"false","arguments":"{\"url\":\"http://127.0.0.1:8000/snap.png\"}"}' > $APP_POST
+	echo '{"name":"filehashing","async":"false","arguments":"{\"url\":\"http://'$IP':8000/snap.png\"}"}' > $APP_POST
 }
 
 function cr_java_filehashing {
@@ -150,6 +155,7 @@ function cr_java_filehashing {
 	APP_NAME=cr-file-hashing
 	INIT_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/init.json
 	RUN_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/run.json
+	echo '{ "value": { "url": "http://'$IP':8000/snap.png" } }' > $RUN_POST
 }
 
 function gv_java_httprequest {
@@ -158,7 +164,7 @@ function gv_java_httprequest {
 	APP_MAIN=com.httprequest.HttpRequest
 	APP_SO=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/build/libhttprequest.so
 	curl -s -X POST $ip:8080/register?name=httprequest\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SO
-	echo '{"name":"httprequest","async":"false","arguments":"{\"url\":\"http://127.0.0.1:8000/snap.png\"}"}' > $APP_POST
+	echo '{"name":"httprequest","async":"false","arguments":"{\"url\":\"http://'$IP':8000/snap.png\"}"}' > $APP_POST
 }
 
 function cr_java_httprequest {
@@ -167,6 +173,7 @@ function cr_java_httprequest {
 	APP_NAME=cr-httprequest
 	INIT_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/init.json
 	RUN_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/run.json
+	echo '{ "value": { "url": "http://'$IP':8000/snap.png" } }' > $RUN_POST
 }
 
 function gv_java_videoprocessing {
@@ -175,7 +182,7 @@ function gv_java_videoprocessing {
 	APP_MAIN=com.videoprocessing.VideoProcessing
 	APP_SO=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/build/libvideoprocessing.so
 	curl -s -X POST $ip:8080/register?name=videoprocessing\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SO
-	echo '{"name":"videoprocessing","async":"false","arguments":"{\"video\":\"http://127.0.0.1:8000/file_example_MP4_480_1_5MG.mp4\",\"ffmpeg\":\"http://127.0.0.1:8000/ffmpeg\"}"}' > $APP_POST
+	echo '{"name":"videoprocessing","async":"false","arguments":"{\"video\":\"http://'$IP':8000/file_example_MP4_480_1_5MG.mp4\",\"ffmpeg\":\"http://192.168.1.83:8000/ffmpeg\"}"}' > $APP_POST
 }
 
 function cr_java_videoprocessing {
@@ -184,6 +191,7 @@ function cr_java_videoprocessing {
 	APP_NAME=cr-video-processing
 	INIT_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/init.json
 	RUN_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/run.json
+	echo '{ "value": { "ffmpeg_url": "http://'$IP':8000/ffmpeg", "video_url": "http://'$IP':8000/file_example_MP4_480_1_5MG.mp4" } }' > $RUN_POST
 }
 
 function gv_python_videoprocessing {
@@ -192,7 +200,7 @@ function gv_python_videoprocessing {
 	APP_MAIN=main
 	APP_SCRIPT=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/main.py
 	curl -s -X POST $ip:8080/register?name=videoprocessing\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SCRIPT
-	echo '{"name":"videoprocessing","async":"false","arguments":"http://127.0.0.1:8000/ffmpeg;http://127.0.0.1:8000/file_example_MP4_480_1_5MG.mp4"}' > $APP_POST
+	echo '{"name":"videoprocessing","async":"false","arguments":"http://'$IP':8000/ffmpeg;http://192.168.1.83:8000/file_example_MP4_480_1_5MG.mp4"}' > $APP_POST
 }
 
 function cr_python_videoprocessing {
@@ -201,6 +209,7 @@ function cr_python_videoprocessing {
 	APP_NAME=cr-video-processing
 	INIT_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/init.json
 	RUN_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/run.json
+	echo '{ "value": { "ffmpeg_url": "http://'$IP':8000/ffmpeg", "video_url": "http://'$IP':8000/file_example_MP4_480_1_5MG.mp4" } }' > $RUN_POST
 }
 
 function gv_python_compression {
@@ -209,7 +218,7 @@ function gv_python_compression {
 	APP_MAIN=main
 	APP_SCRIPT=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/main.py
 	curl -s -X POST $ip:8080/register?name=compression\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SCRIPT
-	echo '{"name":"compression","async":"false","arguments":"http://127.0.0.1:8000/file_example_MP4_480_1_5MG.mp4"}' > $APP_POST
+	echo '{"name":"compression","async":"false","arguments":"http://'$IP':8000/file_example_MP4_480_1_5MG.mp4"}' > $APP_POST
 }
 
 function cr_python_compression {
@@ -218,6 +227,7 @@ function cr_python_compression {
 	APP_NAME=cr-compression
 	INIT_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/init.json
 	RUN_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/run.json
+	echo '{ "value": { "url": "http://'$IP':8000/snap.png" } }' > $RUN_POST
 }
 
 function gv_javascript_dynamichtml {
@@ -226,7 +236,7 @@ function gv_javascript_dynamichtml {
 	APP_MAIN=main
 	APP_SCRIPT=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/main.js
 	curl -s -X POST $ip:8080/register?name=dynamichtml\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SCRIPT
-	echo '{"name":"dynamichtml","async":"false","arguments":"http://127.0.0.1:8000/template.html;rbruno;1000"}' > $APP_POST
+	echo '{"name":"dynamichtml","async":"false","arguments":"http://'$IP':8000/template.html;rbruno;10"}' > $APP_POST
 }
 
 function cr_javascript_dynamichtml {
@@ -235,6 +245,7 @@ function cr_javascript_dynamichtml {
 	APP_NAME=cr-dynamic-html
 	INIT_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/init.json
 	RUN_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/run.json
+	echo '{ "value": { "url": "http://'$IP':8000/template.html", "username": "rbruno", "nsize": "10" } }' > $RUN_POST
 }
 
 function gv_python_dynamichtml {
@@ -243,7 +254,7 @@ function gv_python_dynamichtml {
 	APP_MAIN=main
 	APP_SCRIPT=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/main.py
 	curl -s -X POST $ip:8080/register?name=dynamichtml\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SCRIPT
-	echo '{"name":"dynamichtml","async":"false","arguments":"http://127.0.0.1:8000/template.html;rbruno;1000"}' > $APP_POST
+	echo '{"name":"dynamichtml","async":"false","arguments":"http://'$IP':8000/template.html;rbruno;1000"}' > $APP_POST
 }
 
 function cr_python_dynamichtml {
@@ -252,6 +263,7 @@ function cr_python_dynamichtml {
 	APP_NAME=cr-dynamic-html
 	INIT_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/init.json
 	RUN_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/run.json
+	echo '{ "value": { "url": "http://'$IP':8000/template.html", "username": "rbruno", "nsize": "10" } }' > $RUN_POST
 }
 
 function gv_python_uploader {
@@ -260,7 +272,7 @@ function gv_python_uploader {
 	APP_MAIN=main
 	APP_SCRIPT=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/main.py
 	curl -s -X POST $ip:8080/register?name=uploader\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SCRIPT
-	echo '{"name":"uploader","async":"false","arguments":"http://127.0.0.1:8000/snap.png"}' > $APP_POST
+	echo '{"name":"uploader","async":"false","arguments":"http://'$IP':8000/snap.png"}' > $APP_POST
 }
 
 function cr_python_uploader {
@@ -269,6 +281,7 @@ function cr_python_uploader {
 	APP_NAME=cr-uploader
 	INIT_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/init.json
 	RUN_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/run.json
+	echo '{ "value": { "url": "http://'$IP':8000/snap.png" } }' > $RUN_POST
 }
 
 
@@ -278,7 +291,7 @@ function gv_javascript_uploader {
 	APP_MAIN=main
 	APP_SCRIPT=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/main.js
 	curl -s -X POST $ip:8080/register?name=uploader\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SCRIPT
-	echo '{"name":"uploader","async":"false","arguments":"http://127.0.0.1:8000/snap.png"}' > $APP_POST
+	echo '{"name":"uploader","async":"false","arguments":"http://'$IP':8000/snap.png"}' > $APP_POST
 }
 
 function cr_javascript_uploader {
@@ -287,6 +300,7 @@ function cr_javascript_uploader {
 	APP_NAME=cr-uploader
 	INIT_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/init.json
 	RUN_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/run.json
+	echo '{ "value": { "url": "http://'$IP':8000/snap.png" } }' > $RUN_POST
 }
 
 # Old, Jar-based benchmarks.
