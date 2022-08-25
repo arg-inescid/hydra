@@ -10,3 +10,4 @@ resources/truffle-build/*
 !resources/truffle-build/META-INF/
 start-vm
 stop-vm
+/.metadata/

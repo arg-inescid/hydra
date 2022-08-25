@@ -11,7 +11,6 @@ import java.nio.file.Paths;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.core.Lambda;
 
 public class LambdaMemoryUtils {
@@ -21,8 +20,8 @@ public class LambdaMemoryUtils {
 
     private static final double KB_IN_MB = 1024;
 
-    public static double getProcessMemory(Function function, Lambda lambda) throws IOException, InterruptedException {
-        long pid = getLambdaPid(function, lambda);
+    public static double getProcessMemory(Lambda lambda) throws IOException, InterruptedException {
+        long pid = getLambdaPid(lambda);
         InputStream stream = executeCommand("ps", "eo", "rss", String.valueOf(pid));
         BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
         double sizeKb = parseOutput(readToString(reader));
@@ -42,7 +41,7 @@ public class LambdaMemoryUtils {
         return 0;
     }
 
-    private static long getLambdaPid(Function function, Lambda lambda) throws IOException, InterruptedException {
+    private static long getLambdaPid(Lambda lambda) throws IOException, InterruptedException {
         File pidFile = Paths.get(CODEBASE, lambda.getLambdaName(), LAMBDA_PID_FILE).toFile();
         BufferedReader reader = new BufferedReader(new FileReader(pidFile));
         String parentPid = readToString(reader);
