@@ -7,12 +7,12 @@ This tutorial is inspited on the [getting-started.md](https://github.com/firecra
 
 #### Step 1: clone [containerd-firecracker](https://github.com/firecracker-microvm/firecracker-containerd)
 
-`git clone git@github.com:firecracker-microvm/firecracker-containerd.git`
+`git clone --recurse-submodules git@github.com:firecracker-microvm/firecracker-containerd.git`
 
 #### Step 2: build tools
 
 ```
-make all 
+make all
 make firecracker
 make image
 sudo make demo-network
@@ -138,7 +138,9 @@ state = "/run/firecracker-containerd"
 
 #### Step 7: start containerd
 
-`sudo env PATH=$PATH FIRECRACKER_CONTAINERD_RUNTIME_CONFIG_PATH=firecracker-runtime.json firecracker-containerd --config firecracker-containerd-config.toml`
+```
+sudo env PATH=$PATH FIRECRACKER_CONTAINERD_RUNTIME_CONFIG_PATH=firecracker-runtime.json firecracker-containerd --config firecracker-containerd-config.toml
+```
 
 This command will launch `containerd-firecracker` and you should now be able to launch Firecracker vms using containerd. For example, the following commands should pull a container image and start a new VM from it:
 
