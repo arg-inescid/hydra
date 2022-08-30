@@ -31,6 +31,7 @@ cp /lib/x86_64-linux-gnu/libpthread.so.0     $DISK/lib/x86_64-linux-gnu/libpthre
 cp /lib/x86_64-linux-gnu/libdl.so.2          $DISK/lib/x86_64-linux-gnu/libdl.so.2
 cp /lib/x86_64-linux-gnu/libc.so.6           $DISK/lib/x86_64-linux-gnu/libc.so.6
 cp /lib/x86_64-linux-gnu/libz.so.1           $DISK/lib/x86_64-linux-gnu/libz.so.1
+cp /lib/x86_64-linux-gnu/librt.so.1          $DISK/lib/x86_64-linux-gnu/librt.so.1
 cp /usr/lib/x86_64-linux-gnu/libstdc++.so.6  $DISK/usr/lib/x86_64-linux-gnu/libstdc++.so.6
 cp /usr/lib/x86_64-linux-gnu/libm.so.6       $DISK/usr/lib/x86_64-linux-gnu/libm.so.6
 cp /usr/lib/x86_64-linux-gnu/libgcc_s.so.1   $DISK/usr/lib/x86_64-linux-gnu/libgcc_s.so.1

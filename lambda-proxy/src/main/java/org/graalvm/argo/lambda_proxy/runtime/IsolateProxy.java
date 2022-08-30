@@ -71,7 +71,6 @@ public class IsolateProxy extends RuntimeProxy {
         }
 
         private void processRequest(IsolateObjectWrapper isolateObjectWrapper, Request req) {
-            System.out.println(String.format("[Background thread %s] Executing request %s in background", Thread.currentThread().getId(), req.input));
             synchronized (req) {
                 // Get input from request, invoke function in isolate, fill output.
                 try {
@@ -88,7 +87,7 @@ public class IsolateProxy extends RuntimeProxy {
         public void run() {
             // Create isolate.
             IsolateObjectWrapper isolateObjectWrapper = languageEngine.createIsolate(functionName);
-            System.out.println(String.format("[Background thread %s] Creating isolate", Thread.currentThread().getId()));
+            System.out.println(String.format("[thread %s] Creating isolate", Thread.currentThread().getId()));
             Request req = null;
             pipeline.freeworkers++;
 
@@ -109,7 +108,7 @@ public class IsolateProxy extends RuntimeProxy {
             }
 
             // Tear down the isolate.
-            System.out.println(String.format("[Background thread %s] Destroying isolate", Thread.currentThread().getId()));
+            System.out.println(String.format("[thread %s] Destroying isolate", Thread.currentThread().getId()));
             languageEngine.tearDownIsolate(functionName, isolateObjectWrapper);
         }
     }
@@ -155,7 +154,6 @@ public class IsolateProxy extends RuntimeProxy {
     }
 
     private String invokeInIsolateWorker(FunctionPipeline pipeline, String input) throws Exception {
-        System.out.println(String.format("[Foreground thread %s] Executing request %s in background", Thread.currentThread().getId(), input));
         Request req = new Request(input);
         synchronized (req) {
             pipeline.queue.add(req);
