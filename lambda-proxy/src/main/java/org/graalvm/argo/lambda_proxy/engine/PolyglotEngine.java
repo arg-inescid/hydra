@@ -45,6 +45,11 @@ public class PolyglotEngine implements LanguageEngine {
      */
     private Context context;
 
+    /**
+     * Each context has a corresponding truffle function that should be used for te invocation.
+     */
+    private Value function;
+
     @SuppressWarnings("unused")
     @CEntryPoint
     private static void installSourceCode(@CEntryPoint.IsolateThreadContext IsolateThread workingThread,
@@ -66,30 +71,27 @@ public class PolyglotEngine implements LanguageEngine {
 
         if (context == null) {
             Map<String, String> options = new HashMap<>();
+            String language = guestFunction.getLanguage().toString();
 
             if (guestFunction.getLanguage() == PolyglotLanguage.PYTHON) {
                 // Allow python imports.
                 options.put("python.ForceImportSite", "true");
             }
 
-            // TODO - only allow the language? Measure performance.
+            // Build context.
             context = Context.newBuilder().allowAllAccess(true).options(options).build();
+
+            // Host access to implement missing language functionalities.
+            context.getBindings(language).putMember("polyHostAccess", new PolyglotHostAccess());
+
+            // Evaluate source script to load function into the environment.
+            context.eval(language, guestFunction.getSource());
+
+            // Get function handle from the script.
+            function = context.eval(language, guestFunction.getEntryPoint());
         }
 
         try {
-            // TODO - we could also cache this entire part (until the function object construction).
-            String language = guestFunction.getLanguage().toString();
-            String entryPoint = guestFunction.getEntryPoint();
-            String sourceCode = guestFunction.getSource();
-            // Host access to implement IO.
-            context.getBindings("js").putMember("polyHostAccess", new PolyglotHostAccess());
-            context.getBindings("python").putMember("polyHostAccess", new PolyglotHostAccess());
-            // evaluate source script
-            context.eval(language, sourceCode);
-            // get function handle from the script
-            Value function = context.eval(language, entryPoint);
-
-            // call the function
             resultString = function.execute(arguments).toString();
         } catch (PolyglotException pe) {
             if (pe.isSyntaxError()) {
@@ -100,7 +102,6 @@ public class PolyglotEngine implements LanguageEngine {
             System.err.println("Error happens during invoking polyglot function: ");
             resultString = String.format("Error happens during invoking polyglot function:: %s", e.getMessage());
         }
-
 
         return resultString;
     }
