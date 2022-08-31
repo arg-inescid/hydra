@@ -153,11 +153,17 @@ public class IsolateProxy extends RuntimeProxy {
         return IsolateUtils.copyString(defaultContext, resultString);
     }
 
-    private String invokeInIsolateWorker(FunctionPipeline pipeline, String input) throws Exception {
+    private String invokeInIsolateWorker(FunctionPipeline pipeline, String input) {
         Request req = new Request(input);
         synchronized (req) {
             pipeline.queue.add(req);
-            req.wait();
+            while(req.getOutput() == null) {
+                try {
+                    req.wait();
+                } catch (InterruptedException e) {
+                    // Ignore
+                }
+            }
             return req.getOutput();
         }
     }
