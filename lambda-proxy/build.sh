@@ -32,7 +32,7 @@ function build_ni {
 }
 
 function build_niuk {
-    $NIUK_HOME/build_niuk.sh $GRAALVISOR_HOME/polyglot-proxy $GRAALVISOR_HOME/polyglot-proxy.img
+    $NIUK_HOME/build_niuk.sh $JAVA_HOME $GRAALVISOR_HOME/polyglot-proxy $GRAALVISOR_HOME/polyglot-proxy.img
 }
 
 cd "$DIR" || {

@@ -136,6 +136,7 @@ function run_firecracker {
             --kernel=$VMM_KERNEL \
             --kernel-opts="init=$IMAGE_PATH_ON_DISK quiet rw tsc=reliable ipv6.disable=1 ip=$VMM_IP::$VMM_GATEWAY:$VMM_MASK::eth0:none::: nomodule $KERNEL_CONSOLE_ARGS reboot=k panic=1 pci=off $args" \
             --root-drive=$VMM_DISK \
+            --memory=$VMM_MEM \
             --tap-device=$VMM_TAP_NAME/$VMM_MAC \
             --socket-path=$VMM_DISK.socket &
     echo "$!" > lambda.pid

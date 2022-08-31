@@ -34,7 +34,6 @@ public class PolyglotHostAccess {
         }
     }
 
-    // TODO - make it an interface with multiple implementations.
     @HostAccess.Export
     public byte[] readBytes(String path) {
         try {
@@ -74,8 +73,7 @@ public class PolyglotHostAccess {
         int    postDataLength = bytes.length;
         HttpURLConnection conn;
         try {
-            // TODO - in future we should actually post to `url` instead of httpbin.
-            conn = (HttpURLConnection) new URL("https://httpbin.org/anything").openConnection();
+            conn = (HttpURLConnection) new URL(url).openConnection();
             conn.setDoOutput(true);
             conn.setInstanceFollowRedirects(false);
             conn.setRequestMethod("POST");
