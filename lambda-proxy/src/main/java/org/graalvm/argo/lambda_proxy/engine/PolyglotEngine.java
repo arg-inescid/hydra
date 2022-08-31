@@ -6,8 +6,11 @@ import static org.graalvm.argo.lambda_proxy.utils.IsolateUtils.retrieveString;
 import static org.graalvm.argo.lambda_proxy.utils.JsonUtils.jsonToMap;
 import static org.graalvm.argo.lambda_proxy.utils.ProxyUtils.*;
 
-import java.io.*;
-import java.lang.reflect.InvocationTargetException;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,9 +32,23 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
+// TODO - split into JavaNativeLibraryEngine and TruffleEngine
 public class PolyglotEngine implements LanguageEngine {
-    // FunctionTable is used to store registered functions inside default and worker isolates
+
+    /**
+     *  FunctionTable is used to store registered functions inside default and worker isolates.
+     */
     private static final ConcurrentHashMap<String, PolyglotFunction> functionTable = new ConcurrentHashMap<>();
+
+    /**
+     * Each thread owns it truffle context, where polyglot functions execute.
+     */
+    private Context context;
+
+    /**
+     * Each context has a corresponding truffle function that should be used for te invocation.
+     */
+    private Value function;
 
     @SuppressWarnings("unused")
     @CEntryPoint
@@ -44,53 +61,53 @@ public class PolyglotEngine implements LanguageEngine {
     }
 
     @Override
-    public String invoke(String functionName, String arguments) {
+    public String invoke(String functionName, String arguments) throws Exception {
         PolyglotFunction guestFunction = functionTable.get(functionName);
-        String resultString = "";
+        String resultString = new String();
+
         if (guestFunction == null) {
             return String.format("{'Error': 'Function %s not registered!'}", functionName);
-        } else {
-            String language = guestFunction.getLanguage().toString();
-            String entryPoint = guestFunction.getEntryPoint();
-            String sourceCode = guestFunction.getSource();
+        }
+
+        if (context == null) {
             Map<String, String> options = new HashMap<>();
+            String language = guestFunction.getLanguage().toString();
 
             if (guestFunction.getLanguage() == PolyglotLanguage.PYTHON) {
                 // Allow python imports.
                 options.put("python.ForceImportSite", "true");
             }
 
-            // TODO - only allow the language? Measure performance.
-            try (Context context = Context.newBuilder().allowAllAccess(true).options(options).build()) {
-                try {
-                    // Host access to implement IO.
-                    context.getBindings("js").putMember("polyHostAccess", new PolyglotHostAccess());
-                    context.getBindings("python").putMember("polyHostAccess", new PolyglotHostAccess());
-                    // evaluate source script
-                    context.eval(language, sourceCode);
-                    // get function handle from the script
-                    Value function = context.eval(language, entryPoint);
-                    // call the function
-                    resultString = function.execute(arguments).toString();
-                }
-                catch (PolyglotException pe) {
-                    if (pe.isSyntaxError()) {
-                         SourceSection location = pe.getSourceLocation();
-                         resultString = String.format("Error happens during parsing/ polyglot function at line %s: %s", location, pe.getMessage());
-                    }
-                }
-                catch (IllegalArgumentException | IllegalStateException | UnsupportedOperationException | NullPointerException e) {
-                    System.err.println("Error happens during invoking polyglot function: ");
-                    resultString = String.format("Error happens during invoking polyglot function:: %s", e.getMessage());
-                }
-            }
+            // Build context.
+            context = Context.newBuilder().allowAllAccess(true).options(options).build();
+
+            // Host access to implement missing language functionalities.
+            context.getBindings(language).putMember("polyHostAccess", new PolyglotHostAccess());
+
+            // Evaluate source script to load function into the environment.
+            context.eval(language, guestFunction.getSource());
+
+            // Get function handle from the script.
+            function = context.eval(language, guestFunction.getEntryPoint());
         }
+
+        try {
+            resultString = function.execute(arguments).toString();
+        } catch (PolyglotException pe) {
+            if (pe.isSyntaxError()) {
+                 SourceSection location = pe.getSourceLocation();
+                 resultString = String.format("Error happens during parsing/ polyglot function at line %s: %s", location, pe.getMessage());
+            }
+        } catch (Exception e) {
+            System.err.println("Error happens during invoking polyglot function: ");
+            resultString = String.format("Error happens during invoking polyglot function:: %s", e.getMessage());
+        }
+
         return resultString;
     }
 
     @Override
-    public String invoke(IsolateObjectWrapper workingIsolate, String functionName, String jsonArguments)
-                    throws IOException, ClassNotFoundException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    public String invoke(IsolateObjectWrapper workingIsolate, String functionName, String jsonArguments) throws Exception {
         PolyglotFunction guestFunction = functionTable.get(functionName);
         if (guestFunction == null) {
             return String.format("{'Error': 'Function %s not registered!'}", functionName);

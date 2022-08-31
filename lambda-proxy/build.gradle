@@ -50,6 +50,6 @@ dependencies {
     implementation 'org.graalvm.sdk:graal-sdk:22.1.0'
     implementation(files('../graalvisor-lib/build/libs/graalvisor-lib-1.0-host.jar'))
     // benchmark support
-    implementation(files(System.getenv('BENCHMARKS_HOME') + '/language/javascript/gv-thumbnail/jvips/JVips.jar'))
+    implementation(files(System.getenv('BENCHMARKS_HOME') + '/src/javascript/gv-thumbnail/jvips/JVips.jar'))
     implementation 'com.github.spullara.mustache.java:compiler:0.9.10'
 }

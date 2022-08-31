@@ -43,8 +43,7 @@ public class JavaEngine implements LanguageEngine {
     }
 
     @Override
-    public String invoke(IsolateObjectWrapper workingIsolate, String functionName, String jsonArguments)
-                    throws IOException, ClassNotFoundException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    public String invoke(IsolateObjectWrapper workingIsolate, String functionName, String jsonArguments) throws Exception {
         IsolateThread workingThread = workingIsolate.getIsolateThread();
         return retrieveString(IsolateProxy.invoke(workingThread,
                         CurrentIsolate.getCurrentThread(),

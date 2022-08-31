@@ -4,11 +4,9 @@ import static org.graalvm.argo.lambda_proxy.utils.JsonUtils.jsonToMap;
 import static org.graalvm.argo.lambda_proxy.utils.ProxyUtils.errorResponse;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.net.InetSocketAddress;
 import java.util.Map;
 
-import org.graalvm.argo.lambda_proxy.base.FunctionRegistrationFailure;
 import org.graalvm.argo.lambda_proxy.engine.LanguageEngine;
 import org.graalvm.argo.lambda_proxy.utils.ProxyUtils;
 
@@ -31,8 +29,7 @@ public abstract class RuntimeProxy {
         server.createContext("/", new InvocationHandler());
     }
 
-    protected abstract String invoke(String functionName, String arguments) throws IOException, ClassNotFoundException,
-            InvocationTargetException, IllegalAccessException, NoSuchMethodException, FunctionRegistrationFailure;
+    protected abstract String invoke(String functionName, boolean cached, String arguments) throws Exception;
 
     public abstract void start();
 
@@ -45,12 +42,14 @@ public abstract class RuntimeProxy {
                 String functionName = (String) input.get("name");
                 String arguments = (String) input.get("arguments");
                 String async = (String)input.get("async");
+                boolean cached = input.get("cached") == null ? true : Boolean.parseBoolean((String)input.get("cached"));
+
                 if (async != null && async.equals("true")) {
                     ProxyUtils.writeResponse(t, 200, "Asynchronous request submitted!");
-                    String output = invoke(functionName, arguments);
+                    String output = invoke(functionName, cached, arguments);
                     System.out.println(output);
                 } else {
-                    String output = invoke(functionName, arguments);
+                    String output = invoke(functionName, cached, arguments);
                     ProxyUtils.writeResponse(t, 200, output);
                 }
             } catch (Exception e) {
