@@ -6,6 +6,8 @@ function DIR {
 
 source $(DIR)/../lambda-manager/src/scripts/environment.sh
 
+$JAVA_HOME/bin/gu install native-image python nodejs
+
 VENV=$JAVA_HOME/graalvisor-python-venv
 
 $JAVA_HOME/bin/graalpython -m venv $VENV
