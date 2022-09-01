@@ -55,7 +55,6 @@ public class PolyglotHostAccess {
 
     @HostAccess.Export
     public byte[] downloadBytes(String url) {
-
         try {
             URLConnection conn = new URL(url).openConnection();
             InputStream is = conn.getInputStream();
@@ -70,7 +69,7 @@ public class PolyglotHostAccess {
 
     @HostAccess.Export
     public void uploadBytes(String url, byte[] bytes) {
-        int    postDataLength = bytes.length;
+        int postDataLength = bytes.length;
         HttpURLConnection conn;
         try {
             conn = (HttpURLConnection) new URL(url).openConnection();
@@ -102,7 +101,7 @@ public class PolyglotHostAccess {
             bytes = image.writeToArray(VipsImageFormat.PNG, false);
             image.release();
             return bytes;
-        } catch (VipsException e) {
+        } catch (Throwable e) {
             e.printStackTrace();
             return null;
         }
