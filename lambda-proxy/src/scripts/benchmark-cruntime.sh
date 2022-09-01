@@ -49,7 +49,7 @@ $app
 sudo bash $MANAGER_HOME/src/scripts/create_taps.sh $TAP $ip
 
 # Launch runtime.
-sudo $CRUNTIME_HOME/start-vm -ip $ip/$smask -gw $gateway -tap $TAP -id $VMID -img $IMG
+sudo $CRUNTIME_HOME/start-vm -ip $ip/$smask -gw $gateway -tap $TAP -id $VMID -img $IMG -mem $MEM -cpu $CPU
 
 # Just let the VM boot...
 sleep 5

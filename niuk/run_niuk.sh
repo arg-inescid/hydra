@@ -11,6 +11,7 @@ Usage: --vmm vmm --disk disk --kernel kernel --memory mem --ip ip --gateway gate
        --disk disk - path to the VM disk image
        --kernel kernel - path to the VM kernel image
        --memory mem - VM RAM memory
+       --cpu cpu - Number of cpus
        --ip ip - VM ip address
        --gateway gateway - VM gateway
        --mask mask - VM networm mask
@@ -26,6 +27,7 @@ VMM=
 VMM_KERNEL=
 VMM_DISK=
 VMM_MEM=
+VMM_CPU=1
 VMM_IP=
 VMM_CONSOLE=
 VMM_GATEWAY=
@@ -44,6 +46,14 @@ while :; do
             shift
         else
             print_and_die "Flag --memory requires an additional argument\n$USAGE"
+        fi
+        ;;
+    -c | --cpu)
+        if [ "$2" ]; then
+            VMM_CPU=$2
+            shift
+        else
+            print_and_die "Flag --cpu requires an additional argument\n$USAGE"
         fi
         ;;
     -i | --ip)
@@ -137,6 +147,7 @@ function run_firecracker {
             --kernel-opts="init=$IMAGE_PATH_ON_DISK quiet rw tsc=reliable ipv6.disable=1 ip=$VMM_IP::$VMM_GATEWAY:$VMM_MASK::eth0:none::: nomodule $KERNEL_CONSOLE_ARGS reboot=k panic=1 pci=off $args" \
             --root-drive=$VMM_DISK \
             --memory=$VMM_MEM \
+            --ncpus=$VMM_CPU \
             --tap-device=$VMM_TAP_NAME/$VMM_MAC \
             --socket-path=$VMM_DISK.socket &
     echo "$!" > lambda.pid
