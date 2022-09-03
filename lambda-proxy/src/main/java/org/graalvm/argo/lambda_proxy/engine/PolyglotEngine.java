@@ -46,7 +46,7 @@ public class PolyglotEngine implements LanguageEngine {
     private Context context;
 
     /**
-     * Each context has a corresponding truffle function that should be used for te invocation.
+     * Each context has a corresponding truffle function that should be used for the invocation.
      */
     private Value function;
 
@@ -72,10 +72,21 @@ public class PolyglotEngine implements LanguageEngine {
         if (context == null) {
             Map<String, String> options = new HashMap<>();
             String language = guestFunction.getLanguage().toString();
+            String javaHome = System.getenv("JAVA_HOME");
+
+            if (javaHome == null) {
+                System.err.println("JAVA_HOME not found in the environment. Polyglot functionality significantly limited.");
+            } else {
+                System.setProperty("org.graalvm.language.python.home", javaHome + "/languages/python");
+                System.setProperty("org.graalvm.language.llvm.home", javaHome + "/languages/llvm");
+                System.setProperty("org.graalvm.language.js.home", javaHome + "/languages/js");
+            }
 
             if (guestFunction.getLanguage() == PolyglotLanguage.PYTHON) {
-                // Allow python imports.
+                // Necessary to allow python imports.
                 options.put("python.ForceImportSite", "true");
+                // Loading the virtual env with installed packages
+                options.put("python.Executable", javaHome + "/graalvisor-python-venv/bin/python");
             }
 
             // Build context.

@@ -182,7 +182,7 @@ function gv_java_videoprocessing {
 	APP_MAIN=com.videoprocessing.VideoProcessing
 	APP_SO=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/build/libvideoprocessing.so
 	curl -s -X POST $ip:8080/register?name=videoprocessing\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SO
-	echo '{"name":"videoprocessing","async":"false","arguments":"{\"video\":\"http://'$IP':8000/file_example_MP4_480_1_5MG.mp4\",\"ffmpeg\":\"http://192.168.1.83:8000/ffmpeg\"}"}' > $APP_POST
+	echo '{"name":"videoprocessing","async":"false","arguments":"{\"video\":\"http://'$IP':8000/video.mp4\",\"ffmpeg\":\"http://'$IP':8000/ffmpeg\"}"}' > $APP_POST
 }
 
 function cr_java_videoprocessing {
@@ -191,7 +191,7 @@ function cr_java_videoprocessing {
 	APP_NAME=cr-video-processing
 	INIT_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/init.json
 	RUN_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/run.json
-	echo '{ "value": { "ffmpeg_url": "http://'$IP':8000/ffmpeg", "video_url": "http://'$IP':8000/file_example_MP4_480_1_5MG.mp4" } }' > $RUN_POST
+	echo '{ "value": { "ffmpeg_url": "http://'$IP':8000/ffmpeg", "video_url": "http://'$IP':8000/video.mp4" } }' > $RUN_POST
 }
 
 function gv_python_videoprocessing {
@@ -200,7 +200,7 @@ function gv_python_videoprocessing {
 	APP_MAIN=main
 	APP_SCRIPT=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/main.py
 	curl -s -X POST $ip:8080/register?name=videoprocessing\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SCRIPT
-	echo '{"name":"videoprocessing","async":"false","arguments":"http://'$IP':8000/ffmpeg;http://192.168.1.83:8000/file_example_MP4_480_1_5MG.mp4"}' > $APP_POST
+	echo '{"name":"videoprocessing","async":"false","arguments":"http://'$IP':8000/ffmpeg;http://'$IP':8000/video.mp4"}' > $APP_POST
 }
 
 function cr_python_videoprocessing {
@@ -209,7 +209,7 @@ function cr_python_videoprocessing {
 	APP_NAME=cr-video-processing
 	INIT_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/init.json
 	RUN_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/run.json
-	echo '{ "value": { "ffmpeg_url": "http://'$IP':8000/ffmpeg", "video_url": "http://'$IP':8000/file_example_MP4_480_1_5MG.mp4" } }' > $RUN_POST
+	echo '{ "value": { "ffmpeg_url": "http://'$IP':8000/ffmpeg", "video_url": "http://'$IP':8000/video.mp4" } }' > $RUN_POST
 }
 
 function gv_python_compression {
@@ -218,7 +218,7 @@ function gv_python_compression {
 	APP_MAIN=main
 	APP_SCRIPT=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/main.py
 	curl -s -X POST $ip:8080/register?name=compression\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SCRIPT
-	echo '{"name":"compression","async":"false","arguments":"http://'$IP':8000/file_example_MP4_480_1_5MG.mp4"}' > $APP_POST
+	echo '{"name":"compression","async":"false","arguments":"http://'$IP':8000/video.mp4"}' > $APP_POST
 }
 
 function cr_python_compression {
@@ -227,7 +227,7 @@ function cr_python_compression {
 	APP_NAME=cr-compression
 	INIT_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/init.json
 	RUN_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/run.json
-	echo '{ "value": { "url": "http://'$IP':8000/snap.png" } }' > $RUN_POST
+	echo '{ "value": { "url": "http://'$IP':8000/video.mp4" } }' > $RUN_POST
 }
 
 function gv_javascript_dynamichtml {
@@ -254,7 +254,7 @@ function gv_python_dynamichtml {
 	APP_MAIN=main
 	APP_SCRIPT=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/main.py
 	curl -s -X POST $ip:8080/register?name=dynamichtml\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SCRIPT
-	echo '{"name":"dynamichtml","async":"false","arguments":"http://'$IP':8000/template.html;rbruno;1000"}' > $APP_POST
+	echo '{"name":"dynamichtml","async":"false","arguments":"http://'$IP':8000/template.html;rbruno;10"}' > $APP_POST
 }
 
 function cr_python_dynamichtml {

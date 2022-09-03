@@ -12,6 +12,7 @@ import (
 	"github.com/firecracker-microvm/firecracker-containerd/runtime/firecrackeroci"
 	"github.com/pkg/errors"
 	"log"
+	"strconv"
 )
 
 func main() {
@@ -24,7 +25,9 @@ func main() {
 	var macAddr = flag.String("mac", "AA:FC:00:00:00:01", "tap. Example: -mac AA:FC:00:00:00:01")
 	var ttrpcCAddr = *containerdAddr + ".ttrpc"
 	var ctnImage = flag.String("img", "docker.io/library/nginx:1.17-alpine", "img. Example: -img docker.io/library/nginx:1.17-alpine")
-	// TODO - add memory and cpu count!
+	var memory = flag.String("mem", "2048", "mem. Example: -mem 2048")
+	var cpu = flag.String("cpu", "1", "cpu. Example: -cpu 1")
+
 	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds)
 	flag.Parse()
 
@@ -32,13 +35,24 @@ func main() {
 		log.Fatal("Incorrect usage. You need to specify the ip, gateway, id, and tap.")
 	}
 
-	if err := start(*containerdAddr, ttrpcCAddr, *namespace, *vmID, *containerCIDR, *gatewayIP, "devmapper", *tapName, *macAddr, *ctnImage); err != nil {
+	if err := start(*containerdAddr, ttrpcCAddr, *namespace, *vmID, *containerCIDR, *gatewayIP, "devmapper", *tapName, *macAddr, *ctnImage, *memory, *cpu); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func start(containerdAddr string, ttrpcCAddr string, namespace string, vmID string, containerCIDR string, gateway string, snapshotter string, tapName string, macAddr string, ctnImage string) (err error) {
+func start(containerdAddr string, ttrpcCAddr string, namespace string, vmID string, containerCIDR string, gateway string, snapshotter string, tapName string, macAddr string, ctnImage string, mem string, cpu string) (err error) {
 	log.Println("Creating containerd client")
+
+	memory_uint32, err := strconv.Atoi(mem)
+	if err != nil {
+		return errors.Wrapf(err, "converting requested vm memory %s", mem)
+	}
+
+	cpu_uint32, err := strconv.Atoi(cpu)
+	if err != nil {
+		return errors.Wrapf(err, "converting requested vm cpu %s", cpu)
+	}
+
 	client, err := containerd.New(containerdAddr)
 	if err != nil {
 		return errors.Wrapf(err, "creating client")
@@ -63,8 +77,8 @@ func start(containerdAddr string, ttrpcCAddr string, namespace string, vmID stri
 		VMID: vmID,
 		// Enabling Go Race Detector makes in-microVM binaries heavy in terms of CPU and memory.
 		MachineCfg: &proto.FirecrackerMachineConfiguration{
-			VcpuCount:  1,
-			MemSizeMib: 2048,
+			VcpuCount:  uint32(cpu_uint32),
+			MemSizeMib: uint32(memory_uint32),
 		},
 	}
 

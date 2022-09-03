@@ -34,7 +34,6 @@ public class PolyglotHostAccess {
         }
     }
 
-    // TODO - make it an interface with multiple implementations.
     @HostAccess.Export
     public byte[] readBytes(String path) {
         try {
@@ -56,7 +55,6 @@ public class PolyglotHostAccess {
 
     @HostAccess.Export
     public byte[] downloadBytes(String url) {
-
         try {
             URLConnection conn = new URL(url).openConnection();
             InputStream is = conn.getInputStream();
@@ -71,11 +69,10 @@ public class PolyglotHostAccess {
 
     @HostAccess.Export
     public void uploadBytes(String url, byte[] bytes) {
-        int    postDataLength = bytes.length;
+        int postDataLength = bytes.length;
         HttpURLConnection conn;
         try {
-            // TODO - in future we should actually post to `url` instead of httpbin.
-            conn = (HttpURLConnection) new URL("https://httpbin.org/anything").openConnection();
+            conn = (HttpURLConnection) new URL(url).openConnection();
             conn.setDoOutput(true);
             conn.setInstanceFollowRedirects(false);
             conn.setRequestMethod("POST");
@@ -104,7 +101,7 @@ public class PolyglotHostAccess {
             bytes = image.writeToArray(VipsImageFormat.PNG, false);
             image.release();
             return bytes;
-        } catch (VipsException e) {
+        } catch (Throwable e) {
             e.printStackTrace();
             return null;
         }

@@ -28,6 +28,10 @@ smask=$(ip r | grep $gateway | awk '{print $1}' | awk -F / '{print $2}')
 mask=$(cidr_to_netmask $smask)
 ip=$(next_ip $gateway)
 
+# Default memory and cpu count.
+MEM=1024
+CPU=1
+
 function pretime {
 	ts=$(date +%s%N)
 }
@@ -68,7 +72,8 @@ function start_niuk {
 		--vmm firecracker \
 		--disk $tmpdir/polyglot-proxy.img \
 		--kernel $RES_HOME/hello-vmlinux.bin \
-		--memory 2048 \
+		--memory $MEM \
+		--cpu $CPU \
 		--ip $ip \
 		--gateway $gateway \
 		--mask $mask \
@@ -78,7 +83,7 @@ function start_niuk {
 }
 
 function start_polyglot_niuk {
-	proxy_args="lambda_timestamp=$(date +%s%N | cut -b1-13) lambda_port=8080 LD_LIBRARY_PATH=/lib:/lib64:/apps:/usr/local/lib"
+	proxy_args="lambda_timestamp=$(date +%s%N | cut -b1-13) lambda_port=8080 LD_LIBRARY_PATH=/lib:/lib64:/apps:/usr/local/lib JAVA_HOME=/jvm"
 	start_niuk
 }
 
