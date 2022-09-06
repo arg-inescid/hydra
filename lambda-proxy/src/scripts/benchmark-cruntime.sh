@@ -7,34 +7,46 @@ function DIR {
 source $(DIR)/test-shared.sh
 source $(DIR)/test-benchmark.sh
 
+if [ "$#" -lt 2 ]; then
+	echo "Syntax: <cr_java_hw|cr_javascript_hw|cr_python_hw> <test|benchmark> [<tests|concurrency> [<cpu> [<memory>]]]"
+	exit 1
+fi
+
+app=$1
+mode=$2
+
+if [ "$#" -ge 3 ]; then
+	workload=$3
+else
+	if [ "$mode" = "test" ]; then
+		workload=10
+	else
+		workload=1
+	fi
+fi
+
+if [ "$#" -ge 4 ]; then
+	CPU=$4
+fi
+
+if [ "$#" -ge 5 ]; then
+	MEM=$5
+fi
+
+echo "Running app=$app; mode=$mode; workload=$workload; cpu=$CPU; mem=$MEM"
+
 function benchmark {
-	for c in 1
-	do
-		echo "Running with $c concurrent isolates..."
-		ab -p $RUN_POST -T application/json -s 30 -c $c -n $((c * 1000))  http://$ip:8080/run &> $tmpdir/ab-$c.log
-		cat $tmpdir/ab-$c.log | grep "Time per request" | grep "(mean)" | awk '{print $4}' >> $tmpdir/ab-latency.dat
-		cat $tmpdir/ab-$c.log | grep Requests | awk '{print $4}'  >> $tmpdir/ab-tput.dat
-		cat $tmpdir/ab-$c.log | grep Concurrency | awk '{print $3}'  >> $tmpdir/ab-concurrency.dat
-		echo "Running with $c concurrent isolates... done!"
-	done
+	ab -p $RUN_POST -T application/json -s 60 -c $workload -n $((workload * 100))  http://$ip:8080/run &> $tmpdir/ab.log
 }
 
 function test {
-	for i in {1..10}
+	for i in $(seq 1 $workload)
 	do
 		pretime
 		curl -s --max-time 60 -X POST $ip:8080/run -H 'Content-Type: application/json' -d @$RUN_POST
 		postime
 	done
 }
-
-if [ "$#" -ne 2 ]; then
-	echo "Syntax: <cr_java_hw|cr_javascript_hw|cr_python_hw> <test|benchmark>"
-	exit 1
-else
-	app=$1
-	mode=$2
-fi
 
 TAP=benchtap
 VMID=benchvm
@@ -54,6 +66,14 @@ sudo $CRUNTIME_HOME/start-vm -ip $ip/$smask -gw $gateway -tap $TAP -id $VMID -im
 # Just let the VM boot...
 sleep 5
 
+# Adding firecracker to cgroup.
+if [ ! -z "$CGROUP" ]
+then
+	PID=$(ps aux | grep firecracker | grep $VMID | awk '{print $2}')
+	echo "Adding $PID to cgroup $CGROUP"
+	echo $PID | sudo tee -a /sys/fs/cgroup/$CGROUP/cgroup.procs
+fi
+
 # Log memory.	
 log_rss $(ps aux | grep firecracker | grep $VMID | awk '{print $2}') $tmpdir/lambda.rss &
 
@@ -71,7 +91,7 @@ sudo bash $MANAGER_HOME/src/scripts/remove_taps.sh $TAP
 wait
 
 # Copy output to app's privde result dir.
-RESULT_DIR=$BENCHMARKS_HOME/results/$APP_LANG/$APP_NAME
+RESULT_DIR=$BENCHMARKS_HOME/results/$APP_LANG/$APP_NAME-$mode-$workload-$CPU-$MEM
 mkdir -p $RESULT_DIR
-cp $tmpdir/lambda.* $tmpdir/app.log $RESULT_DIR
+cp $tmpdir/lambda.* $tmpdir/*.log $RESULT_DIR
 echo "Check logs: $RESULT_DIR/lambda.log"

@@ -29,7 +29,7 @@ mask=$(cidr_to_netmask $smask)
 ip=$(next_ip $gateway)
 
 # Default memory and cpu count.
-MEM=1024
+MEM=2048
 CPU=1
 
 function pretime {
