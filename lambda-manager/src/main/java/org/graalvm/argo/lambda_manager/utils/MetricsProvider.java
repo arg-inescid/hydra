@@ -1,9 +1,5 @@
 package org.graalvm.argo.lambda_manager.utils;
 
-import java.util.Map;
-
-import org.graalvm.argo.lambda_manager.core.Configuration;
-import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.core.Lambda;
 import org.graalvm.argo.lambda_manager.core.LambdaManager;
 
@@ -16,27 +12,27 @@ public class MetricsProvider {
 
     private static Buffer buffer = Buffer.create();
 
-    private static final String FOOTPRINT_METRIC = "lambda_footprint{name=\"%s\"} %.3f %d\n";
-    private static final String LATENCY_METRIC = "request_latency{user=\"%s\",function=\"%s\"} %d %d\n";
+    private static final String LAMBDA_FOOTPRINT = "lambda_footprint{name=\"%s\"} %.3f %d\n";
+    private static final String SYSTEM_FOOTPRINT = "system_footprint %.3f %d\n";
+    private static final String REQUEST_LATENCY_MAX = "request_latency_max %d %d\n";
+    private static final String REQUEST_LATENCY_AVG = "request_latency_avg %.3f %d\n";
 
 
     public static Single<String> getFootprintAndScalability() {
         try {
             long timestamp = System.currentTimeMillis();
-            Map<String, Function> functionsMap = Configuration.storage.getAll();
             StringBuilder responseBuilder = new StringBuilder();
 
+            double totalMemory = 0;
             for (Lambda lambda : LambdaManager.lambdas) {
                 double lambdaMemory = LambdaMemoryUtils.getProcessMemory(lambda);
-                responseBuilder.append(String.format(FOOTPRINT_METRIC, lambda.getLambdaName(), lambdaMemory, timestamp));
+                totalMemory += lambdaMemory;
+                responseBuilder.append(String.format(LAMBDA_FOOTPRINT, lambda.getLambdaName(), lambdaMemory, timestamp));
             }
 
-            for (Map.Entry<String, Function> entry : functionsMap.entrySet()) {
-                Function function = entry.getValue();
-                String username = Configuration.coder.decodeUsername(function.getName());
-                String functionName = Configuration.coder.decodeFunctionName(function.getName());
-                responseBuilder.append(String.format(LATENCY_METRIC, username, functionName, buffer.max(), timestamp));
-            }
+            responseBuilder.append(String.format(SYSTEM_FOOTPRINT, totalMemory, timestamp));
+            responseBuilder.append(String.format(REQUEST_LATENCY_MAX, buffer.max(), timestamp));
+            responseBuilder.append(String.format(REQUEST_LATENCY_AVG, buffer.avg(), timestamp));
             return Single.just(responseBuilder.toString());
         } catch (Throwable t) {
             t.printStackTrace();

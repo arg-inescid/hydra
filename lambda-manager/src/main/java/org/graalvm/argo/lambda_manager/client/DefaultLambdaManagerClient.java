@@ -91,7 +91,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         } else if (lambda.getExecutionMode() == LambdaExecutionMode.CUSTOM) {
             path = "/run";
             if (function.getLanguage() == FunctionLanguage.JAVA) {
-                payload = "{ \"value\" : { \"name\" : \"rbruno!\" } }"; // TODO - receive from arguments
+                payload = "{ \"value\" : " + arguments + " }";
             } else {
                 payload = "{ }"; // TODO - receive from arguments
             }
