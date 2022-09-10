@@ -20,19 +20,19 @@ GV_BENCHMARKS="$GV_BENCHMARKS gv_java_filehashing"        # 256 MB
 CR_BENCHMARKS="$CR_BENCHMARKS cr_java_filehashing"        # 256 MB
 GV_BENCHMARKS="$GV_BENCHMARKS gv_javascript_dynamichtml"  # 256 MB
 CR_BENCHMARKS="$CR_BENCHMARKS cr_javascript_dynamichtml"  # 256 MB
-GV_BENCHMARKS="$GV_BENCHMARKS gv_python_dynamichtml"      # 512 MB
-CR_BENCHMARKS="$CR_BENCHMARKS cr_python_dynamichtml"      # 512 MB
-GV_BENCHMARKS="$GV_BENCHMARKS gv_python_thumbnail"        # 512 MB
-CR_BENCHMARKS="$CR_BENCHMARKS cr_python_thumbnail"        # 512 MB
+GV_BENCHMARKS="$GV_BENCHMARKS gv_python_dynamichtml"      # 256 MB
+CR_BENCHMARKS="$CR_BENCHMARKS cr_python_dynamichtml"      # 256 MB
+GV_BENCHMARKS="$GV_BENCHMARKS gv_python_thumbnail"        # 256 MB
+CR_BENCHMARKS="$CR_BENCHMARKS cr_python_thumbnail"        # 256 MB
 GV_BENCHMARKS="$GV_BENCHMARKS gv_javascript_uploader"     # 256 MB
 CR_BENCHMARKS="$CR_BENCHMARKS cr_javascript_uploader"     # 256 MB
 GV_BENCHMARKS="$GV_BENCHMARKS gv_java_httprequest"        # 256 MB
 CR_BENCHMARKS="$CR_BENCHMARKS cr_java_httprequest"        # 256 MB
 GV_BENCHMARKS="$GV_BENCHMARKS gv_java_videoprocessing"    # 1024 MB, note reduce benchmark to 10*workload
 CR_BENCHMARKS="$CR_BENCHMARKS cr_java_videoprocessing"    # 1024 MB, note reduce benchmark to 10*workload
-GV_BENCHMARKS="$GV_BENCHMARKS gv_python_uploader"         # 512 MB
+GV_BENCHMARKS="$GV_BENCHMARKS gv_python_uploader"         # 256 MB
 CR_BENCHMARKS="$CR_BENCHMARKS cr_python_uploader"         # 256 MB
-GV_BENCHMARKS="$GV_BENCHMARKS gv_python_compression"      # 1024 MB
+GV_BENCHMARKS="$GV_BENCHMARKS gv_python_compression"      # 512 MB
 CR_BENCHMARKS="$CR_BENCHMARKS cr_python_compression"      # 256 MB
 GV_BENCHMARKS="$GV_BENCHMARKS gv_python_videoprocessing"  # 512 MB, note reduce benchmark to 10*workload
 CR_BENCHMARKS="$CR_BENCHMARKS cr_python_videoprocessing"  # 512 MB, note reduce benchmark to 10*workload
@@ -70,10 +70,10 @@ function memory {
         $(DIR)/benchmark-graalvisor.sh niuk gv_javascript_dynamichtml benchmark 8 1 2048
 
         echo "100000 100000" | sudo tee -a /sys/fs/cgroup/$CGROUP/cpu.max # 1 core
-        $(DIR)/benchmark-graalvisor.sh niuk gv_python_dynamichtml benchmark 4 1 2048
+        $(DIR)/benchmark-graalvisor.sh niuk gv_python_dynamichtml benchmark 8 1 2048
 
         echo "100000 100000" | sudo tee -a /sys/fs/cgroup/$CGROUP/cpu.max # 1 core
-        $(DIR)/benchmark-graalvisor.sh niuk gv_python_thumbnail benchmark 4 1 2048
+        $(DIR)/benchmark-graalvisor.sh niuk gv_python_thumbnail benchmark 8 1 2048
 
         echo "100000 100000" | sudo tee -a /sys/fs/cgroup/$CGROUP/cpu.max # 1 core
         $(DIR)/benchmark-graalvisor.sh niuk gv_javascript_uploader benchmark 8 1 2048
@@ -85,10 +85,10 @@ function memory {
         $(DIR)/benchmark-graalvisor.sh niuk gv_java_videoprocessing benchmark 2 1 2048
 
         echo "100000 100000" | sudo tee -a /sys/fs/cgroup/$CGROUP/cpu.max # 1 core
-        $(DIR)/benchmark-graalvisor.sh niuk gv_python_uploader benchmark 4 1 2048
+        $(DIR)/benchmark-graalvisor.sh niuk gv_python_uploader benchmark 8 1 2048
 
         echo "100000 100000" | sudo tee -a /sys/fs/cgroup/$CGROUP/cpu.max # 1 core
-        $(DIR)/benchmark-graalvisor.sh niuk gv_python_compression benchmark 2 1 2048
+        $(DIR)/benchmark-graalvisor.sh niuk gv_python_compression benchmark 4 1 2048
 
         echo "100000 100000" | sudo tee -a /sys/fs/cgroup/$CGROUP/cpu.max # 1 core
         $(DIR)/benchmark-graalvisor.sh niuk gv_python_videoprocessing benchmark 4 1 2048
@@ -114,11 +114,11 @@ function memory {
         echo "12500 100000" | sudo tee -a /sys/fs/cgroup/$CGROUP/cpu.max # .125 cores
         $(DIR)/benchmark-cruntime.sh cr_javascript_dynamichtml benchmark 1 1 256
 
-        echo "25000 100000" | sudo tee -a /sys/fs/cgroup/$CGROUP/cpu.max # .25 cores
-        $(DIR)/benchmark-cruntime.sh cr_python_dynamichtml benchmark 1 1 512
+        echo "12500 100000" | sudo tee -a /sys/fs/cgroup/$CGROUP/cpu.max # .125 cores
+        $(DIR)/benchmark-cruntime.sh cr_python_dynamichtml benchmark 1 1 256
 
-        echo "25000 100000" | sudo tee -a /sys/fs/cgroup/$CGROUP/cpu.max # .25 cores
-        $(DIR)/benchmark-cruntime.sh cr_python_thumbnail benchmark 1 1 512
+        echo "12500 100000" | sudo tee -a /sys/fs/cgroup/$CGROUP/cpu.max # .125 cores
+        $(DIR)/benchmark-cruntime.sh cr_python_thumbnail benchmark 1 1 256
 
         echo "12500 100000" | sudo tee -a /sys/fs/cgroup/$CGROUP/cpu.max # .125 cores
         $(DIR)/benchmark-cruntime.sh cr_javascript_uploader benchmark 1 1 256
@@ -201,11 +201,11 @@ function startup_latency {
     }
 
     startup_latency_gv
-    #startup_latency_cr
+    startup_latency_cr
 }
 
 #cdf_latency_filehashing
 #warm_latency
 #memory
-startup_latency
+#startup_latency
 

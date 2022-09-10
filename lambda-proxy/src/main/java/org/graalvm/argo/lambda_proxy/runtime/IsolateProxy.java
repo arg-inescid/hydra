@@ -5,7 +5,9 @@ import static org.graalvm.argo.lambda_proxy.utils.IsolateUtils.retrieveString;
 import static org.graalvm.argo.lambda_proxy.utils.JsonUtils.json;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -16,12 +18,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.graalvm.argo.lambda_proxy.base.IsolateObjectWrapper;
+import org.graalvm.argo.lambda_proxy.base.PolyglotLanguage;
 import org.graalvm.argo.lambda_proxy.engine.JavaEngine;
 import org.graalvm.argo.lambda_proxy.engine.LanguageEngine;
 import org.graalvm.argo.lambda_proxy.engine.PolyglotEngine;
 import org.graalvm.argo.lambda_proxy.utils.IsolateUtils;
 import org.graalvm.nativeimage.ImageSingletons;
+import org.graalvm.nativeimage.Isolate;
 import org.graalvm.nativeimage.IsolateThread;
+import org.graalvm.nativeimage.Isolates;
 import org.graalvm.nativeimage.ObjectHandle;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
 
@@ -83,11 +88,47 @@ public class IsolateProxy extends RuntimeProxy {
             }
         }
 
+        private IsolateObjectWrapper prepareIsolate() {
+            synchronized (pipeline) {
+                if (! PolyglotEngine.functionTable.get(functionName).getLanguage().equals(PolyglotLanguage.JAVA)) {
+                    if (pipeline.workers.isEmpty()) {
+                        IsolateObjectWrapper worker = languageEngine.createIsolate(functionName);
+                        System.out.println(String.format("[thread %s] New isolate %s", Thread.currentThread().getId(), worker.getIsolate().rawValue()));
+                        pipeline.workers.add(worker);
+                        return worker;
+                    } else {
+                        Isolate isolate = pipeline.workers.get(0).getIsolate();
+                        IsolateThread isolateThread = Isolates.attachCurrentThread(isolate);
+                        System.out.println(String.format("[thread %s] Attached to isolate %s", Thread.currentThread().getId(), isolate.rawValue()));
+                        IsolateObjectWrapper worker = new IsolateObjectWrapper(isolate, isolateThread);
+                        pipeline.workers.add(worker);
+                        return worker;
+                    }
+                } else {
+                    IsolateObjectWrapper worker = languageEngine.createIsolate(functionName);
+                    System.out.println(String.format("[thread %s] New isolate %s", Thread.currentThread().getId(), worker.getIsolate().rawValue()));
+                    pipeline.workers.add(worker);
+                    return worker;
+                }
+            }
+        }
+
+        private void disposeIsolate(IsolateObjectWrapper worker) {
+            synchronized (pipeline) {
+                pipeline.workers.remove(worker);
+                if (pipeline.workers.isEmpty()) {
+                    languageEngine.tearDownIsolate(functionName, worker);
+                    System.out.println(String.format("[thread %s] Destroying isolate %s", Thread.currentThread().getId(), worker.getIsolate().rawValue()));
+                } else {
+                    Isolates.detachThread(worker.getIsolateThread());
+                    System.out.println(String.format("[thread %s] Detaching from isolate %s", Thread.currentThread().getId(), worker.getIsolate().rawValue()));
+                }
+            }
+        }
+
         @Override
         public void run() {
-            // Create isolate.
-            IsolateObjectWrapper isolateObjectWrapper = languageEngine.createIsolate(functionName);
-            System.out.println(String.format("[thread %s] Creating isolate", Thread.currentThread().getId()));
+            IsolateObjectWrapper isolateObjectWrapper = prepareIsolate();
             Request req = null;
             pipeline.freeworkers++;
 
@@ -107,23 +148,24 @@ public class IsolateProxy extends RuntimeProxy {
                 processRequest(isolateObjectWrapper, req);
             }
 
-            // Tear down the isolate.
-            System.out.println(String.format("[thread %s] Destroying isolate", Thread.currentThread().getId()));
-            languageEngine.tearDownIsolate(functionName, isolateObjectWrapper);
+            disposeIsolate(isolateObjectWrapper);
         }
     }
 
     /**
-     * A function pipeline contains a queue used to submit requests for a fuction along with the number of free workers for this function.
+     * A function pipeline contains a queue used to submit requests for a function along with the number of free workers for this function.
      */
     static class FunctionPipeline {
 
         private final BlockingQueue<Request> queue;
 
+        private final List<IsolateObjectWrapper> workers;
+
         private volatile int freeworkers = 0;
 
         public FunctionPipeline() {
-            this.queue = new ArrayBlockingQueue<Request>(16);
+            this.queue = new ArrayBlockingQueue<>(16);
+            this.workers = new ArrayList<>();
         }
     }
 

@@ -5,19 +5,23 @@ import static org.graalvm.argo.lambda_proxy.PolyglotProxy.APP_DIR;
 import java.io.FileNotFoundException;
 import java.util.Locale;
 
+import org.graalvm.polyglot.Engine;
+
 import com.oracle.svm.graalvisor.api.GraalVisorAPI;
 
 public class PolyglotFunction {
-    private String name;
-    private String entryPoint;
-    private PolyglotLanguage language;
-    private String source;
+    private final String name;
+    private final String entryPoint;
+    private final PolyglotLanguage language;
+    private final String source;
     private GraalVisorAPI graalVisorAPI;
+    private Engine engine;
 
     public PolyglotFunction(String name, String entryPoint, String language, String source) {
         this.name = name;
         this.entryPoint = entryPoint;
         this.language = PolyglotLanguage.valueOf(language.toUpperCase(Locale.ROOT));
+        this.source = source;
         if (this.language.equals(PolyglotLanguage.JAVA)) {
             try {
                 this.graalVisorAPI = new GraalVisorAPI(APP_DIR + name);
@@ -26,12 +30,16 @@ public class PolyglotFunction {
                 e.printStackTrace();
             }
         } else {
-            this.source = source;
+            this.engine = Engine.create();
         }
     }
 
     public GraalVisorAPI getGraalVisorAPI() {
         return graalVisorAPI;
+    }
+
+    public Engine getTruffleEngine() {
+        return engine;
     }
 
     public String getName() {

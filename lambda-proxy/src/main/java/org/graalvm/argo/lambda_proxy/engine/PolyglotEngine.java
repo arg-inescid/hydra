@@ -38,12 +38,12 @@ public class PolyglotEngine implements LanguageEngine {
     /**
      *  FunctionTable is used to store registered functions inside default and worker isolates.
      */
-    private static final ConcurrentHashMap<String, PolyglotFunction> functionTable = new ConcurrentHashMap<>();
+    public static final ConcurrentHashMap<String, PolyglotFunction> functionTable = new ConcurrentHashMap<>(); // TODO - rename to FUNCTION_TABLE.
 
     /**
      * Each thread owns it truffle context, where polyglot functions execute.
      */
-    private Context context;
+    private ThreadLocal<Context> context = new ThreadLocal<>();
 
     /**
      * Each context has a corresponding truffle function that should be used for the invocation.
@@ -69,7 +69,7 @@ public class PolyglotEngine implements LanguageEngine {
             return String.format("{'Error': 'Function %s not registered!'}", functionName);
         }
 
-        if (context == null) {
+        if (context.get() == null) {
             Map<String, String> options = new HashMap<>();
             String language = guestFunction.getLanguage().toString();
             String javaHome = System.getenv("JAVA_HOME");
@@ -90,16 +90,17 @@ public class PolyglotEngine implements LanguageEngine {
             }
 
             // Build context.
-            context = Context.newBuilder().allowAllAccess(true).options(options).build();
+            context.set(Context.newBuilder().allowAllAccess(true).engine(guestFunction.getTruffleEngine()).options(options).build());
+            System.out.println(String.format("[thread %s] Creating context %s", Thread.currentThread().getId(), context.get().toString()));
 
             // Host access to implement missing language functionalities.
-            context.getBindings(language).putMember("polyHostAccess", new PolyglotHostAccess());
+            context.get().getBindings(language).putMember("polyHostAccess", new PolyglotHostAccess());
 
             // Evaluate source script to load function into the environment.
-            context.eval(language, guestFunction.getSource());
+            context.get().eval(language, guestFunction.getSource());
 
             // Get function handle from the script.
-            function = context.eval(language, guestFunction.getEntryPoint());
+            function = context.get().eval(language, guestFunction.getEntryPoint());
         }
 
         try {
