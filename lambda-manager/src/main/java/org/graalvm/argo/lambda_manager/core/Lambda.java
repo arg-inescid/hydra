@@ -26,6 +26,9 @@ public class Lambda {
 	/** Number of processed requests since the lambda started. */
 	private int closedRequestCount;
 
+	/** Name of the owner of this lambda. */
+	private final String username;
+
 	private Timer timer;
 	private ConnectionTriplet<String, String, RxHttpClient> connectionTriplet;
 	private LambdaExecutionMode executionMode;
@@ -36,7 +39,7 @@ public class Lambda {
 	/** Memory pool that registers the memory utilized by the lambda. */
 	private final MemoryPool memoryPool;
 
-	// TODO - rething if we should use a function in the constructor.
+	// TODO - rethink if we should use a function in the constructor.
 	public Lambda(Function function) {
 		this.registeredFunctions = new ConcurrentHashMap<>();
 		this.memoryPool = function.getRuntime().equals("graalvisor")
@@ -45,6 +48,7 @@ public class Lambda {
 		if (!function.requiresRegistration()) {
 			this.registeredFunctions.put(function.getName(), function);
 		}
+		this.username = Configuration.coder.decodeUsername(function.getName());
 	}
 
 	public long setLambdaID(long lid) {
@@ -135,7 +139,15 @@ public class Lambda {
 	}
 
 	public boolean canRegisterInLambda(Function function) {
-		return this.executionMode == LambdaExecutionMode.GRAALVISOR ? true : (registeredFunctions.isEmpty() || registeredFunctions.contains(function));
+	    if (executionMode != LambdaExecutionMode.GRAALVISOR) {
+            return (registeredFunctions.isEmpty() || registeredFunctions.contains(function));
+        } else {
+            if (function.isFunctionIsolated()) {
+                return (registeredFunctions.isEmpty() || registeredFunctions.contains(function));
+            } else {
+                return username.equals(Configuration.coder.decodeUsername(function.getName()));
+            }
+        }
 	}
 
 	public void resetRegisteredInLambda(Function function) {
@@ -152,5 +164,9 @@ public class Lambda {
 
 	public MemoryPool getMemoryPool() {
 		return memoryPool;
+	}
+
+	public String getUsername() {
+	    return username;
 	}
 }

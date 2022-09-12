@@ -30,6 +30,9 @@ public class Function {
     /** Function status in the optimization pipeline. */
     private FunctionStatus status;
 
+    /** Flag stating if this function can be co-located with other functions in the same lambda. */
+    private final boolean functionIsolation;
+
     /**
      * There will be only one started Native Image Agent per function, so we need to keep information
      * about PID for that single lambda. We are sending this information to
@@ -38,7 +41,7 @@ public class Function {
      */
     private long lastAgentPID;
 
-    public Function(String name, String language, String entryPoint, String memory, String runtime) throws Exception {
+    public Function(String name, String language, String entryPoint, String memory, String runtime, boolean functionIsolation) throws Exception {
         this.name = name;
         this.language = FunctionLanguage.fromString(language);
         this.entryPoint = entryPoint;
@@ -49,6 +52,7 @@ public class Function {
         } else {
             this.status = FunctionStatus.READY;
         }
+        this.functionIsolation = functionIsolation;
     }
 
     public String getName() {
@@ -113,5 +117,9 @@ public class Function {
         default:
             throw new IllegalStateException("Unexpected value: " + getStatus());
         }
+    }
+
+    public boolean isFunctionIsolated() {
+        return functionIsolation;
     }
 }

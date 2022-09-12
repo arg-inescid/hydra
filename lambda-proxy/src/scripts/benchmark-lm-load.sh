@@ -27,7 +27,7 @@ function process_dataset {
         if [ -z "${setUploadedOwners[$HashOwner]}" ]
         then
             # Upload function for current owner and set as uploaded to prevent uploading it more than once
-            curl -s -X POST $LAMBDA_MANAGER_ADDRESS/upload_function?username=$HashOwner\&function_name=$function_name\&function_language=java\&function_entry_point=$function_entry_point\&function_memory=150\&function_runtime=$function_runtime \
+            curl -s -X POST $LAMBDA_MANAGER_ADDRESS/upload_function?username=$HashOwner\&function_name=$function_name\&function_language=java\&function_entry_point=$function_entry_point\&function_memory=64\&function_runtime=$function_runtime \
                 -H 'Content-Type: application/octet-stream' --data-binary @"$function_code"
             setUploadedOwners["$HashOwner"]=1
         fi
@@ -36,7 +36,7 @@ function process_dataset {
         time_to_sleep=$(python3 -c "print((($Timestamp - $current_timestamp) % 3600000) / 1000)")
         current_timestamp=$Timestamp
         sleep $time_to_sleep
-        curl -s -X POST $LAMBDA_MANAGER_ADDRESS/$HashOwner/$function_name -H 'Content-Type: application/json' --data '{"memory":"'$AverageAllocatedMb'","sleep":"'$AverageDuration'"}' &
+        curl -s -X POST $LAMBDA_MANAGER_ADDRESS/$HashOwner/$function_name -H 'Content-Type: application/json' --data '{"memory":"32000000","sleep":"'$AverageDuration'"}' &
     done
     wait
 

@@ -138,7 +138,7 @@ fi
 args=$@
 
 function run_firecracker {
-    rm $VMM_DISK.sock &> /dev/null
+    rm /tmp/$VMM_TAP_NAME.socket &> /dev/null
 
 
     # Kernel opts example: https://github.com/firecracker-microvm/firecracker-demo/blob/main/start-firecracker.sh
@@ -149,7 +149,7 @@ function run_firecracker {
             --memory=$VMM_MEM \
             --ncpus=$VMM_CPU \
             --tap-device=$VMM_TAP_NAME/$VMM_MAC \
-            --socket-path=$VMM_DISK.socket &
+            --socket-path=/tmp/$VMM_TAP_NAME.socket &
     echo "$!" > lambda.pid
     echo "$VMM_IP" > lambda.ip
     wait

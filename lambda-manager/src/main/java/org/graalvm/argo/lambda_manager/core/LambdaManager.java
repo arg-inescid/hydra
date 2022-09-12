@@ -113,7 +113,8 @@ public class LambdaManager {
                                                 String functionEntryPoint,
                                                 String functionMemory,
                                                 String functionRuntime,
-                                                byte[] functionCode) {
+                                                byte[] functionCode,
+                                                boolean functionIsolation) {
         String responseString;
 
         if (!Configuration.isInitialized()) {
@@ -123,7 +124,7 @@ public class LambdaManager {
 
         try {
             String encodeFunctionName = Configuration.coder.encodeFunctionName(username, functionName);
-            Function function = new Function(encodeFunctionName, functionLanguage, functionEntryPoint, functionMemory, functionRuntime);
+            Function function = new Function(encodeFunctionName, functionLanguage, functionEntryPoint, functionMemory, functionRuntime, functionIsolation);
             Configuration.storage.register(encodeFunctionName, function, functionCode);
             Logger.log(Level.INFO, String.format(Messages.SUCCESS_FUNCTION_UPLOAD, functionName));
             responseString = String.format(Messages.SUCCESS_FUNCTION_UPLOAD, functionName);
