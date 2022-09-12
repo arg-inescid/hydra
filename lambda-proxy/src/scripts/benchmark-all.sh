@@ -45,8 +45,11 @@ function cdf_latency_filehashing {
 }
 
 function warm_latency {
-    for benchmark in $GV_BENCHMARKS; do $(DIR)/benchmark-graalvisor.sh niuk $benchmark test; done
-    for benchmark in $CR_BENCHMARKS; do $(DIR)/benchmark-cruntime.sh        $benchmark test; done
+    export CGROUP="experiments"
+    echo "100000 100000" | sudo tee -a /sys/fs/cgroup/$CGROUP/cpu.max # 1 core
+    for benchmark in $GV_BENCHMARKS; do $(DIR)/benchmark-graalvisor.sh niuk $benchmark test 50 1 2048; done
+    for benchmark in $CR_BENCHMARKS; do $(DIR)/benchmark-cruntime.sh        $benchmark test 50 1 2048; done
+    unset CGROUP
 }
 
 # Memory (fixed HW resources of 1 core and 2GB of memory, measure ops/s/mb)
