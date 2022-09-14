@@ -50,7 +50,7 @@ copy_deps $gvbinary
 copy_deps ~/.cache/Python-Eggs/Pillow-6.2.0-py3.8-linux-x86_64.egg-tmp/PIL/_imaging.graalpython-38-native-x86_64-linux.so
 
 # JVips.jar
-unzip -q -f ../../graalvm-argo-benchmarks/demos/demo-ni-jni/JVips.jar -d /tmp/jvips
+unzip -o -q ../../graalvm-argo-benchmarks/demos/demo-ni-jni/JVips.jar -d /tmp/jvips
 for dep in /tmp/jvips/*.so; do copy_deps $dep; done
 
 # Copy graalvm languages and python's virtual environment.
