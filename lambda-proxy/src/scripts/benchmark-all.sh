@@ -38,6 +38,8 @@ GV_BENCHMARKS="$GV_BENCHMARKS gv_python_videoprocessing"  # 512 MB, note reduce 
 CR_BENCHMARKS="$CR_BENCHMARKS cr_python_videoprocessing"  # 512 MB, note reduce benchmark to 10*workload
 GV_BENCHMARKS="$GV_BENCHMARKS gv_javascript_thumbnail"    # 512 MB
 CR_BENCHMARKS="$CR_BENCHMARKS cr_javascript_thumbnail"    # 512 MB
+GV_BENCHMARKS="$GV_BENCHMARKS gv_java_classify"           # 1024 MB, note reduce benchmark to 50*workload
+CR_BENCHMARKS="$CR_BENCHMARKS cr_java_classify"           # 1024 MB, note reduce benchmark to 50*workload
 
 function cdf_latency_filehashing {
     $(DIR)/benchmark-cruntime.sh        cr_java_filehashing test
@@ -98,6 +100,12 @@ function memory {
 
         echo "100000 100000" | sudo tee -a /sys/fs/cgroup/$CGROUP/cpu.max # 1 core
         $(DIR)/benchmark-graalvisor.sh niuk gv_javascript_thumbnail benchmark 4 1 2048
+
+        echo "100000 100000" | sudo tee -a /sys/fs/cgroup/$CGROUP/cpu.max # 1 core
+        # Note: there is a bug in gv, it can't run 2 parallel calls to classify.
+        # Since the workload is throughput intensive, having a second one would keep the same throughput so it is fine...
+        $(DIR)/benchmark-graalvisor.sh niuk gv_java_classify benchmark 1 1 2048
+
     }
 
     # Run custom runtime with 1 to 8 concurrent requests
@@ -143,6 +151,9 @@ function memory {
 
         echo "25000 100000" | sudo tee -a /sys/fs/cgroup/$CGROUP/cpu.max # .25 cores
         $(DIR)/benchmark-cruntime.sh cr_javascript_thumbnail benchmark 1 1 512
+
+        echo "50000 100000" | sudo tee -a /sys/fs/cgroup/$CGROUP/cpu.max # 1 cores
+        $(DIR)/benchmark-cruntime.sh cr_java_classify benchmark 1 1 1024
     }
 
     export CGROUP="experiments"
@@ -209,6 +220,6 @@ function startup_latency {
 
 #cdf_latency_filehashing
 #warm_latency
-#memory
+memory
 #startup_latency
 
