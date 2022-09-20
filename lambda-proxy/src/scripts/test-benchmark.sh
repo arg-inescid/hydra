@@ -248,6 +248,24 @@ function cr_python_compression {
 	echo '{ "value": { "url": "http://'$IP':8000/video.mp4" } }' > $RUN_POST
 }
 
+function gv_python_mst {
+	APP_LANG=python
+	APP_NAME=gv-mst
+	APP_MAIN=main
+	APP_SCRIPT=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/main.py
+	curl -s -X POST $ip:8080/register?name=mst\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SCRIPT
+	echo '{"name":"mst","async":"false","arguments":"100"}' > $APP_POST
+}
+
+function cr_python_mst {
+	IMG=docker.io/openwhisk/action-python-v3.9:latest
+	APP_LANG=python
+	APP_NAME=cr-mst
+	INIT_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/init.json
+	RUN_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/run.json
+	echo '{ "value": { "size": "100" } }' > $RUN_POST
+}
+
 function gv_javascript_dynamichtml {
 	APP_LANG=javascript
 	APP_NAME=gv-dynamic-html

@@ -17,3 +17,5 @@ graalpython -m ginstall list
 graalpython -m ginstall install numpy
 graalpython -m ginstall install Pillow
 graalpython -m ginstall install requests
+graalpython -m ginstall pypi texttable
+graalpython -m ginstall pypi igraph
