@@ -81,7 +81,8 @@ sleep 1
 # Adding firecracker to cgroup.
 if [ ! -z "$CGROUP" ]
 then
-	PID=$(ps aux | grep firecracker | grep polyglot-proxy.img.socket | awk '{print $2}')
+        # This is a workaround to identify the PID of the firecracker vm.
+	PID=$(ps aux | grep firecracker | grep testtap.socket | awk '{print $2}')
 	echo "Adding $PID to cgroup $CGROUP"
 	echo $PID | sudo tee -a /sys/fs/cgroup/$CGROUP/cgroup.procs
 fi

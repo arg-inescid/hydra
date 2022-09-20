@@ -212,6 +212,24 @@ function cr_python_videoprocessing {
 	echo '{ "value": { "ffmpeg_url": "http://'$IP':8000/ffmpeg", "video_url": "http://'$IP':8000/video.mp4" } }' > $RUN_POST
 }
 
+function gv_java_classify {
+	APP_LANG=java
+	APP_NAME=gv-classify
+	APP_MAIN=com.classify.Classify
+	APP_SO=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/build/libclassify.so
+	curl -s -X POST $ip:8080/register?name=classify\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SO
+	echo '{"name":"classify","async":"false","arguments":"{\"model_url\":\"http://'$IP':8000/tensorflow_inception_graph.pb\",\"labels_url\":\"http://'$IP':8000/imagenet_comp_graph_label_strings.txt\",\"image_url\":\"http://'$IP':8000/eagle.jpg\"}"}' > $APP_POST
+}
+
+function cr_java_classify {
+	IMG=docker.io/openwhisk/java8action:latest
+	APP_LANG=java
+	APP_NAME=cr-classify
+	INIT_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/init.json
+	RUN_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/run.json
+	echo '{ "value": { "model_url": "http://'$IP':8000/tensorflow_inception_graph.pb", "labels_url": "http://'$IP':8000/imagenet_comp_graph_label_strings.txt", "image_url": "http://'$IP':8000/eagle.jpg" } }' > $RUN_POST
+}
+
 function gv_python_compression {
 	APP_LANG=python
 	APP_NAME=gv-compression
