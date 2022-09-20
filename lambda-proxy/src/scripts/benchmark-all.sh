@@ -40,6 +40,9 @@ GV_BENCHMARKS="$GV_BENCHMARKS gv_javascript_thumbnail"    # 512 MB
 CR_BENCHMARKS="$CR_BENCHMARKS cr_javascript_thumbnail"    # 512 MB
 GV_BENCHMARKS="$GV_BENCHMARKS gv_java_classify"           # 1024 MB, note reduce benchmark to 50*workload
 CR_BENCHMARKS="$CR_BENCHMARKS cr_java_classify"           # 1024 MB, note reduce benchmark to 50*workload
+GV_BENCHMARKS="$GV_BENCHMARKS gv_python_mst"              # 512 MB
+CR_BENCHMARKS="$CR_BENCHMARKS cr_python_mst"              # 512 MB
+
 
 function cdf_latency_filehashing {
     $(DIR)/benchmark-cruntime.sh        cr_java_filehashing test
@@ -49,8 +52,8 @@ function cdf_latency_filehashing {
 function warm_latency {
     export CGROUP="experiments"
     echo "100000 100000" | sudo tee -a /sys/fs/cgroup/$CGROUP/cpu.max # 1 core
-    for benchmark in $GV_BENCHMARKS; do $(DIR)/benchmark-graalvisor.sh niuk $benchmark test 50 1 2048; done
-    for benchmark in $CR_BENCHMARKS; do $(DIR)/benchmark-cruntime.sh        $benchmark test 50 1 2048; done
+    for benchmark in $GV_BENCHMARKS; do $(DIR)/benchmark-graalvisor.sh niuk $benchmark test 100 1 2048; done
+    for benchmark in $CR_BENCHMARKS; do $(DIR)/benchmark-cruntime.sh        $benchmark test 100 1 2048; done
     unset CGROUP
 }
 
@@ -106,6 +109,8 @@ function memory {
         # Since the workload is throughput intensive, having a second one would keep the same throughput so it is fine...
         $(DIR)/benchmark-graalvisor.sh niuk gv_java_classify benchmark 1 1 2048
 
+        echo "100000 100000" | sudo tee -a /sys/fs/cgroup/$CGROUP/cpu.max # 1 core
+        $(DIR)/benchmark-graalvisor.sh niuk gv_python_mst benchmark 4 1 2048
     }
 
     # Run custom runtime with 1 to 8 concurrent requests
@@ -154,6 +159,9 @@ function memory {
 
         echo "50000 100000" | sudo tee -a /sys/fs/cgroup/$CGROUP/cpu.max # 1 cores
         $(DIR)/benchmark-cruntime.sh cr_java_classify benchmark 1 1 1024
+
+        echo "25000 100000" | sudo tee -a /sys/fs/cgroup/$CGROUP/cpu.max # .25 cores
+        $(DIR)/benchmark-cruntime.sh cr_python_mst benchmark 1 1 512
     }
 
     export CGROUP="experiments"
