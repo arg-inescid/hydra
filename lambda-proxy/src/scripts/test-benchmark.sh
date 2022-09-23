@@ -71,6 +71,7 @@ function cr_python_thumbnail {
 	RUN_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/run.json
 	echo '{ "value": { "url": "http://'$IP':8000/snap.png" } }' > $RUN_POST
 }
+
 function gv_javascript_thumbnail {
 	APP_LANG=javascript
 	APP_NAME=gv-thumbnail
@@ -337,6 +338,15 @@ function cr_javascript_uploader {
 	INIT_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/init.json
 	RUN_POST=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/run.json
 	echo '{ "value": { "url": "http://'$IP':8000/snap.png" } }' > $RUN_POST
+}
+
+function gv_python_warble {
+	APP_LANG=python
+	APP_NAME=gv-warble
+	APP_MAIN=main
+	APP_SCRIPT=$BENCHMARKS_HOME/src/$APP_LANG/$APP_NAME/main.py
+	curl -s -X POST $ip:8080/register?name=warble\&entryPoint=$APP_MAIN\&language=$APP_LANG -H 'Content-Type: application/json' --data-binary @$APP_SCRIPT
+	echo $'{"name":"warble","async":"false","arguments":"[\'-v\',\'{PRINT(\\"test\\")}\']"}' > $APP_POST
 }
 
 # Old, Jar-based benchmarks.

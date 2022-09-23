@@ -157,6 +157,7 @@ public class RoundedRobinScheduler implements Scheduler {
                 // This sync block protects from concurrent requests trying to allocate one lambda at the same time.
                 synchronized (LambdaManager.lambdas) {
                     // Check if there are lambdas already starting with the execution mode.
+                    // TODO: throttle lambda creation properly.
                     if (LambdaManager.startingLambdas.get(targetMode).isEmpty()) {
                         // Acquire memory for a new lambda.
                         if (Configuration.argumentStorage.getMemoryPool().allocateMemoryLambda(function.getMemory())) {
