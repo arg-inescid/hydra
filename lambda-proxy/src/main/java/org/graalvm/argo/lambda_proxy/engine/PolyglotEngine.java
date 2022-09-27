@@ -93,9 +93,6 @@ public class PolyglotEngine implements LanguageEngine {
             context.set(Context.newBuilder().allowAllAccess(true).engine(guestFunction.getTruffleEngine()).options(options).build());
             System.out.println(String.format("[thread %s] Creating context %s", Thread.currentThread().getId(), context.get().toString()));
 
-            // Host access to implement missing language functionalities.
-            context.get().getBindings(language).putMember("polyHostAccess", new PolyglotHostAccess());
-
             // Evaluate source script to load function into the environment.
             context.get().eval(language, guestFunction.getSource());
 

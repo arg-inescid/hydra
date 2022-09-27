@@ -46,19 +46,9 @@ cp /lib64/ld-linux-x86-64.so.2 $DISK/lib64/ld-linux-x86-64.so.2
 # Copy necessary libraries (check with ldd ../lambda-proxy/build/native-image/polyglot-proxy).
 copy_deps $gvbinary
 
-# Copy Tensorflow dependencies.
-copy_deps ../../graalvm-argo-benchmarks/src/java/gv-classify/build/libclassify.so
-
-# Graalpython's Pillow package.
-copy_deps ~/.cache/Python-Eggs/Pillow-6.2.0-py3.8-linux-x86_64.egg-tmp/PIL/_imaging.graalpython-38-native-x86_64-linux.so
-
-# JVips.jar
-unzip -o -q ../../graalvm-argo-benchmarks/demos/demo-ni-jni/JVips.jar -d /tmp/jvips
-for dep in /tmp/jvips/*.so; do copy_deps $dep; done
-
 # Copy graalvm languages and python's virtual environment.
 mkdir -p $DISK/jvm/languages
-cp -r $ghome/languages/{python,js,llvm} $DISK/jvm/languages
+cp -r $ghome/languages/{python,llvm} $DISK/jvm/languages
 cp -r $ghome/graalvisor-python-venv $DISK/jvm
 
 # Copy graalvisor and init.

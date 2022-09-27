@@ -11,7 +11,6 @@ NC='\033[0m' # No Color
 FLAG=$1
 
 LANGS=""
-LANGS="$LANGS --language:js"
 LANGS="$LANGS --language:python"
 
 function build_ni {
@@ -28,7 +27,7 @@ function build_ni {
         org.graalvm.argo.lambda_proxy.PolyglotProxy \
         polyglot-proxy \
         -H:+ReportExceptionStackTraces \
-        -H:ConfigurationFileDirectories=$PROXY_HOME/ni-agent-config/native-image,$PROXY_HOME/ni-agent-config/native-image-jvips
+        -H:ConfigurationFileDirectories=$PROXY_HOME/ni-agent-config/native-image
 }
 
 function build_niuk {
