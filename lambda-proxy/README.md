@@ -10,7 +10,7 @@ In general, Lambda-proxy works as a HTTP server that handles function invocation
 
 The following is the architecture diagram of the different versions of Lambda proxy being deployed:
 
-![](ProxyArchitecture.svg "Lambda-proxy Architecture")
+![](docs/ProxyArchitecture.svg "Lambda-proxy Architecture")
 
 ---
 
