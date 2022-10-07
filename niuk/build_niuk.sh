@@ -43,7 +43,7 @@ mkdir -p $DISK/usr/lib/x86_64-linux-gnu
 # Copy the dynamic linker.
 cp /lib64/ld-linux-x86-64.so.2 $DISK/lib64/ld-linux-x86-64.so.2
 
-# Copy necessary libraries (check with ldd ../lambda-proxy/build/native-image/polyglot-proxy).
+# Copy necessary libraries (check with ldd ../graalvisor/build/native-image/polyglot-proxy).
 copy_deps $gvbinary
 
 # Copy Tensorflow dependencies.

@@ -24,7 +24,7 @@
           "function_entry_point": "main",
           "function_memory": "512",
           "function_runtime": "docker.io/openwhisk/action-nodejs-v12:latest",
-          "source": "../../../../lambda-proxy/src/scripts/test-cruntime-nodejs/init.json"
+          "source": "../../../../graalvisor/src/scripts/test-cruntime-nodejs/init.json"
         },
         {
           "command": "send",
