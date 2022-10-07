@@ -10,10 +10,6 @@ GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 FLAG=$1
 
-LANGS=""
-LANGS="$LANGS --language:js"
-LANGS="$LANGS --language:python"
-
 function build_ni {
     mkdir -p $GRAALVISOR_HOME &> /dev/null
     cd $GRAALVISOR_HOME
@@ -39,6 +35,23 @@ cd "$DIR" || {
   echo "Redirection failed!"
   exit 1
 }
+
+LANGS=""
+read -p "Javascript support (y or Y, everything else as no)? " -n 1 -r
+echo    # move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    LANGS="$LANGS --language:js"
+    echo "JavaScript support added!"
+fi
+
+read -p "Python support (y or Y, everything else as no)? " -n 1 -r
+echo    # move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    LANGS="$LANGS --language:python"
+    echo "Python support added!"
+fi
 
 echo -e "${GREEN}Building lambda proxy Jar...${NC}"
 ./gradlew clean shadowJar javaProxy
