@@ -15,27 +15,27 @@
       "commands": [
         {
           "command": "remove",
-          "function_name": "hello-world"
+          "function_name": "hello-world-py"
         },
         {
           "command": "upload",
-          "allocate": 3,
-          "function_name": "hello-world",
+          "function_name": "hello-world-py",
           "function_language": "python",
           "function_entry_point": "main",
           "function_memory": "512",
-          "source": "../../../../../../benchmarks/language/python/hello-world/main.py"
+          "function_runtime": "graalvisor",
+          "source": "../../../../../../graalvm-argo-benchmarks/src/python/gv-hello-world/hello-world.py"
         },
         {
           "command": "send",
           "sending_info": [
             {
-              "iterations": 1000,
+              "iterations": 1,
               "num_requests": 100,
-              "num_clients": 100,
-              "function_name": "hello-world",
+              "num_clients": 1,
+              "function_name": "hello-world-py",
               "parameters": {},
-              "output": "../../../../../../benchmarks/results/python/hello-world/hello-world-1.dat"
+              "output": "../../../../../../graalvm-argo-benchmarks/results/python/gv-hello-world/hello-world.dat"
             }
           ]
         }
