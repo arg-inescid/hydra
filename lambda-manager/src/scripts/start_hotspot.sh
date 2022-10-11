@@ -19,7 +19,7 @@ if [ ! -f "$PROXY_JAR" ]; then
 fi
 
 cp "$PROXY_JAR" "$FUNCTION_CODE" "$LAMBDA_HOME"/shared
-echo "\$JAVA_HOME/bin/java -cp lambda-proxy-1.0-java.jar:$FUNCTION_NAME org.graalvm.argo.lambda_proxy.JavaProxy" >"$LAMBDA_HOME"/shared/run.sh
+echo "\$JAVA_HOME/bin/java -cp graalvisor-1.0-java.jar:$FUNCTION_NAME org.graalvm.argo.lambda_proxy.JavaProxy" >"$LAMBDA_HOME"/shared/run.sh
 
 "$LAMBDA_HOME"/debian_vm_unikernel.sh --memory "$LAMBDA_MEMORY" --gateway "$LAMBDA_GATEWAY" --ip "$LAMBDA_IP" \
   --mask "$LAMBDA_MASK" --kernel "$KERNEL_PATH" --img "$LAMBDA_HOME"/stretch.img --shared "$LAMBDA_HOME"/shared \

@@ -24,7 +24,7 @@
           "function_entry_point": "main",
           "function_memory": "512",
           "function_runtime": "docker.io/openwhisk/action-nodejs-v12:latest",
-          "source": "../../../../lambda-proxy/src/scripts/test-cruntime-nodejs/init.json"
+          "source": "../../../../../graalvm-argo-benchmarks/src/javascript/cr-hello-world/init.json"
         },
         {
           "command": "send",
@@ -35,7 +35,7 @@
               "num_clients": 1,
               "function_name": "hw-nodejs-cruntime",
               "parameters": {},
-              "output": "../../../../../benchmarks/results/javascript/hello-world/hello-world-1.dat"
+              "output": "../../../../../graalvm-argo-benchmarks/results/javascript/cr-hello-world/hello-world.dat"
             }
           ]
         }

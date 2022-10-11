@@ -17,7 +17,7 @@ SETUP_DB_VM_LOC = os.path.join(LAMBDA_MANAGER_DIR, "src", "scripts", "qemu-jvm")
 SETUP_DB_VM_FILE = "setup_debian_vm.sh"
 
 # Proxy global variables.
-PROXY_DIR = os.path.join(LAMBDA_MANAGER_DIR, "..", "lambda-proxy")
+PROXY_DIR = os.path.join(LAMBDA_MANAGER_DIR, "..", "graalvisor")
 
 # Cluster manage global variables.
 CLUSTER_MANAGER_DIR = os.path.join(LAMBDA_MANAGER_DIR, "..", "cluster-manager")

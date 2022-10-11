@@ -24,7 +24,7 @@
           "function_entry_point": "main",
           "function_memory": "512",
           "function_runtime": "docker.io/openwhisk/action-python-v3.9:latest",
-          "source": "../../../../lambda-proxy/src/scripts/test-cruntime-python/init.json"
+          "source": "../../../../../graalvm-argo-benchmarks/src/python/cr-hello-world/init.json"
         },
         {
           "command": "send",
@@ -35,7 +35,7 @@
               "num_clients": 1,
               "function_name": "hw-python-cruntime",
               "parameters": {},
-              "output": "../../../../../benchmarks/results/python/hello-world/hello-world-1.dat"
+              "output": "../../../../../graalvm-argo-benchmarks/results/python/cr-hello-world/hello-world.dat"
             }
           ]
         }

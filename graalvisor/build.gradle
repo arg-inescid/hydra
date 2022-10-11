@@ -11,10 +11,10 @@ plugins {
 
 group = 'org.graalvm.argo.lambda_proxy'
 version = '1.0'
-description = 'lambda-proxy'
+description = 'graalvisor'
 
 shadowJar {
-    archiveFileName = "lambda-proxy-1.0-all.jar"
+    archiveFileName = "graalvisor-1.0-all.jar"
 }
 
 
