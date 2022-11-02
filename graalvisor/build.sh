@@ -8,7 +8,6 @@ DIR=$OLD_DIR
 
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
-FLAG=$1
 
 function build_ni {
     mkdir -p $GRAALVISOR_HOME &> /dev/null
@@ -61,6 +60,11 @@ echo -e "${GREEN}Building lambda proxy Native Image...${NC}"
 build_ni
 echo -e "${GREEN}Building lambda proxy Native Image... done!${NC}"
 
-echo -e "${GREEN}Building lambda proxy Native Image Unikernel...${NC}"
-build_niuk
-echo -e "${GREEN}Building lambda proxy Native Image Unikernel... done!${NC}"
+read -p "Build NIUk (y or Y, everything else as no)? " -n 1 -r
+echo    # move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    echo -e "${GREEN}Building lambda proxy Native Image Unikernel...${NC}"
+    build_niuk
+    echo -e "${GREEN}Building lambda proxy Native Image Unikernel... done!${NC}"
+fi
