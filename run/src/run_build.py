@@ -2,7 +2,7 @@
 import os.path
 import sys
 
-from run_globals import LAMBDA_MANAGER_DIR, PROXY_DIR, BUILD_SCRIPT, CLUSTER_MANAGER_DIR, LOAD_BALANCER_DIR
+from run_globals import LAMBDA_MANAGER_DIR, PROXY_DIR, GRAALVISOR_LIB_DIR, BUILD_SCRIPT, CLUSTER_MANAGER_DIR, LOAD_BALANCER_DIR
 from run_utils import print_message, MessageType
 
 
@@ -16,16 +16,9 @@ def build_load_balancer():
 
 def build_lambda_proxy():
     print_message("Building lambda proxy...", MessageType.INFO)
-    os.system("bash {lambda_proxy_build_script} --java".format(
+    os.system("bash {lambda_proxy_build_script}".format(
         lambda_proxy_build_script=os.path.join(PROXY_DIR, BUILD_SCRIPT)))
     print_message("Building lambda proxy...done", MessageType.INFO)
-
-
-def build_polyglot_proxy():
-    print_message("Building polyglot lambda proxy...", MessageType.INFO)
-    os.system("bash {lambda_proxy_build_script} --polyglot".format(
-        lambda_proxy_build_script=os.path.join(PROXY_DIR, BUILD_SCRIPT)))
-    print_message("Building polyglot lambda proxy...done", MessageType.INFO)
 
 
 def build_cluster_manager():
@@ -42,19 +35,26 @@ def build_lambda_manager():
     print_message("Building lambda manager...done", MessageType.INFO)
 
 
+def build_graalvisor_library():
+    print_message("Building graalvisor library...", MessageType.INFO)
+    os.system("bash {graalvisor_library_build_script}".format(
+        graalvisor_library_build_script=os.path.join(GRAALVISOR_LIB_DIR, BUILD_SCRIPT)))
+    print_message("Building graalvisor library...done", MessageType.INFO)
+
+
 def do(filter_list):
     filter_list_empty = len(filter_list) == 0
     filter_set = set(filter_list.split(","))
     if "lb" in filter_set or filter_list_empty:
         build_load_balancer()
-    if "lp" in filter_set or "lp-java" in filter_set or filter_list_empty:
+    if "lp" in filter_set or filter_list_empty:
         build_lambda_proxy()
-    if "lp" in filter_set or "lp-polyglot" in filter_set or filter_list_empty:
-        build_polyglot_proxy()
     if "cm" in filter_set or filter_list_empty:
         build_cluster_manager()
     if "lm" in filter_set or filter_list_empty:
         build_lambda_manager()
+    if "gv-lib" in filter_set or filter_list_empty:
+        build_graalvisor_library()
 
 
 # Main function.

@@ -19,6 +19,9 @@ SETUP_DB_VM_FILE = "setup_debian_vm.sh"
 # Proxy global variables.
 PROXY_DIR = os.path.join(LAMBDA_MANAGER_DIR, "..", "graalvisor")
 
+# GraalVisor library global variables.
+GRAALVISOR_LIB_DIR = os.path.join(LAMBDA_MANAGER_DIR, "..", "graalvisor-lib")
+
 # Cluster manage global variables.
 CLUSTER_MANAGER_DIR = os.path.join(LAMBDA_MANAGER_DIR, "..", "cluster-manager")
 
