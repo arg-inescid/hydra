@@ -52,4 +52,5 @@ dependencies {
     // benchmark support
     implementation(files(System.getenv('BENCHMARKS_HOME') + '/src/javascript/gv-thumbnail/jvips/JVips.jar'))
     implementation 'com.github.spullara.mustache.java:compiler:0.9.10'
+    implementation group: 'org.postgresql', name: 'postgresql', version: '42.5.0'
 }

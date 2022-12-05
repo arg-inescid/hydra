@@ -45,6 +45,21 @@ public class GraalVisor {
         int invoke(GraalVisorIsolateThread hostThread, int fd, CCharPointer buffer, int bufferLen, int readOffset);
     }
 
+    public interface HostOpenDBConnectionFunctionPointer extends CFunctionPointer {
+        @InvokeCFunctionPointer
+        int invoke(GraalVisorIsolateThread hostThread, CCharPointer connectionUrl, CCharPointer user, CCharPointer password);
+    }
+
+    public interface HostExecuteDBQueryFunctionPointer extends CFunctionPointer {
+        @InvokeCFunctionPointer
+        int invoke(GraalVisorIsolateThread hostThread, int connectionId, CCharPointer query, CCharPointer buffer, int bufferLen);
+    }
+
+    public interface HostCloseDBConnectionFunctionPointer extends CFunctionPointer {
+        @InvokeCFunctionPointer
+        int invoke(GraalVisorIsolateThread hostThread, int connectionId);
+    }
+
     @CStruct("graal_visor_t")
     public interface GraalVisorStruct extends PointerBase {
 
@@ -85,6 +100,23 @@ public class GraalVisor {
         @CField("f_host_read_bytes")
         void setHostReadBytesFunction(HostReadBytesFunctionPointer hostReadBytesFunctionPointer);
 
+        @CField("f_host_open_db_connection")
+        HostOpenDBConnectionFunctionPointer getHostOpenDBConnectionFunction();
+
+        @CField("f_host_open_db_connection")
+        void setHostOpenDBConnectionFunction(HostOpenDBConnectionFunctionPointer hostOpenDBConnectionFunctionPointer);
+
+        @CField("f_host_execute_db_query")
+        HostExecuteDBQueryFunctionPointer getHostExecuteDBQueryFunction();
+
+        @CField("f_host_execute_db_query")
+        void setHostExecuteDBQueryFunction(HostExecuteDBQueryFunctionPointer hostExecuteDBQueryFunctionPointer);
+
+        @CField("f_host_close_db_connection")
+        HostCloseDBConnectionFunctionPointer getHostCloseDBConnectionFunction();
+
+        @CField("f_host_close_db_connection")
+        void setHostCloseDBConnectionFunction(HostCloseDBConnectionFunctionPointer hostCloseDBConnectionFunctionPointer);
     }
 
     static class GraalVisorAPIDirectives implements CContext.Directives {

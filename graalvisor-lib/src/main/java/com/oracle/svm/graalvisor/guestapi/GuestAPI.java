@@ -212,4 +212,23 @@ public class GuestAPI {
         }
     }
 
+    public static int openDBConnection(String connectionUrl, String user, String password) {
+        try (CTypeConversion.CCharPointerHolder connectionUrlHolder = CTypeConversion.toCString(connectionUrl);
+                CTypeConversion.CCharPointerHolder userHolder = CTypeConversion.toCString(user);
+                CTypeConversion.CCharPointerHolder passwordHolder = CTypeConversion.toCString(password)) {
+            return graalVisorStructHost.getHostOpenDBConnectionFunction().invoke(hostIsolateThread, connectionUrlHolder.get(), userHolder.get(), passwordHolder.get());
+        }
+    }
+
+    public static int executeDBQuery(int connectionId, String query, byte[] buffer, int bufferLen) {
+        try (CTypeConversion.CCharPointerHolder queryHolder = CTypeConversion.toCString(query);
+                PinnedObject buf = PinnedObject.create(buffer)) {
+            return graalVisorStructHost.getHostExecuteDBQueryFunction().invoke(hostIsolateThread, connectionId, queryHolder.get(), buf.addressOfArrayElement(0), bufferLen);
+        }
+    }
+
+    public static int closeDBConnection(int connectionId) {
+        return graalVisorStructHost.getHostCloseDBConnectionFunction().invoke(hostIsolateThread, connectionId);
+    }
+
 }
