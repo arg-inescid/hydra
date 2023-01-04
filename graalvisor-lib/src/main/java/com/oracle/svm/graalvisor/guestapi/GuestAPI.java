@@ -78,7 +78,15 @@ public class GuestAPI {
         }
         try {
             if (method != null) {
-                return json.asString(method.invoke(null, new Object[]{input}));
+                Object resultObject;
+                try {
+                    resultObject = method.invoke(null, new Object[]{input});
+                } catch (Throwable t) {
+                    Throwable cause = t.getCause() != null ? t.getCause() : t;
+                    resultObject = "Exception in user function: " + cause.getClass().getCanonicalName() + ": " + cause.getMessage();
+                    cause.printStackTrace();
+                }
+                return json.asString(resultObject);
             }
         } catch (IOException e) {
             e.printStackTrace();
