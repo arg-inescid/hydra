@@ -1,6 +1,5 @@
 package org.graalvm.argo.graalvisor;
 
-import static org.graalvm.argo.graalvisor.Proxy.runInIsolate;
 import static org.graalvm.argo.graalvisor.utils.IsolateUtils.retrieveString;
 import static org.graalvm.argo.graalvisor.utils.JsonUtils.json;
 
@@ -19,11 +18,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.graalvm.argo.graalvisor.base.IsolateObjectWrapper;
 import org.graalvm.argo.graalvisor.base.PolyglotLanguage;
-import org.graalvm.argo.graalvisor.engine.JavaEngine;
 import org.graalvm.argo.graalvisor.engine.LanguageEngine;
 import org.graalvm.argo.graalvisor.engine.PolyglotEngine;
 import org.graalvm.argo.graalvisor.utils.IsolateUtils;
-import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.Isolate;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.Isolates;
@@ -173,12 +170,6 @@ public class SubstrateVMProxy extends RuntimeProxy {
      * A map of queues is used to send requests into worker threads.
      */
     private static ConcurrentMap<String, FunctionPipeline> queues = new ConcurrentHashMap<>();
-
-    static {
-        if (runInIsolate) {
-            RuntimeProxy.languageEngine = ImageSingletons.contains(JavaEngine.class) ? ImageSingletons.lookup(JavaEngine.class) : ImageSingletons.lookup(PolyglotEngine.class);
-        }
-    }
 
     public SubstrateVMProxy(int port, LanguageEngine engine, boolean concurrent) throws IOException {
         super(port, engine, concurrent);
