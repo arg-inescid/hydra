@@ -10,8 +10,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Map;
 
+import org.graalvm.argo.lambda_proxy.SubstrateVMProxy;
 import org.graalvm.argo.lambda_proxy.base.IsolateObjectWrapper;
-import org.graalvm.argo.lambda_proxy.runtime.IsolateProxy;
 import org.graalvm.nativeimage.CurrentIsolate;
 import org.graalvm.nativeimage.Isolate;
 import org.graalvm.nativeimage.IsolateThread;
@@ -45,7 +45,7 @@ public class JavaEngine implements LanguageEngine {
     @Override
     public String invoke(IsolateObjectWrapper workingIsolate, String functionName, String jsonArguments) throws Exception {
         IsolateThread workingThread = workingIsolate.getIsolateThread();
-        return retrieveString(IsolateProxy.invoke(workingThread,
+        return retrieveString(SubstrateVMProxy.invoke(workingThread,
                         CurrentIsolate.getCurrentThread(),
                         copyString(workingThread, functionName),
                         copyString(workingThread, jsonArguments)));

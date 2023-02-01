@@ -1,4 +1,4 @@
-package org.graalvm.argo.lambda_proxy.runtime;
+package org.graalvm.argo.lambda_proxy;
 
 import static org.graalvm.argo.lambda_proxy.Proxy.runInIsolate;
 import static org.graalvm.argo.lambda_proxy.utils.IsolateUtils.retrieveString;
@@ -33,7 +33,7 @@ import org.graalvm.nativeimage.c.function.CEntryPoint;
 /**
  * A runtime proxy that runs requests in isolates.
  */
-public class IsolateProxy extends RuntimeProxy {
+public class SubstrateVMProxy extends RuntimeProxy {
 
     /**
      * A Request object is used as a communication packet between a foreground thread and a background thread.
@@ -180,7 +180,7 @@ public class IsolateProxy extends RuntimeProxy {
         }
     }
 
-    public IsolateProxy(int port, LanguageEngine engine, boolean concurrent) throws IOException {
+    public SubstrateVMProxy(int port, LanguageEngine engine, boolean concurrent) throws IOException {
         super(port, engine, concurrent);
     }
 
@@ -191,7 +191,7 @@ public class IsolateProxy extends RuntimeProxy {
         // Resolve and delete the argumentsHandle and functionHandle, deserialize request json
         String functionName = retrieveString(functionHandle);
         String argumentString = retrieveString(argumentHandle);
-        String resultString = IsolateProxy.languageEngine.invoke(functionName, argumentString);
+        String resultString = SubstrateVMProxy.languageEngine.invoke(functionName, argumentString);
         return IsolateUtils.copyString(defaultContext, resultString);
     }
 

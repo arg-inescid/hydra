@@ -16,10 +16,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.graalvm.argo.lambda_proxy.SubstrateVMProxy;
 import org.graalvm.argo.lambda_proxy.base.IsolateObjectWrapper;
 import org.graalvm.argo.lambda_proxy.base.PolyglotFunction;
 import org.graalvm.argo.lambda_proxy.base.PolyglotLanguage;
-import org.graalvm.argo.lambda_proxy.runtime.IsolateProxy;
 import org.graalvm.nativeimage.*;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
 import org.graalvm.polyglot.Context;
@@ -128,7 +128,7 @@ public class PolyglotEngine implements LanguageEngine {
             return guestFunction.getGraalVisorAPI().invokeFunction(guestThread, guestFunction.getEntryPoint(), jsonArguments);
         } else {
             IsolateThread workingThread = workingIsolate.getIsolateThread();
-            return retrieveString(IsolateProxy.invoke(workingThread, CurrentIsolate.getCurrentThread(), copyString(workingThread, functionName), copyString(workingThread, jsonArguments)));
+            return retrieveString(SubstrateVMProxy.invoke(workingThread, CurrentIsolate.getCurrentThread(), copyString(workingThread, functionName), copyString(workingThread, jsonArguments)));
         }
     }
 

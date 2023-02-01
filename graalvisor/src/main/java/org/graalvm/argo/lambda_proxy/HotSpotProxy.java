@@ -1,4 +1,4 @@
-package org.graalvm.argo.lambda_proxy.runtime;
+package org.graalvm.argo.lambda_proxy;
 
 import static org.graalvm.argo.lambda_proxy.utils.JsonUtils.json;
 

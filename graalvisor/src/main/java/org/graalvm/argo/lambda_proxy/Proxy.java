@@ -4,9 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import org.graalvm.argo.lambda_proxy.engine.LanguageEngine;
 import org.graalvm.argo.lambda_proxy.engine.PolyglotEngine;
-import org.graalvm.argo.lambda_proxy.runtime.HotSpotProxy;
-import org.graalvm.argo.lambda_proxy.runtime.IsolateProxy;
-import org.graalvm.argo.lambda_proxy.runtime.RuntimeProxy;
 
 public abstract class Proxy {
 
@@ -43,7 +40,7 @@ public abstract class Proxy {
 
         LanguageEngine engine = new PolyglotEngine();
         int port = Integer.parseInt(lambda_port);
-        RuntimeProxy proxy = runInIsolate ? new IsolateProxy(port, engine, true) : new HotSpotProxy(port, engine, true);
+        RuntimeProxy proxy = runInIsolate ? new SubstrateVMProxy(port, engine, true) : new HotSpotProxy(port, engine, true);
         proxy.start();
     }
 }
