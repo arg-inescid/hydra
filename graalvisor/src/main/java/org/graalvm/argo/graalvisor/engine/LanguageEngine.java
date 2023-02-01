@@ -1,6 +1,6 @@
-package org.graalvm.argo.lambda_proxy.engine;
+package org.graalvm.argo.graalvisor.engine;
 
-import org.graalvm.argo.lambda_proxy.base.IsolateObjectWrapper;
+import org.graalvm.argo.graalvisor.base.IsolateObjectWrapper;
 import org.graalvm.nativeimage.Isolates;
 import com.sun.net.httpserver.HttpServer;
 

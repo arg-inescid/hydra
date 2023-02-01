@@ -1,6 +1,6 @@
-package org.graalvm.argo.lambda_proxy.base;
+package org.graalvm.argo.graalvisor.base;
 
-import static org.graalvm.argo.lambda_proxy.Proxy.APP_DIR;
+import static org.graalvm.argo.graalvisor.Proxy.APP_DIR;
 
 import java.io.FileNotFoundException;
 import java.util.Locale;

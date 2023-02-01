@@ -1,9 +1,10 @@
-package org.graalvm.argo.lambda_proxy;
+package org.graalvm.argo.graalvisor;
 
 import java.io.File;
 import java.io.IOException;
-import org.graalvm.argo.lambda_proxy.engine.LanguageEngine;
-import org.graalvm.argo.lambda_proxy.engine.PolyglotEngine;
+
+import org.graalvm.argo.graalvisor.engine.LanguageEngine;
+import org.graalvm.argo.graalvisor.engine.PolyglotEngine;
 
 public abstract class Proxy {
 

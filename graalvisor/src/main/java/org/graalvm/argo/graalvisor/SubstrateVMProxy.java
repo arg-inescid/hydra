@@ -1,8 +1,8 @@
-package org.graalvm.argo.lambda_proxy;
+package org.graalvm.argo.graalvisor;
 
-import static org.graalvm.argo.lambda_proxy.Proxy.runInIsolate;
-import static org.graalvm.argo.lambda_proxy.utils.IsolateUtils.retrieveString;
-import static org.graalvm.argo.lambda_proxy.utils.JsonUtils.json;
+import static org.graalvm.argo.graalvisor.Proxy.runInIsolate;
+import static org.graalvm.argo.graalvisor.utils.IsolateUtils.retrieveString;
+import static org.graalvm.argo.graalvisor.utils.JsonUtils.json;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -17,12 +17,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import org.graalvm.argo.lambda_proxy.base.IsolateObjectWrapper;
-import org.graalvm.argo.lambda_proxy.base.PolyglotLanguage;
-import org.graalvm.argo.lambda_proxy.engine.JavaEngine;
-import org.graalvm.argo.lambda_proxy.engine.LanguageEngine;
-import org.graalvm.argo.lambda_proxy.engine.PolyglotEngine;
-import org.graalvm.argo.lambda_proxy.utils.IsolateUtils;
+import org.graalvm.argo.graalvisor.base.IsolateObjectWrapper;
+import org.graalvm.argo.graalvisor.base.PolyglotLanguage;
+import org.graalvm.argo.graalvisor.engine.JavaEngine;
+import org.graalvm.argo.graalvisor.engine.LanguageEngine;
+import org.graalvm.argo.graalvisor.engine.PolyglotEngine;
+import org.graalvm.argo.graalvisor.utils.IsolateUtils;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.Isolate;
 import org.graalvm.nativeimage.IsolateThread;

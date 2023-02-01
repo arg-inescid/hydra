@@ -1,4 +1,4 @@
-package org.graalvm.argo.lambda_proxy.base;
+package org.graalvm.argo.graalvisor.base;
 
 /**
  * Exception thrown when polyglot function registration failed. Reasons could be 1. failure during

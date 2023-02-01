@@ -1,14 +1,14 @@
-package org.graalvm.argo.lambda_proxy;
+package org.graalvm.argo.graalvisor;
 
-import static org.graalvm.argo.lambda_proxy.utils.JsonUtils.jsonToMap;
-import static org.graalvm.argo.lambda_proxy.utils.ProxyUtils.errorResponse;
+import static org.graalvm.argo.graalvisor.utils.JsonUtils.jsonToMap;
+import static org.graalvm.argo.graalvisor.utils.ProxyUtils.errorResponse;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Map;
 
-import org.graalvm.argo.lambda_proxy.engine.LanguageEngine;
-import org.graalvm.argo.lambda_proxy.utils.ProxyUtils;
+import org.graalvm.argo.graalvisor.engine.LanguageEngine;
+import org.graalvm.argo.graalvisor.utils.ProxyUtils;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;

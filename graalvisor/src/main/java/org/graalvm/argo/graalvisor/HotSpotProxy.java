@@ -1,6 +1,6 @@
-package org.graalvm.argo.lambda_proxy;
+package org.graalvm.argo.graalvisor;
 
-import static org.graalvm.argo.lambda_proxy.utils.JsonUtils.json;
+import static org.graalvm.argo.graalvisor.utils.JsonUtils.json;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.graalvm.argo.lambda_proxy.engine.LanguageEngine;
+import org.graalvm.argo.graalvisor.engine.LanguageEngine;
 
 public class HotSpotProxy extends RuntimeProxy {
 

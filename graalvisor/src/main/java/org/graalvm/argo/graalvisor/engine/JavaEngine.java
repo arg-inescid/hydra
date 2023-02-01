@@ -1,17 +1,17 @@
-package org.graalvm.argo.lambda_proxy.engine;
+package org.graalvm.argo.graalvisor.engine;
 
-import static org.graalvm.argo.lambda_proxy.utils.IsolateUtils.copyString;
-import static org.graalvm.argo.lambda_proxy.utils.IsolateUtils.retrieveString;
-import static org.graalvm.argo.lambda_proxy.utils.JsonUtils.json;
-import static org.graalvm.argo.lambda_proxy.utils.JsonUtils.jsonToMap;
+import static org.graalvm.argo.graalvisor.utils.IsolateUtils.copyString;
+import static org.graalvm.argo.graalvisor.utils.IsolateUtils.retrieveString;
+import static org.graalvm.argo.graalvisor.utils.JsonUtils.json;
+import static org.graalvm.argo.graalvisor.utils.JsonUtils.jsonToMap;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Map;
 
-import org.graalvm.argo.lambda_proxy.SubstrateVMProxy;
-import org.graalvm.argo.lambda_proxy.base.IsolateObjectWrapper;
+import org.graalvm.argo.graalvisor.SubstrateVMProxy;
+import org.graalvm.argo.graalvisor.base.IsolateObjectWrapper;
 import org.graalvm.nativeimage.CurrentIsolate;
 import org.graalvm.nativeimage.Isolate;
 import org.graalvm.nativeimage.IsolateThread;

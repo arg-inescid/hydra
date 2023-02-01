@@ -1,10 +1,10 @@
-package org.graalvm.argo.lambda_proxy.engine;
+package org.graalvm.argo.graalvisor.engine;
 
-import static org.graalvm.argo.lambda_proxy.Proxy.APP_DIR;
-import static org.graalvm.argo.lambda_proxy.utils.IsolateUtils.copyString;
-import static org.graalvm.argo.lambda_proxy.utils.IsolateUtils.retrieveString;
-import static org.graalvm.argo.lambda_proxy.utils.JsonUtils.jsonToMap;
-import static org.graalvm.argo.lambda_proxy.utils.ProxyUtils.*;
+import static org.graalvm.argo.graalvisor.Proxy.APP_DIR;
+import static org.graalvm.argo.graalvisor.utils.IsolateUtils.copyString;
+import static org.graalvm.argo.graalvisor.utils.IsolateUtils.retrieveString;
+import static org.graalvm.argo.graalvisor.utils.JsonUtils.jsonToMap;
+import static org.graalvm.argo.graalvisor.utils.ProxyUtils.*;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -16,10 +16,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.graalvm.argo.lambda_proxy.SubstrateVMProxy;
-import org.graalvm.argo.lambda_proxy.base.IsolateObjectWrapper;
-import org.graalvm.argo.lambda_proxy.base.PolyglotFunction;
-import org.graalvm.argo.lambda_proxy.base.PolyglotLanguage;
+import org.graalvm.argo.graalvisor.SubstrateVMProxy;
+import org.graalvm.argo.graalvisor.base.IsolateObjectWrapper;
+import org.graalvm.argo.graalvisor.base.PolyglotFunction;
+import org.graalvm.argo.graalvisor.base.PolyglotLanguage;
 import org.graalvm.nativeimage.*;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
 import org.graalvm.polyglot.Context;
