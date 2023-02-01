@@ -9,7 +9,7 @@ plugins {
     id "com.github.johnrengelman.shadow" version "7.1.0"
 }
 
-group = 'org.graalvm.argo.lambda_proxy'
+group = 'org.graalvm.argo.graalvisor'
 version = '1.0'
 description = 'graalvisor'
 
@@ -38,8 +38,8 @@ task javaProxy(type: ShadowJar) {
     minimize {
         exclude "com.oracle.svm.graalvisor.headers/*"
         exclude "com/oracle/svm/graalvisor/**/*"
-        exclude "org/graalvm/argo/lambda_proxy/engine/PolyglotEngine*"
-        exclude "org/graalvm/argo/lambda_proxy/base/PolyglotFunction*"
+        exclude "org/graalvm/argo/graalvisor/engine/PolyglotEngine*"
+        exclude "org/graalvm/argo/graalvisor/base/PolyglotFunction*"
     }
     javaProxy.archiveFileName = rootProject.name + '-1.0-java' + '.jar'
 }

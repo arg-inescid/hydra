@@ -18,9 +18,9 @@ function build_ni {
         -DGraalVisorHost \
         -Dcom.oracle.svm.graalvisor.libraryPath=$PROXY_HOME/build/resources/main/com.oracle.svm.graalvisor.headers \
         $LANGS \
-        --features=org.graalvm.argo.lambda_proxy.engine.PolyglotEngineSingletonFeature \
+        --features=org.graalvm.argo.graalvisor.engine.PolyglotEngineSingletonFeature \
         -cp $PROXY_HOME/build/libs/graalvisor-1.0-all.jar \
-        org.graalvm.argo.lambda_proxy.Proxy \
+        org.graalvm.argo.graalvisor.Proxy \
         polyglot-proxy \
         -H:+ReportExceptionStackTraces \
         -H:ConfigurationFileDirectories=$PROXY_HOME/ni-agent-config/native-image,$PROXY_HOME/ni-agent-config/native-image-jvips
