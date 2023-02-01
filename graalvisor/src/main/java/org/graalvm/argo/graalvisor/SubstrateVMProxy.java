@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.graalvm.argo.graalvisor.base.IsolateObjectWrapper;
 import org.graalvm.argo.graalvisor.base.PolyglotLanguage;
-import org.graalvm.argo.graalvisor.engine.PolyglotEngine;
+import org.graalvm.argo.graalvisor.engine.FunctionStorage;
 import org.graalvm.argo.graalvisor.utils.IsolateUtils;
 import org.graalvm.nativeimage.Isolate;
 import org.graalvm.nativeimage.IsolateThread;
@@ -84,7 +84,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
 
         private IsolateObjectWrapper prepareIsolate() {
             synchronized (pipeline) {
-                if (! PolyglotEngine.functionTable.get(functionName).getLanguage().equals(PolyglotLanguage.JAVA)) {
+                if (! FunctionStorage.FTABLE.get(functionName).getLanguage().equals(PolyglotLanguage.JAVA)) {
                     if (pipeline.workers.isEmpty()) {
                         IsolateObjectWrapper worker = languageEngine.createIsolate(functionName);
                         System.out.println(String.format("[thread %s] New isolate %s", Thread.currentThread().getId(), worker.getIsolate().rawValue()));

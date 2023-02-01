@@ -1,13 +1,25 @@
 package org.graalvm.argo.graalvisor;
 
+import static org.graalvm.argo.graalvisor.Proxy.APP_DIR;
 import static org.graalvm.argo.graalvisor.utils.JsonUtils.jsonToMap;
 import static org.graalvm.argo.graalvisor.utils.ProxyUtils.errorResponse;
+import static org.graalvm.argo.graalvisor.utils.ProxyUtils.extractRequestBody;
+import static org.graalvm.argo.graalvisor.utils.ProxyUtils.writeResponse;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
 
+import org.graalvm.argo.graalvisor.base.PolyglotFunction;
+import org.graalvm.argo.graalvisor.base.PolyglotLanguage;
+import org.graalvm.argo.graalvisor.engine.FunctionStorage;
 import org.graalvm.argo.graalvisor.engine.PolyglotEngine;
 import org.graalvm.argo.graalvisor.utils.ProxyUtils;
 
@@ -23,9 +35,10 @@ public abstract class RuntimeProxy {
     public RuntimeProxy(int port) throws IOException {
         server = HttpServer.create(new InetSocketAddress(port), -1);
         server.createContext("/", new InvocationHandler());
+        server.createContext("/register", new RegisterHandler());
+        server.createContext("/deregister", new DeregisterHandler());
         server.setExecutor(Proxy.CONCURRENT ? Executors.newCachedThreadPool() : Executors.newFixedThreadPool(1));
         languageEngine = new PolyglotEngine();
-        languageEngine.registerHandler(server); // TODO - move all handlers to this file.
     }
 
     protected abstract String invoke(String functionName, boolean cached, String arguments) throws Exception;
@@ -53,6 +66,74 @@ public abstract class RuntimeProxy {
                     String output = invoke(functionName, cached, arguments);
                     ProxyUtils.writeResponse(t, 200, output);
                 }
+            } catch (Exception e) {
+                e.printStackTrace(System.err);
+                errorResponse(t, "An error has occurred (see logs for details): " + e);
+            }
+        }
+    }
+
+    private static class RegisterHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange t) throws IOException {
+
+            long start = System.currentTimeMillis();
+            String[] params = t.getRequestURI().getQuery().split("&");
+            Map<String, String> metaData = new HashMap<>();
+            for (String param : params) {
+                String[] keyValue = param.split("=");
+                metaData.put(keyValue[0], keyValue[1]);
+            }
+            // //check
+            String functionName = metaData.get("name");
+            String soFileName = APP_DIR + functionName;
+            synchronized (FunctionStorage.FTABLE) {
+                if (FunctionStorage.FTABLE.containsKey(functionName)) {
+                    writeResponse(t, 200, String.format("Function %s has already been registered!", functionName));
+                    return;
+                }
+                String functionEntryPoint = metaData.get("entryPoint");
+                String functionLanguage = metaData.get("language");
+
+                if (functionLanguage.equalsIgnoreCase("java")) {
+                    if (!new File(soFileName).exists()) {
+                        try (FileOutputStream fileOutputStream = new FileOutputStream(soFileName);
+                                        InputStream sourceInputStream = new BufferedInputStream(t.getRequestBody(), 4096)) {
+                            sourceInputStream.transferTo(fileOutputStream);
+                        }
+                    }
+                    long beforeLoad = System.nanoTime();
+                    FunctionStorage.FTABLE.put(functionName, new PolyglotFunction(functionName, functionEntryPoint, functionLanguage, ""));
+                    System.out.println("Loading SO takes: " + (System.nanoTime() - beforeLoad) / 1e6 + "ms");
+                } else {
+                    try (InputStream sourceInputStream = new BufferedInputStream(t.getRequestBody(), 4096)) {
+                        String sourceCode = new String(sourceInputStream.readAllBytes(), StandardCharsets.UTF_8);
+                        FunctionStorage.FTABLE.put(functionName, new PolyglotFunction(functionName, functionEntryPoint, functionLanguage, sourceCode));
+                    } catch (IllegalArgumentException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            System.out.println("Function registered! time took: " + (System.currentTimeMillis() - start) + "ms");
+            writeResponse(t, 200, String.format("Function %s registered!", functionName));
+        }
+    }
+
+    private static class DeregisterHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange t) throws IOException {
+            try {
+                String functionName = (String) jsonToMap(extractRequestBody(t)).get("name");
+                if (!FunctionStorage.FTABLE.containsKey(functionName)) {
+                    errorResponse(t, String.format("Function %s has not been registered before!", functionName));
+                    return;
+                } else {
+                    if (FunctionStorage.FTABLE.get(functionName).getLanguage().equals(PolyglotLanguage.JAVA)) {
+                        FunctionStorage.FTABLE.get(functionName).getGraalVisorAPI().close();
+                    }
+                    FunctionStorage.FTABLE.remove(functionName);
+                }
+                writeResponse(t, 200, String.format("Function %s removed!", functionName));
             } catch (Exception e) {
                 e.printStackTrace(System.err);
                 errorResponse(t, "An error has occurred (see logs for details): " + e);

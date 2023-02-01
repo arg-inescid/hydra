@@ -1,21 +1,9 @@
 package org.graalvm.argo.graalvisor.engine;
 
-import static org.graalvm.argo.graalvisor.Proxy.APP_DIR;
 import static org.graalvm.argo.graalvisor.utils.IsolateUtils.copyString;
 import static org.graalvm.argo.graalvisor.utils.IsolateUtils.retrieveString;
-import static org.graalvm.argo.graalvisor.utils.JsonUtils.jsonToMap;
-import static org.graalvm.argo.graalvisor.utils.ProxyUtils.*;
-
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.graalvm.argo.graalvisor.SubstrateVMProxy;
 import org.graalvm.argo.graalvisor.base.IsolateObjectWrapper;
 import org.graalvm.argo.graalvisor.base.PolyglotFunction;
@@ -28,17 +16,9 @@ import org.graalvm.polyglot.SourceSection;
 import org.graalvm.polyglot.Value;
 
 import com.oracle.svm.graalvisor.types.GuestIsolateThread;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
 
 // TODO - split into JavaNativeLibraryEngine and TruffleEngine
 public class PolyglotEngine {
-
-    /**
-     *  FunctionTable is used to store registered functions inside default and worker isolates.
-     */
-    public static final ConcurrentHashMap<String, PolyglotFunction> functionTable = new ConcurrentHashMap<>(); // TODO - remove from this file.
 
     /**
      * Each thread owns it truffle context, where polyglot functions execute.
@@ -57,11 +37,11 @@ public class PolyglotEngine {
                     ObjectHandle entryPoint,
                     ObjectHandle language,
                     ObjectHandle sourceCode) {
-        functionTable.put(retrieveString(functionName), new PolyglotFunction(retrieveString(functionName), retrieveString(entryPoint), retrieveString(language), retrieveString(sourceCode)));
+        FunctionStorage.FTABLE.put(retrieveString(functionName), new PolyglotFunction(retrieveString(functionName), retrieveString(entryPoint), retrieveString(language), retrieveString(sourceCode)));
     }
 
     public String invoke(String functionName, String arguments) throws Exception {
-        PolyglotFunction guestFunction = functionTable.get(functionName);
+        PolyglotFunction guestFunction = FunctionStorage.FTABLE.get(functionName);
         String resultString = new String();
 
         if (guestFunction == null) {
@@ -118,7 +98,7 @@ public class PolyglotEngine {
     }
 
     public String invoke(IsolateObjectWrapper workingIsolate, String functionName, String jsonArguments) throws Exception {
-        PolyglotFunction guestFunction = functionTable.get(functionName);
+        PolyglotFunction guestFunction = FunctionStorage.FTABLE.get(functionName);
         if (guestFunction == null) {
             return String.format("{'Error': 'Function %s not registered!'}", functionName);
         } else if (guestFunction.getLanguage().equals(PolyglotLanguage.JAVA)) {
@@ -131,7 +111,7 @@ public class PolyglotEngine {
     }
 
     public IsolateObjectWrapper createIsolate(String functionName) {
-        PolyglotFunction polyglotFunction = functionTable.get(functionName);
+        PolyglotFunction polyglotFunction = FunctionStorage.FTABLE.get(functionName);
         if (polyglotFunction == null)
             return null;
         else if (polyglotFunction.getLanguage().equals(PolyglotLanguage.JAVA)) {
@@ -152,84 +132,11 @@ public class PolyglotEngine {
     }
 
     public void tearDownIsolate(String functionName, IsolateObjectWrapper workingIsolate) {
-        if (functionName != null && workingIsolate != null && functionTable.containsKey(functionName)) {
-            if (functionTable.get(functionName).getLanguage().equals(PolyglotLanguage.JAVA)) {
-                functionTable.get(functionName).getGraalVisorAPI().tearDownIsolate((GuestIsolateThread) workingIsolate.getIsolateThread());
+        if (functionName != null && workingIsolate != null && FunctionStorage.FTABLE.containsKey(functionName)) {
+            if (FunctionStorage.FTABLE.get(functionName).getLanguage().equals(PolyglotLanguage.JAVA)) {
+                FunctionStorage.FTABLE.get(functionName).getGraalVisorAPI().tearDownIsolate((GuestIsolateThread) workingIsolate.getIsolateThread());
             } else {
                 Isolates.tearDownIsolate(workingIsolate.getIsolateThread());
-            }
-        }
-    }
-
-    public void registerHandler(HttpServer server) {
-        server.createContext("/register", new RegisterHandler());
-        server.createContext("/deregister", new DeregisterHandler());
-    }
-
-    private static class RegisterHandler implements HttpHandler {
-        @Override
-        public void handle(HttpExchange t) throws IOException {
-
-            long start = System.currentTimeMillis();
-            String[] params = t.getRequestURI().getQuery().split("&");
-            Map<String, String> metaData = new HashMap<>();
-            for (String param : params) {
-                String[] keyValue = param.split("=");
-                metaData.put(keyValue[0], keyValue[1]);
-            }
-            // //check
-            String functionName = metaData.get("name");
-            String soFileName = APP_DIR + functionName;
-            synchronized (functionTable) {
-                if (functionTable.containsKey(functionName)) {
-                    writeResponse(t, 200, String.format("Function %s has already been registered!", functionName));
-                    return;
-                }
-                String functionEntryPoint = metaData.get("entryPoint");
-                String functionLanguage = metaData.get("language");
-
-                if (functionLanguage.equalsIgnoreCase("java")) {
-                    if (!new File(soFileName).exists()) {
-                        try (FileOutputStream fileOutputStream = new FileOutputStream(soFileName);
-                                        InputStream sourceInputStream = new BufferedInputStream(t.getRequestBody(), 4096)) {
-                            sourceInputStream.transferTo(fileOutputStream);
-                        }
-                    }
-                    long beforeLoad = System.nanoTime();
-                    functionTable.put(functionName, new PolyglotFunction(functionName, functionEntryPoint, functionLanguage, ""));
-                    System.out.println("Loading SO takes: " + (System.nanoTime() - beforeLoad) / 1e6 + "ms");
-                } else {
-                    try (InputStream sourceInputStream = new BufferedInputStream(t.getRequestBody(), 4096)) {
-                        String sourceCode = new String(sourceInputStream.readAllBytes(), StandardCharsets.UTF_8);
-                        functionTable.put(functionName, new PolyglotFunction(functionName, functionEntryPoint, functionLanguage, sourceCode));
-                    } catch (IllegalArgumentException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-            System.out.println("Function registered! time took: " + (System.currentTimeMillis() - start) + "ms");
-            writeResponse(t, 200, String.format("Function %s registered!", functionName));
-        }
-    }
-
-    private static class DeregisterHandler implements HttpHandler {
-        @Override
-        public void handle(HttpExchange t) throws IOException {
-            try {
-                String functionName = (String) jsonToMap(extractRequestBody(t)).get("name");
-                if (!functionTable.containsKey(functionName)) {
-                    errorResponse(t, String.format("Function %s has not been registered before!", functionName));
-                    return;
-                } else {
-                    if (functionTable.get(functionName).getLanguage().equals(PolyglotLanguage.JAVA)) {
-                        functionTable.get(functionName).getGraalVisorAPI().close();
-                    }
-                    functionTable.remove(functionName);
-                }
-                writeResponse(t, 200, String.format("Function %s removed!", functionName));
-            } catch (Exception e) {
-                e.printStackTrace(System.err);
-                errorResponse(t, "An error has occurred (see logs for details): " + e);
             }
         }
     }
