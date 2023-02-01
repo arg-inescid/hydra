@@ -1,26 +1,14 @@
 package org.graalvm.argo.graalvisor;
 
 import java.io.File;
-import java.io.IOException;
-
-import org.graalvm.argo.graalvisor.engine.LanguageEngine;
-import org.graalvm.argo.graalvisor.engine.PolyglotEngine;
 
 public abstract class Proxy {
 
-    public static final boolean runInIsolate = System.getProperty("java.vm.name").equals("Substrate VM");
-
-    protected static final String TIMESTAMP_TAG = "lambda_timestamp=";
-    protected static final String ENTRY_POINT_TAG = "lambda_entry_point=";
-    protected static final String PORT_TAG = "lambda_port=";
+    private static final boolean IS_SVM = System.getProperty("java.vm.name").equals("Substrate VM");
     public static final String APP_DIR = "./apps/"; // TODO - move to a variable as well?
+    public static final boolean CONCURRENT = true; // TODO - move to variable as well?
 
-    /**
-     * @param args - expected args are: <timestamp> <service port>
-     * @throws IOException
-     * @throws NumberFormatException
-     */
-    public static void main(String[] args) throws NumberFormatException, IOException {
+    public static void main(String[] args) throws Exception {
         String lambda_port = System.getenv("lambda_port");
         String lambda_timestamp = System.getenv("lambda_timestamp");
 
@@ -39,9 +27,7 @@ public abstract class Proxy {
         // Create directory where apps will be placed.
         new File(APP_DIR).mkdirs();
 
-        LanguageEngine engine = new PolyglotEngine();
         int port = Integer.parseInt(lambda_port);
-        RuntimeProxy proxy = runInIsolate ? new SubstrateVMProxy(port, engine, true) : new HotSpotProxy(port, engine, true);
-        proxy.start();
+        (IS_SVM ?  new SubstrateVMProxy(port) : new HotSpotProxy(port)).start();
     }
 }

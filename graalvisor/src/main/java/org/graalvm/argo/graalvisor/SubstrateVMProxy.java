@@ -12,13 +12,10 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.graalvm.argo.graalvisor.base.IsolateObjectWrapper;
 import org.graalvm.argo.graalvisor.base.PolyglotLanguage;
-import org.graalvm.argo.graalvisor.engine.LanguageEngine;
 import org.graalvm.argo.graalvisor.engine.PolyglotEngine;
 import org.graalvm.argo.graalvisor.utils.IsolateUtils;
 import org.graalvm.nativeimage.Isolate;
@@ -171,8 +168,8 @@ public class SubstrateVMProxy extends RuntimeProxy {
      */
     private static ConcurrentMap<String, FunctionPipeline> queues = new ConcurrentHashMap<>();
 
-    public SubstrateVMProxy(int port, LanguageEngine engine, boolean concurrent) throws IOException {
-        super(port, engine, concurrent);
+    public SubstrateVMProxy(int port) throws IOException {
+        super(port);
     }
 
     @SuppressWarnings("unused")
@@ -240,14 +237,4 @@ public class SubstrateVMProxy extends RuntimeProxy {
         output.put("process time (us)", (finish - start) / 1000);
         return json.asString(output);
     }
-
-    @Override
-    public void start() {
-        registerInvocationHandler();
-        languageEngine.registerHandler(server);
-        ExecutorService executorService = concurrent ? Executors.newCachedThreadPool() : Executors.newFixedThreadPool(1);
-        server.setExecutor(executorService);
-        server.start();
-    }
-
 }

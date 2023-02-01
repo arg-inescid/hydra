@@ -6,8 +6,9 @@ import static org.graalvm.argo.graalvisor.utils.ProxyUtils.errorResponse;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Map;
+import java.util.concurrent.Executors;
 
-import org.graalvm.argo.graalvisor.engine.LanguageEngine;
+import org.graalvm.argo.graalvisor.engine.PolyglotEngine;
 import org.graalvm.argo.graalvisor.utils.ProxyUtils;
 
 import com.sun.net.httpserver.HttpExchange;
@@ -15,23 +16,23 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
 public abstract class RuntimeProxy {
-    public static LanguageEngine languageEngine;
+
+	public static PolyglotEngine languageEngine;
     protected static HttpServer server;
-    protected static boolean concurrent;
 
-    public RuntimeProxy(int port, LanguageEngine engine, boolean concurrent) throws IOException {
+    public RuntimeProxy(int port) throws IOException {
         server = HttpServer.create(new InetSocketAddress(port), -1);
-        languageEngine = engine;
-        RuntimeProxy.concurrent = concurrent;
-    }
-
-    protected void registerInvocationHandler() {
         server.createContext("/", new InvocationHandler());
+        server.setExecutor(Proxy.CONCURRENT ? Executors.newCachedThreadPool() : Executors.newFixedThreadPool(1));
+        languageEngine = new PolyglotEngine();
+        languageEngine.registerHandler(server); // TODO - move all handlers to this file.
     }
 
     protected abstract String invoke(String functionName, boolean cached, String arguments) throws Exception;
 
-    public abstract void start();
+    public void start() {
+        server.start();
+    }
 
     private class InvocationHandler implements HttpHandler {
         @Override
@@ -58,5 +59,4 @@ public abstract class RuntimeProxy {
             }
         }
     }
-
 }

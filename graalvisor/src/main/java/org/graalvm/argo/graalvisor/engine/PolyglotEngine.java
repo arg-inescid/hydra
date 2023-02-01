@@ -33,12 +33,12 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
 // TODO - split into JavaNativeLibraryEngine and TruffleEngine
-public class PolyglotEngine implements LanguageEngine {
+public class PolyglotEngine {
 
     /**
      *  FunctionTable is used to store registered functions inside default and worker isolates.
      */
-    public static final ConcurrentHashMap<String, PolyglotFunction> functionTable = new ConcurrentHashMap<>(); // TODO - rename to FUNCTION_TABLE.
+    public static final ConcurrentHashMap<String, PolyglotFunction> functionTable = new ConcurrentHashMap<>(); // TODO - remove from this file.
 
     /**
      * Each thread owns it truffle context, where polyglot functions execute.
@@ -60,7 +60,6 @@ public class PolyglotEngine implements LanguageEngine {
         functionTable.put(retrieveString(functionName), new PolyglotFunction(retrieveString(functionName), retrieveString(entryPoint), retrieveString(language), retrieveString(sourceCode)));
     }
 
-    @Override
     public String invoke(String functionName, String arguments) throws Exception {
         PolyglotFunction guestFunction = functionTable.get(functionName);
         String resultString = new String();
@@ -118,7 +117,6 @@ public class PolyglotEngine implements LanguageEngine {
         return resultString;
     }
 
-    @Override
     public String invoke(IsolateObjectWrapper workingIsolate, String functionName, String jsonArguments) throws Exception {
         PolyglotFunction guestFunction = functionTable.get(functionName);
         if (guestFunction == null) {
@@ -132,7 +130,6 @@ public class PolyglotEngine implements LanguageEngine {
         }
     }
 
-    @Override
     public IsolateObjectWrapper createIsolate(String functionName) {
         PolyglotFunction polyglotFunction = functionTable.get(functionName);
         if (polyglotFunction == null)
@@ -154,7 +151,6 @@ public class PolyglotEngine implements LanguageEngine {
         }
     }
 
-    @Override
     public void tearDownIsolate(String functionName, IsolateObjectWrapper workingIsolate) {
         if (functionName != null && workingIsolate != null && functionTable.containsKey(functionName)) {
             if (functionTable.get(functionName).getLanguage().equals(PolyglotLanguage.JAVA)) {
@@ -165,7 +161,6 @@ public class PolyglotEngine implements LanguageEngine {
         }
     }
 
-    @Override
     public void registerHandler(HttpServer server) {
         server.createContext("/register", new RegisterHandler());
         server.createContext("/deregister", new DeregisterHandler());

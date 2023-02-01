@@ -5,15 +5,11 @@ import static org.graalvm.argo.graalvisor.utils.JsonUtils.json;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import org.graalvm.argo.graalvisor.engine.LanguageEngine;
 
 public class HotSpotProxy extends RuntimeProxy {
 
-    public HotSpotProxy(int port, LanguageEngine engine, boolean concurrent) throws IOException {
-        super(port, engine, concurrent);
+    public HotSpotProxy(int port) throws IOException {
+        super(port);
     }
 
     @Override
@@ -30,14 +26,5 @@ public class HotSpotProxy extends RuntimeProxy {
             e.printStackTrace();
         }
         return ret;
-    }
-
-    @Override
-    public void start() {
-        registerInvocationHandler();
-        languageEngine.registerHandler(server);
-        ExecutorService executorService = concurrent ? Executors.newCachedThreadPool() : Executors.newFixedThreadPool(1);
-        server.setExecutor(executorService);
-        server.start();
     }
 }
