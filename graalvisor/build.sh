@@ -20,7 +20,7 @@ function build_ni {
         $LANGS \
         --features=org.graalvm.argo.lambda_proxy.engine.PolyglotEngineSingletonFeature \
         -cp $PROXY_HOME/build/libs/graalvisor-1.0-all.jar \
-        org.graalvm.argo.lambda_proxy.PolyglotProxy \
+        org.graalvm.argo.lambda_proxy.Proxy \
         polyglot-proxy \
         -H:+ReportExceptionStackTraces \
         -H:ConfigurationFileDirectories=$PROXY_HOME/ni-agent-config/native-image,$PROXY_HOME/ni-agent-config/native-image-jvips

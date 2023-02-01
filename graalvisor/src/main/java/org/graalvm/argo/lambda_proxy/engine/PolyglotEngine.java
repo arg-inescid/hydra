@@ -1,6 +1,6 @@
 package org.graalvm.argo.lambda_proxy.engine;
 
-import static org.graalvm.argo.lambda_proxy.PolyglotProxy.APP_DIR;
+import static org.graalvm.argo.lambda_proxy.Proxy.APP_DIR;
 import static org.graalvm.argo.lambda_proxy.utils.IsolateUtils.copyString;
 import static org.graalvm.argo.lambda_proxy.utils.IsolateUtils.retrieveString;
 import static org.graalvm.argo.lambda_proxy.utils.JsonUtils.jsonToMap;
