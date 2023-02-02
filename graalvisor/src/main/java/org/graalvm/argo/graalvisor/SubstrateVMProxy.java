@@ -61,12 +61,12 @@ public class SubstrateVMProxy extends RuntimeProxy {
      */
     static class IsolateWorker extends Thread {
 
-        private final String functionName;
+        private final PolyglotFunction function;
 
         private FunctionPipeline pipeline;
 
-        public IsolateWorker(String functionName, FunctionPipeline pipeline) {
-            this.functionName = functionName;
+        public IsolateWorker(PolyglotFunction function, FunctionPipeline pipeline) {
+            this.function = function;
             this.pipeline = pipeline;
         }
 
@@ -74,7 +74,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
             synchronized (req) {
                 // Get input from request, invoke function in isolate, fill output.
                 try {
-                    req.setOutput(invokeInternal(isolateObjectWrapper, functionName, req.getInput()));
+                    req.setOutput(invokeInternal(isolateObjectWrapper, function, req.getInput()));
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -85,9 +85,9 @@ public class SubstrateVMProxy extends RuntimeProxy {
 
         private IsolateObjectWrapper prepareIsolate() {
             synchronized (pipeline) {
-                if (! FunctionStorage.FTABLE.get(functionName).getLanguage().equals(PolyglotLanguage.JAVA)) {
+                if (! function.getLanguage().equals(PolyglotLanguage.JAVA)) {
                     if (pipeline.workers.isEmpty()) {
-                        IsolateObjectWrapper worker = createIsolate(functionName);
+                        IsolateObjectWrapper worker = createIsolate(function);
                         System.out.println(String.format("[thread %s] New isolate %s", Thread.currentThread().getId(), worker.getIsolate().rawValue()));
                         pipeline.workers.add(worker);
                         return worker;
@@ -100,7 +100,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
                         return worker;
                     }
                 } else {
-                    IsolateObjectWrapper worker = createIsolate(functionName);
+                    IsolateObjectWrapper worker = createIsolate(function);
                     System.out.println(String.format("[thread %s] New isolate %s", Thread.currentThread().getId(), worker.getIsolate().rawValue()));
                     pipeline.workers.add(worker);
                     return worker;
@@ -112,7 +112,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
             synchronized (pipeline) {
                 pipeline.workers.remove(worker);
                 if (pipeline.workers.isEmpty()) {
-                    tearDownIsolate(functionName, worker);
+                    tearDownIsolate(function, worker);
                     System.out.println(String.format("[thread %s] Destroying isolate %s", Thread.currentThread().getId(), worker.getIsolate().rawValue()));
                 } else {
                     Isolates.detachThread(worker.getIsolateThread());
@@ -138,7 +138,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
             }
 
             // Between the loop exit and now, there could be a new request.
-            pipeline = queues.remove(functionName);
+            pipeline = queues.remove(function.getName());
             while ((req = pipeline.queue.poll()) != null) {
                 processRequest(isolateObjectWrapper, req);
             }
@@ -188,20 +188,20 @@ public class SubstrateVMProxy extends RuntimeProxy {
         }
     }
 
-    private FunctionPipeline getFunctionPipeline(String functionName) {
-        FunctionPipeline pipeline = queues.get(functionName);
+    private FunctionPipeline getFunctionPipeline(PolyglotFunction function) {
+        FunctionPipeline pipeline = queues.get(function.getName());
         if (pipeline == null) {
             FunctionPipeline newpipeline = new FunctionPipeline();
-            FunctionPipeline oldpipeline = queues.putIfAbsent(functionName, newpipeline);
+            FunctionPipeline oldpipeline = queues.putIfAbsent(function.getName(), newpipeline);
             pipeline = oldpipeline == null ? newpipeline : oldpipeline;
             // We could loose the race to install a queue for this function.
             if (oldpipeline == null) {
                 // We won the race, create isolate worker.
-                new IsolateWorker(functionName, pipeline).start();
+                new IsolateWorker(function, pipeline).start();
             }
         } else if (!pipeline.queue.isEmpty() && pipeline.freeworkers < pipeline.queue.size()) {
             // If the queue is not empty and if there not enough workers, we create a new isolate worker to help processing requests.
-            new IsolateWorker(functionName, pipeline).start();
+            new IsolateWorker(function, pipeline).start();
         }
         return pipeline;
     }
@@ -216,12 +216,9 @@ public class SubstrateVMProxy extends RuntimeProxy {
         FunctionStorage.FTABLE.put(retrieveString(functionName), new PolyglotFunction(retrieveString(functionName), retrieveString(entryPoint), retrieveString(language), retrieveString(sourceCode)));
     }
 
-    public static IsolateObjectWrapper createIsolate(String functionName) {
-        PolyglotFunction polyglotFunction = FunctionStorage.FTABLE.get(functionName);
-        if (polyglotFunction == null)
-            return null;
-        else if (polyglotFunction.getLanguage().equals(PolyglotLanguage.JAVA)) {
-            GuestIsolateThread guestThread = polyglotFunction.getGraalVisorAPI().createIsolate();
+    public static IsolateObjectWrapper createIsolate(PolyglotFunction function) {
+        if (function.getLanguage().equals(PolyglotLanguage.JAVA)) {
+            GuestIsolateThread guestThread = function.getGraalVisorAPI().createIsolate();
             return new IsolateObjectWrapper(Isolates.getIsolate(guestThread), guestThread);
         } else {
             // create a new isolate and setup configurations in that isolate.
@@ -229,18 +226,18 @@ public class SubstrateVMProxy extends RuntimeProxy {
             Isolate isolate = Isolates.getIsolate(isolateThread);
             // initialize source code into isolate
             installSourceCode(isolateThread,
-                            copyString(isolateThread, functionName),
-                            copyString(isolateThread, polyglotFunction.getEntryPoint()),
-                            copyString(isolateThread, polyglotFunction.getLanguage().name()),
-                            copyString(isolateThread, polyglotFunction.getSource()));
+                            copyString(isolateThread, function.getName()),
+                            copyString(isolateThread, function.getEntryPoint()),
+                            copyString(isolateThread, function.getLanguage().name()),
+                            copyString(isolateThread, function.getSource()));
             return new IsolateObjectWrapper(isolate, isolateThread);
         }
     }
 
-    public static void tearDownIsolate(String functionName, IsolateObjectWrapper workingIsolate) {
-        if (functionName != null && workingIsolate != null && FunctionStorage.FTABLE.containsKey(functionName)) {
-            if (FunctionStorage.FTABLE.get(functionName).getLanguage().equals(PolyglotLanguage.JAVA)) {
-                FunctionStorage.FTABLE.get(functionName).getGraalVisorAPI().tearDownIsolate((GuestIsolateThread) workingIsolate.getIsolateThread());
+    public static void tearDownIsolate(PolyglotFunction function, IsolateObjectWrapper workingIsolate) {
+        if (workingIsolate != null) {
+            if (function.getLanguage().equals(PolyglotLanguage.JAVA)) {
+                function.getGraalVisorAPI().tearDownIsolate((GuestIsolateThread) workingIsolate.getIsolateThread());
             } else {
                 Isolates.tearDownIsolate(workingIsolate.getIsolateThread());
             }
@@ -257,29 +254,28 @@ public class SubstrateVMProxy extends RuntimeProxy {
         return IsolateUtils.copyString(defaultContext, resultString);
     }
 
-    public static String invokeInternal(IsolateObjectWrapper isolate, String functionName, String jsonArguments) throws Exception {
-        PolyglotFunction guestFunction = FunctionStorage.FTABLE.get(functionName);
-        if (guestFunction.getLanguage().equals(PolyglotLanguage.JAVA)) {
+    public static String invokeInternal(IsolateObjectWrapper isolate, PolyglotFunction function, String jsonArguments) throws Exception {
+        if (function.getLanguage().equals(PolyglotLanguage.JAVA)) {
             GuestIsolateThread isolateThread = (GuestIsolateThread) isolate.getIsolateThread();
-            return guestFunction.getGraalVisorAPI().invokeFunction(isolateThread, guestFunction.getEntryPoint(), jsonArguments);
+            return function.getGraalVisorAPI().invokeFunction(isolateThread, function.getEntryPoint(), jsonArguments);
         } else {
             IsolateThread isolateThread = isolate.getIsolateThread();
-            return retrieveString(invokeFunction(isolateThread, CurrentIsolate.getCurrentThread(), copyString(isolateThread, functionName), copyString(isolateThread, jsonArguments)));
+            return retrieveString(invokeFunction(isolateThread, CurrentIsolate.getCurrentThread(), copyString(isolateThread, function.getName()), copyString(isolateThread, jsonArguments)));
         }
     }
 
     @Override
-    protected String invoke(String functionName, boolean cached, String arguments) throws Exception {
+    protected String invoke(PolyglotFunction function, boolean cached, String arguments) throws Exception {
         String res;
 
         if (cached) {
-            res = invokeInIsolateWorker(getFunctionPipeline(functionName), arguments);
+            res = invokeInIsolateWorker(getFunctionPipeline(function), arguments);
         } else {
-            IsolateObjectWrapper isolateObjectWrapper = createIsolate(functionName);
+            IsolateObjectWrapper isolateObjectWrapper = createIsolate(function);
             // Copy serialized input into heap space of the process isolate.
-            res = invokeInternal(isolateObjectWrapper, functionName, arguments);
+            res = invokeInternal(isolateObjectWrapper, function, arguments);
             // Tear down isolate (could be offline?)
-            tearDownIsolate(functionName, isolateObjectWrapper);
+            tearDownIsolate(function, isolateObjectWrapper);
         }
 
         return res;

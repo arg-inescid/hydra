@@ -42,16 +42,17 @@ public abstract class RuntimeProxy {
         languageEngine = new PolyglotEngine();
     }
 
-    protected abstract String invoke(String functionName, boolean cached, String arguments) throws Exception;
+    protected abstract String invoke(PolyglotFunction functionName, boolean cached, String arguments) throws Exception;
 
 	private String invokeWrapper(String functionName, boolean cached, String arguments) throws Exception {
+		PolyglotFunction function = FunctionStorage.FTABLE.get(functionName);
 		String res;
 
 		long start = System.nanoTime();
-		if (!FunctionStorage.FTABLE.contains(functionName)) {
+		if (function == null) {
             res = String.format("{'Error': 'Function %s not registered!'}", functionName);
         } else {
-            res = invoke(functionName, cached, arguments);
+            res = invoke(function, cached, arguments);
         }
 		long finish = System.nanoTime();
 

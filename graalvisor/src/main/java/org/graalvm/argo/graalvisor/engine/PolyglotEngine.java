@@ -19,7 +19,7 @@ public class PolyglotEngine {
     /**
      * Each context has a corresponding truffle function that should be used for the invocation.
      */
-    private Value function;
+    private Value vfunction;
 
     public String invoke(String functionName, String arguments) throws Exception {
         PolyglotFunction guestFunction = FunctionStorage.FTABLE.get(functionName);
@@ -60,11 +60,11 @@ public class PolyglotEngine {
             context.get().eval(language, guestFunction.getSource());
 
             // Get function handle from the script.
-            function = context.get().eval(language, guestFunction.getEntryPoint());
+            vfunction = context.get().eval(language, guestFunction.getEntryPoint());
         }
 
         try {
-            resultString = function.execute(arguments).toString();
+            resultString = vfunction.execute(arguments).toString();
         } catch (PolyglotException pe) {
             if (pe.isSyntaxError()) {
                  SourceSection location = pe.getSourceLocation();
