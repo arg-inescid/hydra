@@ -1,6 +1,7 @@
 package org.graalvm.argo.graalvisor;
 
 import static org.graalvm.argo.graalvisor.Proxy.APP_DIR;
+import static org.graalvm.argo.graalvisor.utils.JsonUtils.json;
 import static org.graalvm.argo.graalvisor.utils.JsonUtils.jsonToMap;
 import static org.graalvm.argo.graalvisor.utils.ProxyUtils.errorResponse;
 import static org.graalvm.argo.graalvisor.utils.ProxyUtils.extractRequestBody;
@@ -29,8 +30,8 @@ import com.sun.net.httpserver.HttpServer;
 
 public abstract class RuntimeProxy {
 
-	public static PolyglotEngine languageEngine;
-    protected static HttpServer server;
+	protected static PolyglotEngine languageEngine;
+    private static HttpServer server;
 
     public RuntimeProxy(int port) throws IOException {
         server = HttpServer.create(new InetSocketAddress(port), -1);
@@ -43,11 +44,29 @@ public abstract class RuntimeProxy {
 
     protected abstract String invoke(String functionName, boolean cached, String arguments) throws Exception;
 
+	private String invokeWrapper(String functionName, boolean cached, String arguments) throws Exception {
+		String res;
+
+		long start = System.nanoTime();
+		if (!FunctionStorage.FTABLE.contains(functionName)) {
+            res = String.format("{'Error': 'Function %s not registered!'}", functionName);
+        } else {
+            res = invoke(functionName, cached, arguments);
+        }
+		long finish = System.nanoTime();
+
+		Map<String, Object> output = new HashMap<>();
+        output.put("result", res);
+        output.put("process time (us)", (finish - start) / 1000);
+        return json.asString(output);
+	}
+
     public void start() {
         server.start();
     }
 
     private class InvocationHandler implements HttpHandler {
+
         @Override
         public void handle(HttpExchange t) throws IOException {
             try {
@@ -60,10 +79,10 @@ public abstract class RuntimeProxy {
 
                 if (async != null && async.equals("true")) {
                     ProxyUtils.writeResponse(t, 200, "Asynchronous request submitted!");
-                    String output = invoke(functionName, cached, arguments);
+                    String output = invokeWrapper(functionName, cached, arguments);
                     System.out.println(output);
                 } else {
-                    String output = invoke(functionName, cached, arguments);
+                    String output = invokeWrapper(functionName, cached, arguments);
                     ProxyUtils.writeResponse(t, 200, output);
                 }
             } catch (Exception e) {
@@ -84,7 +103,6 @@ public abstract class RuntimeProxy {
                 String[] keyValue = param.split("=");
                 metaData.put(keyValue[0], keyValue[1]);
             }
-            // //check
             String functionName = metaData.get("name");
             String soFileName = APP_DIR + functionName;
             synchronized (FunctionStorage.FTABLE) {
