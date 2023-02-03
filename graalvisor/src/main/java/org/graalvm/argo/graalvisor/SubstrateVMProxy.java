@@ -12,8 +12,10 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 import org.graalvm.argo.graalvisor.base.IsolateObjectWrapper;
+import org.graalvm.argo.graalvisor.base.NativeFunction;
 import org.graalvm.argo.graalvisor.base.PolyglotFunction;
 import org.graalvm.argo.graalvisor.base.PolyglotLanguage;
+import org.graalvm.argo.graalvisor.base.TruffleFunction;
 import org.graalvm.argo.graalvisor.engine.FunctionStorage;
 import org.graalvm.argo.graalvisor.utils.IsolateUtils;
 import org.graalvm.nativeimage.CurrentIsolate;
@@ -213,23 +215,23 @@ public class SubstrateVMProxy extends RuntimeProxy {
                     ObjectHandle entryPoint,
                     ObjectHandle language,
                     ObjectHandle sourceCode) {
-        FunctionStorage.FTABLE.put(retrieveString(functionName), new PolyglotFunction(retrieveString(functionName), retrieveString(entryPoint), retrieveString(language), retrieveString(sourceCode)));
+        FunctionStorage.FTABLE.put(retrieveString(functionName), new TruffleFunction(retrieveString(functionName), retrieveString(entryPoint), retrieveString(language), retrieveString(sourceCode)));
     }
 
     public static IsolateObjectWrapper createIsolate(PolyglotFunction function) {
         if (function.getLanguage().equals(PolyglotLanguage.JAVA)) {
-            GuestIsolateThread guestThread = function.getGraalVisorAPI().createIsolate();
+            NativeFunction nfunction = (NativeFunction) function;
+            GuestIsolateThread guestThread = nfunction.getGraalVisorAPI().createIsolate();
             return new IsolateObjectWrapper(Isolates.getIsolate(guestThread), guestThread);
         } else {
-            // create a new isolate and setup configurations in that isolate.
+            TruffleFunction tfunction = (TruffleFunction) function;
             IsolateThread isolateThread = Isolates.createIsolate(Isolates.CreateIsolateParameters.getDefault());
             Isolate isolate = Isolates.getIsolate(isolateThread);
-            // initialize source code into isolate
             installSourceCode(isolateThread,
-                            copyString(isolateThread, function.getName()),
-                            copyString(isolateThread, function.getEntryPoint()),
-                            copyString(isolateThread, function.getLanguage().name()),
-                            copyString(isolateThread, function.getSource()));
+                            copyString(isolateThread, tfunction.getName()),
+                            copyString(isolateThread, tfunction.getEntryPoint()),
+                            copyString(isolateThread, tfunction.getLanguage().name()),
+                            copyString(isolateThread, tfunction.getSource()));
             return new IsolateObjectWrapper(isolate, isolateThread);
         }
     }
@@ -237,7 +239,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
     public static void tearDownIsolate(PolyglotFunction function, IsolateObjectWrapper workingIsolate) {
         if (workingIsolate != null) {
             if (function.getLanguage().equals(PolyglotLanguage.JAVA)) {
-                function.getGraalVisorAPI().tearDownIsolate((GuestIsolateThread) workingIsolate.getIsolateThread());
+                ((NativeFunction)function).getGraalVisorAPI().tearDownIsolate((GuestIsolateThread) workingIsolate.getIsolateThread());
             } else {
                 Isolates.tearDownIsolate(workingIsolate.getIsolateThread());
             }
@@ -257,7 +259,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
     public static String invokeInternal(IsolateObjectWrapper isolate, PolyglotFunction function, String jsonArguments) throws Exception {
         if (function.getLanguage().equals(PolyglotLanguage.JAVA)) {
             GuestIsolateThread isolateThread = (GuestIsolateThread) isolate.getIsolateThread();
-            return function.getGraalVisorAPI().invokeFunction(isolateThread, function.getEntryPoint(), jsonArguments);
+            return ((NativeFunction)function).getGraalVisorAPI().invokeFunction(isolateThread, function.getEntryPoint(), jsonArguments);
         } else {
             IsolateThread isolateThread = isolate.getIsolateThread();
             return retrieveString(invokeFunction(isolateThread, CurrentIsolate.getCurrentThread(), copyString(isolateThread, function.getName()), copyString(isolateThread, jsonArguments)));

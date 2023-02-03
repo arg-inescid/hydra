@@ -18,8 +18,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
 
+import org.graalvm.argo.graalvisor.base.NativeFunction;
 import org.graalvm.argo.graalvisor.base.PolyglotFunction;
 import org.graalvm.argo.graalvisor.base.PolyglotLanguage;
+import org.graalvm.argo.graalvisor.base.TruffleFunction;
 import org.graalvm.argo.graalvisor.engine.FunctionStorage;
 import org.graalvm.argo.graalvisor.engine.PolyglotEngine;
 import org.graalvm.argo.graalvisor.utils.ProxyUtils;
@@ -122,12 +124,12 @@ public abstract class RuntimeProxy {
                         }
                     }
                     long beforeLoad = System.nanoTime();
-                    FunctionStorage.FTABLE.put(functionName, new PolyglotFunction(functionName, functionEntryPoint, functionLanguage, ""));
+                    FunctionStorage.FTABLE.put(functionName, new NativeFunction(functionName, functionEntryPoint, functionLanguage));
                     System.out.println("Loading SO takes: " + (System.nanoTime() - beforeLoad) / 1e6 + "ms");
                 } else {
                     try (InputStream sourceInputStream = new BufferedInputStream(t.getRequestBody(), 4096)) {
                         String sourceCode = new String(sourceInputStream.readAllBytes(), StandardCharsets.UTF_8);
-                        FunctionStorage.FTABLE.put(functionName, new PolyglotFunction(functionName, functionEntryPoint, functionLanguage, sourceCode));
+                        FunctionStorage.FTABLE.put(functionName, new TruffleFunction(functionName, functionEntryPoint, functionLanguage, sourceCode));
                     } catch (IllegalArgumentException e) {
                         e.printStackTrace();
                     }
@@ -143,12 +145,12 @@ public abstract class RuntimeProxy {
         public void handle(HttpExchange t) throws IOException {
             try {
                 String functionName = (String) jsonToMap(extractRequestBody(t)).get("name");
-                if (!FunctionStorage.FTABLE.containsKey(functionName)) {
+                PolyglotFunction function = FunctionStorage.FTABLE.get(functionName);
+                if (function == null) {
                     errorResponse(t, String.format("Function %s has not been registered before!", functionName));
-                    return;
                 } else {
-                    if (FunctionStorage.FTABLE.get(functionName).getLanguage().equals(PolyglotLanguage.JAVA)) {
-                        FunctionStorage.FTABLE.get(functionName).getGraalVisorAPI().close();
+                    if (function.getLanguage().equals(PolyglotLanguage.JAVA)) {
+                        ((NativeFunction)function).getGraalVisorAPI().close();
                     }
                     FunctionStorage.FTABLE.remove(functionName);
                 }

@@ -4,9 +4,9 @@ import java.util.HashMap;
 import java.util.Map;
 import org.graalvm.argo.graalvisor.base.PolyglotFunction;
 import org.graalvm.argo.graalvisor.base.PolyglotLanguage;
+import org.graalvm.argo.graalvisor.base.TruffleFunction;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
-import org.graalvm.polyglot.SourceSection;
 import org.graalvm.polyglot.Value;
 
 public class PolyglotEngine {
@@ -22,16 +22,18 @@ public class PolyglotEngine {
     private Value vfunction;
 
     public String invoke(String functionName, String arguments) throws Exception {
-        PolyglotFunction guestFunction = FunctionStorage.FTABLE.get(functionName);
         String resultString = new String();
 
-        if (guestFunction == null) {
-            return String.format("{'Error': 'Function %s not registered!'}", functionName);
-        }
-
         if (context.get() == null) {
-            Map<String, String> options = new HashMap<>();
-            String language = guestFunction.getLanguage().toString();
+           PolyglotFunction polyglotFunction = FunctionStorage.FTABLE.get(functionName);
+
+           if (polyglotFunction == null || !(polyglotFunction instanceof TruffleFunction)) {
+              return String.format("{'Error': 'Function %s not registered or not truffle function!'}", functionName);
+           }
+
+           TruffleFunction truffleFunction = (TruffleFunction) polyglotFunction;
+           Map<String, String> options = new HashMap<>();
+            String language = polyglotFunction.getLanguage().toString();
             String javaHome = System.getenv("JAVA_HOME");
 
             if (javaHome == null) {
@@ -42,7 +44,7 @@ public class PolyglotEngine {
                 System.setProperty("org.graalvm.language.js.home", javaHome + "/languages/js");
             }
 
-            if (guestFunction.getLanguage() == PolyglotLanguage.PYTHON) {
+            if (polyglotFunction.getLanguage() == PolyglotLanguage.PYTHON) {
                 // Necessary to allow python imports.
                 options.put("python.ForceImportSite", "true");
                 // Loading the virtual env with installed packages
@@ -50,25 +52,24 @@ public class PolyglotEngine {
             }
 
             // Build context.
-            context.set(Context.newBuilder().allowAllAccess(true).engine(guestFunction.getTruffleEngine()).options(options).build());
+            context.set(Context.newBuilder().allowAllAccess(true).engine(truffleFunction.getTruffleEngine()).options(options).build());
             System.out.println(String.format("[thread %s] Creating context %s", Thread.currentThread().getId(), context.get().toString()));
 
             // Host access to implement missing language functionalities.
             context.get().getBindings(language).putMember("polyHostAccess", new PolyglotHostAccess());
 
             // Evaluate source script to load function into the environment.
-            context.get().eval(language, guestFunction.getSource());
+            context.get().eval(language, truffleFunction.getSource());
 
             // Get function handle from the script.
-            vfunction = context.get().eval(language, guestFunction.getEntryPoint());
+            vfunction = context.get().eval(language, polyglotFunction.getEntryPoint());
         }
 
         try {
             resultString = vfunction.execute(arguments).toString();
         } catch (PolyglotException pe) {
             if (pe.isSyntaxError()) {
-                 SourceSection location = pe.getSourceLocation();
-                 resultString = String.format("Error happens during parsing/ polyglot function at line %s: %s", location, pe.getMessage());
+                 resultString = String.format("Error happens during parsing/ polyglot function at line %s: %s", pe.getSourceLocation(), pe.getMessage());
             }
         } catch (Exception e) {
             System.err.println("Error happens during invoking polyglot function: ");
