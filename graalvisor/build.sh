@@ -19,7 +19,7 @@ function build_ni {
         -Dcom.oracle.svm.graalvisor.libraryPath=$PROXY_HOME/build/resources/main/com.oracle.svm.graalvisor.headers \
         $LANGS \
         -cp $PROXY_HOME/build/libs/graalvisor-1.0-all.jar \
-        org.graalvm.argo.graalvisor.Proxy \
+        org.graalvm.argo.graalvisor.Main \
         polyglot-proxy \
         -H:+ReportExceptionStackTraces \
         -H:ConfigurationFileDirectories=$PROXY_HOME/ni-agent-config/native-image,$PROXY_HOME/ni-agent-config/native-image-jvips

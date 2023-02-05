@@ -2,15 +2,15 @@ package org.graalvm.argo.graalvisor;
 
 import java.io.File;
 
-public abstract class Proxy {
+public abstract class Main {
 
     private static final boolean IS_SVM = System.getProperty("java.vm.name").equals("Substrate VM");
-    public static final String APP_DIR = "./apps/"; // TODO - move to a variable as well?
-    public static final boolean CONCURRENT = true; // TODO - move to variable as well?
+    public static String APP_DIR;
 
     public static void main(String[] args) throws Exception {
         String lambda_port = System.getenv("lambda_port");
         String lambda_timestamp = System.getenv("lambda_timestamp");
+        APP_DIR = System.getenv("app_dir");
 
         if (lambda_port == null) {
             System.err.println("Error invoking Proxy, service port is null.");
@@ -20,6 +20,10 @@ public abstract class Proxy {
         if (lambda_timestamp == null) {
             System.err.println("Error invoking Proxy, service timestamp is null.");
             System.exit(1);
+        }
+
+        if (APP_DIR == null) {
+            APP_DIR = "./apps/";
         }
 
         System.out.println("Polyglot Lambda boot time: " + (System.currentTimeMillis() - Long.parseLong(lambda_timestamp)));

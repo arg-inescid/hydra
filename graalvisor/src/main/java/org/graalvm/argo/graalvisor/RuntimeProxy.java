@@ -1,6 +1,6 @@
 package org.graalvm.argo.graalvisor;
 
-import static org.graalvm.argo.graalvisor.Proxy.APP_DIR;
+import static org.graalvm.argo.graalvisor.Main.APP_DIR;
 import static org.graalvm.argo.graalvisor.utils.JsonUtils.json;
 import static org.graalvm.argo.graalvisor.utils.JsonUtils.jsonToMap;
 import static org.graalvm.argo.graalvisor.utils.ProxyUtils.errorResponse;
@@ -40,7 +40,7 @@ public abstract class RuntimeProxy {
         server.createContext("/", new InvocationHandler());
         server.createContext("/register", new RegisterHandler());
         server.createContext("/deregister", new DeregisterHandler());
-        server.setExecutor(Proxy.CONCURRENT ? Executors.newCachedThreadPool() : Executors.newFixedThreadPool(1));
+        server.setExecutor(Executors.newCachedThreadPool());
         languageEngine = new PolyglotEngine();
     }
 
