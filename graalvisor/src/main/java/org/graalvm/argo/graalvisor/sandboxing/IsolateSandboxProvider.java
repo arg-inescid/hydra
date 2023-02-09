@@ -7,7 +7,6 @@ import org.graalvm.argo.graalvisor.base.PolyglotFunction;
 import com.oracle.svm.graalvisor.api.GraalVisorAPI;
 import com.oracle.svm.graalvisor.types.GuestIsolateThread;
 
-// Note: Java only!
 public class IsolateSandboxProvider extends SandboxProvider {
 
     private GraalVisorAPI graalVisorAPI;

@@ -69,18 +69,14 @@ public class SubstrateVMProxy extends RuntimeProxy {
         }
 
         private SandboxHandle prepareSandbox() {
-            synchronized (pipeline) {
-                SandboxHandle worker = function.getSandboxProvider().createSandbox();
-                System.out.println(String.format("[thread %s] New sandbox %s", Thread.currentThread().getId(), worker));
-                return worker;
-            }
+            SandboxHandle worker = function.getSandboxProvider().createSandbox();
+            System.out.println(String.format("[thread %s] New sandbox %s", Thread.currentThread().getId(), worker));
+            return worker;
         }
 
         private void disposeSandbox(SandboxHandle shandle) {
-            synchronized (pipeline) {
-                function.getSandboxProvider().destroySandbox(shandle);
-                System.out.println(String.format("[thread %s] Destroying sandbox %s", Thread.currentThread().getId(), shandle));
-            }
+            function.getSandboxProvider().destroySandbox(shandle);
+            System.out.println(String.format("[thread %s] Destroying sandbox %s", Thread.currentThread().getId(), shandle));
         }
 
         @Override
@@ -114,7 +110,6 @@ public class SubstrateVMProxy extends RuntimeProxy {
      */
     static class FunctionPipeline {
 
-        // TODO - the communication will also need to change as this does not work with processes...
         private final BlockingQueue<Request> queue;
 
         private volatile int freeworkers = 0;
