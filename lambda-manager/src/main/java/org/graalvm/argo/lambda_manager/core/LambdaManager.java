@@ -81,7 +81,9 @@ public class LambdaManager {
                 Configuration.scheduler.reschedule(lambda, function);
 
                 if (response.equals(Messages.HTTP_TIMEOUT)) {
-                    if (lambda.getExecutionMode() == LambdaExecutionMode.NATIVE_IMAGE) {
+                    if (lambda.getExecutionMode() == LambdaExecutionMode.NATIVE_IMAGE ||
+                            (function.canRebuild() && lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR)) {
+                        // TODO: test fallback for GV once isolates do not terminate entire runtime
                         function.setStatus(FunctionStatus.NOT_BUILT_NOT_CONFIGURED);
                         targetMode = LambdaExecutionMode.HOTSPOT_W_AGENT;
                     }
@@ -123,9 +125,9 @@ public class LambdaManager {
         }
 
         try {
-            String encodeFunctionName = Configuration.coder.encodeFunctionName(username, functionName);
-            Function function = new Function(encodeFunctionName, functionLanguage, functionEntryPoint, functionMemory, functionRuntime, functionIsolation);
-            Configuration.storage.register(encodeFunctionName, function, functionCode);
+            String encodedFunctionName = Configuration.coder.encodeFunctionName(username, functionName);
+            Function function = new Function(encodedFunctionName, functionLanguage, functionEntryPoint, functionMemory, functionRuntime, functionCode, functionIsolation);
+            Configuration.storage.register(encodedFunctionName, function, functionCode);
             Logger.log(Level.INFO, String.format(Messages.SUCCESS_FUNCTION_UPLOAD, functionName));
             responseString = String.format(Messages.SUCCESS_FUNCTION_UPLOAD, functionName);
         } catch (Exception e) {

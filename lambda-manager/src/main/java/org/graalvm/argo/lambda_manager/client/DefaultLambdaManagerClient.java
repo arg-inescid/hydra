@@ -84,9 +84,12 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         String path ="/";
         String payload = "";
 
-        if (function.getLanguage() == FunctionLanguage.NATIVE_JAVA) {
+        if (function.getLanguage() == FunctionLanguage.NATIVE_JAVA
+                || lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT
+                || lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT) {
             payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getEntryPoint());
         } else if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
+            // Both canRebuild and readily-provided GV functions go here
             payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getName());
         } else if (lambda.getExecutionMode() == LambdaExecutionMode.CUSTOM) {
             path = "/run";

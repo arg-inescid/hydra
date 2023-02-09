@@ -9,6 +9,9 @@ import java.nio.file.Paths;
 
 public class Function {
 
+    /** First four bytes of JAR files. */
+    private static final byte[] JAR_FILE_SIGNATURE = { 0x50, 0x4b, 0x03, 0x04 };
+
     /** Name of the function. The name of a function is a unique identifier. */
     private final String name;
 
@@ -33,6 +36,9 @@ public class Function {
     /** Flag stating if this function can be co-located with other functions in the same lambda. */
     private final boolean functionIsolation;
 
+    /** Flag stating if this function can be re-built into native image in case of fallback (only for Graalvisor). */
+    private final boolean canRebuild;
+
     /**
      * There will be only one started Native Image Agent per function, so we need to keep information
      * about PID for that single lambda. We are sending this information to
@@ -41,13 +47,14 @@ public class Function {
      */
     private long lastAgentPID;
 
-    public Function(String name, String language, String entryPoint, String memory, String runtime, boolean functionIsolation) throws Exception {
+    public Function(String name, String language, String entryPoint, String memory, String runtime, byte[] functionCode, boolean functionIsolation) throws Exception {
         this.name = name;
         this.language = FunctionLanguage.fromString(language);
         this.entryPoint = entryPoint;
         this.memory = Long.parseLong(memory);
         this.runtime = runtime;
-        if (this.language == FunctionLanguage.NATIVE_JAVA) {
+        this.canRebuild = runtime.equals(Environment.GRAALVISOR_RUNTIME) && this.isJar(functionCode);
+        if (this.language == FunctionLanguage.NATIVE_JAVA || this.canRebuild) {
             this.status = FunctionStatus.NOT_BUILT_NOT_CONFIGURED;
         } else {
             this.status = FunctionStatus.READY;
@@ -88,11 +95,23 @@ public class Function {
     }
 
     public boolean requiresRegistration() {
-        return language != FunctionLanguage.NATIVE_JAVA;
+        switch (getLambdaExecutionMode()) {
+        case HOTSPOT_W_AGENT:
+        case HOTSPOT:
+        case NATIVE_IMAGE:
+            return false;
+        default:
+            return true;
+        }
     }
 
     public Path buildFunctionSourceCodePath() {
-        return Paths.get(Environment.CODEBASE, name, name);
+        if (canRebuild && getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
+            // The function was uploaded for GV target and its .so is built
+            return Paths.get(Environment.CODEBASE, name, "build_so", "lib" + name + ".so");
+        } else {
+            return Paths.get(Environment.CODEBASE, name, name);
+        }
     }
 
     public String getRuntime() {
@@ -109,7 +128,7 @@ public class Function {
         case READY:
             if (getLanguage() == FunctionLanguage.NATIVE_JAVA) {
                 return LambdaExecutionMode.NATIVE_IMAGE;
-            } else if (getRuntime().equals("graalvisor")) {
+            } else if (getRuntime().equals(Environment.GRAALVISOR_RUNTIME)) {
                 return LambdaExecutionMode.GRAALVISOR;
             } else {
                 return LambdaExecutionMode.CUSTOM;
@@ -120,6 +139,22 @@ public class Function {
     }
 
     public boolean isFunctionIsolated() {
-        return functionIsolation;
+        return this.functionIsolation;
+    }
+
+    public boolean canRebuild() {
+        return this.canRebuild;
+    }
+
+    private boolean isJar(byte[] functionCode) {
+        if (functionCode == null || JAR_FILE_SIGNATURE.length > functionCode.length) {
+            return false;
+        }
+        for (int i = 0; i < JAR_FILE_SIGNATURE.length; ++i) {
+            if (functionCode[i] != JAR_FILE_SIGNATURE[i]) {
+                return false;
+            }
+        }
+        return true;
     }
 }

@@ -13,7 +13,25 @@ FUNCTION_CODE=$FUNCTION_HOME/$FUNCTION_NAME
 LAMBDA_HOME=$CODEBASE_HOME/lambda_"$LAMBDA_ID"_HOTSPOT_W_AGENT
 prepare_hotspot_lambda_directory "$LAMBDA_HOME"
 
-PREV_AGENT_PID=$9
+TIMESTAMP_TAG="${9}"
+if [ -z "$TIMESTAMP_TAG" ]; then
+  echo "Timestamp tag is not present."
+  exit 1
+fi
+
+ENTRY_POINT_TAG="${10}"
+if [ -z "$ENTRY_POINT_TAG" ]; then
+  echo "Entry point tag is not present."
+  exit 1
+fi
+
+PORT_TAG="${11}"
+if [ -z "$PORT_TAG" ]; then
+  echo "Port tag is not present."
+  exit 1
+fi
+
+PREV_AGENT_PID="${12}"
 if [ -z "$PREV_AGENT_PID" ]; then
   echo "Previous agent pid is not present."
   exit 1
@@ -40,7 +58,11 @@ else
   printf "[\n]\n" > "$LAMBDA_HOME"/shared/config/serialization-config.json
 fi
 
-echo "\$JAVA_HOME/bin/java -Djava.library.path=\$JAVA_HOME/lib -agentlib:native-image-agent=config-merge-dir=config,caller-filter-file=caller-filter-config.json,report-dynamic-feature-failures -cp graalvisor-1.0-java.jar:$FUNCTION_NAME org.graalvm.argo.lambda_proxy.JavaProxy" >"$LAMBDA_HOME"/shared/run.sh
+echo "export $PORT_TAG" >"$LAMBDA_HOME"/shared/run.sh
+echo "export $ENTRY_POINT_TAG" >>"$LAMBDA_HOME"/shared/run.sh
+echo "export $TIMESTAMP_TAG" >>"$LAMBDA_HOME"/shared/run.sh
+
+echo "\$JAVA_HOME/bin/java -Djava.library.path=\$JAVA_HOME/lib -agentlib:native-image-agent=config-merge-dir=config,caller-filter-file=caller-filter-config.json -cp graalvisor-1.0-all.jar:$FUNCTION_NAME org.graalvm.argo.lambda_proxy.JavaProxy" >>"$LAMBDA_HOME"/shared/run.sh
 
 "$LAMBDA_HOME"/debian_vm_unikernel.sh --memory "$LAMBDA_MEMORY" --gateway "$LAMBDA_GATEWAY" --ip "$LAMBDA_IP" \
   --mask "$LAMBDA_MASK" --kernel "$KERNEL_PATH" --img "$LAMBDA_HOME"/stretch.img --shared "$LAMBDA_HOME"/shared \

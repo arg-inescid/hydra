@@ -35,6 +35,9 @@ public class Environment {
     public static final String CREATE_TAPS_FILENAME = Paths.get(MANAGER_LOGS, "create_taps.log").toString();
     public static final String REMOVE_TAPS_FILENAME = Paths.get(MANAGER_LOGS, "remove_taps.log").toString();
 
+    // Graalvisor runtime identifier.
+    public static final String GRAALVISOR_RUNTIME = "graalvisor";
+
     public synchronized static long pid() {
         return NEXT_ID++;
     }

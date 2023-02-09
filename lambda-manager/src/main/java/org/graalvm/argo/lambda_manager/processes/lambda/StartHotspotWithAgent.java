@@ -51,10 +51,10 @@ public class StartHotspotWithAgent extends StartLambda {
         } else {
             command.add("--noconsole");
         }
-        command.add(String.valueOf(function.getLastAgentPID()));
         command.add(TIMESTAMP_TAG + System.currentTimeMillis());
         command.add(ENTRY_POINT_TAG + function.getEntryPoint());
         command.add(PORT_TAG + Configuration.argumentStorage.getLambdaPort());
+        command.add(String.valueOf(function.getLastAgentPID()));
         return command;
     }
 

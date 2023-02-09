@@ -8,6 +8,7 @@ import org.graalvm.argo.lambda_manager.core.LambdaManager;
 import org.graalvm.argo.lambda_manager.optimizers.FunctionStatus;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
+import org.graalvm.argo.lambda_manager.processes.lambda.BuildSO;
 import org.graalvm.argo.lambda_manager.processes.lambda.BuildVMM;
 import org.graalvm.argo.lambda_manager.processes.lambda.DefaultLambdaShutdownHandler;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspot;
@@ -64,7 +65,11 @@ public class RoundedRobinScheduler implements Scheduler {
                 break;
             case HOTSPOT:
                 if (function.getStatus() == FunctionStatus.NOT_BUILT_CONFIGURED) {
-                    new BuildVMM(function).build().start();
+                    if (function.getLanguage() == FunctionLanguage.NATIVE_JAVA) {
+                        new BuildVMM(function).build().start();
+                    } else {
+                        new BuildSO(function).build().start();
+                    }
                     Logger.log(Level.INFO, "Starting new vmm build for function " + function.getName());
                 }
                 process = new StartHotspot(lambda, function);
@@ -118,7 +123,7 @@ public class RoundedRobinScheduler implements Scheduler {
             }
 
             // If we have a runtime with multiple isolates.
-            if (function.getRuntime().equals("graalvisor")) {
+            if (function.getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
                 // Acquire memory for a new isolate inside the lambda.
                 if (lambda.getMemoryPool().allocateMemoryLambda(function.getMemory())) {
                     // We successfully allocated memory!
@@ -215,7 +220,7 @@ public class RoundedRobinScheduler implements Scheduler {
                 lambda.resetTimer();
             }
         }
-        if (function.getRuntime().equals("graalvisor")) {
+        if (function.getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
             lambda.getMemoryPool().deallocateMemoryLambda(function.getMemory());
         }
     }
