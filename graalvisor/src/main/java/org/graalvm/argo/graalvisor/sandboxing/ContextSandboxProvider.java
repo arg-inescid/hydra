@@ -14,7 +14,6 @@ import org.graalvm.nativeimage.Isolates;
 import org.graalvm.nativeimage.ObjectHandle;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
 
-// Note: Truffle only!
 public class ContextSandboxProvider extends SandboxProvider {
 
     private Isolate isolate;
