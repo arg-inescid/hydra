@@ -2,10 +2,13 @@ package org.graalvm.argo.graalvisor.base;
 
 import java.util.Locale;
 
+import org.graalvm.argo.graalvisor.sandboxing.SandboxProvider;
+
 public class PolyglotFunction {
     private final String name;
     private final String entryPoint;
     private final PolyglotLanguage language;
+    private SandboxProvider sprovider;
 
     public PolyglotFunction(String name, String entryPoint, String language) {
         this.name = name;
@@ -23,5 +26,13 @@ public class PolyglotFunction {
 
     public PolyglotLanguage getLanguage() {
         return language;
+    }
+
+    public void setSandboxProvider(SandboxProvider sprovider) {
+        this.sprovider = sprovider;
+    }
+
+    public SandboxProvider getSandboxProvider() {
+        return this.sprovider;
     }
 }

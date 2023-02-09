@@ -6,25 +6,26 @@ import org.graalvm.argo.graalvisor.base.PolyglotFunction;
 import org.graalvm.argo.graalvisor.base.PolyglotLanguage;
 import org.graalvm.argo.graalvisor.base.TruffleFunction;
 import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Value;
 
 public class PolyglotEngine {
 
     /**
-     * Each thread owns it truffle context, where polyglot functions execute.
+     * Each thread owns it function value, where polyglot functions execute.
      */
-    private ThreadLocal<Context> context = new ThreadLocal<>();
+    private ThreadLocal<Value> functionValue = new ThreadLocal<>();
 
     /**
-     * Each context has a corresponding truffle function that should be used for the invocation.
+     * Each sandbox has a corresponding truffle engine that should be used for the invocation.
      */
-    private Value vfunction;
+    private Engine functionEngine; // TODO - what is two invocations arrive at the same time.
 
     public String invoke(String functionName, String arguments) throws Exception {
         String resultString = new String();
 
-        if (context.get() == null) {
+        if (functionValue.get() == null) {
            PolyglotFunction polyglotFunction = FunctionStorage.FTABLE.get(functionName);
 
            if (polyglotFunction == null || !(polyglotFunction instanceof TruffleFunction)) {
@@ -51,29 +52,34 @@ public class PolyglotEngine {
                 options.put("python.Executable", javaHome + "/graalvisor-python-venv/bin/python");
             }
 
+            if (functionEngine == null) {
+                functionEngine = Engine.create();
+            }
+
             // Build context.
-            context.set(Context.newBuilder().allowAllAccess(true).engine(truffleFunction.getTruffleEngine()).options(options).build());
-            System.out.println(String.format("[thread %s] Creating context %s", Thread.currentThread().getId(), context.get().toString()));
+            Context context = Context.newBuilder().allowAllAccess(true).engine(functionEngine).options(options).build();
+            System.out.println(String.format("[thread %s] Creating context %s", Thread.currentThread().getId(), context.toString()));
 
             // Host access to implement missing language functionalities.
-            context.get().getBindings(language).putMember("polyHostAccess", new PolyglotHostAccess());
+            context.getBindings(language).putMember("polyHostAccess", new PolyglotHostAccess());
 
             // Evaluate source script to load function into the environment.
-            context.get().eval(language, truffleFunction.getSource());
+            context.eval(language, truffleFunction.getSource());
 
             // Get function handle from the script.
-            vfunction = context.get().eval(language, polyglotFunction.getEntryPoint());
+            functionValue.set(context.eval(language, polyglotFunction.getEntryPoint()));
         }
 
         try {
-            resultString = vfunction.execute(arguments).toString();
+            resultString = functionValue.get().execute(arguments).toString();
         } catch (PolyglotException pe) {
             if (pe.isSyntaxError()) {
                  resultString = String.format("Error happens during parsing/ polyglot function at line %s: %s", pe.getSourceLocation(), pe.getMessage());
             }
         } catch (Exception e) {
-            System.err.println("Error happens during invoking polyglot function: ");
-            resultString = String.format("Error happens during invoking polyglot function:: %s", e.getMessage());
+            resultString = String.format("Error while invoking polyglot function: %s", e.getMessage());
+            System.err.println(resultString);
+            e.printStackTrace(System.err);
         }
 
         return resultString;

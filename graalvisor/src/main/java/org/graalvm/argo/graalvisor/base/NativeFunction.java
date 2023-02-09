@@ -1,24 +1,15 @@
 package org.graalvm.argo.graalvisor.base;
 
-import static org.graalvm.argo.graalvisor.Main.APP_DIR;
-import java.io.FileNotFoundException;
-import com.oracle.svm.graalvisor.api.GraalVisorAPI;
-
 public class NativeFunction extends PolyglotFunction {
 
-	private GraalVisorAPI graalVisorAPI;
+    private final String path;
 
-	public NativeFunction(String name, String entryPoint, String language) {
-		super(name, entryPoint, language);
-		try {
-            this.graalVisorAPI = new GraalVisorAPI(APP_DIR + name);
-        } catch (FileNotFoundException e) {
-            System.err.println("SO file not found.");
-            e.printStackTrace();
-        }
-	}
+    public NativeFunction(String name, String entryPoint, String language, String path) {
+        super(name, entryPoint, language);
+        this.path = path;
+    }
 
-    public GraalVisorAPI getGraalVisorAPI() {
-        return graalVisorAPI;
+    public String getPath() {
+        return this.path;
     }
 }
