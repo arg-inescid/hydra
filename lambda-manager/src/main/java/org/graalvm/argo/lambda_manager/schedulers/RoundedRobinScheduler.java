@@ -9,13 +9,11 @@ import org.graalvm.argo.lambda_manager.optimizers.FunctionStatus;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
 import org.graalvm.argo.lambda_manager.processes.lambda.BuildSO;
-import org.graalvm.argo.lambda_manager.processes.lambda.BuildVMM;
 import org.graalvm.argo.lambda_manager.processes.lambda.DefaultLambdaShutdownHandler;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspot;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotWithAgent;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartLambda;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalvisor;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartVMM;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartCustomRuntime;
 import org.graalvm.argo.lambda_manager.utils.NetworkUtils;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
@@ -65,17 +63,10 @@ public class RoundedRobinScheduler implements Scheduler {
                 break;
             case HOTSPOT:
                 if (function.getStatus() == FunctionStatus.NOT_BUILT_CONFIGURED) {
-                    if (function.getLanguage() == FunctionLanguage.NATIVE_JAVA) {
-                        new BuildVMM(function).build().start();
-                    } else {
-                        new BuildSO(function).build().start();
-                    }
-                    Logger.log(Level.INFO, "Starting new vmm build for function " + function.getName());
+                    new BuildSO(function).build().start();
+                    Logger.log(Level.INFO, "Starting new .so build for function " + function.getName());
                 }
                 process = new StartHotspot(lambda, function);
-                break;
-            case NATIVE_IMAGE:
-                process = new StartVMM(lambda, function);
                 break;
             case GRAALVISOR:
                 process = new StartGraalvisor(lambda, function);

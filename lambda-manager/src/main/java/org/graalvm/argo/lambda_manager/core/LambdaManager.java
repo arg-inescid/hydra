@@ -41,7 +41,6 @@ public class LambdaManager {
     public static final Map<LambdaExecutionMode, Set<Lambda>> startingLambdas = Map.ofEntries(
             Map.entry(LambdaExecutionMode.HOTSPOT_W_AGENT, Collections.newSetFromMap(new ConcurrentHashMap<Lambda, Boolean>())),
             Map.entry(LambdaExecutionMode.HOTSPOT, Collections.newSetFromMap(new ConcurrentHashMap<Lambda, Boolean>())),
-            Map.entry(LambdaExecutionMode.NATIVE_IMAGE, Collections.newSetFromMap(new ConcurrentHashMap<Lambda, Boolean>())),
             Map.entry(LambdaExecutionMode.GRAALVISOR, Collections.newSetFromMap(new ConcurrentHashMap<Lambda, Boolean>())),
             Map.entry(LambdaExecutionMode.CUSTOM, Collections.newSetFromMap(new ConcurrentHashMap<Lambda, Boolean>())));
 
@@ -81,8 +80,7 @@ public class LambdaManager {
                 Configuration.scheduler.reschedule(lambda, function);
 
                 if (response.equals(Messages.HTTP_TIMEOUT)) {
-                    if (lambda.getExecutionMode() == LambdaExecutionMode.NATIVE_IMAGE ||
-                            (function.canRebuild() && lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR)) {
+                    if (function.canRebuild() && lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
                         // TODO: test fallback for GV once isolates do not terminate entire runtime
                         function.setStatus(FunctionStatus.NOT_BUILT_NOT_CONFIGURED);
                         targetMode = LambdaExecutionMode.HOTSPOT_W_AGENT;

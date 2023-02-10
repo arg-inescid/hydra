@@ -68,7 +68,6 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
                 case HOTSPOT_W_AGENT:
                     shutdownHotSpotLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());
                     break;
-                case NATIVE_IMAGE:
                 case GRAALVISOR:
                     shutdownVMMLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());
                     break;

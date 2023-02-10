@@ -2,7 +2,6 @@ package org.graalvm.argo.lambda_manager.core;
 
 import org.graalvm.argo.lambda_manager.optimizers.FunctionStatus;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
-import org.graalvm.argo.lambda_manager.processes.lambda.BuildVMM;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -25,7 +24,7 @@ public class Function {
     private final long memory;
 
     /** The runtime where this function should be executed. Accepted values include:
-     * - graalvisor (any truffle language, java_lib, and java_native)
+     * - graalvisor (any truffle language, java)
      * - <docker image> (e.g., docker.io/openwhisk/action-python-v3.9:latest)
      * */
     private final String runtime;
@@ -40,9 +39,9 @@ public class Function {
     private final boolean canRebuild;
 
     /**
-     * There will be only one started Native Image Agent per function, so we need to keep information
-     * about PID for that single lambda. We are sending this information to
-     * {@link BuildVMM } because during a build, we need to have
+     * There will be only one started Native Image Agent per function, so we need to
+     * keep information about PID for that single lambda. We are sending this
+     * information to {@link BuildSO } because during a build, we need to have
      * access to the agent's generated configurations.
      */
     private long lastAgentPID;
@@ -54,7 +53,7 @@ public class Function {
         this.memory = Long.parseLong(memory);
         this.runtime = runtime;
         this.canRebuild = runtime.equals(Environment.GRAALVISOR_RUNTIME) && this.isJar(functionCode);
-        if (this.language == FunctionLanguage.NATIVE_JAVA || this.canRebuild) {
+        if (this.canRebuild) {
             this.status = FunctionStatus.NOT_BUILT_NOT_CONFIGURED;
         } else {
             this.status = FunctionStatus.READY;
@@ -98,7 +97,6 @@ public class Function {
         switch (getLambdaExecutionMode()) {
         case HOTSPOT_W_AGENT:
         case HOTSPOT:
-        case NATIVE_IMAGE:
             return false;
         default:
             return true;
@@ -126,9 +124,7 @@ public class Function {
         case CONFIGURING_OR_BUILDING:
             return LambdaExecutionMode.HOTSPOT;
         case READY:
-            if (getLanguage() == FunctionLanguage.NATIVE_JAVA) {
-                return LambdaExecutionMode.NATIVE_IMAGE;
-            } else if (getRuntime().equals(Environment.GRAALVISOR_RUNTIME)) {
+            if (getRuntime().equals(Environment.GRAALVISOR_RUNTIME)) {
                 return LambdaExecutionMode.GRAALVISOR;
             } else {
                 return LambdaExecutionMode.CUSTOM;

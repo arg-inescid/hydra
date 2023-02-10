@@ -47,7 +47,6 @@ public class ShutdownHook implements ApplicationEventListener<ApplicationShutdow
         LambdaManager.lambdasFunction.clear();
         LambdaManager.startingLambdas.get(LambdaExecutionMode.HOTSPOT_W_AGENT).clear();
         LambdaManager.startingLambdas.get(LambdaExecutionMode.HOTSPOT).clear();
-        LambdaManager.startingLambdas.get(LambdaExecutionMode.NATIVE_IMAGE).clear();
         LambdaManager.startingLambdas.get(LambdaExecutionMode.GRAALVISOR).clear();
         LambdaManager.startingLambdas.get(LambdaExecutionMode.CUSTOM).clear();
     }
