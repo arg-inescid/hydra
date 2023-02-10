@@ -4,9 +4,9 @@ import java.io.File;
 
 public abstract class Main {
 
-	/**
-	 * Location where function code will be placed.
-	 */
+    /**
+     * Location where function code will be placed.
+     */
     public static String APP_DIR = System.getenv("app_dir");
 
     public static void main(String[] args) throws Exception {
