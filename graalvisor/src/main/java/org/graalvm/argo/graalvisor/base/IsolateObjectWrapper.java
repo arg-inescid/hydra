@@ -1,4 +1,4 @@
-package org.graalvm.argo.lambda_proxy.base;
+package org.graalvm.argo.graalvisor.base;
 
 import org.graalvm.nativeimage.Isolate;
 import org.graalvm.nativeimage.IsolateThread;

@@ -1,4 +1,4 @@
-package org.graalvm.argo.lambda_proxy.utils;
+package org.graalvm.argo.graalvisor.utils;
 
 import java.io.IOException;
 import java.util.HashMap;

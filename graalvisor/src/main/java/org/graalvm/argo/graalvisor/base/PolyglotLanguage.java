@@ -1,4 +1,4 @@
-package org.graalvm.argo.lambda_proxy.base;
+package org.graalvm.argo.graalvisor.base;
 
 public enum PolyglotLanguage {
     JAVASCRIPT("js"),

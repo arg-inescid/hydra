@@ -1,4 +1,4 @@
-package org.graalvm.argo.lambda_proxy.engine;
+package org.graalvm.argo.graalvisor.engine;
 
 import java.awt.Dimension;
 import java.io.DataOutputStream;
@@ -20,7 +20,7 @@ import com.criteo.vips.VipsImage;
 import com.criteo.vips.enums.VipsImageFormat;
 import com.github.mustachejava.DefaultMustacheFactory;
 
-import org.graalvm.argo.lambda_proxy.utils.JsonUtils;
+import org.graalvm.argo.graalvisor.utils.JsonUtils;
 import org.graalvm.polyglot.HostAccess;
 
 public class PolyglotHostAccess {
