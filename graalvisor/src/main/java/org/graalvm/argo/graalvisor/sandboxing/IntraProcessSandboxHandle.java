@@ -53,9 +53,7 @@ public class IntraProcessSandboxHandle extends SandboxHandle implements Comparab
 
         if (function.getLanguage().equals(PolyglotLanguage.JAVA)) {
             IsolateSandboxProvider isprovider = (IsolateSandboxProvider) sprovider;
-            // TODO - why do we even have a guest isolate thread?
-            GuestIsolateThread guestIsolateThread = (GuestIsolateThread) isolateThread;
-            return isprovider.getGraalvisorAPI().invokeFunction(guestIsolateThread, function.getEntryPoint(), jsonArguments);
+            return isprovider.getGraalvisorAPI().invokeFunction((GuestIsolateThread) isolateThread, function.getEntryPoint(), jsonArguments);
         } else {
             return retrieveString(invokeFunction(isolateThread, CurrentIsolate.getCurrentThread(), copyString(isolateThread, function.getName()), copyString(isolateThread, jsonArguments)));
         }
