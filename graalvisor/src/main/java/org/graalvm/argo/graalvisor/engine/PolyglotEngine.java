@@ -15,12 +15,12 @@ public class PolyglotEngine {
     /**
      * Each thread owns it function value, where polyglot functions execute.
      */
-    private ThreadLocal<Value> functionValue = new ThreadLocal<>();
+    private final ThreadLocal<Value> functionValue = new ThreadLocal<>();
 
     /**
      * Each sandbox has a corresponding truffle engine that should be used for the invocation.
      */
-    private Engine functionEngine; // TODO - what is two invocations arrive at the same time.
+    private final Engine functionEngine = Engine.create();
 
     public String invoke(String functionName, String arguments) throws Exception {
         String resultString = new String();
@@ -50,10 +50,6 @@ public class PolyglotEngine {
                 options.put("python.ForceImportSite", "true");
                 // Loading the virtual env with installed packages
                 options.put("python.Executable", javaHome + "/graalvisor-python-venv/bin/python");
-            }
-
-            if (functionEngine == null) {
-                functionEngine = Engine.create();
             }
 
             // Build context.

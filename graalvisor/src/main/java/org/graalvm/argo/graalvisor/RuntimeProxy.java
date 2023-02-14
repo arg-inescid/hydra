@@ -43,7 +43,7 @@ public abstract class RuntimeProxy {
    /**
     * Global reference to the engine that runs truffle functions.
     */
-   public static final PolyglotEngine LANGUAGE_ENGINE = new PolyglotEngine();
+   public static final PolyglotEngine LANGUAGE_ENGINE;
 
    /**
     * Simple Http server. It uses a cached thread pool for managing threads.
@@ -56,6 +56,17 @@ public abstract class RuntimeProxy {
         server.createContext("/register", new RegisterHandler());
         server.createContext("/deregister", new DeregisterHandler());
         server.setExecutor(Executors.newCachedThreadPool());
+    }
+
+    static {
+        PolyglotEngine engine = null;
+        try {
+            engine = new PolyglotEngine();
+        } catch (Throwable e) {
+            System.out.println("Warning: graalvisor compiled with no truffle language support.");
+        } finally {
+            LANGUAGE_ENGINE = engine;
+        }
     }
 
     protected abstract String invoke(PolyglotFunction functionName, boolean cached, String arguments) throws Exception;
@@ -141,8 +152,8 @@ public abstract class RuntimeProxy {
                 } else {
                     try (InputStream bis = new BufferedInputStream(t.getRequestBody(), 4096)) {
                         String sourceCode = new String(bis.readAllBytes(), StandardCharsets.UTF_8);
-                      function = new TruffleFunction(functionName, functionEntryPoint, functionLanguage, sourceCode);
-                      sprovider = new ContextSandboxProvider(function);
+                        function = new TruffleFunction(functionName, functionEntryPoint, functionLanguage, sourceCode);
+                        sprovider = new ContextSandboxProvider(function);
                     }
                 }
                 function.setSandboxProvider(sprovider);
