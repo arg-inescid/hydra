@@ -68,19 +68,18 @@ public class SubstrateVMProxy extends RuntimeProxy {
             }
         }
 
-        private SandboxHandle prepareSandbox() {
+        private SandboxHandle prepareSandbox() throws Exception {
             SandboxHandle worker = function.getSandboxProvider().createSandbox();
             System.out.println(String.format("[thread %s] New sandbox %s", Thread.currentThread().getId(), worker));
             return worker;
         }
 
-        private void disposeSandbox(SandboxHandle shandle) {
+        private void disposeSandbox(SandboxHandle shandle) throws Exception {
             function.getSandboxProvider().destroySandbox(shandle);
             System.out.println(String.format("[thread %s] Destroying sandbox %s", Thread.currentThread().getId(), shandle));
         }
 
-        @Override
-        public void run() {
+        public void runInternal() throws Exception {
             SandboxHandle shandle = prepareSandbox();
             Request req = null;
             pipeline.freeworkers++;
@@ -102,6 +101,16 @@ public class SubstrateVMProxy extends RuntimeProxy {
             }
 
             disposeSandbox(shandle);
+        }
+
+        @Override
+        public void run() {
+            try {
+                runInternal();
+            } catch (Exception e) {
+                System.err.println(String.format("[thread %s] Error: thread quit unexpectedly", Thread.currentThread().getId()));
+                e.printStackTrace();
+            }
         }
     }
 
