@@ -18,7 +18,7 @@ import com.oracle.svm.graalvisor.types.GuestIsolateThread;
 
 public class IntraProcessSandboxHandle extends SandboxHandle implements Comparable<IntraProcessSandboxHandle> {
 
-    private IsolateThread isolateThread;
+    private final IsolateThread isolateThread;
 
     public IntraProcessSandboxHandle(SandboxProvider sprovider, IsolateThread isolateThread) {
         super(sprovider);
