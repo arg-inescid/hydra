@@ -16,11 +16,13 @@ public abstract class SandboxProvider {
         return this.function;
     }
 
+    public abstract String getName();
+
     public abstract void loadProvider() throws IOException;
 
-    public abstract SandboxHandle createSandbox();
+    public abstract SandboxHandle createSandbox() throws IOException;
 
-    public abstract void destroySandbox(SandboxHandle shandle);
+    public abstract void destroySandbox(SandboxHandle shandle) throws IOException;
 
     public abstract void unloadProvider() throws IOException;
 

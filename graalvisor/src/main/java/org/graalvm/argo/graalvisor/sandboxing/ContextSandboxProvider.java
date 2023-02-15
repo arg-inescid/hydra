@@ -51,12 +51,12 @@ public class ContextSandboxProvider extends SandboxProvider {
     @Override
     public SandboxHandle createSandbox() {
             IsolateThread isolateThread = Isolates.attachCurrentThread(isolate);
-           return new IntraProcessSandboxHandle(this, isolateThread);
+           return new ContextSandboxHandle(this, isolateThread);
     }
 
     @Override
     public void destroySandbox(SandboxHandle shandle) {
-        Isolates.detachThread(((IntraProcessSandboxHandle)shandle).getIsolateThread());
+        Isolates.detachThread(((IsolateSandboxHandle)shandle).getIsolateThread());
     }
 
     @Override
@@ -65,4 +65,8 @@ public class ContextSandboxProvider extends SandboxProvider {
         Isolates.tearDownIsolate(isolateThread);
     }
 
+    @Override
+    public String getName() {
+        return "context";
+    }
 }

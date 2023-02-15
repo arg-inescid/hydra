@@ -20,11 +20,13 @@ import java.util.concurrent.Executors;
 
 import org.graalvm.argo.graalvisor.base.NativeFunction;
 import org.graalvm.argo.graalvisor.base.PolyglotFunction;
+import org.graalvm.argo.graalvisor.base.PolyglotLanguage;
 import org.graalvm.argo.graalvisor.base.TruffleFunction;
 import org.graalvm.argo.graalvisor.engine.FunctionStorage;
 import org.graalvm.argo.graalvisor.engine.PolyglotEngine;
 import org.graalvm.argo.graalvisor.sandboxing.ContextSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.IsolateSandboxProvider;
+import org.graalvm.argo.graalvisor.sandboxing.RuntimeSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.SandboxProvider;
 import org.graalvm.argo.graalvisor.utils.ProxyUtils;
 
@@ -121,6 +123,36 @@ public abstract class RuntimeProxy {
     }
 
     private static class RegisterHandler implements HttpHandler {
+
+        private SandboxProvider getDefaultSandboxProvider(PolyglotFunction function) {
+            if (function.getLanguage() == PolyglotLanguage.JAVA) {
+                return new RuntimeSandboxProvider(function);
+            } else {
+                return new ContextSandboxProvider(function);
+            }
+        }
+
+        private SandboxProvider getSandboxProvider(PolyglotFunction function, String sandboxName) {
+
+            if (sandboxName == null) {
+                return getDefaultSandboxProvider(function);
+            }
+
+            if (function.getLanguage() == PolyglotLanguage.JAVA) {
+                if (sandboxName.equals("isolate")) {
+                    return new IsolateSandboxProvider(function);
+                } else if (sandboxName.equals("runtime")) {
+                    return new RuntimeSandboxProvider(function);
+                }
+            } else {
+                if (sandboxName.equals("context")) {
+                    return new ContextSandboxProvider(function);
+                }
+            }
+
+            return null;
+        }
+
         @Override
         public void handle(HttpExchange t) throws IOException {
 
@@ -133,34 +165,42 @@ public abstract class RuntimeProxy {
             }
             String functionName = metaData.get("name");
             String soFileName = APP_DIR + functionName;
+            String functionEntryPoint = metaData.get("entryPoint");
+            String functionLanguage = metaData.get("language");
+            String sandboxName = metaData.get("sandbox");
+            PolyglotFunction function = null;
+            SandboxProvider sprovider = null;
+
             synchronized (FunctionStorage.FTABLE) {
                 if (FunctionStorage.FTABLE.containsKey(functionName)) {
                     writeResponse(t, 200, String.format("Function %s has already been registered!", functionName));
                     return;
                 }
-                String functionEntryPoint = metaData.get("entryPoint");
-                String functionLanguage = metaData.get("language");
-                PolyglotFunction function = null;
-                SandboxProvider sprovider = null;
 
                 if (functionLanguage.equalsIgnoreCase("java")) {
                     try (OutputStream fos = new FileOutputStream(soFileName); InputStream bis = new BufferedInputStream(t.getRequestBody(), 4096)) {
                         bis.transferTo(fos);
                     }
                     function = new NativeFunction(functionName, functionEntryPoint, functionLanguage, APP_DIR + functionName);
-                    sprovider = new IsolateSandboxProvider(function);
                 } else {
                     try (InputStream bis = new BufferedInputStream(t.getRequestBody(), 4096)) {
                         String sourceCode = new String(bis.readAllBytes(), StandardCharsets.UTF_8);
                         function = new TruffleFunction(functionName, functionEntryPoint, functionLanguage, sourceCode);
-                        sprovider = new ContextSandboxProvider(function);
                     }
                 }
+                sprovider = getSandboxProvider(function, sandboxName);
+
+                if (sprovider == null) {
+                    writeResponse(t, 200, String.format("Failed to register fuction: unknown sandbox %s!", sandboxName));
+                    return;
+                }
+
                 function.setSandboxProvider(sprovider);
                 sprovider.loadProvider();
                 FunctionStorage.FTABLE.put(functionName, function);
             }
-            System.out.println("Function registered! Took: " + (System.currentTimeMillis() - start) + " ms");
+
+            System.out.println(String.format("Function %s registered with %s sandboxing in %s ms", functionName, sprovider.getName(), (System.currentTimeMillis() - start)));
             writeResponse(t, 200, String.format("Function %s registered!", functionName));
         }
     }

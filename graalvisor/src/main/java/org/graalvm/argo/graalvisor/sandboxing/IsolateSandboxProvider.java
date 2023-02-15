@@ -27,17 +27,22 @@ public class IsolateSandboxProvider extends SandboxProvider {
     @Override
     public SandboxHandle createSandbox() {
         GuestIsolateThread isolateThread = graalVisorAPI.createIsolate();
-        return new IntraProcessSandboxHandle(this, isolateThread);
+        return new IsolateSandboxHandle(this, isolateThread);
     }
 
     @Override
     public void destroySandbox(SandboxHandle shandle) {
-        IntraProcessSandboxHandle ipshandle = (IntraProcessSandboxHandle) shandle;
+        IsolateSandboxHandle ipshandle = (IsolateSandboxHandle) shandle;
         graalVisorAPI.tearDownIsolate((GuestIsolateThread) ipshandle.getIsolateThread());
     }
 
     @Override
     public void unloadProvider() throws IOException {
         graalVisorAPI.close();
+    }
+
+    @Override
+    public String getName() {
+        return "isolate";
     }
 }
