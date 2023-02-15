@@ -188,8 +188,8 @@ public abstract class RuntimeProxy {
                         function = new TruffleFunction(functionName, functionEntryPoint, functionLanguage, sourceCode);
                     }
                 }
-                sprovider = getSandboxProvider(function, sandboxName);
 
+                sprovider = getSandboxProvider(function, sandboxName);
                 if (sprovider == null) {
                     writeResponse(t, 200, String.format("Failed to register fuction: unknown sandbox %s!", sandboxName));
                     return;
