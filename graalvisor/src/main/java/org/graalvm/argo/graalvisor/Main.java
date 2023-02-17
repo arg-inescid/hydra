@@ -11,6 +11,7 @@ public abstract class Main {
 
     public static void main(String[] args) throws Exception {
         String lambda_port = System.getenv("lambda_port");
+        String lambda_entry_point = System.getenv("lambda_entry_point");
         String lambda_timestamp = System.getenv("lambda_timestamp");
 
         if (lambda_port == null) {
@@ -36,7 +37,7 @@ public abstract class Main {
         if (System.getProperty("java.vm.name").equals("Substrate VM")) {
            new SubstrateVMProxy(port).start();
         } else {
-           new HotSpotProxy(port).start();
+           new HotSpotProxy(port, lambda_entry_point).start();
         }
     }
 }
