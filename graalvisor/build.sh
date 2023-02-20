@@ -1,11 +1,7 @@
 #!/bin/bash
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
-
-OLD_DIR=$DIR
-source "$DIR"/../lambda-manager/src/scripts/environment.sh
-DIR=$OLD_DIR
-
+GRAALVISOR_HOME=$DIR/build/native-image
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
@@ -16,18 +12,30 @@ function build_ni {
         --no-fallback \
         --enable-url-protocols=http \
         -DGraalVisorHost \
-        -Dcom.oracle.svm.graalvisor.libraryPath=$PROXY_HOME/build/resources/main/com.oracle.svm.graalvisor.headers \
+        -Dcom.oracle.svm.graalvisor.libraryPath=$DIR/build/resources/main/com.oracle.svm.graalvisor.headers \
         $LANGS \
-        -cp $PROXY_HOME/build/libs/graalvisor-1.0-all.jar \
+        -cp $DIR/build/libs/graalvisor-1.0-all.jar \
         org.graalvm.argo.graalvisor.Main \
         polyglot-proxy \
         -H:+ReportExceptionStackTraces \
-        -H:ConfigurationFileDirectories=$PROXY_HOME/ni-agent-config/native-image,$PROXY_HOME/ni-agent-config/native-image-jvips
+        -H:ConfigurationFileDirectories=$DIR/ni-agent-config/native-image,$DIR/ni-agent-config/native-image-jvips
 }
 
 function build_niuk {
     $NIUK_HOME/build_niuk.sh $JAVA_HOME $GRAALVISOR_HOME/polyglot-proxy $GRAALVISOR_HOME/polyglot-proxy.img
 }
+
+if [ -z "$JAVA_HOME" ]
+then
+        echo "Please set JAVA_HOME first. It should be a Graalvm with native-image available."
+        exit 1
+fi
+
+if [ -z "$BENCHMARKS_HOME" ]
+then
+        echo "Please set BENCHMARKS_HOME first. It point to a checkout of github.com/graalvm-argo/benchmarks."
+        exit 1
+fi
 
 cd "$DIR" || {
   echo "Redirection failed!"
