@@ -4,14 +4,18 @@ import java.io.IOException;
 
 import org.graalvm.argo.graalvisor.base.NativeFunction;
 import org.graalvm.argo.graalvisor.base.PolyglotFunction;
+
 import com.oracle.svm.graalvisor.api.GraalVisorAPI;
-import com.oracle.svm.graalvisor.types.GuestIsolateThread;
 
-public class IsolateSandboxProvider extends SandboxProvider {
+public class ProcessSandboxProvider extends SandboxProvider {
 
+    /**
+     * The process sandbox provider loads the function so that child processes can benefit form
+     * COW memory.
+     */
     private GraalVisorAPI graalvisorAPI;
 
-    public IsolateSandboxProvider(PolyglotFunction function) {
+    public ProcessSandboxProvider(PolyglotFunction function) {
         super(function);
     }
 
@@ -25,15 +29,13 @@ public class IsolateSandboxProvider extends SandboxProvider {
     }
 
     @Override
-    public SandboxHandle createSandbox() {
-        GuestIsolateThread isolateThread = graalvisorAPI.createIsolate();
-        return new IsolateSandboxHandle(this, isolateThread);
+    public SandboxHandle createSandbox()  throws IOException {
+        return new ProcessSandboxHandle(this);
     }
 
     @Override
-    public void destroySandbox(SandboxHandle shandle) {
-        IsolateSandboxHandle ipshandle = (IsolateSandboxHandle) shandle;
-        graalvisorAPI.tearDownIsolate((GuestIsolateThread) ipshandle.getIsolateThread());
+    public void destroySandbox(SandboxHandle shandle) throws IOException {
+        ((ProcessSandboxHandle) shandle).destroyHandle();
     }
 
     @Override
@@ -43,6 +45,6 @@ public class IsolateSandboxProvider extends SandboxProvider {
 
     @Override
     public String getName() {
-        return "isolate";
+        return "process";
     }
 }

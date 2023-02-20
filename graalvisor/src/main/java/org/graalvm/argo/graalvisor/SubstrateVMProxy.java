@@ -68,19 +68,8 @@ public class SubstrateVMProxy extends RuntimeProxy {
             }
         }
 
-        private SandboxHandle prepareSandbox() throws Exception {
-            SandboxHandle worker = function.getSandboxProvider().createSandbox();
-            System.out.println(String.format("[thread %s] New sandbox %s", Thread.currentThread().getId(), worker));
-            return worker;
-        }
-
-        private void disposeSandbox(SandboxHandle shandle) throws Exception {
-            function.getSandboxProvider().destroySandbox(shandle);
-            System.out.println(String.format("[thread %s] Destroying sandbox %s", Thread.currentThread().getId(), shandle));
-        }
-
         public void runInternal() throws Exception {
-            SandboxHandle shandle = prepareSandbox();
+            SandboxHandle shandle = prepareSandbox(function);
             Request req = null;
             pipeline.freeworkers++;
 
@@ -100,7 +89,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
                 processRequest(shandle, req);
             }
 
-            disposeSandbox(shandle);
+            destroySandbox(function, shandle);
         }
 
         @Override
@@ -152,7 +141,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
         }
     }
 
-    private FunctionPipeline getFunctionPipeline(PolyglotFunction function) {
+    private static FunctionPipeline getFunctionPipeline(PolyglotFunction function) {
         FunctionPipeline pipeline = queues.get(function.getName());
         if (pipeline == null) {
             FunctionPipeline newpipeline = new FunctionPipeline();
@@ -170,6 +159,17 @@ public class SubstrateVMProxy extends RuntimeProxy {
         return pipeline;
     }
 
+    private static SandboxHandle prepareSandbox(PolyglotFunction function) throws Exception {
+        SandboxHandle worker = function.getSandboxProvider().createSandbox();
+        System.out.println(String.format("[thread %s] New sandbox %s", Thread.currentThread().getId(), worker));
+        return worker;
+    }
+
+    private static void destroySandbox(PolyglotFunction function, SandboxHandle shandle) throws Exception {
+        function.getSandboxProvider().destroySandbox(shandle);
+        System.out.println(String.format("[thread %s] Destroying sandbox %s", Thread.currentThread().getId(), shandle));
+    }
+
     @Override
     protected String invoke(PolyglotFunction function, boolean cached, String arguments) throws Exception {
         String res;
@@ -177,9 +177,9 @@ public class SubstrateVMProxy extends RuntimeProxy {
         if (cached) {
             res = invokeInCachedSandbox(getFunctionPipeline(function), arguments);
         } else {
-            SandboxHandle shandle = function.getSandboxProvider().createSandbox();
+            SandboxHandle shandle = prepareSandbox(function);
             res = shandle.invokeSandbox(arguments);
-            function.getSandboxProvider().destroySandbox(shandle);
+            destroySandbox(function, shandle);
         }
 
         return res;

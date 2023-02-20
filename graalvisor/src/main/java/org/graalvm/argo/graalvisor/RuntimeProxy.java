@@ -26,6 +26,7 @@ import org.graalvm.argo.graalvisor.engine.FunctionStorage;
 import org.graalvm.argo.graalvisor.engine.PolyglotEngine;
 import org.graalvm.argo.graalvisor.sandboxing.ContextSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.IsolateSandboxProvider;
+import org.graalvm.argo.graalvisor.sandboxing.ProcessSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.RuntimeSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.SandboxProvider;
 import org.graalvm.argo.graalvisor.utils.ProxyUtils;
@@ -143,6 +144,8 @@ public abstract class RuntimeProxy {
                     return new IsolateSandboxProvider(function);
                 } else if (sandboxName.equals("runtime")) {
                     return new RuntimeSandboxProvider(function);
+                } else if (sandboxName.equals("process")) {
+                    return new ProcessSandboxProvider(function);
                 }
             } else {
                 if (sandboxName.equals("context")) {
