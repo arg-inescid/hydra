@@ -35,6 +35,9 @@ public class Function {
     /** Flag stating if this function can be co-located with other functions in the same lambda. */
     private final boolean functionIsolation;
 
+    /** Flag stating if instances of this function can be co-located in the same lambda. */
+    private final boolean invocationCollocation;
+
     /** Flag stating if this function can be re-built into native image in case of fallback (only for Graalvisor). */
     private final boolean canRebuild;
 
@@ -46,7 +49,7 @@ public class Function {
      */
     private long lastAgentPID;
 
-    public Function(String name, String language, String entryPoint, String memory, String runtime, byte[] functionCode, boolean functionIsolation) throws Exception {
+    public Function(String name, String language, String entryPoint, String memory, String runtime, byte[] functionCode, boolean functionIsolation, boolean invocationCollocation) throws Exception {
         this.name = name;
         this.language = FunctionLanguage.fromString(language);
         this.entryPoint = entryPoint;
@@ -59,6 +62,7 @@ public class Function {
             this.status = FunctionStatus.READY;
         }
         this.functionIsolation = functionIsolation;
+        this.invocationCollocation = invocationCollocation || this.getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR;
     }
 
     public String getName() {
@@ -136,6 +140,13 @@ public class Function {
 
     public boolean isFunctionIsolated() {
         return this.functionIsolation;
+    }
+
+    public boolean canCollocateInvocation() {
+        // Lambda execution mode can change from "non-collocatable" to "collocatable"
+        // runtime and back throughout the function lifetime as the function might go
+        // through the build pipeline and fallback
+        return this.invocationCollocation || this.getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR;
     }
 
     public boolean canRebuild() {

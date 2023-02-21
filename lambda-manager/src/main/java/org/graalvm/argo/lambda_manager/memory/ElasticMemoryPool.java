@@ -25,7 +25,7 @@ public class ElasticMemoryPool extends MemoryPool {
         } else {
         	synchronized (parentPool) {
         		// We always allocate a multiple of LOCAL_POOL_SIZE blocks.
-        		long increment = delta / LOCAL_POOL_SIZE + 1;
+                long increment = (delta / LOCAL_POOL_SIZE + 1) * LOCAL_POOL_SIZE;
         		if (parentPool.allocateMemoryLambda(increment)) {
         			freeMemory = freeMemory + increment - delta;
         			maxMemory += increment;
@@ -41,11 +41,13 @@ public class ElasticMemoryPool extends MemoryPool {
     public synchronized boolean deallocateMemoryLambda(long delta) {
         freeMemory += delta;
         if (freeMemory > LOCAL_POOL_SIZE) {
-        	synchronized (parentPool) {
-        		parentPool.deallocateMemoryLambda(LOCAL_POOL_SIZE);
-        		freeMemory -= LOCAL_POOL_SIZE;
-        		maxMemory -= LOCAL_POOL_SIZE;
-        	}
+            synchronized (parentPool) {
+                if (freeMemory > LOCAL_POOL_SIZE) {
+                    parentPool.deallocateMemoryLambda(LOCAL_POOL_SIZE);
+                    freeMemory -= LOCAL_POOL_SIZE;
+                    maxMemory -= LOCAL_POOL_SIZE;
+                }
+            }
         }
         return true;
     }

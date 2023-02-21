@@ -114,7 +114,7 @@ public class RoundedRobinScheduler implements Scheduler {
             }
 
             // If we have a runtime with multiple isolates.
-            if (function.getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
+            if (function.canCollocateInvocation()) {
                 // Acquire memory for a new isolate inside the lambda.
                 if (lambda.getMemoryPool().allocateMemoryLambda(function.getMemory())) {
                     // We successfully allocated memory!
@@ -155,8 +155,8 @@ public class RoundedRobinScheduler implements Scheduler {
                     // Check if there are lambdas already starting with the execution mode.
                     // TODO: throttle lambda creation properly.
                     if (LambdaManager.startingLambdas.get(targetMode).isEmpty()) {
-                        // Acquire memory for a new lambda.
-                        if (Configuration.argumentStorage.getMemoryPool().allocateMemoryLambda(function.getMemory())) {
+                        // Acquire memory for a new lambda when needed.
+                        if (function.canCollocateInvocation() || Configuration.argumentStorage.getMemoryPool().allocateMemoryLambda(function.getMemory())) {
                             // We successfully allocated memory!
                             startLambda(function, targetMode);
                         } else {
@@ -211,7 +211,7 @@ public class RoundedRobinScheduler implements Scheduler {
                 lambda.resetTimer();
             }
         }
-        if (function.getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
+        if (function.canCollocateInvocation()) {
             lambda.getMemoryPool().deallocateMemoryLambda(function.getMemory());
         }
     }

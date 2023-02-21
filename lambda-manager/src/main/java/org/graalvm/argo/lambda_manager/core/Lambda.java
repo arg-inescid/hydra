@@ -42,7 +42,7 @@ public class Lambda {
 	// TODO - rethink if we should use a function in the constructor.
 	public Lambda(Function function) {
 		this.registeredFunctions = new ConcurrentHashMap<>();
-		this.memoryPool = function.getRuntime().equals(Environment.GRAALVISOR_RUNTIME)
+		this.memoryPool = function.canCollocateInvocation()
 				? new ElasticMemoryPool(Configuration.argumentStorage.getMemoryPool())
 				: new FixedMemoryPool(function.getMemory(), function.getMemory());
 		if (!function.requiresRegistration()) {

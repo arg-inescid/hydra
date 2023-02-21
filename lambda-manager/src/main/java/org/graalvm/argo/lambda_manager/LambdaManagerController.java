@@ -47,8 +47,11 @@ public class LambdaManagerController {
                                          @QueryValue("function_memory") String functionMemory,
                                          @Nullable @QueryValue("function_runtime") String functionRuntime,
                                          @Nullable @QueryValue("function_isolation") Boolean functionIsolation,
+                                         @Nullable @QueryValue("invocation_collocation") Boolean invocationCollocation,
                                          @Body byte[] functionCode) {
-        return LambdaManager.uploadFunction(username, functionName, functionLanguage, functionEntryPoint, functionMemory, functionRuntime, functionCode, Boolean.TRUE.equals(functionIsolation));
+        return LambdaManager.uploadFunction(username, functionName, functionLanguage, functionEntryPoint,
+                functionMemory, functionRuntime, functionCode, Boolean.TRUE.equals(functionIsolation),
+                Boolean.TRUE.equals(invocationCollocation));
     }
 
     @Post("/remove_function")
