@@ -8,33 +8,35 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Paths;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.graalvm.argo.lambda_manager.core.Lambda;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 
 public class LambdaMemoryUtils {
 
-    private static final String RSS_REGEX = "(\\d+)";
     private static final String LAMBDA_PID_FILE = "lambda.pid";
     private static final String LAMBDA_ID_FILE = "lambda.id";
 
     private static final double KB_IN_MB = 1024;
 
-    public static double getProcessMemory(Lambda lambda) throws IOException, InterruptedException {
-        if (lambda.getExecutionMode() == LambdaExecutionMode.CUSTOM) {
-            String lambdaId = getVmId(lambda);
-            InputStream stream = executeCommand("ps", "aux");
-            BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
-            double sizeKb = parseOutputCr(reader, lambdaId);
-            return kilobytesToMegabytes(sizeKb);
-        } else {
-            long pid = getLambdaPid(lambda);
-            InputStream stream = executeCommand("ps", "eo", "rss", String.valueOf(pid));
-            BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
-            double sizeKb = parseOutput(readToString(reader));
-            return kilobytesToMegabytes(sizeKb);
+    public static double getProcessMemory(Lambda lambda) {
+        try {
+            if (lambda.getExecutionMode() == LambdaExecutionMode.CUSTOM) {
+                String lambdaId = getVmId(lambda);
+                InputStream stream = executeCommand("bash", "-c", "ps aux | grep firecracker");
+                BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+                double sizeKb = parseOutputCr(reader, lambdaId);
+                return kilobytesToMegabytes(sizeKb);
+            } else {
+                String pid = getLambdaPid(lambda);
+                InputStream stream = executeCommand("ps", "eo", "rss", pid);
+                BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+                double sizeKb = parseOutput(readToString(reader));
+                return kilobytesToMegabytes(sizeKb);
+            }
+        } catch (Throwable thr) {
+            thr.printStackTrace();
+            return 0;
         }
     }
 
@@ -56,12 +58,8 @@ public class LambdaMemoryUtils {
     }
 
     private static double parseOutput(String processOutput) {
-        Pattern pattern = Pattern.compile(RSS_REGEX);
-        Matcher matcher = pattern.matcher(processOutput);
-        if (matcher.find()) {
-            return Double.parseDouble(matcher.group(1));
-        }
-        return 0;
+        processOutput = processOutput.replaceAll("[^-\\d.]", "");
+        return processOutput.isEmpty() ? 0 : Double.parseDouble(processOutput);
     }
 
     private static String getVmId(Lambda lambda) throws IOException, InterruptedException {
@@ -70,14 +68,14 @@ public class LambdaMemoryUtils {
         return readToString(reader);
     }
 
-    private static long getLambdaPid(Lambda lambda) throws IOException, InterruptedException {
+    private static String getLambdaPid(Lambda lambda) throws IOException, InterruptedException {
         File pidFile = Paths.get(CODEBASE, lambda.getLambdaName(), LAMBDA_PID_FILE).toFile();
         BufferedReader reader = new BufferedReader(new FileReader(pidFile));
         String parentPid = readToString(reader);
 
         InputStream stream = executeCommand("pgrep", "-P", parentPid);
         reader = new BufferedReader(new InputStreamReader(stream));
-        return Long.parseLong(readToString(reader));
+        return readToString(reader);
     }
 
     private static String readToString(BufferedReader reader) throws IOException {
