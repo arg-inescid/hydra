@@ -48,7 +48,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
 
         private final PolyglotFunction function;
 
-        private FunctionPipeline pipeline;
+        private final FunctionPipeline pipeline;
 
         public Worker(PolyglotFunction function, FunctionPipeline pipeline) {
             this.function = function;
@@ -71,7 +71,6 @@ public class SubstrateVMProxy extends RuntimeProxy {
         public void runInternal() throws Exception {
             SandboxHandle shandle = prepareSandbox(function);
             Request req = null;
-            pipeline.freeworkers++;
 
             try {
                 while ((req = pipeline.queue.poll(10, TimeUnit.SECONDS)) != null) {
@@ -83,22 +82,19 @@ public class SubstrateVMProxy extends RuntimeProxy {
                 e.printStackTrace();
             }
 
-            // Between the loop exit and now, there could be a new request.
-            pipeline = queues.remove(function.getName());
-            while ((req = pipeline.queue.poll()) != null) {
-                processRequest(shandle, req);
-            }
-
             destroySandbox(function, shandle);
         }
 
         @Override
         public void run() {
             try {
+                pipeline.freeworkers++;
                 runInternal();
             } catch (Exception e) {
                 System.err.println(String.format("[thread %s] Error: thread quit unexpectedly", Thread.currentThread().getId()));
                 e.printStackTrace();
+            } finally {
+                pipeline.freeworkers--;
             }
         }
     }
@@ -166,8 +162,8 @@ public class SubstrateVMProxy extends RuntimeProxy {
     }
 
     private static void destroySandbox(PolyglotFunction function, SandboxHandle shandle) throws Exception {
-        function.getSandboxProvider().destroySandbox(shandle);
         System.out.println(String.format("[thread %s] Destroying sandbox %s", Thread.currentThread().getId(), shandle));
+        function.getSandboxProvider().destroySandbox(shandle);
     }
 
     @Override

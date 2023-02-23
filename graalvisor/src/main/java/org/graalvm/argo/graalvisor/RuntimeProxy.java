@@ -127,7 +127,7 @@ public abstract class RuntimeProxy {
 
         private SandboxProvider getDefaultSandboxProvider(PolyglotFunction function) {
             if (function.getLanguage() == PolyglotLanguage.JAVA) {
-                return new RuntimeSandboxProvider(function);
+                return new IsolateSandboxProvider(function);
             } else {
                 return new ContextSandboxProvider(function);
             }

@@ -24,7 +24,7 @@ public class ProcessSandboxHandle extends SandboxHandle {
     private static final String C2P_SMEM_PREFIX = SMEM_PREFIX + "-from-";
 
     /**
-     * Signal number for sending a SIGKILL signal.
+     * Signal number for sending a terminating child processes.
      */
     private static final int SIGKILL = 9;
 
@@ -68,9 +68,6 @@ public class ProcessSandboxHandle extends SandboxHandle {
     }
 
     @CFunction
-    public static native int fork();
-
-    @CFunction
     public static native int kill(int pid, int sig);
 
     private void child(ProcessSandboxProvider rsProvider) {
@@ -85,19 +82,39 @@ public class ProcessSandboxHandle extends SandboxHandle {
             System.err.println(e.getMessage());
             e.printStackTrace();
         } finally {
-            kill((int) ProcessHandle.current().pid(), SIGKILL);
+            destroyChild(childPid);
         }
     }
 
+    private static boolean waitChild(int pid) {
+        for (int i = 0; i < 10; i++) {
+            if (childToParentChannel(pid).exists()) {
+                return true;
+            } else {
+                try {
+                    Thread.sleep(100); // TODO - reduce a bit more?
+                } catch (InterruptedException e) {
+                    // ignore
+                }
+            }
+        }
+        return false;
+    }
+
     public ProcessSandboxHandle(ProcessSandboxProvider rsProvider) throws IOException {
-        if ((childPid = fork())== 0) {
+        if ((childPid = NativeSandboxInterface.gfork()) == 0) {
             childPid = (int) ProcessHandle.current().pid();
             sender = new SendOnlySharedMemoryChannel(childToParentChannel(childPid));
             receiver = new ReceiveOnlySharedMemoryChannel(parentToChildChannel(childPid));
             child(rsProvider);
         } else {
-            sender = new SendOnlySharedMemoryChannel(parentToChildChannel(childPid));
-            receiver = new ReceiveOnlySharedMemoryChannel(childToParentChannel(childPid));
+            if (waitChild(childPid)) {
+                sender = new SendOnlySharedMemoryChannel(parentToChildChannel(childPid));
+                receiver = new ReceiveOnlySharedMemoryChannel(childToParentChannel(childPid));
+            } else {
+                kill(childPid, SIGKILL);
+                throw new IOException(String.format("Process sandbox (%d) failed to start.", childPid));
+            }
         }
     }
 
@@ -108,10 +125,9 @@ public class ProcessSandboxHandle extends SandboxHandle {
     }
 
     private static void destroyChild(int pid) {
+        kill(pid, SIGKILL);
         parentToChildChannel(pid).delete();
         childToParentChannel(pid).delete();
-        System.out.println("Killing process " + pid);
-        kill(pid, SIGKILL);
     }
 
     @Override
