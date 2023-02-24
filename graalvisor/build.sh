@@ -36,13 +36,13 @@ function build_niuk {
 
 if [ -z "$JAVA_HOME" ]
 then
-        echo "Please set JAVA_HOME first. It should be a Graalvm with native-image available."
+        echo "Please set JAVA_HOME first. It should be a GraalVM with native-image available."
         exit 1
 fi
 
 if [ -z "$BENCHMARKS_HOME" ]
 then
-        echo "Please set BENCHMARKS_HOME first. It point to a checkout of github.com/graalvm-argo/benchmarks."
+        echo "Please set BENCHMARKS_HOME first. It should point to a checkout of github.com/graalvm-argo/benchmarks."
         exit 1
 fi
 
