@@ -2,6 +2,8 @@ package org.graalvm.argo.graalvisor;
 
 import java.io.File;
 
+import org.graalvm.argo.graalvisor.sandboxing.NativeSandboxInterface;
+
 public abstract class Main {
 
     /**
@@ -28,8 +30,12 @@ public abstract class Main {
             APP_DIR = "./apps/";
         }
 
-        System.out.println(String.format("Polyglot Lambda boot time: %s ms" ,(System.currentTimeMillis() - Long.parseLong(lambda_timestamp))));
+        System.out.println(String.format("Graalvisor boot time: %s ms" ,(System.currentTimeMillis() - Long.parseLong(lambda_timestamp))));
 
+        // Initialize our native sandbox interface.
+        NativeSandboxInterface.ginit();
+
+        // Create the directory where function code will be placed.
         new File(APP_DIR).mkdirs();
 
         int port = Integer.parseInt(lambda_port);
