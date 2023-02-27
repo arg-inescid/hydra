@@ -6,6 +6,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.graalvm.argo.graalvisor.base.PolyglotFunction;
 import org.graalvm.argo.graalvisor.sandboxing.SandboxHandle;
@@ -74,9 +75,9 @@ public class SubstrateVMProxy extends RuntimeProxy {
 
             try {
                 while ((req = pipeline.queue.poll(10, TimeUnit.SECONDS)) != null) {
-                    pipeline.freeworkers--;
+                    pipeline.freeworkers.decrementAndGet();
                     processRequest(shandle, req);
-                    pipeline.freeworkers++;
+                    pipeline.freeworkers.incrementAndGet();
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -88,13 +89,12 @@ public class SubstrateVMProxy extends RuntimeProxy {
         @Override
         public void run() {
             try {
-                pipeline.freeworkers++;
                 runInternal();
             } catch (Exception e) {
                 System.err.println(String.format("[thread %s] Error: thread quit unexpectedly", Thread.currentThread().getId()));
                 e.printStackTrace();
             } finally {
-                pipeline.freeworkers--;
+                pipeline.freeworkers.decrementAndGet();
             }
         }
     }
@@ -106,7 +106,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
 
         private final BlockingQueue<Request> queue;
 
-        private volatile int freeworkers = 0;
+        private final AtomicInteger freeworkers = new AtomicInteger(0);
 
         public FunctionPipeline() {
             this.queue = new ArrayBlockingQueue<>(16);
@@ -139,30 +139,30 @@ public class SubstrateVMProxy extends RuntimeProxy {
 
     private static FunctionPipeline getFunctionPipeline(PolyglotFunction function) {
         FunctionPipeline pipeline = queues.get(function.getName());
+
         if (pipeline == null) {
             FunctionPipeline newpipeline = new FunctionPipeline();
             FunctionPipeline oldpipeline = queues.putIfAbsent(function.getName(), newpipeline);
             pipeline = oldpipeline == null ? newpipeline : oldpipeline;
-            // We could loose the race to install a queue for this function.
-            if (oldpipeline == null) {
-                // We won the race, create isolate worker.
-                new Worker(function, pipeline).start();
-            }
-        } else if (!pipeline.queue.isEmpty() && pipeline.freeworkers < pipeline.queue.size()) {
-            // If the queue is not empty and if there not enough workers, we create a new isolate worker to help processing requests.
+        }
+
+        if (pipeline.freeworkers.compareAndSet(0, 1)) {
             new Worker(function, pipeline).start();
         }
+
         return pipeline;
     }
 
     private static SandboxHandle prepareSandbox(PolyglotFunction function) throws Exception {
+        long start = System.nanoTime();
         SandboxHandle worker = function.getSandboxProvider().createSandbox();
-        System.out.println(String.format("[thread %s] New sandbox %s", Thread.currentThread().getId(), worker));
+        long finish = System.nanoTime();
+        System.out.println(String.format("[thread %s] New %s sandbox %s in %s us", Thread.currentThread().getId(), function.getSandboxProvider().getName(), worker, (finish - start)/1000));
         return worker;
     }
 
     private static void destroySandbox(PolyglotFunction function, SandboxHandle shandle) throws Exception {
-        System.out.println(String.format("[thread %s] Destroying sandbox %s", Thread.currentThread().getId(), shandle));
+        System.out.println(String.format("[thread %s] Destroying %s sandbox %s", Thread.currentThread().getId(), function.getSandboxProvider().getName(), shandle));
         function.getSandboxProvider().destroySandbox(shandle);
     }
 

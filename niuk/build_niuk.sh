@@ -21,6 +21,12 @@ function copy_deps {
     done
 }
 
+if [ -z "$BENCHMARKS_HOME" ]
+then
+        echo "Please set BENCHMARKS_HOME first. It should point to a checkout of github.com/graalvm-argo/benchmarks."
+        exit 1
+fi
+
 if [ "$#" -ne 3 ]; then
     echo "Illegal number of parameters."
     echo "Syntax: build_niuk.sh <graalvm home> <input graalvisor native-image binary path> <output graalvisor vm disk path>"
@@ -47,13 +53,15 @@ cp /lib64/ld-linux-x86-64.so.2 $DISK/lib64/ld-linux-x86-64.so.2
 copy_deps $gvbinary
 
 # Copy Tensorflow dependencies.
-copy_deps ../../graalvm-argo-benchmarks/src/java/gv-classify/build/libclassify.so
+copy_deps $BENCHMARKS_HOME/src/java/gv-classify/build/libclassify.so
+unzip -o -q $BENCHMARKS_HOME/src/java/gv-classify/build/libs/classify-1.0-all.jar -d /tmp/classify
+for dep in /tmp/classify/org/tensorflow/native/linux-x86_64/*.so; do copy_deps $dep; done
 
 # Graalpython's Pillow package.
 copy_deps ~/.cache/Python-Eggs/Pillow-6.2.0-py3.8-linux-x86_64.egg-tmp/PIL/_imaging.graalpython-38-native-x86_64-linux.so
 
 # JVips.jar
-unzip -o -q ../../graalvm-argo-benchmarks/demos/demo-ni-jni/JVips.jar -d /tmp/jvips
+unzip -o -q $BENCHMARKS_HOME/demos/ni-jni/JVips.jar -d /tmp/jvips
 for dep in /tmp/jvips/*.so; do copy_deps $dep; done
 
 # Copy graalvm languages and python's virtual environment.
