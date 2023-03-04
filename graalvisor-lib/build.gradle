@@ -37,13 +37,8 @@ task hostLib(type: ShadowJar) {
     hostLib.archiveFileName = rootProject.name + '-1.0-host' + '.jar'
 }
 
-
 dependencies {
     implementation 'org.graalvm.sdk:graal-sdk:22.0.0'
     implementation 'com.fasterxml.jackson.jr:jackson-jr-objects:2.13.0-rc2'
     compileOnly group: 'org.graalvm.nativeimage', name: 'svm', version: '22.0.0'
-}
-
-test {
-    useJUnitPlatform()
 }

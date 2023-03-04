@@ -12,8 +12,6 @@ import org.graalvm.nativeimage.c.struct.CField;
 import org.graalvm.nativeimage.c.struct.CStruct;
 import org.graalvm.nativeimage.c.type.CCharPointer;
 import org.graalvm.word.PointerBase;
-import org.graalvm.word.UnsignedWord;
-
 import com.oracle.svm.graalvisor.types.GraalVisorIsolate;
 import com.oracle.svm.graalvisor.types.GraalVisorIsolateThread;
 
@@ -23,26 +21,6 @@ public class GraalVisor {
     public interface HostReceiveStringFunctionPointer extends CFunctionPointer {
         @InvokeCFunctionPointer
         ObjectHandle invoke(GraalVisorIsolateThread thread, CCharPointer cString);
-    }
-
-    public interface HostOpenFileFunctionPointer extends CFunctionPointer {
-        @InvokeCFunctionPointer
-        int invoke(GraalVisorIsolateThread hostThread, CCharPointer fileName, int accessMode);
-    }
-
-    public interface HostCloseFileFunctionPointer extends CFunctionPointer {
-        @InvokeCFunctionPointer
-        int invoke(GraalVisorIsolateThread hostThread, int fd);
-    }
-
-    public interface HostWriteBytesFunctionPointer extends CFunctionPointer {
-        @InvokeCFunctionPointer
-        int invoke(GraalVisorIsolateThread hostThread, int fd, CCharPointer bytes, UnsignedWord length);
-    }
-
-    public interface HostReadBytesFunctionPointer extends CFunctionPointer {
-        @InvokeCFunctionPointer
-        int invoke(GraalVisorIsolateThread hostThread, int fd, CCharPointer buffer, int bufferLen, int readOffset);
     }
 
     @CStruct("graal_visor_t")
@@ -60,31 +38,6 @@ public class GraalVisor {
 
         @CField("f_host_receive_string")
         void setHostReceiveStringFunction(HostReceiveStringFunctionPointer printFunction);
-
-        @CField("f_host_open_file")
-        HostOpenFileFunctionPointer getHostOpenFileFunction();
-
-        @CField("f_host_open_file")
-        void setHostOpenFileFunction(HostOpenFileFunctionPointer hostOpenFileFunctionPointer);
-
-        @CField("f_host_close_file")
-        HostCloseFileFunctionPointer getHostCloseFileFunction();
-
-        @CField("f_host_close_file")
-        void setHostCloseFileFunction(HostCloseFileFunctionPointer hostCloseFileFunctionPointer);
-
-        @CField("f_host_write_bytes")
-        HostWriteBytesFunctionPointer getHostWriteBytesFunction();
-
-        @CField("f_host_write_bytes")
-        void setHostWriteBytesFunction(HostWriteBytesFunctionPointer hostWriteBytesFunctionPointer);
-
-        @CField("f_host_read_bytes")
-        HostReadBytesFunctionPointer getHostReadBytesFunction();
-
-        @CField("f_host_read_bytes")
-        void setHostReadBytesFunction(HostReadBytesFunctionPointer hostReadBytesFunctionPointer);
-
     }
 
     static class GraalVisorAPIDirectives implements CContext.Directives {
