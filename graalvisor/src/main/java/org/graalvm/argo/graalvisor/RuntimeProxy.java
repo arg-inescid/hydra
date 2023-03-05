@@ -43,14 +43,29 @@ import com.sun.net.httpserver.HttpServer;
  */
 public abstract class RuntimeProxy {
 
-   /**
-    * Global reference to the engine that runs truffle functions.
-    */
-   public static final PolyglotEngine LANGUAGE_ENGINE;
+    interface ProxyHttpHandler extends HttpHandler {
 
-   /**
-    * Simple Http server. It uses a cached thread pool for managing threads.
-    */
+        abstract void handleInternal(HttpExchange exchange) throws IOException;
+
+        @Override
+        public default void handle(HttpExchange exchange) throws IOException {
+            try {
+                handleInternal(exchange);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+    /**
+     * Global reference to the engine that runs truffle functions.
+     */
+    public static final PolyglotEngine LANGUAGE_ENGINE;
+
+    /**
+     * Simple Http server. It uses a cached thread pool for managing threads.
+     */
     private static HttpServer server;
 
     public RuntimeProxy(int port) throws IOException {
@@ -96,10 +111,10 @@ public abstract class RuntimeProxy {
         server.start();
     }
 
-    private class InvocationHandler implements HttpHandler {
+    private class InvocationHandler implements ProxyHttpHandler {
 
         @Override
-        public void handle(HttpExchange t) throws IOException {
+        public void handleInternal(HttpExchange t) throws IOException {
             try {
                 String jsonBody = ProxyUtils.extractRequestBody(t);
                 Map<String, Object> input = jsonToMap(jsonBody);
@@ -123,7 +138,7 @@ public abstract class RuntimeProxy {
         }
     }
 
-    private static class RegisterHandler implements HttpHandler {
+    private static class RegisterHandler implements ProxyHttpHandler {
 
         private SandboxProvider getDefaultSandboxProvider(PolyglotFunction function) {
             if (function.getLanguage() == PolyglotLanguage.JAVA) {
@@ -157,8 +172,7 @@ public abstract class RuntimeProxy {
         }
 
         @Override
-        public void handle(HttpExchange t) throws IOException {
-
+        public void handleInternal(HttpExchange t) throws IOException {
             long start = System.currentTimeMillis();
             String[] params = t.getRequestURI().getQuery().split("&");
             Map<String, String> metaData = new HashMap<>();
@@ -208,9 +222,10 @@ public abstract class RuntimeProxy {
         }
     }
 
-    private static class DeregisterHandler implements HttpHandler {
+    private static class DeregisterHandler implements ProxyHttpHandler {
+
         @Override
-        public void handle(HttpExchange t) throws IOException {
+        public void handleInternal(HttpExchange t) throws IOException {
             try {
                 String functionName = (String) jsonToMap(extractRequestBody(t)).get("name");
                 PolyglotFunction function = FunctionStorage.FTABLE.get(functionName);

@@ -37,25 +37,30 @@ fi
 gcc -c $DIR/init.c -o $DIR/init.o
 gcc -o $DIR/init $DIR/init.o
 
-# Prepare file system.
+# Prepare directory used to setup the filesystem.
 rm -rf $DISK &> /dev/null
-mkdir -p $DISK/proc
-mkdir -p $DISK/tmp
-mkdir -p $DISK/dev
-mkdir -p $DISK/lib64
-mkdir -p $DISK/lib/x86_64-linux-gnu 
-mkdir -p $DISK/usr/lib/x86_64-linux-gnu
+mkdir -p $DISK
 
-# Copy the dynamic linker.
-cp /lib64/ld-linux-x86-64.so.2 $DISK/lib64/ld-linux-x86-64.so.2
+# If we don't have a base filesystem, create one.
+if [ ! -f $DIR/debian.ext4 ];
+then
+    # Create an empty 2gb partition.
+    dd if=/dev/zero of=$DIR/debian.ext4 bs=1M count=2048
+    mkfs.ext4 $DIR/debian.ext4
+    # Mount it, add permissions
+    sudo mount $DIR/debian.ext4 $DISK
+    sudo chown -R $USER:$USER $DIR
+    # Use a debian docker to copy the entire image to the mounted dir.
+    docker export $(docker create debian) | tar -xC $DISK
+    # Revert permissions and unmount.
+    sudo chown -R root:root $DISK
+    sudo umount $DISK
+fi
 
-# Copy necessary libraries (check with ldd ../graalvisor/build/native-image/polyglot-proxy).
-copy_deps $gvbinary
-
-# Copy Tensorflow dependencies.
-copy_deps $BENCHMARKS_HOME/src/java/gv-classify/build/libclassify.so
-unzip -o -q $BENCHMARKS_HOME/src/java/gv-classify/build/libs/classify-1.0-all.jar -d /tmp/classify
-for dep in /tmp/classify/org/tensorflow/native/linux-x86_64/*.so; do copy_deps $dep; done
+# Copy the base filesystem into a new one, mount, and setup permissions.
+cp $DIR/debian.ext4 $gvdisk
+sudo mount $gvdisk $DISK
+sudo chown -R $USER:$USER $DISK
 
 # Graalpython's Pillow package.
 copy_deps ~/.cache/Python-Eggs/Pillow-6.2.0-py3.8-linux-x86_64.egg-tmp/PIL/_imaging.graalpython-38-native-x86_64-linux.so
@@ -73,5 +78,7 @@ cp -r $ghome/graalvisor-python-venv $DISK/jvm
 cp $gvbinary $DISK/polyglot-proxy
 cp $DIR/init $DISK
 
-# Create the file system.
-virt-make-fs --type=ext4 --format=raw --size=2048M $DISK $gvdisk
+# Unmount image and remove directory used for the mount.
+sudo chown -R root:root $DISK
+sudo umount $DISK
+rm -r $DISK
