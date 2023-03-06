@@ -19,6 +19,7 @@ function build_ni {
     $JAVA_HOME/bin/native-image \
         --no-fallback \
         --enable-url-protocols=http \
+        --initialize-at-run-time=com.oracle.svm.graalvisor.utils.JsonUtils \
 	-H:CLibraryPath=$LIB_DIR \
         -DGraalVisorHost \
         -Dcom.oracle.svm.graalvisor.libraryPath=$DIR/build/resources/main/com.oracle.svm.graalvisor.headers \

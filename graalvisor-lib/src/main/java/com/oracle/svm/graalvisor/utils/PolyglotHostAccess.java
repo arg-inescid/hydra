@@ -1,4 +1,4 @@
-package org.graalvm.argo.graalvisor.engine;
+package com.oracle.svm.graalvisor.utils;
 
 import java.awt.Dimension;
 import java.io.DataOutputStream;
@@ -18,9 +18,7 @@ import java.util.Map;
 import com.criteo.vips.VipsException;
 import com.criteo.vips.VipsImage;
 import com.criteo.vips.enums.VipsImageFormat;
-import com.github.mustachejava.DefaultMustacheFactory;
 
-import org.graalvm.argo.graalvisor.utils.JsonUtils;
 import org.graalvm.polyglot.HostAccess;
 
 public class PolyglotHostAccess {
@@ -102,21 +100,6 @@ public class PolyglotHostAccess {
             image.release();
             return bytes;
         } catch (Throwable e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    // Note: Replacement for nodejs mustache package.
-    @HostAccess.Export
-    public String mustache(String template, String arguments) {
-        Map<String, Object> scopes = JsonUtils.jsonToMap(arguments);
-        try {
-            Writer writer = new StringWriter();
-            new DefaultMustacheFactory().compile(new StringReader(template), "template").execute(writer, scopes);
-            writer.flush();
-            return writer.toString();
-        } catch (IOException e) {
             e.printStackTrace();
             return null;
         }

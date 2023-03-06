@@ -10,6 +10,8 @@ import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Value;
 
+import com.oracle.svm.graalvisor.utils.PolyglotHostAccess;
+
 public class PolyglotEngine {
 
     /**

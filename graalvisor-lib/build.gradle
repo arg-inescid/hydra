@@ -38,7 +38,8 @@ task hostLib(type: ShadowJar) {
 }
 
 dependencies {
-    implementation 'org.graalvm.sdk:graal-sdk:22.0.0'
+    implementation 'org.graalvm.sdk:graal-sdk:22.1.0'
     implementation 'com.fasterxml.jackson.jr:jackson-jr-objects:2.13.0-rc2'
-    compileOnly group: 'org.graalvm.nativeimage', name: 'svm', version: '22.0.0'
+    implementation(files(System.getenv('BENCHMARKS_HOME') + '/src/javascript/gv-thumbnail/jvips/JVips.jar'))
+    compileOnly group: 'org.graalvm.nativeimage', name: 'svm', version: '22.1.0'
 }
