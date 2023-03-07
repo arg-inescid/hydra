@@ -63,7 +63,6 @@ copy_deps ~/.cache/Python-Eggs/Pillow-6.2.0-py3.8-linux-x86_64.egg-tmp/PIL/_imag
 if [ -z "$BENCHMARKS_HOME" ]
 then
         echo "Warninig: BENCHMARKS_HOME is not set. Some benchmarks might now work due to missing dependencies."
-        exit 1
 else
         # JVips.jar
         unzip -o -q $BENCHMARKS_HOME/demos/ni-jni/JVips.jar -d /tmp/jvips
