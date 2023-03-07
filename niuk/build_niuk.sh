@@ -21,12 +21,6 @@ function copy_deps {
     done
 }
 
-if [ -z "$BENCHMARKS_HOME" ]
-then
-        echo "Please set BENCHMARKS_HOME first. It should point to a checkout of github.com/graalvm-argo/benchmarks."
-        exit 1
-fi
-
 if [ "$#" -ne 3 ]; then
     echo "Illegal number of parameters."
     echo "Syntax: build_niuk.sh <graalvm home> <input graalvisor native-image binary path> <output graalvisor vm disk path>"
@@ -65,9 +59,17 @@ sudo chown -R $USER:$USER $DISK
 # Graalpython's Pillow package.
 copy_deps ~/.cache/Python-Eggs/Pillow-6.2.0-py3.8-linux-x86_64.egg-tmp/PIL/_imaging.graalpython-38-native-x86_64-linux.so
 
-# JVips.jar
-unzip -o -q $BENCHMARKS_HOME/demos/ni-jni/JVips.jar -d /tmp/jvips
-for dep in /tmp/jvips/*.so; do copy_deps $dep; done
+# TODO - eventually we also need to get rid of this. Benchmarks should include their own deps.
+if [ -z "$BENCHMARKS_HOME" ]
+then
+        echo "Warninig: BENCHMARKS_HOME is not set. Some benchmarks might now work due to missing dependencies."
+        exit 1
+else
+        # JVips.jar
+        unzip -o -q $BENCHMARKS_HOME/demos/ni-jni/JVips.jar -d /tmp/jvips
+        for dep in /tmp/jvips/*.so; do copy_deps $dep; done
+fi
+
 
 # Copy graalvm languages and python's virtual environment.
 mkdir -p $DISK/jvm/languages
