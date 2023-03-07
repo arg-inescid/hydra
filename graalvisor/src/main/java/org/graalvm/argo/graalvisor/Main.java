@@ -16,21 +16,19 @@ public abstract class Main {
         String lambda_entry_point = System.getenv("lambda_entry_point");
         String lambda_timestamp = System.getenv("lambda_timestamp");
 
-        if (lambda_port == null) {
-            System.err.println("Error invoking graalvisor, service port is null.");
-            System.exit(1);
+        if (lambda_timestamp != null) {
+            System.out.println(String.format("Graalvisor boot time: %s ms" ,(System.currentTimeMillis() - Long.parseLong(lambda_timestamp))));
         }
 
-        if (lambda_timestamp == null) {
-            System.err.println("Error invoking graalvisor, service timestamp is null.");
-            System.exit(1);
+        if (lambda_port == null) {
+            lambda_port = "8080";
         }
 
         if (APP_DIR == null) {
             APP_DIR = "./apps/";
         }
 
-        System.out.println(String.format("Graalvisor boot time: %s ms" ,(System.currentTimeMillis() - Long.parseLong(lambda_timestamp))));
+        System.out.println(String.format("Graalvisor listening on port  %s.", lambda_port));
 
         // Initialize our native sandbox interface.
         NativeSandboxInterface.ginit();
