@@ -41,12 +41,6 @@ then
         exit 1
 fi
 
-if [ -z "$BENCHMARKS_HOME" ]
-then
-        echo "Please set BENCHMARKS_HOME first. It should point to a checkout of github.com/graalvm-argo/benchmarks."
-        exit 1
-fi
-
 cd "$DIR" || {
   echo "Redirection failed!"
   exit 1

@@ -1,24 +1,14 @@
 package com.oracle.svm.graalvisor.utils;
 
-import java.awt.Dimension;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.io.Writer;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
-import java.util.Map;
-
-import com.criteo.vips.VipsException;
-import com.criteo.vips.VipsImage;
-import com.criteo.vips.enums.VipsImageFormat;
-
 import org.graalvm.polyglot.HostAccess;
 
 public class PolyglotHostAccess {
@@ -87,22 +77,4 @@ public class PolyglotHostAccess {
             e.printStackTrace();
         }
     }
-
-    // Note: Access to vips (replacement for nodejs sharp package).
-    @HostAccess.Export
-    public byte[] resize(byte[] bytes, float ratio) {
-        try {
-            VipsImage image = new VipsImage(bytes, bytes.length);
-            int width = (int) (image.getWidth() * ratio);
-            int height =(int) (image.getHeight() * ratio);
-            image.thumbnailImage(new Dimension(width, height), true);
-            bytes = image.writeToArray(VipsImageFormat.PNG, false);
-            image.release();
-            return bytes;
-        } catch (Throwable e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
 }
