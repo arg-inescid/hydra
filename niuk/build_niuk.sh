@@ -2,24 +2,13 @@
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 
+source $DIR/build_shared.sh
+
 DISK=$DIR/disk
 
 ghome=$1
 gvbinary=$2
 gvdisk=$3
-
-function copy_deps {
-    # Use ldd to look for dependencies.
-    for dep in $(ldd $1 | grep "=" | grep -v "not found" | awk '{ print $3 }')
-    do
-        if [ ! -f "$DISK/$dep" ]; then
-            echo "Copying $dep as a dependency of $1"
-            cp $dep $DISK/$(dirname $dep)
-            # Dependencies might have dependencies as well.
-            copy_deps $dep
-        fi
-    done
-}
 
 if [ "$#" -ne 3 ]; then
     echo "Illegal number of parameters."
