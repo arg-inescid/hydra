@@ -31,8 +31,8 @@ function build_ni {
         -H:ConfigurationFileDirectories=$DIR/ni-agent-config/native-image,$DIR/ni-agent-config/native-image-jvips
 }
 
-function build_niuk {
-    $DIR/../niuk/build_niuk.sh $JAVA_HOME $GRAALVISOR_HOME/polyglot-proxy $GRAALVISOR_HOME/polyglot-proxy.img
+function build_vm_image {
+    $DIR/../niuk/build_vm_image.sh $JAVA_HOME $GRAALVISOR_HOME/polyglot-proxy $GRAALVISOR_HOME/polyglot-proxy.img
 }
 
 if [ -z "$JAVA_HOME" ]
@@ -80,6 +80,6 @@ echo    # move to a new line
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     echo -e "${GREEN}Building lambda proxy Native Image Unikernel...${NC}"
-    build_niuk
+    build_vm_image
     echo -e "${GREEN}Building lambda proxy Native Image Unikernel... done!${NC}"
 fi

@@ -11,7 +11,7 @@ gvbinary=$2
 
 if [ "$#" -ne 2 ]; then
     echo "Illegal number of parameters."
-    echo "Syntax: build_niuk.sh <graalvm home> <input graalvisor native-image binary path>"
+    echo "Syntax: build_container_image.sh <graalvm home> <input graalvisor native-image binary path>"
     exit 1
 fi
 

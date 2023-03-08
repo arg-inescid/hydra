@@ -12,7 +12,7 @@ gvdisk=$3
 
 if [ "$#" -ne 3 ]; then
     echo "Illegal number of parameters."
-    echo "Syntax: build_niuk.sh <graalvm home> <input graalvisor native-image binary path> <output graalvisor vm disk path>"
+    echo "Syntax: build_vm_image.sh <graalvm home> <input graalvisor native-image binary path> <output graalvisor vm disk path>"
     exit 1
 fi
 
