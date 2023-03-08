@@ -32,7 +32,7 @@ function build_ni {
 }
 
 function build_niuk {
-    $DIR/../niuk/$NIUK_HOME/build_niuk.sh $JAVA_HOME $GRAALVISOR_HOME/polyglot-proxy $GRAALVISOR_HOME/polyglot-proxy.img
+    $DIR/../niuk/build_niuk.sh $JAVA_HOME $GRAALVISOR_HOME/polyglot-proxy $GRAALVISOR_HOME/polyglot-proxy.img
 }
 
 if [ -z "$JAVA_HOME" ]
