@@ -10,6 +10,8 @@ import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Value;
 
+import com.oracle.svm.graalvisor.utils.PolyglotHostAccess;
+
 public class PolyglotEngine {
 
     /**
@@ -70,7 +72,7 @@ public class PolyglotEngine {
             resultString = functionValue.get().execute(arguments).toString();
         } catch (PolyglotException pe) {
             if (pe.isSyntaxError()) {
-                 resultString = String.format("Error happens during parsing/ polyglot function at line %s: %s", pe.getSourceLocation(), pe.getMessage());
+                 resultString = String.format("Error happens during parsing the polyglot function at line %s: %s", pe.getSourceLocation(), pe.getMessage());
             }
         } catch (Exception e) {
             resultString = String.format("Error while invoking polyglot function: %s", e.getMessage());

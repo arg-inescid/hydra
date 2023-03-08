@@ -1,6 +1,6 @@
 package org.graalvm.argo.graalvisor;
 
-import static org.graalvm.argo.graalvisor.utils.JsonUtils.json;
+import static com.oracle.svm.graalvisor.utils.JsonUtils.json;
 
 import java.lang.reflect.Method;
 import java.util.Map;
@@ -9,7 +9,7 @@ import org.graalvm.argo.graalvisor.base.HotSpotFunction;
 import org.graalvm.argo.graalvisor.base.PolyglotFunction;
 import org.graalvm.argo.graalvisor.base.PolyglotLanguage;
 import org.graalvm.argo.graalvisor.engine.FunctionStorage;
-import org.graalvm.argo.graalvisor.utils.JsonUtils;
+import com.oracle.svm.graalvisor.utils.JsonUtils;
 
 /**
  * Runtime proxy that runs on HotSpot JVM. Right now we only support truffle

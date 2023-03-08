@@ -2,7 +2,6 @@ package com.oracle.svm.graalvisor.guestapi;
 
 import static com.oracle.svm.graalvisor.utils.JsonUtils.json;
 import static com.oracle.svm.graalvisor.utils.StringUtils.retrieveString;
-import static com.oracle.svm.graalvisor.utils.file.FileAccessModeUtils.getFileAccessMode;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -20,7 +19,6 @@ import org.graalvm.nativeimage.c.type.CTypeConversion;
 import org.graalvm.word.WordFactory;
 
 import com.oracle.svm.graalvisor.GraalVisor;
-import com.oracle.svm.graalvisor.guestapi.file.FileAccessMode;
 import com.oracle.svm.graalvisor.types.GraalVisorIsolateThread;
 import com.oracle.svm.graalvisor.types.GuestIsolateThread;
 
@@ -165,59 +163,4 @@ public class GuestAPI {
             return graalVisorStructHost.getHostReceiveStringFunction().invoke(hostIsolateThread, cStringHolder.get());
         }
     }
-
-    /**
-     * Guest API: Delegate host to open a file for the guest.
-     *
-     * @param fileName file name going to be opened (created)
-     * @param accessMode Different flags defined in {@link FileAccessMode} to open the file
-     * @return file descriptor for the opened file
-     */
-    public static int openFile(String fileName, FileAccessMode accessMode) {
-        try (CTypeConversion.CCharPointerHolder fileNameHolder = CTypeConversion.toCString(fileName)) {
-            return graalVisorStructHost.getHostOpenFileFunction().invoke(hostIsolateThread, fileNameHolder.get(), getFileAccessMode(accessMode));
-        }
-    }
-
-    /**
-     * Guest API: Close the file using its file descriptor
-     *
-     * @param fd file descriptor of the opened file
-     * @return returns zero on success. On error, -1 is returned, and errno is set to indicate the
-     *         error.
-     */
-    public static int closeFile(int fd) {
-        return graalVisorStructHost.getHostCloseFileFunction().invoke(hostIsolateThread, fd);
-    }
-
-    /**
-     * Guest API: Write first {@param length} bytes in {@param buffer} to the file using its file
-     * descriptor
-     *
-     * @param fd file descriptor of the output file
-     * @param buffer bytes going to be written
-     * @param length number of bytes going to be written
-     */
-    public static void writeBytes(int fd, byte[] buffer, int length) {
-        try (PinnedObject buf = PinnedObject.create(buffer)) {
-            graalVisorStructHost.getHostWriteBytesFunction().invoke(hostIsolateThread, fd, buf.addressOfArrayElement(0), WordFactory.unsigned(length));
-        }
-    }
-
-    /**
-     * Guest API: attempts to read up to count bytes from file descriptor fd into the buffer
-     * starting at buf.
-     *
-     * @param fd file descriptor
-     * @param buffer read buffer
-     * @param bufferLen length of read buffer
-     * @param readOffset offset for read buffer
-     * @return number of bytes read
-     */
-    public static int readBytes(int fd, byte[] buffer, int bufferLen, int readOffset) {
-        try (PinnedObject buf = PinnedObject.create(buffer)) {
-            return graalVisorStructHost.getHostReadBytesFunction().invoke(hostIsolateThread, fd, buf.addressOfArrayElement(0), bufferLen, readOffset);
-        }
-    }
-
 }

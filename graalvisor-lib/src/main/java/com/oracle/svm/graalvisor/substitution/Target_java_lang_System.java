@@ -1,4 +1,4 @@
-package com.oracle.svm.graalvisor.guestapi;
+package com.oracle.svm.graalvisor.substitution;
 
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
