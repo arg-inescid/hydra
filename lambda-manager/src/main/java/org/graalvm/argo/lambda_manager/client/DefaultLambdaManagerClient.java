@@ -48,7 +48,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         // TODO: optimization: read chunks of file and send it in parts.
         try (InputStream sourceFile = Files.newInputStream(function.buildFunctionSourceCodePath())) {
             String path = null;
-            if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
+            if (function.getRuntime().equals(Function.GV_DOCKER_RUNTIME) || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
                 path = String.format("/register?name=%s&language=%s&entryPoint=%s", function.getName(), function.getLanguage().toString(), function.getEntryPoint());
             } else if (lambda.getExecutionMode() == LambdaExecutionMode.CUSTOM) {
                 path = "/init";
@@ -67,7 +67,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         String path = null;
         String payload = null;
 
-        if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
+        if (function.getRuntime().equals(Function.GV_DOCKER_RUNTIME) || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
             path ="/deregister";
             payload = JsonUtils.convertParametersIntoJsonObject(null, null, function.getName());
         } else if (lambda.getExecutionMode() == LambdaExecutionMode.CUSTOM) {
@@ -87,7 +87,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT
                 || lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT) {
             payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getEntryPoint());
-        } else if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
+        } else if (function.getRuntime().equals(Function.GV_DOCKER_RUNTIME) || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
             // Both canRebuild and readily-provided GV functions go here
             payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getName());
         } else if (lambda.getExecutionMode() == LambdaExecutionMode.CUSTOM) {

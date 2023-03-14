@@ -8,6 +8,9 @@ import java.nio.file.Paths;
 
 public class Function {
 
+    // TODO: refactor GV containerd usage. Move container image URL to lambda-manager config file.
+    public static final String GV_DOCKER_RUNTIME = "docker.io/sergiyivan/large-scale-experiment:graalvisor";
+
     /** First four bytes of JAR files. */
     private static final byte[] JAR_FILE_SIGNATURE = { 0x50, 0x4b, 0x03, 0x04 };
 
@@ -62,7 +65,7 @@ public class Function {
             this.status = FunctionStatus.READY;
         }
         this.functionIsolation = functionIsolation;
-        this.invocationCollocation = invocationCollocation || this.getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR;
+        this.invocationCollocation = invocationCollocation || runtime.equals(Function.GV_DOCKER_RUNTIME) || this.getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR;
     }
 
     public String getName() {

@@ -139,14 +139,14 @@ public class Lambda {
 	}
 
 	public boolean canRegisterInLambda(Function function) {
-	    if (executionMode != LambdaExecutionMode.GRAALVISOR) {
-            return (registeredFunctions.isEmpty() || registeredFunctions.contains(function));
-        } else {
+        if (function.getRuntime().equals(Function.GV_DOCKER_RUNTIME) || executionMode == LambdaExecutionMode.GRAALVISOR) {
             if (function.isFunctionIsolated()) {
                 return (registeredFunctions.isEmpty() || registeredFunctions.contains(function));
             } else {
                 return username.equals(Configuration.coder.decodeUsername(function.getName()));
             }
+        } else {
+            return (registeredFunctions.isEmpty() || registeredFunctions.contains(function));
         }
 	}
 
