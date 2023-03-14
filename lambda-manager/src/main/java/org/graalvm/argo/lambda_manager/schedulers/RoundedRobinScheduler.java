@@ -138,6 +138,7 @@ public class RoundedRobinScheduler implements Scheduler {
     @Override
     public Lambda schedule(Function function, LambdaExecutionMode targetMode) {
         Lambda lambda = null;
+        String username = Configuration.coder.decodeUsername(function.getName());
 
         while (Environment.notShutdownHookActive()) {
             // For each lambda running this function...
@@ -152,9 +153,8 @@ public class RoundedRobinScheduler implements Scheduler {
             if (lambda == null) {
                 // This sync block protects from concurrent requests trying to allocate one lambda at the same time.
                 synchronized (LambdaManager.lambdas) {
-                    // Check if there are lambdas already starting with the execution mode.
-                    // TODO: throttle lambda creation properly.
-                    if (LambdaManager.startingLambdas.get(targetMode).isEmpty()) {
+                    // Check if there are lambdas already starting with the execution mode for that user.
+                    if (!LambdaManager.startingLambdas.get(targetMode).stream().anyMatch(l -> l.getUsername().equals(username))) {
                         // Acquire memory for a new lambda when needed.
                         if (function.canCollocateInvocation() || Configuration.argumentStorage.getMemoryPool().allocateMemoryLambda(function.getMemory())) {
                             // We successfully allocated memory!
