@@ -20,6 +20,7 @@ public class MetricsProvider {
     private static final String OPEN_REQUESTS = "open_requests %d %d\n";
     private static final String ACTIVE_LAMBDAS = "active_lambdas %d %d\n";
 
+    private static final String THROUGHPUT= "throughput %d %d\n";
 
     public static Single<String> getFootprintAndScalability() {
         long timestamp = System.currentTimeMillis();
@@ -39,6 +40,7 @@ public class MetricsProvider {
         responseBuilder.append(String.format(REQUEST_LATENCY_AVG, buffer.avg(), timestamp));
         responseBuilder.append(String.format(OPEN_REQUESTS, openRequests, timestamp));
         responseBuilder.append(String.format(ACTIVE_LAMBDAS, LambdaManager.lambdas.size(), timestamp));
+        responseBuilder.append(String.format(THROUGHPUT, buffer.size(), timestamp));
         buffer.reset();
         return Single.just(responseBuilder.toString());
     }

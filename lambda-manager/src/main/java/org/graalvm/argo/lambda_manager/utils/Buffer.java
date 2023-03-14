@@ -57,4 +57,7 @@ public class Buffer {
         failedOffers = 0;
     }
 
+    public synchronized int size() {
+        return end + 1;
+    }
 }
