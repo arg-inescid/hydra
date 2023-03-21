@@ -32,7 +32,7 @@ then
     mkfs.ext4 $DIR/debian.ext4
     # Mount it, add permissions
     sudo mount $DIR/debian.ext4 $DISK
-    sudo chown -R $USER:$USER $DIR
+    sudo chown -R $USER:$USER $DISK
     # Use a debian docker to copy the entire image to the mounted dir.
     docker export $(docker create debian) | tar -xC $DISK
     # Revert permissions and unmount.
@@ -45,24 +45,8 @@ cp $DIR/debian.ext4 $gvdisk
 sudo mount $gvdisk $DISK
 sudo chown -R $USER:$USER $DISK
 
-# Graalpython's Pillow package.
-copy_deps ~/.cache/Python-Eggs/Pillow-6.2.0-py3.8-linux-x86_64.egg-tmp/PIL/_imaging.graalpython-38-native-x86_64-linux.so
-
-# TODO - eventually we also need to get rid of this. Benchmarks should include their own deps.
-if [ -z "$BENCHMARKS_HOME" ]
-then
-        echo "Warninig: BENCHMARKS_HOME is not set. Some benchmarks might now work due to missing dependencies."
-else
-        # JVips.jar
-        unzip -o -q $BENCHMARKS_HOME/demos/ni-jni/JVips.jar -d /tmp/jvips
-        for dep in /tmp/jvips/*.so; do copy_deps $dep; done
-fi
-
-
-# Copy graalvm languages and python's virtual environment.
-mkdir -p $DISK/jvm/languages
-cp -r $ghome/languages/{python,js,llvm} $DISK/jvm/languages
-cp -r $ghome/graalvisor-python-venv $DISK/jvm
+# Copy files necessary to execute non-java functions.
+copy_polyglot_deps
 
 # Copy graalvisor and init.
 cp $gvbinary $DISK/polyglot-proxy
