@@ -45,16 +45,7 @@ cp $DIR/debian.ext4 $gvdisk
 sudo mount $gvdisk $DISK
 sudo chown -R $USER:$USER $DISK
 
-# TODO - eventually we also need to get rid of this. Benchmarks should include their own deps.
-if [ -z "$BENCHMARKS_HOME" ]
-then
-        echo "Warninig: BENCHMARKS_HOME is not set. Some benchmarks might now work due to missing dependencies."
-else
-        # JVips.jar
-        unzip -o -q $BENCHMARKS_HOME/demos/ni-jni/JVips.jar -d /tmp/jvips
-        for dep in /tmp/jvips/*.so; do copy_deps $dep; done
-fi
-
+# Copy files necessary to execute non-java functions.
 copy_polyglot_deps
 
 # Copy graalvisor and init.

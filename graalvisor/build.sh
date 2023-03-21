@@ -50,12 +50,12 @@ cd "$DIR" || {
   exit 1
 }
 
-export LANGS=""
+LANGS=""
 read -p "Javascript support (y or Y, everything else as no)? " -n 1 -r
 echo    # move to a new line
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    export LANGS="$LANGS --language:js"
+    LANGS="$LANGS --language:js"
     echo "JavaScript support added!"
 fi
 
@@ -63,7 +63,7 @@ read -p "Python support (y or Y, everything else as no)? " -n 1 -r
 echo    # move to a new line
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    export LANGS="$LANGS --language:python"
+    LANGS="$LANGS --language:python"
     echo "Python support added!"
 fi
 
