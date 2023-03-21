@@ -19,9 +19,7 @@ fi
 rm -rf $DISK &> /dev/null
 mkdir -p $DISK
 
-# Graalpython's Pillow package.
-copy_deps ~/.cache/Python-Eggs/Pillow-6.2.0-py3.8-linux-x86_64.egg-tmp/PIL/_imaging.graalpython-38-native-x86_64-linux.so
-
+# TODO - eventually we also need to get rid of this. Benchmarks should include their own deps.
 if [ -z "$BENCHMARKS_HOME" ]
 then
         echo "Warninig: BENCHMARKS_HOME is not set. Some benchmarks might now work due to missing dependencies."
@@ -31,10 +29,7 @@ else
         for dep in /tmp/jvips/*.so; do copy_deps $dep; done
 fi
 
-# Copy graalvm languages and python's virtual environment.
-mkdir -p $DISK/jvm/languages
-cp -r $ghome/languages/{python,js,llvm} $DISK/jvm/languages
-cp -r $ghome/graalvisor-python-venv $DISK/jvm
+copy_polyglot_deps
 
 # Copy graalvisor and init.
 cp $gvbinary $DISK/polyglot-proxy

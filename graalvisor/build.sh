@@ -35,6 +35,10 @@ function build_vm_image {
     $DIR/../niuk/build_vm_image.sh $JAVA_HOME $GRAALVISOR_HOME/polyglot-proxy $GRAALVISOR_HOME/polyglot-proxy.img
 }
 
+function build_container_image {
+    $DIR/../niuk/build_container_image.sh $JAVA_HOME $GRAALVISOR_HOME/polyglot-proxy
+}
+
 if [ -z "$JAVA_HOME" ]
 then
         echo "Please set JAVA_HOME first. It should be a GraalVM with native-image available."
@@ -46,12 +50,12 @@ cd "$DIR" || {
   exit 1
 }
 
-LANGS=""
+export LANGS=""
 read -p "Javascript support (y or Y, everything else as no)? " -n 1 -r
 echo    # move to a new line
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    LANGS="$LANGS --language:js"
+    export LANGS="$LANGS --language:js"
     echo "JavaScript support added!"
 fi
 
@@ -59,27 +63,36 @@ read -p "Python support (y or Y, everything else as no)? " -n 1 -r
 echo    # move to a new line
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    LANGS="$LANGS --language:python"
+    export LANGS="$LANGS --language:python"
     echo "Python support added!"
 fi
 
-echo -e "${GREEN}Building lambda proxy Jar...${NC}"
+echo -e "${GREEN}Building graalvisor jar...${NC}"
 ./gradlew clean shadowJar javaProxy
-echo -e "${GREEN}Building lambda proxy Jar... done!${NC}"
+echo -e "${GREEN}Building graalvisor jar... done!${NC}"
 
-echo -e "${GREEN}Building lambda proxy native sandbox interface...${NC}"
+echo -e "${GREEN}Building graalvisor native sandbox interface...${NC}"
 build_nsi
-echo -e "${GREEN}Building lambda proxy native sandbox interface... done!${NC}"
+echo -e "${GREEN}Building graalvisor native sandbox interface... done!${NC}"
 
-echo -e "${GREEN}Building lambda proxy Native Image...${NC}"
+echo -e "${GREEN}Building graalvisor Native Image...${NC}"
 build_ni
-echo -e "${GREEN}Building lambda proxy Native Image... done!${NC}"
+echo -e "${GREEN}Building graalvisor Native Image... done!${NC}"
 
-read -p "Build NIUk (y or Y, everything else as no)? " -n 1 -r
+read -p "Build vm image (y or Y, everything else as no)? " -n 1 -r
 echo    # move to a new line
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    echo -e "${GREEN}Building lambda proxy Native Image Unikernel...${NC}"
+    echo -e "${GREEN}Building vm image...${NC}"
     build_vm_image
-    echo -e "${GREEN}Building lambda proxy Native Image Unikernel... done!${NC}"
+    echo -e "${GREEN}Building vm image... done!${NC}"
+fi
+
+read -p "Build container image (y or Y, everything else as no)? " -n 1 -r
+echo    # move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    echo -e "${GREEN}Building container image...${NC}"
+    build_container_image
+    echo -e "${GREEN}Building container image... done!${NC}"
 fi
