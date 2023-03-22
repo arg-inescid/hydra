@@ -2,7 +2,8 @@ package org.graalvm.argo.graalvisor.sandboxing;
 
 import java.io.File;
 import java.io.IOException;
-import org.graalvm.argo.graalvisor.base.NativeFunction;
+
+import org.graalvm.argo.graalvisor.function.NativeFunction;
 import org.graalvm.argo.graalvisor.utils.sharedmemory.ReceiveOnlySharedMemoryChannel;
 import org.graalvm.argo.graalvisor.utils.sharedmemory.SendOnlySharedMemoryChannel;
 import org.graalvm.nativeimage.c.function.CFunction;

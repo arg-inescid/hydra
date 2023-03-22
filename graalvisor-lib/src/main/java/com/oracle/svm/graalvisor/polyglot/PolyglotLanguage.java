@@ -1,4 +1,4 @@
-package org.graalvm.argo.graalvisor.base;
+package com.oracle.svm.graalvisor.polyglot;
 
 public enum PolyglotLanguage {
     JAVASCRIPT("js"),

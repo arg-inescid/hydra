@@ -5,9 +5,9 @@ import static org.graalvm.argo.graalvisor.utils.IsolateUtils.retrieveString;
 
 import java.io.IOException;
 
-import org.graalvm.argo.graalvisor.base.PolyglotFunction;
-import org.graalvm.argo.graalvisor.base.TruffleFunction;
-import org.graalvm.argo.graalvisor.engine.FunctionStorage;
+import org.graalvm.argo.graalvisor.RuntimeProxy;
+import org.graalvm.argo.graalvisor.function.PolyglotFunction;
+import org.graalvm.argo.graalvisor.function.TruffleFunction;
 import org.graalvm.nativeimage.Isolate;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.Isolates;
@@ -32,7 +32,7 @@ public class ContextSandboxProvider extends SandboxProvider {
         String entryPoint = retrieveString(entryPointHandle);
         String language = retrieveString(languageHandle);
         String sourceCode = retrieveString(sourceCodeHandle);
-        FunctionStorage.FTABLE.put(functionName, new TruffleFunction(functionName, entryPoint, language, sourceCode));
+        RuntimeProxy.FTABLE.put(functionName, new TruffleFunction(functionName, entryPoint, language, sourceCode));
     }
 
     @Override

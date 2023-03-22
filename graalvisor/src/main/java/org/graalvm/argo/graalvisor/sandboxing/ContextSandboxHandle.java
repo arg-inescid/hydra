@@ -4,7 +4,8 @@ import static org.graalvm.argo.graalvisor.utils.IsolateUtils.copyString;
 import static org.graalvm.argo.graalvisor.utils.IsolateUtils.retrieveString;
 
 import org.graalvm.argo.graalvisor.RuntimeProxy;
-import org.graalvm.argo.graalvisor.base.PolyglotFunction;
+import org.graalvm.argo.graalvisor.function.PolyglotFunction;
+import org.graalvm.argo.graalvisor.function.TruffleFunction;
 import org.graalvm.argo.graalvisor.utils.IsolateUtils;
 import org.graalvm.nativeimage.CurrentIsolate;
 import org.graalvm.nativeimage.IsolateThread;
@@ -28,7 +29,16 @@ public class ContextSandboxHandle extends SandboxHandle {
                     ObjectHandle functionHandle, ObjectHandle argumentHandle) throws Exception {
         String functionName = retrieveString(functionHandle);
         String argumentString = retrieveString(argumentHandle);
-        String resultString = RuntimeProxy.LANGUAGE_ENGINE.invoke(functionName, argumentString);
+        String resultString;
+        PolyglotFunction function = RuntimeProxy.FTABLE.get(functionName);
+
+        if (function == null || !(function instanceof TruffleFunction)) {
+            resultString = String.format("{'Error': 'Function %s not registered or not truffle function!'}", functionName);
+        } else {
+            TruffleFunction tf = (TruffleFunction) function;
+            resultString = RuntimeProxy.LANGUAGE_ENGINE.invoke(tf.getLanguage().toString(), tf.getSource(), tf.getEntryPoint(), argumentString);
+        }
+
         return IsolateUtils.copyString(defaultContext, resultString);
     }
 

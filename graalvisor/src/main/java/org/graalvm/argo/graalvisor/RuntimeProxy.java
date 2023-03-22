@@ -16,14 +16,12 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 
-import org.graalvm.argo.graalvisor.base.NativeFunction;
-import org.graalvm.argo.graalvisor.base.PolyglotFunction;
-import org.graalvm.argo.graalvisor.base.PolyglotLanguage;
-import org.graalvm.argo.graalvisor.base.TruffleFunction;
-import org.graalvm.argo.graalvisor.engine.FunctionStorage;
-import org.graalvm.argo.graalvisor.engine.PolyglotEngine;
+import org.graalvm.argo.graalvisor.function.NativeFunction;
+import org.graalvm.argo.graalvisor.function.PolyglotFunction;
+import org.graalvm.argo.graalvisor.function.TruffleFunction;
 import org.graalvm.argo.graalvisor.sandboxing.ContextSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.IsolateSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.ProcessSandboxProvider;
@@ -31,6 +29,8 @@ import org.graalvm.argo.graalvisor.sandboxing.RuntimeSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.SandboxProvider;
 import org.graalvm.argo.graalvisor.utils.ProxyUtils;
 
+import com.oracle.svm.graalvisor.polyglot.PolyglotLanguage;
+import com.oracle.svm.graalvisor.polyglot.PolyglotEngine;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -57,11 +57,15 @@ public abstract class RuntimeProxy {
         }
     }
 
-
     /**
      * Global reference to the engine that runs truffle functions.
      */
     public static final PolyglotEngine LANGUAGE_ENGINE;
+
+    /**
+     *  FunctionTable is used to store registered functions inside default and worker isolates.
+     */
+    public static final ConcurrentHashMap<String, PolyglotFunction> FTABLE = new ConcurrentHashMap<>();
 
     /**
      * Simple Http server. It uses a cached thread pool for managing threads.
@@ -90,7 +94,7 @@ public abstract class RuntimeProxy {
     protected abstract String invoke(PolyglotFunction functionName, boolean cached, String arguments) throws Exception;
 
    private String invokeWrapper(String functionName, boolean cached, String arguments) throws Exception {
-      PolyglotFunction function = FunctionStorage.FTABLE.get(functionName);
+      PolyglotFunction function = FTABLE.get(functionName);
       String res;
 
       long start = System.nanoTime();
@@ -188,8 +192,8 @@ public abstract class RuntimeProxy {
             PolyglotFunction function = null;
             SandboxProvider sprovider = null;
 
-            synchronized (FunctionStorage.FTABLE) {
-                if (FunctionStorage.FTABLE.containsKey(functionName)) {
+            synchronized (FTABLE) {
+                if (FTABLE.containsKey(functionName)) {
                     writeResponse(t, 200, String.format("Function %s has already been registered!", functionName));
                     return;
                 }
@@ -214,7 +218,7 @@ public abstract class RuntimeProxy {
 
                 function.setSandboxProvider(sprovider);
                 sprovider.loadProvider();
-                FunctionStorage.FTABLE.put(functionName, function);
+                FTABLE.put(functionName, function);
             }
 
             System.out.println(String.format("Function %s registered with %s sandboxing in %s ms", functionName, sprovider.getName(), (System.currentTimeMillis() - start)));
@@ -228,12 +232,12 @@ public abstract class RuntimeProxy {
         public void handleInternal(HttpExchange t) throws IOException {
             try {
                 String functionName = (String) jsonToMap(extractRequestBody(t)).get("name");
-                PolyglotFunction function = FunctionStorage.FTABLE.get(functionName);
+                PolyglotFunction function = FTABLE.get(functionName);
                 if (function == null) {
                     errorResponse(t, String.format("Function %s has not been registered before!", functionName));
                 } else {
                    function.getSandboxProvider().unloadProvider();
-                    FunctionStorage.FTABLE.remove(functionName);
+                   FTABLE.remove(functionName);
                 }
                 writeResponse(t, 200, String.format("Function %s removed!", functionName));
             } catch (Exception e) {

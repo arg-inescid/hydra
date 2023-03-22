@@ -1,6 +1,6 @@
 package org.graalvm.argo.graalvisor.sandboxing;
 
-import org.graalvm.argo.graalvisor.base.PolyglotFunction;
+import org.graalvm.argo.graalvisor.function.PolyglotFunction;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.Isolates;
 import com.oracle.svm.graalvisor.types.GuestIsolateThread;

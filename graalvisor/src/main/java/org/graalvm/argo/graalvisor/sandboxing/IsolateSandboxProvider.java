@@ -2,8 +2,9 @@ package org.graalvm.argo.graalvisor.sandboxing;
 
 import java.io.IOException;
 
-import org.graalvm.argo.graalvisor.base.NativeFunction;
-import org.graalvm.argo.graalvisor.base.PolyglotFunction;
+import org.graalvm.argo.graalvisor.function.NativeFunction;
+import org.graalvm.argo.graalvisor.function.PolyglotFunction;
+
 import com.oracle.svm.graalvisor.api.GraalVisorAPI;
 import com.oracle.svm.graalvisor.types.GuestIsolateThread;
 

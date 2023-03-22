@@ -1,4 +1,4 @@
-package com.oracle.svm.graalvisor.guestapi;
+package com.oracle.svm.graalvisor.polyglot;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -8,15 +8,19 @@ import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Value;
 
-import com.oracle.svm.graalvisor.utils.PolyglotHostAccess;
-
 public class PolyglotEngine {
 
-    private final Value function;
+    /**
+     * Each thread owns it function value, where polyglot functions execute.
+     */
+    private final ThreadLocal<Value> function = new ThreadLocal<>();
 
+    /**
+     * Each sandbox has a corresponding truffle engine that should be used for the invocation.
+     */
     private static final Engine engine = Engine.create();
 
-    public PolyglotEngine(String language, String source, String entrypoint) {
+    public void init(String language, String source, String entrypoint) {
         Map<String, String> options = new HashMap<>();
         String javaHome = System.getenv("JAVA_HOME");
 
@@ -28,7 +32,7 @@ public class PolyglotEngine {
             System.setProperty("org.graalvm.language.js.home", javaHome + "/languages/js");
         }
 
-        if (language.equals("python")) {
+        if (PolyglotLanguage.PYTHON.toString().equals(language)) {
             // Necessary to allow python imports.
             options.put("python.ForceImportSite", "true");
             // Loading the virtual env with installed packages
@@ -46,18 +50,22 @@ public class PolyglotEngine {
         context.eval(language, source);
 
         // Get function handle from the script.
-        function = context.eval(language, entrypoint);
-
+        function.set(context.eval(language, entrypoint));
     }
 
     public void addBindings(String language, Context context) {
         context.getBindings(language).putMember("polyHostAccess", new PolyglotHostAccess());
     }
 
-    public String invoke(String arguments) {
+    public String invoke(String language, String source, String entrypoint, String arguments) {
         String resultString = new String();
+
+        if (function.get() == null) {
+            init(language, source, entrypoint);
+        }
+
         try {
-            resultString = function.execute(arguments).toString();
+            resultString = function.get().execute(arguments).toString();
         } catch (PolyglotException pe) {
             if (pe.isSyntaxError()) {
                  resultString = String.format("Error happens during parsing the polyglot function at line %s: %s", pe.getSourceLocation(), pe.getMessage());

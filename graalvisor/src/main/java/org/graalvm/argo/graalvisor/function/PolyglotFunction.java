@@ -1,8 +1,10 @@
-package org.graalvm.argo.graalvisor.base;
+package org.graalvm.argo.graalvisor.function;
 
 import java.util.Locale;
 
 import org.graalvm.argo.graalvisor.sandboxing.SandboxProvider;
+
+import com.oracle.svm.graalvisor.polyglot.PolyglotLanguage;
 
 public class PolyglotFunction {
     private final String name;
