@@ -1,4 +1,4 @@
-package org.graalvm.argo.graalvisor.base;
+package org.graalvm.argo.graalvisor.function;
 
 public class TruffleFunction extends PolyglotFunction {
 

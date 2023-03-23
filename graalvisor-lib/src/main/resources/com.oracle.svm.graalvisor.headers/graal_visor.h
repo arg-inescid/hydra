@@ -4,12 +4,7 @@
 #include <sys/types.h>
 
 typedef struct graal_visor_struct {
-  graal_isolate_t* f_host_isolate;
   void * (*f_host_receive_string)(graal_isolatethread_t *, char*);
-  int (*f_host_open_file)(graal_isolatethread_t *, char*, int);
-  int (*f_host_close_file)(graal_isolatethread_t *, int);
-  int (*f_host_write_bytes)(graal_isolatethread_t *, int, char*, size_t);
-  int (*f_host_read_bytes)(graal_isolatethread_t *, int, char*, int , int);
 } graal_visor_t;
 
 

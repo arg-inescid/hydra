@@ -2,13 +2,12 @@ package org.graalvm.argo.graalvisor.sandboxing;
 
 import java.io.IOException;
 
-import org.graalvm.argo.graalvisor.base.NativeFunction;
-import org.graalvm.argo.graalvisor.base.PolyglotFunction;
+import org.graalvm.argo.graalvisor.function.NativeFunction;
+import org.graalvm.argo.graalvisor.function.PolyglotFunction;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.Isolates;
 
 import com.oracle.svm.graalvisor.api.GraalVisorAPI;
-import com.oracle.svm.graalvisor.types.GuestIsolateThread;
 
 public class RuntimeSandboxHandle extends SandboxHandle {
 
@@ -28,12 +27,12 @@ public class RuntimeSandboxHandle extends SandboxHandle {
     @Override
     public String invokeSandbox(String jsonArguments) throws Exception {
         PolyglotFunction function = rsProvider.getFunction();
-        return graalvisorAPI.invokeFunction((GuestIsolateThread) isolateThread, function.getEntryPoint(), jsonArguments);
+        return graalvisorAPI.invokeFunction((IsolateThread) isolateThread, function.getEntryPoint(), jsonArguments);
     }
 
     @Override
     public void destroyHandle() throws IOException {
-        graalvisorAPI.tearDownIsolate((GuestIsolateThread) isolateThread);
+        graalvisorAPI.tearDownIsolate((IsolateThread) isolateThread);
         graalvisorAPI.close();
     }
 

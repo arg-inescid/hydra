@@ -2,7 +2,7 @@ package org.graalvm.argo.graalvisor.sandboxing;
 
 import java.io.IOException;
 
-import org.graalvm.argo.graalvisor.base.PolyglotFunction;
+import org.graalvm.argo.graalvisor.function.PolyglotFunction;
 
 public class RuntimeSandboxProvider extends SandboxProvider {
 

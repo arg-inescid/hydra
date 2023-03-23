@@ -2,13 +2,14 @@ package org.graalvm.argo.graalvisor.sandboxing;
 
 import java.io.File;
 import java.io.IOException;
-import org.graalvm.argo.graalvisor.base.NativeFunction;
+
+import org.graalvm.argo.graalvisor.function.NativeFunction;
 import org.graalvm.argo.graalvisor.utils.sharedmemory.ReceiveOnlySharedMemoryChannel;
 import org.graalvm.argo.graalvisor.utils.sharedmemory.SendOnlySharedMemoryChannel;
+import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.c.function.CFunction;
 
 import com.oracle.svm.graalvisor.api.GraalVisorAPI;
-import com.oracle.svm.graalvisor.types.GuestIsolateThread;
 
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
@@ -73,7 +74,7 @@ public class ProcessSandboxHandle extends SandboxHandle {
     private void child(ProcessSandboxProvider rsProvider) {
         NativeFunction function = (NativeFunction) rsProvider.getFunction();
         GraalVisorAPI gvAPI = rsProvider.getGraalvisorAPI();
-        GuestIsolateThread ithread = gvAPI.createIsolate();
+        IsolateThread ithread = gvAPI.createIsolate();
         try {
             while(true) {
                 sender.writeString(gvAPI.invokeFunction(ithread, function.getEntryPoint(), receiver.readString()));

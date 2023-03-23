@@ -2,10 +2,11 @@ package org.graalvm.argo.graalvisor.sandboxing;
 
 import java.io.IOException;
 
-import org.graalvm.argo.graalvisor.base.NativeFunction;
-import org.graalvm.argo.graalvisor.base.PolyglotFunction;
+import org.graalvm.argo.graalvisor.function.NativeFunction;
+import org.graalvm.argo.graalvisor.function.PolyglotFunction;
+import org.graalvm.nativeimage.IsolateThread;
+
 import com.oracle.svm.graalvisor.api.GraalVisorAPI;
-import com.oracle.svm.graalvisor.types.GuestIsolateThread;
 
 public class IsolateSandboxProvider extends SandboxProvider {
 
@@ -26,14 +27,14 @@ public class IsolateSandboxProvider extends SandboxProvider {
 
     @Override
     public SandboxHandle createSandbox() {
-        GuestIsolateThread isolateThread = graalvisorAPI.createIsolate();
+        IsolateThread isolateThread = graalvisorAPI.createIsolate();
         return new IsolateSandboxHandle(this, isolateThread);
     }
 
     @Override
     public void destroySandbox(SandboxHandle shandle) {
         IsolateSandboxHandle ipshandle = (IsolateSandboxHandle) shandle;
-        graalvisorAPI.tearDownIsolate((GuestIsolateThread) ipshandle.getIsolateThread());
+        graalvisorAPI.tearDownIsolate((IsolateThread) ipshandle.getIsolateThread());
     }
 
     @Override

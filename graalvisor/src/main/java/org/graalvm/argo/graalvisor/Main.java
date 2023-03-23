@@ -17,7 +17,7 @@ public abstract class Main {
         String lambda_timestamp = System.getenv("lambda_timestamp");
 
         if (lambda_timestamp != null) {
-            System.out.println(String.format("Graalvisor boot time: %s ms" ,(System.currentTimeMillis() - Long.parseLong(lambda_timestamp))));
+            System.out.println(String.format("Graalvisor boot time: %s ms.", (System.currentTimeMillis() - Long.parseLong(lambda_timestamp))));
         }
 
         if (lambda_port == null) {
@@ -28,7 +28,7 @@ public abstract class Main {
             APP_DIR = "./apps/";
         }
 
-        System.out.println(String.format("Graalvisor listening on port  %s.", lambda_port));
+        System.out.println(String.format("Graalvisor listening on port %s.", lambda_port));
 
         // Initialize our native sandbox interface.
         NativeSandboxInterface.ginit();

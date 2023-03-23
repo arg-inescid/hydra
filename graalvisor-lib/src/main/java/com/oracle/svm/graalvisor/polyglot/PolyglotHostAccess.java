@@ -1,4 +1,4 @@
-package com.oracle.svm.graalvisor.utils;
+package com.oracle.svm.graalvisor.polyglot;
 
 import java.io.DataOutputStream;
 import java.io.File;
