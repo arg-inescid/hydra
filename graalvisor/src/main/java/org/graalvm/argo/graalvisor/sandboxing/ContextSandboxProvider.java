@@ -50,8 +50,8 @@ public class ContextSandboxProvider extends SandboxProvider {
 
     @Override
     public SandboxHandle createSandbox() {
-            IsolateThread isolateThread = Isolates.attachCurrentThread(isolate);
-           return new ContextSandboxHandle(this, isolateThread);
+        IsolateThread isolateThread = Isolates.attachCurrentThread(isolate);
+        return new ContextSandboxHandle(this, isolateThread);
     }
 
     @Override

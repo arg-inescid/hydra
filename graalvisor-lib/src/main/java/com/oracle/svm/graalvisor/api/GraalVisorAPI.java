@@ -10,6 +10,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import org.graalvm.nativeimage.CurrentIsolate;
+import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.ObjectHandle;
 import org.graalvm.nativeimage.StackValue;
 import org.graalvm.nativeimage.c.function.CFunctionPointer;
@@ -23,8 +24,6 @@ import com.oracle.svm.core.c.function.CEntryPointCreateIsolateParameters;
 import com.oracle.svm.core.c.function.CEntryPointNativeFunctions;
 import com.oracle.svm.core.posix.PosixUtils;
 import com.oracle.svm.graalvisor.GraalVisor;
-import com.oracle.svm.graalvisor.types.GraalVisorIsolateThread;
-import com.oracle.svm.graalvisor.types.GuestIsolateThread;
 
 @SuppressWarnings("unused")
 public class GraalVisorAPI implements Closeable {
@@ -62,11 +61,11 @@ public class GraalVisorAPI implements Closeable {
      *
      * @return return the GuestIsolateThread attached to the guest isolate.
      */
-    public GuestIsolateThread createIsolate() {
+    public IsolateThread createIsolate() {
         CEntryPointNativeFunctions.IsolateThreadPointer isolateThreadPointer = StackValue.get(CEntryPointNativeFunctions.IsolateThreadPointer.class);
         createIsolateFunctionPointer.invoke(WordFactory.nullPointer(), WordFactory.nullPointer(), isolateThreadPointer);
-        GuestIsolateThread isolateThread = (GuestIsolateThread) isolateThreadPointer.read();
-        guestInstallGraalvisorFunctionPointer.invoke(isolateThread, (GraalVisorIsolateThread) CurrentIsolate.getCurrentThread(), getGraalVisorHostDescriptor());
+        IsolateThread isolateThread = (IsolateThread) isolateThreadPointer.read();
+        guestInstallGraalvisorFunctionPointer.invoke(isolateThread, (IsolateThread) CurrentIsolate.getCurrentThread(), getGraalVisorHostDescriptor());
         return isolateThread;
     }
 
@@ -76,7 +75,7 @@ public class GraalVisorAPI implements Closeable {
      * @param thread isolate thread that created by this so.
      */
 
-    public void tearDownIsolate(GuestIsolateThread thread) {
+    public void tearDownIsolate(IsolateThread thread) {
         tearDownIsolateFunctionPointer.invoke(thread);
     }
 
@@ -88,7 +87,7 @@ public class GraalVisorAPI implements Closeable {
      * @param arguments arguments passed the application function
      * @return invocation result
      */
-    public String invokeFunction(GuestIsolateThread guestIsolate, String className, String arguments) {
+    public String invokeFunction(IsolateThread guestIsolate, String className, String arguments) {
         ObjectHandle functionHandle, argumentHandle;
         try (CTypeConversion.CCharPointerHolder cStringHolder = CTypeConversion.toCString(className)) {
             functionHandle = guestReceiveStringFunctionPointer.invoke(guestIsolate, cStringHolder.get());
@@ -112,22 +111,22 @@ public class GraalVisorAPI implements Closeable {
 
     interface GuestInstallGraalvisorFunctionPointer extends CFunctionPointer {
         @InvokeCFunctionPointer
-        void invoke(GuestIsolateThread guestThread, GraalVisorIsolateThread hostThread, GraalVisor.GraalVisorStruct graalVisorStructHost);
+        void invoke(IsolateThread guestThread, IsolateThread hostThread, GraalVisor.GraalVisorStruct graalVisorStructHost);
     }
 
     interface TearDownIsolateFunctionPointer extends CFunctionPointer {
         @InvokeCFunctionPointer
-        void invoke(GuestIsolateThread thread);
+        void invoke(IsolateThread thread);
     }
 
     interface InvokeFunctionPointer extends CFunctionPointer {
         @InvokeCFunctionPointer
-        ObjectHandle invoke(GuestIsolateThread guestIsolate, ObjectHandle functionName, ObjectHandle arguments);
+        ObjectHandle invoke(IsolateThread guestIsolate, ObjectHandle functionName, ObjectHandle arguments);
     }
 
     interface GuestReceiveStringFunctionPointer extends CFunctionPointer {
         @InvokeCFunctionPointer
-        ObjectHandle invoke(GuestIsolateThread guestThread, CCharPointer cString);
+        ObjectHandle invoke(IsolateThread guestThread, CCharPointer cString);
     }
 
 }

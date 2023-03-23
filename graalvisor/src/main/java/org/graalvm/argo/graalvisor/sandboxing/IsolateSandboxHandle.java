@@ -3,7 +3,6 @@ package org.graalvm.argo.graalvisor.sandboxing;
 import org.graalvm.argo.graalvisor.function.PolyglotFunction;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.Isolates;
-import com.oracle.svm.graalvisor.types.GuestIsolateThread;
 
 public class IsolateSandboxHandle extends SandboxHandle {
 
@@ -23,7 +22,7 @@ public class IsolateSandboxHandle extends SandboxHandle {
     @Override
     public String invokeSandbox(String jsonArguments) throws Exception {
         PolyglotFunction function = isProvider.getFunction();
-        return isProvider.getGraalvisorAPI().invokeFunction((GuestIsolateThread) isolateThread, function.getEntryPoint(), jsonArguments);
+        return isProvider.getGraalvisorAPI().invokeFunction((IsolateThread) isolateThread, function.getEntryPoint(), jsonArguments);
     }
 
     @Override
