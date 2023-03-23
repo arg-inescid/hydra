@@ -18,7 +18,7 @@ public class PolyglotEngine {
     /**
      * Each sandbox has a corresponding truffle engine that should be used for the invocation.
      */
-    private static final Engine engine = Engine.create();
+    private final Engine engine = Engine.create();
 
     public void init(String language, String source, String entrypoint) {
         Map<String, String> options = new HashMap<>();

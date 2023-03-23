@@ -21,19 +21,11 @@ import org.graalvm.word.WordFactory;
 
 import com.oracle.svm.graalvisor.GraalVisor;
 
-/**
- * API used in guest application, note that the file manipulation apis only work in SVM
- */
 @SuppressWarnings("unused")
 public class GuestAPI {
 
     protected static Method method;
     private volatile static GraalVisor.GraalVisorStruct graalVisorStructHost;
-    /*
-     * In this example, we assume that there is fixed binding between host thread and guest isolate.
-     * Only one thread would visit this guest.
-     */
-    private volatile static IsolateThread hostIsolateThread;
     private volatile static boolean functionRegistered = false;
 
     /**
@@ -95,15 +87,13 @@ public class GuestAPI {
      * C entrypoint function for installing GraalVisor into guest isolate
      *
      * @param guestThread target guest isolate thread
-     * @param hostThread current
      * @param graalvisorStruct pointer to the GraalVisor host
      */
     @CEntryPoint(name = "guest_install_graalvisor", include = AsGraalVisorGuest.class)
-    private static void guestInstallGraalvisor(@CEntryPoint.IsolateThreadContext IsolateThread guestThread, IsolateThread hostThread, GraalVisor.GraalVisorStruct graalvisorStruct) {
+    private static void guestInstallGraalvisor(@CEntryPoint.IsolateThreadContext IsolateThread guestThread, GraalVisor.GraalVisorStruct graalvisorStruct) {
         if (graalVisorStructHost.isNonNull()) {
             return;
         }
-        hostIsolateThread = hostThread;
         graalVisorStructHost = graalvisorStruct;
     }
 
@@ -118,7 +108,7 @@ public class GuestAPI {
      *             application function
      */
     @CEntryPoint(name = "invoke_main_function", include = AsGraalVisorGuest.class)
-    private static ObjectHandle invoke(@CEntryPoint.IsolateThreadContext IsolateThread guestThread, ObjectHandle classHandle, ObjectHandle argumentHandle)
+    private static ObjectHandle invoke(@CEntryPoint.IsolateThreadContext IsolateThread guestThread, IsolateThread hostThread, ObjectHandle classHandle, ObjectHandle argumentHandle)
                     throws InvocationTargetException, IllegalAccessException {
         String functionName = retrieveString(classHandle);
         String arguments = retrieveString(argumentHandle);
@@ -127,11 +117,11 @@ public class GuestAPI {
                 setApplicationClassName(functionName);
             } catch (ClassNotFoundException | NoSuchMethodException e) {
                 e.printStackTrace();
-                return copyStringToHost("Function not found!");
+                return copyStringToHost(hostThread, "Function not found!");
             }
             functionRegistered = true;
         }
-        return copyStringToHost(invoke(arguments));
+        return copyStringToHost(hostThread, invoke(arguments));
     }
 
     /**
@@ -157,9 +147,9 @@ public class GuestAPI {
      *            host.
      * @return {@code ObjectHandle} that points to the copy in host heap space.
      */
-    protected static ObjectHandle copyStringToHost(String resultString) {
+    protected static ObjectHandle copyStringToHost(IsolateThread hostThread, String resultString) {
         try (CTypeConversion.CCharPointerHolder cStringHolder = CTypeConversion.toCString(resultString)) {
-            return graalVisorStructHost.getHostReceiveStringFunction().invoke(hostIsolateThread, cStringHolder.get());
+            return graalVisorStructHost.getHostReceiveStringFunction().invoke(hostThread, cStringHolder.get());
         }
     }
 }

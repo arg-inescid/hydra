@@ -22,6 +22,7 @@ import java.util.concurrent.Executors;
 import org.graalvm.argo.graalvisor.function.NativeFunction;
 import org.graalvm.argo.graalvisor.function.PolyglotFunction;
 import org.graalvm.argo.graalvisor.function.TruffleFunction;
+import org.graalvm.argo.graalvisor.sandboxing.PolyContextSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.ContextSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.IsolateSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.ProcessSandboxProvider;
@@ -148,7 +149,7 @@ public abstract class RuntimeProxy {
             if (function.getLanguage() == PolyglotLanguage.JAVA) {
                 return new IsolateSandboxProvider(function);
             } else {
-                return new ContextSandboxProvider(function);
+                return new PolyContextSandboxProvider(function);
             }
         }
 
@@ -159,7 +160,9 @@ public abstract class RuntimeProxy {
             }
 
             if (function.getLanguage() == PolyglotLanguage.JAVA) {
-                if (sandboxName.equals("isolate")) {
+                if (sandboxName.equals("context")) {
+                    return new ContextSandboxProvider(function);
+                } else if (sandboxName.equals("isolate")) {
                     return new IsolateSandboxProvider(function);
                 } else if (sandboxName.equals("runtime")) {
                     return new RuntimeSandboxProvider(function);
@@ -168,7 +171,7 @@ public abstract class RuntimeProxy {
                 }
             } else {
                 if (sandboxName.equals("context")) {
-                    return new ContextSandboxProvider(function);
+                    return new PolyContextSandboxProvider(function);
                 }
             }
 

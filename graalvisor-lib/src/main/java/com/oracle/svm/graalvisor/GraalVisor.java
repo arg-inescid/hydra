@@ -4,7 +4,6 @@ import java.io.File;
 import java.util.Collections;
 import java.util.List;
 
-import org.graalvm.nativeimage.Isolate;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.ObjectHandle;
 import org.graalvm.nativeimage.c.CContext;
@@ -25,13 +24,6 @@ public class GraalVisor {
 
     @CStruct("graal_visor_t")
     public interface GraalVisorStruct extends PointerBase {
-
-        @CField("f_host_isolate")
-        Isolate getHostIsolate();
-
-        /* Write access of a field. A call to the function is replaced with a raw memory store. */
-        @CField("f_host_isolate")
-        void setHostIsolate(Isolate hostIsolate);
 
         @CField("f_host_receive_string")
         HostReceiveStringFunctionPointer getHostReceiveStringFunction();

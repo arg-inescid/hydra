@@ -2,7 +2,6 @@ package com.oracle.svm.graalvisor;
 
 import static org.graalvm.nativeimage.UnmanagedMemory.malloc;
 
-import org.graalvm.nativeimage.CurrentIsolate;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.ObjectHandle;
 import org.graalvm.nativeimage.ObjectHandles;
@@ -26,7 +25,6 @@ public class GraalVisorImpl {
         if (graalVisorStructHost.isNull()) {
             /* Note that malloc can only be invoked during runtime! */
             graalVisorStructHost = malloc(SizeOf.get(GraalVisor.GraalVisorStruct.class));
-            graalVisorStructHost.setHostIsolate(CurrentIsolate.getIsolate());
             graalVisorStructHost.setHostReceiveStringFunction(hostReceiveStringFunctionPointer.getFunctionPointer());
         }
         return graalVisorStructHost;
@@ -34,7 +32,7 @@ public class GraalVisorImpl {
 
     @SuppressWarnings("unused")
     @CEntryPoint(include = AsGraalVisorHost.class)
-    private static ObjectHandle hostReceiveString(IsolateThread hostThread, CCharPointer cString) {
+    private static ObjectHandle hostReceiveString(@CEntryPoint.IsolateThreadContext IsolateThread hostThread, CCharPointer cString) {
         String targetString = CTypeConversion.toJavaString(cString);
         return ObjectHandles.getGlobal().create(targetString);
     }
