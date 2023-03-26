@@ -20,6 +20,10 @@ public abstract class SandboxProvider {
 
     public abstract void loadProvider() throws IOException;
 
+    public String warmupProvider(String jsonArguments) throws IOException {
+        return String.format("{'Error': 'Provider %s has no support for warmup operation'}", this.getName());
+    }
+
     public abstract SandboxHandle createSandbox() throws IOException;
 
     public abstract void destroySandbox(SandboxHandle shandle) throws IOException;

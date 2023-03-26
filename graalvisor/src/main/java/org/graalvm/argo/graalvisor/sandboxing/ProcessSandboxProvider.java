@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import org.graalvm.argo.graalvisor.function.NativeFunction;
 import org.graalvm.argo.graalvisor.function.PolyglotFunction;
+import org.graalvm.nativeimage.IsolateThread;
 
 import com.oracle.svm.graalvisor.api.GraalVisorAPI;
 
@@ -26,6 +27,16 @@ public class ProcessSandboxProvider extends SandboxProvider {
     @Override
     public void loadProvider() throws IOException {
         this.graalvisorAPI = new GraalVisorAPI(((NativeFunction) getFunction()).getPath());
+    }
+
+    @Override
+    public synchronized String warmupProvider(String jsonArguments) throws IOException {
+        IsolateThread isolateThread = graalvisorAPI.createIsolate();
+        String result = graalvisorAPI.invokeFunction((IsolateThread) isolateThread, getFunction().getEntryPoint(), jsonArguments);
+        graalvisorAPI.tearDownIsolate(isolateThread);
+        graalvisorAPI.close();
+        this.loadProvider();
+        return result;
     }
 
     @Override
