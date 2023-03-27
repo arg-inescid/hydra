@@ -76,6 +76,7 @@ public abstract class RuntimeProxy {
     public RuntimeProxy(int port) throws IOException {
         server = HttpServer.create(new InetSocketAddress(port), -1);
         server.createContext("/", new InvocationHandler());
+        server.createContext("/warmup", new WarmupHandler());
         server.createContext("/register", new RegisterHandler());
         server.createContext("/deregister", new DeregisterHandler());
         server.setExecutor(Executors.newCachedThreadPool());
@@ -92,9 +93,9 @@ public abstract class RuntimeProxy {
         }
     }
 
-    protected abstract String invoke(PolyglotFunction functionName, boolean cached, String arguments) throws Exception;
+    protected abstract String invoke(PolyglotFunction functionName, boolean cached, boolean warmup, String arguments) throws Exception;
 
-   private String invokeWrapper(String functionName, boolean cached, String arguments) throws Exception {
+   private String invokeWrapper(String functionName, boolean cached, boolean warmup, String arguments) throws Exception {
       PolyglotFunction function = FTABLE.get(functionName);
       String res;
 
@@ -102,7 +103,7 @@ public abstract class RuntimeProxy {
       if (function == null) {
             res = String.format("{'Error': 'Function %s not registered!'}", functionName);
         } else {
-            res = invoke(function, cached, arguments);
+            res = invoke(function, cached, warmup, arguments);
         }
       long finish = System.nanoTime();
 
@@ -130,12 +131,30 @@ public abstract class RuntimeProxy {
 
                 if (async != null && async.equals("true")) {
                     ProxyUtils.writeResponse(t, 200, "Asynchronous request submitted!");
-                    String output = invokeWrapper(functionName, cached, arguments);
+                    String output = invokeWrapper(functionName, cached, false, arguments);
                     System.out.println(output);
                 } else {
-                    String output = invokeWrapper(functionName, cached, arguments);
+                    String output = invokeWrapper(functionName, cached, false, arguments);
                     ProxyUtils.writeResponse(t, 200, output);
                 }
+            } catch (Exception e) {
+                e.printStackTrace(System.err);
+                errorResponse(t, "An error has occurred (see logs for details): " + e);
+            }
+        }
+    }
+
+    private class WarmupHandler implements ProxyHttpHandler {
+
+        @Override
+        public void handleInternal(HttpExchange t) throws IOException {
+            try {
+                String jsonBody = ProxyUtils.extractRequestBody(t);
+                Map<String, Object> input = jsonToMap(jsonBody);
+                String functionName = (String) input.get("name");
+                String arguments = (String) input.get("arguments");
+                String output = invokeWrapper(functionName, false, true, arguments);
+                ProxyUtils.writeResponse(t, 200, output);
             } catch (Exception e) {
                 e.printStackTrace(System.err);
                 errorResponse(t, "An error has occurred (see logs for details): " + e);

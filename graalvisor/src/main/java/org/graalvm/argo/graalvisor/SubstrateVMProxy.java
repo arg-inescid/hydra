@@ -167,10 +167,12 @@ public class SubstrateVMProxy extends RuntimeProxy {
     }
 
     @Override
-    protected String invoke(PolyglotFunction function, boolean cached, String arguments) throws Exception {
+    protected String invoke(PolyglotFunction function, boolean cached, boolean warmup, String arguments) throws Exception {
         String res;
 
-        if (cached) {
+        if (warmup) {
+            res = function.getSandboxProvider().warmupProvider(arguments);
+        } else if (cached) {
             res = invokeInCachedSandbox(getFunctionPipeline(function), arguments);
         } else {
             SandboxHandle shandle = prepareSandbox(function);
