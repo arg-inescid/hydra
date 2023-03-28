@@ -47,12 +47,9 @@ public class SubstrateVMProxy extends RuntimeProxy {
      */
     static class Worker extends Thread {
 
-        private final PolyglotFunction function;
-
         private final FunctionPipeline pipeline;
 
-        public Worker(PolyglotFunction function, FunctionPipeline pipeline) {
-            this.function = function;
+        public Worker(FunctionPipeline pipeline) {
             this.pipeline = pipeline;
         }
 
@@ -70,20 +67,18 @@ public class SubstrateVMProxy extends RuntimeProxy {
         }
 
         public void runInternal() throws Exception {
-            SandboxHandle shandle = prepareSandbox(function);
+            SandboxHandle shandle = prepareSandbox(pipeline.getFunction());
             Request req = null;
 
             try {
-                while ((req = pipeline.queue.poll(10, TimeUnit.SECONDS)) != null) {
-                    pipeline.freeworkers.decrementAndGet();
+                while ((req = pipeline.queue.poll(60, TimeUnit.SECONDS)) != null) {
                     processRequest(shandle, req);
-                    pipeline.freeworkers.incrementAndGet();
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
 
-            destroySandbox(function, shandle);
+            destroySandbox(pipeline.getFunction(), shandle);
         }
 
         @Override
@@ -93,8 +88,6 @@ public class SubstrateVMProxy extends RuntimeProxy {
             } catch (Exception e) {
                 System.err.println(String.format("[thread %s] Error: thread quit unexpectedly", Thread.currentThread().getId()));
                 e.printStackTrace();
-            } finally {
-                pipeline.freeworkers.decrementAndGet();
             }
         }
     }
@@ -104,12 +97,47 @@ public class SubstrateVMProxy extends RuntimeProxy {
      */
     static class FunctionPipeline {
 
+        private final PolyglotFunction function;
+
         private final BlockingQueue<Request> queue;
 
-        private final AtomicInteger freeworkers = new AtomicInteger(0);
+        private final AtomicInteger workers = new AtomicInteger(0);
 
-        public FunctionPipeline() {
+        private final AtomicInteger active = new AtomicInteger(0);
+
+        public FunctionPipeline(PolyglotFunction function) {
+            this.function = function;
             this.queue = new ArrayBlockingQueue<>(16);
+        }
+
+        public String invokeInCachedSandbox(String input) {
+            Request req = new Request(input);
+            active.getAndIncrement();
+
+            synchronized (this) {
+                if (workers.intValue() < active.intValue()) {
+                    workers.incrementAndGet();
+                    new Worker(this).start();
+                }
+            }
+
+            synchronized (req) {
+                queue.add(req);
+
+                while(req.getOutput() == null) {
+                    try {
+                        req.wait();
+                    } catch (InterruptedException e) {
+                        // Ignore
+                    }
+                }
+                active.getAndDecrement();
+                return req.getOutput();
+            }
+        }
+
+        public PolyglotFunction getFunction() {
+            return this.function;
         }
     }
 
@@ -122,32 +150,13 @@ public class SubstrateVMProxy extends RuntimeProxy {
         super(port);
     }
 
-    private String invokeInCachedSandbox(FunctionPipeline pipeline, String input) {
-        Request req = new Request(input);
-        synchronized (req) {
-            pipeline.queue.add(req);
-            while(req.getOutput() == null) {
-                try {
-                    req.wait();
-                } catch (InterruptedException e) {
-                    // Ignore
-                }
-            }
-            return req.getOutput();
-        }
-    }
-
     private static FunctionPipeline getFunctionPipeline(PolyglotFunction function) {
         FunctionPipeline pipeline = queues.get(function.getName());
 
         if (pipeline == null) {
-            FunctionPipeline newpipeline = new FunctionPipeline();
+            FunctionPipeline newpipeline = new FunctionPipeline(function);
             FunctionPipeline oldpipeline = queues.putIfAbsent(function.getName(), newpipeline);
             pipeline = oldpipeline == null ? newpipeline : oldpipeline;
-        }
-
-        if (pipeline.freeworkers.compareAndSet(0, 1)) {
-            new Worker(function, pipeline).start();
         }
 
         return pipeline;
@@ -173,7 +182,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
         if (warmup) {
             res = function.getSandboxProvider().warmupProvider(arguments);
         } else if (cached) {
-            res = invokeInCachedSandbox(getFunctionPipeline(function), arguments);
+            res = getFunctionPipeline(function).invokeInCachedSandbox(arguments);
         } else {
             SandboxHandle shandle = prepareSandbox(function);
             res = shandle.invokeSandbox(arguments);
