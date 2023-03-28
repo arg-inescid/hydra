@@ -78,6 +78,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
                 e.printStackTrace();
             }
 
+            pipeline.workers.decrementAndGet();
             destroySandbox(pipeline.getFunction(), shandle);
         }
 
