@@ -33,6 +33,7 @@ task hostLib(type: ShadowJar) {
     minimize{
         exclude "com/oracle/svm/graalvisor/utils/file/*"
         exclude "com/oracle/svm/graalvisor/guestapi/**/*"
+        exclude "com/oracle/svm/graalvisor/substitution/**/*"
     }
     hostLib.archiveFileName = rootProject.name + '-1.0-host' + '.jar'
 }
