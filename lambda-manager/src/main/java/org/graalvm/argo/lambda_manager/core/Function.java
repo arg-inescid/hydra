@@ -41,6 +41,9 @@ public class Function {
     /** Flag stating if instances of this function can be co-located in the same lambda. */
     private final boolean invocationCollocation;
 
+    /** Desired sandbox for Graalvisor runtime. Can only be used with Graalvisor. */
+    private final String gvSandbox;
+
     /** Flag stating if this function can be re-built into native image in case of fallback (only for Graalvisor). */
     private final boolean canRebuild;
 
@@ -52,7 +55,7 @@ public class Function {
      */
     private long lastAgentPID;
 
-    public Function(String name, String language, String entryPoint, String memory, String runtime, byte[] functionCode, boolean functionIsolation, boolean invocationCollocation) throws Exception {
+    public Function(String name, String language, String entryPoint, String memory, String runtime, byte[] functionCode, boolean functionIsolation, boolean invocationCollocation, String gvSandbox) throws Exception {
         this.name = name;
         this.language = FunctionLanguage.fromString(language);
         this.entryPoint = entryPoint;
@@ -66,6 +69,7 @@ public class Function {
         }
         this.functionIsolation = functionIsolation;
         this.invocationCollocation = invocationCollocation || runtime.equals(Function.GV_DOCKER_RUNTIME) || this.getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR;
+        this.gvSandbox = gvSandbox;
     }
 
     public String getName() {
@@ -150,6 +154,10 @@ public class Function {
         // runtime and back throughout the function lifetime as the function might go
         // through the build pipeline and fallback
         return this.invocationCollocation || this.getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR;
+    }
+
+    public String getGraalvisorSandbox() {
+        return this.gvSandbox;
     }
 
     public boolean canRebuild() {

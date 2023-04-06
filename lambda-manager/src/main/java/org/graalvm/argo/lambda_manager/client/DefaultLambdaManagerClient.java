@@ -52,7 +52,12 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         try (InputStream sourceFile = Files.newInputStream(function.buildFunctionSourceCodePath())) {
             String path = null;
             if (function.getRuntime().equals(Function.GV_DOCKER_RUNTIME) || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
-                path = String.format("/register?name=%s&language=%s&entryPoint=%s", function.getName(), function.getLanguage().toString(), function.getEntryPoint());
+                String sandbox = function.getGraalvisorSandbox();
+                if (sandbox != null) {
+                    path = String.format("/register?name=%s&language=%s&entryPoint=%s&sandbox=%s", function.getName(), function.getLanguage().toString(), function.getEntryPoint(), sandbox);
+                } else {
+                    path = String.format("/register?name=%s&language=%s&entryPoint=%s", function.getName(), function.getLanguage().toString(), function.getEntryPoint());
+                }
             } else if (lambda.getExecutionMode() == LambdaExecutionMode.CUSTOM) {
                 path = "/init";
             } else {
