@@ -5,10 +5,12 @@ import org.graalvm.argo.lambda_manager.memory.FixedMemoryPool;
 import org.graalvm.argo.lambda_manager.memory.MemoryPool;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.utils.ConnectionTriplet;
+
 import io.micronaut.http.client.RxHttpClient;
 
 import org.graalvm.argo.lambda_manager.processes.lambda.DefaultLambdaShutdownHandler;
 
+import java.util.Set;
 import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -39,6 +41,11 @@ public class Lambda {
 	/** Memory pool that registers the memory utilized by the lambda. */
 	private final MemoryPool memoryPool;
 
+	/** Functions that need to be uploaded to this lambda. */
+	private Set<Function> requiresFunctionUpload;
+
+	private String customRuntimeId;
+
 	// TODO - rethink if we should use a function in the constructor.
 	public Lambda(Function function) {
 		this.registeredFunctions = new ConcurrentHashMap<>();
@@ -49,6 +56,7 @@ public class Lambda {
 			this.registeredFunctions.put(function.getName(), function);
 		}
 		this.username = Configuration.coder.decodeUsername(function.getName());
+        this.requiresFunctionUpload = ConcurrentHashMap.newKeySet();
 	}
 
 	public long setLambdaID(long lid) {
@@ -141,12 +149,12 @@ public class Lambda {
 	public boolean canRegisterInLambda(Function function) {
         if (function.getRuntime().equals(Function.GV_DOCKER_RUNTIME) || executionMode == LambdaExecutionMode.GRAALVISOR) {
             if (function.isFunctionIsolated()) {
-                return (registeredFunctions.isEmpty() || registeredFunctions.contains(function));
+                return (registeredFunctions.isEmpty() || registeredFunctions.contains(function)) && username.equals(Configuration.coder.decodeUsername(function.getName()));
             } else {
                 return username.equals(Configuration.coder.decodeUsername(function.getName()));
             }
         } else {
-            return (registeredFunctions.isEmpty() || registeredFunctions.contains(function));
+            return (registeredFunctions.isEmpty() || registeredFunctions.contains(function)) && username.equals(Configuration.coder.decodeUsername(function.getName()));
         }
 	}
 
@@ -169,4 +177,20 @@ public class Lambda {
 	public String getUsername() {
 	    return username;
 	}
+
+    public void setRequiresFunctionUpload(Function function) {
+        requiresFunctionUpload.add(function);
+    }
+
+    public boolean isFunctionUploadRequired(Function function) {
+        return requiresFunctionUpload.remove(function);
+    }
+
+    public String getCustomRuntimeId() {
+        return customRuntimeId;
+    }
+
+    public void setCustomRuntimeId(String customRuntimeId) {
+        this.customRuntimeId = customRuntimeId;
+    }
 }

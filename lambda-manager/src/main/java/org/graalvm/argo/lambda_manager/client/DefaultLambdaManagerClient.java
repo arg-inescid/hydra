@@ -29,11 +29,14 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
                 try {
                     return flowable.blockingFirst();
                 } catch (ReadTimeoutException readTimeoutException) {
+                    Logger.log(Level.WARNING, "Received readTimeoutException");
                     break;
                 } catch (HttpClientException httpClientException) {
                     try {
+                        Logger.log(Level.WARNING, "Received httpClientException");
                         Thread.sleep(Configuration.argumentStorage.getHealthCheck());
                     } catch (InterruptedException interruptedException) {
+                        Logger.log(Level.WARNING, "Received interruptedException");
                         // Skipping raised exception.
                     }
                 }

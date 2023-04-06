@@ -2,8 +2,6 @@ package org.graalvm.argo.lambda_manager.schedulers;
 
 import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.core.Lambda;
-import org.graalvm.argo.lambda_manager.exceptions.user.FunctionNotFound;
-import org.graalvm.argo.lambda_manager.exceptions.user.SchedulingException;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 
 /**
@@ -16,10 +14,8 @@ public interface Scheduler {
 	 * @param function
 	 * @param targetMode
 	 * @return
-	 * @throws FunctionNotFound
-	 * @throws SchedulingException
 	 */
-    Lambda schedule(Function function, LambdaExecutionMode targetMode) throws FunctionNotFound, SchedulingException;
+    Lambda schedule(Function function, LambdaExecutionMode targetMode);
 
     /**
      * Reschedules the Lambda after executing the lambda invocation.

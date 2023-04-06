@@ -26,11 +26,6 @@ import java.util.logging.Level;
 public class LambdaManager {
 
     /**
-     * This map keeps a set of Lambdas (value) that have a particular function (key) registered.
-     */
-    public static final Map<Function, Set<Lambda>> lambdasFunction = new ConcurrentHashMap<>();
-
-    /**
      * This set contains all the lambdas tracked by the lambda manager.
      */
     public static final Set<Lambda> lambdas = Collections.newSetFromMap(new ConcurrentHashMap<Lambda, Boolean>());
@@ -52,6 +47,8 @@ public class LambdaManager {
 
     public static Single<String> processRequest(String username, String functionName, String arguments) {
         String response = null;
+        Function function = null;
+        Lambda lambda = null;
 
         if (!Configuration.isInitialized()) {
             Logger.log(Level.WARNING, Messages.NO_CONFIGURATION_UPLOADED);
@@ -59,51 +56,56 @@ public class LambdaManager {
         }
 
         try {
-            Function function = Configuration.storage.get(Configuration.coder.encodeFunctionName(username, functionName));
-            LambdaExecutionMode targetMode = function.getLambdaExecutionMode();
+            function = Configuration.storage.get(Configuration.coder.encodeFunctionName(username, functionName));
+        } catch (FunctionNotFound functionNotFound) {
+            Logger.log(Level.WARNING, functionNotFound.getMessage(), functionNotFound);
+            return JsonUtils.constructJsonResponseObject(functionNotFound.getMessage());
+        }
+        LambdaExecutionMode targetMode = function.getLambdaExecutionMode();
 
-            for (int i = 0; i < Configuration.LAMBDA_FAULT_TOLERANCE; i++) {
+        for (int i = 0; i < Configuration.LAMBDA_FAULT_TOLERANCE; i++) {
+            try {
                 long start = System.currentTimeMillis();
-                Lambda lambda = Configuration.scheduler.schedule(function, targetMode);
+                lambda = Configuration.scheduler.schedule(function, targetMode);
 
-                if (!lambda.isRegisteredInLambda(function)) {
-                    response = Configuration.client.registerFunction(lambda, function);
-                    Logger.log(Level.FINE, String.format("Function %s registration in lambda %s returned %s", function.getName(), lambda.getLambdaName(), response));
-                    if (!lambdasFunction.containsKey(function)) {
-                        lambdasFunction.put(function, Collections.newSetFromMap(new ConcurrentHashMap<Lambda, Boolean>()));
+                synchronized (lambda) {
+                    if (lambda.isFunctionUploadRequired(function)) {
+                        response = Configuration.client.registerFunction(lambda, function);
+                        long spentTime = System.currentTimeMillis() - start;
+                        MetricsProvider.reportColdStartTime(spentTime);
+                        Logger.log(Level.FINE, String.format("Function %s registration in lambda %s returned %s", function.getName(), lambda.getLambdaName(), response));
                     }
-                    lambdasFunction.get(function).add(lambda);
-                    lambda.setRegisteredInLambda(function);
                 }
 
                 response = Configuration.client.invokeFunction(lambda, function, arguments);
-                Configuration.scheduler.reschedule(lambda, function);
 
                 if (response.equals(Messages.HTTP_TIMEOUT)) {
                     if (function.canRebuild() && lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
                         // TODO: test fallback for GV once isolates do not terminate entire runtime
                         function.setStatus(FunctionStatus.NOT_BUILT_NOT_CONFIGURED);
                         targetMode = LambdaExecutionMode.HOTSPOT_W_AGENT;
+                        Logger.log(Level.INFO, "Decommissioning (failed requests) lambda " + lambda.getLambdaID());
+                        lambda.setDecommissioned(true);
                     }
-                    Logger.log(Level.INFO, "Decommissioning (failed requests) lambda " + lambda.getLambdaID());
-                    lambda.setDecommissioned(true);
                 } else {
                     long spentTime = System.currentTimeMillis() - start;
                     MetricsProvider.reportRequestTime(spentTime);
                     Logger.log(Level.FINE, formatRequestSpentTimeMessage(lambda, function, spentTime));
                     break;
                 }
+            } catch (Throwable throwable) {
+                if (Environment.notShutdownHookActive()) {
+                    Logger.log(Level.SEVERE, throwable.getMessage(), throwable);
+                }
+                response = Messages.INTERNAL_ERROR;
+            } finally {
+                if (lambda != null && function != null) {
+                    Configuration.scheduler.reschedule(lambda, function);
+                }
             }
 
-        } catch (FunctionNotFound functionNotFound) {
-            Logger.log(Level.WARNING, functionNotFound.getMessage(), functionNotFound);
-            response = functionNotFound.getMessage();
-        } catch (Throwable throwable) {
-            if (Environment.notShutdownHookActive()) {
-                Logger.log(Level.SEVERE, throwable.getMessage(), throwable);
-            }
-            response = Messages.INTERNAL_ERROR;
         }
+
         return JsonUtils.constructJsonResponseObject(response);
     }
 
@@ -198,7 +200,6 @@ public class LambdaManager {
                 String functionName = Configuration.coder.decodeFunctionName(entry.getValue().getName());
                 functionNode.put("user", username);
                 functionNode.put("name", functionName);
-                functionNode.put("maxLambdas", LambdaManager.lambdasFunction.get(entry.getValue()).size());
                 functionsArrayNode.add(functionNode);
             }
             response = functionsArrayNode;

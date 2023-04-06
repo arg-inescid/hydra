@@ -25,7 +25,7 @@ public abstract class Main {
         }
 
         if (APP_DIR == null) {
-            APP_DIR = "./apps/";
+            APP_DIR = "/tmp/apps/";
         }
 
         System.out.println(String.format("Graalvisor listening on port %s.", lambda_port));

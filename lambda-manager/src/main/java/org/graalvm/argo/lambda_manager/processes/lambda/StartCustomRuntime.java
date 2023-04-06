@@ -8,6 +8,7 @@ import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.utils.ConnectionTriplet;
 
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,6 +44,9 @@ public class StartCustomRuntime extends StartLambda {
             command.add("--noconsole");
         }
         command.add(function.getRuntime());
+        String lambdaId = generateLambdaId();
+        lambda.setCustomRuntimeId(lambdaId);
+        command.add(lambdaId);
         return command;
     }
 
@@ -55,5 +59,17 @@ public class StartCustomRuntime extends StartLambda {
 				lambda.resetRegisteredInLambda();
 			}
 		};
+    }
+
+    private static final String AB = "0123456789abcdef";
+    private static SecureRandom rnd = new SecureRandom();
+    private static final int ID_LEN = 32;
+
+    private String generateLambdaId() {
+        StringBuilder sb = new StringBuilder(ID_LEN);
+        for (int i = 0; i < ID_LEN; i++) {
+            sb.append(AB.charAt(rnd.nextInt(AB.length())));
+        }
+        return sb.toString();
     }
 }

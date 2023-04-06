@@ -2,7 +2,6 @@ package org.graalvm.argo.lambda_manager.processes.lambda;
 
 import org.graalvm.argo.lambda_manager.core.Configuration;
 import org.graalvm.argo.lambda_manager.core.Environment;
-import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.core.Lambda;
 import org.graalvm.argo.lambda_manager.core.LambdaManager;
 import org.graalvm.argo.lambda_manager.schedulers.RoundedRobinScheduler;
@@ -11,8 +10,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.Map;
-import java.util.Set;
 import java.util.TimerTask;
 import java.util.logging.Level;
 
@@ -44,7 +41,7 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
     }
 
     private void shutdownVMMLambda(String lambdaPath) throws Throwable {
-        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_vmm.sh", lambdaPath).start();
+        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_graalvisor.sh", lambda.getConnectionTriplet().tap).start();
         p.waitFor();
         if (p.exitValue() != 0) {
             Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", lambda.getLambdaID()));
@@ -85,11 +82,9 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
 
     @Override
     public void run() {
+        Logger.log(Level.INFO, String.format("Terminating lambda %d.", lambda.getLambdaID()));
         // Remove lambda form global state.
         LambdaManager.lambdas.remove(lambda);
-        for (Map.Entry<Function, Set<Lambda>> pair : LambdaManager.lambdasFunction.entrySet()) {
-            pair.getValue().remove(lambda);
-        }
 
         // Reset the auto-shutdown timer.
         if (lambda.getTimer() != null) {

@@ -224,7 +224,7 @@ public abstract class RuntimeProxy {
                     try (OutputStream fos = new FileOutputStream(soFileName); InputStream bis = new BufferedInputStream(t.getRequestBody(), 4096)) {
                         bis.transferTo(fos);
                     }
-                    function = new NativeFunction(functionName, functionEntryPoint, functionLanguage, APP_DIR + functionName);
+                    function = new NativeFunction(functionName, functionEntryPoint, functionLanguage, soFileName);
                 } else {
                     try (InputStream bis = new BufferedInputStream(t.getRequestBody(), 4096)) {
                         String sourceCode = new String(bis.readAllBytes(), StandardCharsets.UTF_8);

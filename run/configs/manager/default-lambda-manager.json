@@ -1,5 +1,5 @@
 {
-  "gateway": "194.210.228.242/23",
+  "gateway": "172.18.0.1/16",
   "maxMemory": 2048,
   "maxTaps": 5,
   "timeout": 25000,

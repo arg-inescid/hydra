@@ -8,32 +8,38 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.graalvm.argo.lambda_manager.core.Lambda;
-import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 
 public class LambdaMemoryUtils {
 
     private static final String LAMBDA_PID_FILE = "lambda.pid";
-    private static final String LAMBDA_ID_FILE = "lambda.id";
 
     private static final double KB_IN_MB = 1024;
 
+    public static Map<String, Double> collectMemoryMetrics() {
+        try {
+            InputStream stream = executeCommand("bash", "-c", "ps -C firecracker -o rss=,args=");
+            BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+            return readMemoryToMap(reader);
+        } catch (Throwable thr) {
+            thr.printStackTrace();
+            return new HashMap<>();
+        }
+    }
+
+    /**
+     * This method is specific to collecting memory metrics only for NIUk lambdas.
+     */
     public static double getProcessMemory(Lambda lambda) {
         try {
-            if (lambda.getExecutionMode() == LambdaExecutionMode.CUSTOM) {
-                String lambdaId = getVmId(lambda);
-                InputStream stream = executeCommand("bash", "-c", "ps aux | grep firecracker");
-                BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
-                double sizeKb = parseOutputCr(reader, lambdaId);
-                return kilobytesToMegabytes(sizeKb);
-            } else {
-                String pid = getLambdaPid(lambda);
-                InputStream stream = executeCommand("ps", "eo", "rss", pid);
-                BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
-                double sizeKb = parseOutput(readToString(reader));
-                return kilobytesToMegabytes(sizeKb);
-            }
+            String pid = getLambdaPid(lambda);
+            InputStream stream = executeCommand("ps", "eo", "rss", pid);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+            double sizeKb = parseOutput(readToString(reader));
+            return kilobytesToMegabytes(sizeKb);
         } catch (Throwable thr) {
             thr.printStackTrace();
             return 0;
@@ -44,28 +50,9 @@ public class LambdaMemoryUtils {
         return sizeKb / KB_IN_MB;
     }
 
-    private static double parseOutputCr(BufferedReader reader, String lambdaId) throws IOException {
-        String line;
-        try (reader) {
-            while ((line = reader.readLine()) != null) {
-                if (line.contains(lambdaId)) {
-                    // retrieve the RSS column from the 'ps aux' output
-                    return Double.parseDouble(line.split("\\s+")[5]);
-                }
-            }
-        }
-        return 0;
-    }
-
     private static double parseOutput(String processOutput) {
         processOutput = processOutput.replaceAll("[^-\\d.]", "");
         return processOutput.isEmpty() ? 0 : Double.parseDouble(processOutput);
-    }
-
-    private static String getVmId(Lambda lambda) throws IOException, InterruptedException {
-        File pidFile = Paths.get(CODEBASE, lambda.getLambdaName(), LAMBDA_ID_FILE).toFile();
-        BufferedReader reader = new BufferedReader(new FileReader(pidFile));
-        return readToString(reader);
     }
 
     private static String getLambdaPid(Lambda lambda) throws IOException, InterruptedException {
@@ -87,6 +74,20 @@ public class LambdaMemoryUtils {
             }
         }
         return builder.toString();
+    }
+
+    private static Map<String, Double> readMemoryToMap(BufferedReader reader) throws IOException {
+        Map<String, Double> rssRecords = new HashMap<>(64);
+        try (reader) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String rssString = line.substring(0, line.indexOf(' '));
+                double rss = rssString.isEmpty() ? 0 : kilobytesToMegabytes(Double.parseDouble(rssString));
+                String lambdaId = line.substring(line.lastIndexOf(' ') + 1);
+                rssRecords.put(lambdaId, rss);
+            }
+        }
+        return rssRecords;
     }
 
     private static InputStream executeCommand(String... command) throws InterruptedException, IOException {
