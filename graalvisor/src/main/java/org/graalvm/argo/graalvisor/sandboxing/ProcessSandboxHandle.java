@@ -8,7 +8,9 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import org.graalvm.argo.graalvisor.function.NativeFunction;
 import org.graalvm.nativeimage.IsolateThread;
+import org.graalvm.nativeimage.StackValue;
 import org.graalvm.nativeimage.c.function.CFunction;
+import org.graalvm.nativeimage.c.type.CIntPointer;
 
 import com.oracle.svm.graalvisor.api.GraalVisorAPI;
 
@@ -51,6 +53,9 @@ public class ProcessSandboxHandle extends SandboxHandle {
     @CFunction
     public static native int kill(int pid, int sig);
 
+    @CFunction
+    public static native int waitpid(int pid, CIntPointer stat_loc, int options);
+
     private void child(ProcessSandboxProvider rsProvider) {
         NativeFunction function = (NativeFunction) rsProvider.getFunction();
         GraalVisorAPI gvAPI = rsProvider.getGraalvisorAPI();
@@ -59,6 +64,8 @@ public class ProcessSandboxHandle extends SandboxHandle {
             while(true) {
                 sender.write(String.format("%s\n", gvAPI.invokeFunction(ithread, function.getEntryPoint(), receiver.readLine())).getBytes());
             }
+        } catch (IOException e) {
+            // Ignore, most likely the parent closed the input stream meaning that the child should quit.
         } catch(Exception e) {
             System.err.println(e.getMessage());
             e.printStackTrace();
@@ -94,8 +101,9 @@ public class ProcessSandboxHandle extends SandboxHandle {
     }
 
     private void destroyChild(int pid) {
+        CIntPointer statusptr = StackValue.get(CIntPointer.class);
         kill(pid, SIGKILL);
-        // TODO - we should call wait here.
+        waitpid(pid, statusptr, 0);
         try {
             sender.close();
             receiver.close();
