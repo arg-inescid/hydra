@@ -24,7 +24,7 @@ public abstract class SandboxProvider {
         return String.format("{'Error': 'Provider %s has no support for warmup operation'}", this.getName());
     }
 
-    public abstract SandboxHandle createSandbox() throws IOException;
+    public abstract SandboxHandle createSandbox() throws Exception;
 
     public abstract void destroySandbox(SandboxHandle shandle) throws IOException;
 

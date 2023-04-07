@@ -1,11 +1,12 @@
 package org.graalvm.argo.graalvisor.sandboxing;
 
-import java.io.File;
+import java.io.BufferedReader;
+import java.io.FileDescriptor;
+import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
-
+import java.lang.reflect.Constructor;
 import org.graalvm.argo.graalvisor.function.NativeFunction;
-import org.graalvm.argo.graalvisor.utils.sharedmemory.ReceiveOnlySharedMemoryChannel;
-import org.graalvm.argo.graalvisor.utils.sharedmemory.SendOnlySharedMemoryChannel;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.c.function.CFunction;
 
@@ -15,14 +16,6 @@ import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
 public class ProcessSandboxHandle extends SandboxHandle {
-
-    /**
-     * Location on disk where shared memory channel files are placed.
-     */
-    private static final String SMEM_DIR = "/tmp";
-    private static final String SMEM_PREFIX = SMEM_DIR + "/shared-mem-channel";
-    private static final String P2C_SMEM_PREFIX = SMEM_PREFIX + "-to-";
-    private static final String C2P_SMEM_PREFIX = SMEM_PREFIX + "-from-";
 
     /**
      * Signal number for sending a terminating child processes.
@@ -35,37 +28,24 @@ public class ProcessSandboxHandle extends SandboxHandle {
     private int childPid;
 
     /**
-     * Shared memory channel used to send invocation arguments.
+     * Used to write payloads (parent to child or child to parent).
      */
-    private SendOnlySharedMemoryChannel sender;
+    private FileOutputStream sender;
 
     /**
-     * Shared memory channel used to receive invocation replies.
+     * Used to read payloads (parent to child or child to parent).
      */
-    private ReceiveOnlySharedMemoryChannel receiver;
+    private BufferedReader receiver;
 
     static {
          SignalHandler shandler = new SignalHandler() {
             @Override
             public void handle(Signal s) {
-                for (final File file : new File(SMEM_DIR).listFiles()) {
-                    if (!file.isDirectory() && file.getPath().startsWith(P2C_SMEM_PREFIX)) {
-                        destroyChild(Integer.parseInt(file.getName().split("-")[4]));
-                    }
-                }
                 System.exit(0);
             }
         };
         Signal.handle(new Signal("TERM"), shandler);
         Signal.handle(new Signal("INT"), shandler);
-    }
-
-    private static File parentToChildChannel(int pid) {
-        return new File(String.format("%s%d", P2C_SMEM_PREFIX, pid));
-    }
-
-    private static File childToParentChannel(int pid) {
-        return new File(String.format("%s%d", C2P_SMEM_PREFIX, pid));
     }
 
     @CFunction
@@ -77,7 +57,7 @@ public class ProcessSandboxHandle extends SandboxHandle {
         IsolateThread ithread = gvAPI.createIsolate();
         try {
             while(true) {
-                sender.writeString(gvAPI.invokeFunction(ithread, function.getEntryPoint(), receiver.readString()));
+                sender.write(String.format("%s\n", gvAPI.invokeFunction(ithread, function.getEntryPoint(), receiver.readLine())).getBytes());
             }
         } catch(Exception e) {
             System.err.println(e.getMessage());
@@ -87,48 +67,41 @@ public class ProcessSandboxHandle extends SandboxHandle {
         }
     }
 
-    private static boolean waitChild(int pid) {
-        for (int i = 0; i < 10; i++) {
-            if (childToParentChannel(pid).exists()) {
-                return true;
-            } else {
-                try {
-                    Thread.sleep(100); // TODO - reduce a bit more?
-                } catch (InterruptedException e) {
-                    // ignore
-                }
-            }
-        }
-        return false;
+    private static FileDescriptor createFileDescriptor(int fd) throws Exception {
+        Constructor<FileDescriptor> ctor = FileDescriptor.class.getDeclaredConstructor(Integer.TYPE);
+        ctor.setAccessible(true);
+        return ctor.newInstance(fd);
     }
 
-    public ProcessSandboxHandle(ProcessSandboxProvider rsProvider) throws IOException {
-        if ((childPid = NativeSandboxInterface.gfork()) == 0) {
+    public ProcessSandboxHandle(ProcessSandboxProvider rsProvider) throws Exception {
+        int[] childPipe = new int[2];
+        int[] parentPipe = new int[2];
+        if ((childPid = NativeSandboxInterface.gfork(childPipe, parentPipe)) == 0) {
             childPid = (int) ProcessHandle.current().pid();
-            sender = new SendOnlySharedMemoryChannel(childToParentChannel(childPid));
-            receiver = new ReceiveOnlySharedMemoryChannel(parentToChildChannel(childPid));
+            sender = new FileOutputStream(createFileDescriptor(childPipe[1]));
+            receiver = new BufferedReader(new FileReader(createFileDescriptor(parentPipe[0])));
             child(rsProvider);
         } else {
-            if (waitChild(childPid)) {
-                sender = new SendOnlySharedMemoryChannel(parentToChildChannel(childPid));
-                receiver = new ReceiveOnlySharedMemoryChannel(childToParentChannel(childPid));
-            } else {
-                kill(childPid, SIGKILL);
-                throw new IOException(String.format("Process sandbox (%d) failed to start.", childPid));
-            }
+            sender = new FileOutputStream(createFileDescriptor(parentPipe[1]));
+            receiver = new BufferedReader(new FileReader(createFileDescriptor(childPipe[0])));
         }
     }
 
     @Override
     public String invokeSandbox(String jsonArguments) throws Exception {
-        sender.writeString(jsonArguments);
-        return receiver.readString();
+        sender.write(String.format("%s\n", jsonArguments).getBytes());
+        return receiver.readLine();
     }
 
-    private static void destroyChild(int pid) {
+    private void destroyChild(int pid) {
         kill(pid, SIGKILL);
-        parentToChildChannel(pid).delete();
-        childToParentChannel(pid).delete();
+        // TODO - we should call wait here.
+        try {
+            sender.close();
+            receiver.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
