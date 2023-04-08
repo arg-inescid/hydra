@@ -22,7 +22,7 @@ function copy_polyglot_deps {
         echo "Warninig: BENCHMARKS_HOME is not set. Some benchmarks might now work due to missing dependencies."
     else
         # JVips.jar
-        unzip -o -q $BENCHMARKS_HOME/demos/ni-jni/JVips.jar -d /tmp/jvips
+        unzip -o -q $BENCHMARKS_HOME/src/javascript/gv-thumbnail/jvips/JVips.jar -d /tmp/jvips
         for dep in /tmp/jvips/*.so; do copy_deps $dep; done
     fi
 
