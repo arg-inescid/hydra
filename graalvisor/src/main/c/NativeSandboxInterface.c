@@ -3,10 +3,15 @@
 #include <signal.h>
 #include "org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface.h"
 
-void close_parent_fds() {
+#define PIPE_READ_END  0
+#define PIPE_WRITE_END 1
+
+void close_parent_fds(int childWrite, int parentRead) {
     // TODO - we should try to get a sense for the used file descriptors.
     for (int fd = 3; fd < 1024; fd++) {
-        close(fd);
+        if (fd != childWrite && fd != parentRead) {
+            close(fd);
+        }
     }
 }
 
@@ -19,11 +24,33 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     setbuf(stdout, NULL);
 }
 
-JNIEXPORT int JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_gfork(JNIEnv *env, jobject thisObj) {
+JNIEXPORT int JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_gfork(JNIEnv *env, jobject thisObj, jintArray childPipeFD, jintArray parentPipeFD) {
+    int parentRead, parentWrite, childRead, childWrite;
+
+    // Preparing child pipe (where the child writes and the parent reads).
+    jint *childPipeFDptr = (*env)->GetIntArrayElements(env, childPipeFD, 0);
+    pipe(childPipeFDptr);
+    childRead = childPipeFDptr[PIPE_READ_END];
+    childWrite = childPipeFDptr[PIPE_WRITE_END];
+    (*env)->ReleaseIntArrayElements(env, childPipeFD, childPipeFDptr, 0);
+
+    // Preparing the parent pipe (where the parent writes and the child reads).
+    jint *parentPipeFDptr = (*env)->GetIntArrayElements(env, parentPipeFD, 0);
+    pipe(parentPipeFDptr);
+    parentRead = parentPipeFDptr[PIPE_READ_END];
+    parentWrite = parentPipeFDptr[PIPE_WRITE_END];
+    (*env)->ReleaseIntArrayElements(env, parentPipeFD, parentPipeFDptr, 0);
+
+    // Forking.
     int pid = fork();
     if (pid == 0) {
-        close_parent_fds();
+        // Sanitizing the child process.
+        close_parent_fds(childWrite, parentRead);
         reset_parent_signal_handlers();
+    } else {
+        // Close the unnecessary pipe ends.
+        close(childPipeFDptr[PIPE_WRITE_END]);
+        close(parentPipeFDptr[PIPE_READ_END]);
     }
     return pid;
 }
