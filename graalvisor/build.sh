@@ -28,7 +28,7 @@ function build_ni {
         org.graalvm.argo.graalvisor.Main \
         polyglot-proxy \
         -H:+ReportExceptionStackTraces \
-        -H:ConfigurationFileDirectories=$DIR/ni-agent-config/native-image,$DIR/ni-agent-config/native-image-jvips
+        -H:ConfigurationFileDirectories=$DIR/ni-agent-config/native-image
 }
 
 function build_vm_image {
