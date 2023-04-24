@@ -83,7 +83,7 @@ public class ProcessSandboxHandle extends SandboxHandle {
     public ProcessSandboxHandle(ProcessSandboxProvider rsProvider) throws Exception {
         int[] childPipe = new int[2];
         int[] parentPipe = new int[2];
-        if ((childPid = NativeSandboxInterface.gfork(childPipe, parentPipe)) == 0) {
+        if ((childPid = NativeSandboxInterface.createNativeProcessSandbox(childPipe, parentPipe)) == 0) {
             childPid = (int) ProcessHandle.current().pid();
             sender = new FileOutputStream(createFileDescriptor(childPipe[1]));
             receiver = new BufferedReader(new FileReader(createFileDescriptor(parentPipe[0])));
