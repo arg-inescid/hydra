@@ -4,9 +4,7 @@ import org.graalvm.argo.lambda_manager.memory.ElasticMemoryPool;
 import org.graalvm.argo.lambda_manager.memory.FixedMemoryPool;
 import org.graalvm.argo.lambda_manager.memory.MemoryPool;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
-import org.graalvm.argo.lambda_manager.utils.ConnectionTriplet;
-
-import io.micronaut.http.client.RxHttpClient;
+import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
 
 import org.graalvm.argo.lambda_manager.processes.lambda.DefaultLambdaShutdownHandler;
 
@@ -32,7 +30,7 @@ public class Lambda {
 	private final String username;
 
 	private Timer timer;
-	private ConnectionTriplet<String, String, RxHttpClient> connectionTriplet;
+	private LambdaConnection connection;
 	private LambdaExecutionMode executionMode;
 
 	/** Indicates whether this lambda should be used for future requests. */
@@ -110,12 +108,12 @@ public class Lambda {
 		}
 	}
 
-	public ConnectionTriplet<String, String, RxHttpClient> getConnectionTriplet() {
-		return connectionTriplet;
+	public LambdaConnection getConnection() {
+		return connection;
 	}
 
-	public void setConnectionTriplet(ConnectionTriplet<String, String, RxHttpClient> connectionTriplet) {
-		this.connectionTriplet = connectionTriplet;
+	public void setConnection(LambdaConnection connection) {
+		this.connection = connection;
 	}
 
 	public LambdaExecutionMode getExecutionMode() {

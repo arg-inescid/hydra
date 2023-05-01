@@ -2,8 +2,7 @@ package org.graalvm.argo.lambda_manager.processes.taps;
 
 import org.graalvm.argo.lambda_manager.core.Configuration;
 import org.graalvm.argo.lambda_manager.processes.AbstractProcess;
-import org.graalvm.argo.lambda_manager.utils.ConnectionTriplet;
-import io.micronaut.http.client.RxHttpClient;
+import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
 import org.graalvm.argo.lambda_manager.core.Environment;
 
 import java.util.ArrayList;
@@ -16,8 +15,8 @@ public class CreateTaps extends AbstractProcess {
         List<String> command = new ArrayList<>();
         command.add("bash");
         command.add("src/scripts/create_taps.sh");
-        for (ConnectionTriplet<String, String, RxHttpClient> connectionTriplet : Configuration.argumentStorage.getConnectionPool()) {
-            command.add(connectionTriplet.tap);
+        for (LambdaConnection connection : Configuration.argumentStorage.getConnectionPool()) {
+            command.add(connection.tap);
         }
         return command;
     }

@@ -14,6 +14,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
                 "timeout",
                 "healthCheck",
                 "lambdaPort",
+                "lambdaType",
                 "lambdaConsole",
                 "managerConsole",
                 "managerState"
@@ -25,6 +26,7 @@ public class LambdaManagerConfiguration implements Serializable {
     @JsonProperty("timeout") private int timeout;
     @JsonProperty("healthCheck") private int healthCheck;
     @JsonProperty("lambdaPort") private int lambdaPort;
+    @JsonProperty("lambdaType") private String lambdaType;
     @JsonProperty("lambdaConsole") private boolean lambdaConsole;
     @JsonProperty("managerConsole") private LambdaManagerConsole lambdaManagerConsole;
     @JsonProperty("managerState") private LambdaManagerState lambdaManagerState;
@@ -46,11 +48,12 @@ public class LambdaManagerConfiguration implements Serializable {
      * @param healthCheck - Lambda's health will be checked in this time-span, after the first
      *            health response, no more checks are made.
      * @param lambdaPort - In which port the lambda will receive its requests.
+     * @param lambdaType - Type of the workers. Accepted values: [container,vm].
      * @param lambdaConsole - Is console active during qemu's run.
      * @param lambdaManagerConsole - The class with information about manager logging.
      * @param lambdaManagerState - The class that represent state of one manager's instance.
      */
-    public LambdaManagerConfiguration(String gateway, int maxMemory, int maxTaps, int timeout, int healthCheck, int lambdaPort,
+    public LambdaManagerConfiguration(String gateway, int maxMemory, int maxTaps, int timeout, int healthCheck, int lambdaPort, String lambdaType,
                     boolean lambdaConsole, LambdaManagerConsole lambdaManagerConsole, LambdaManagerState lambdaManagerState) {
         super();
         this.gateway = gateway;
@@ -59,6 +62,7 @@ public class LambdaManagerConfiguration implements Serializable {
         this.timeout = timeout;
         this.healthCheck = healthCheck;
         this.lambdaPort = lambdaPort;
+        this.lambdaType = lambdaType;
         this.lambdaConsole = lambdaConsole;
         this.lambdaManagerConsole = lambdaManagerConsole;
         this.lambdaManagerState = lambdaManagerState;
@@ -122,6 +126,16 @@ public class LambdaManagerConfiguration implements Serializable {
     @JsonProperty("lambdaPort")
     public void setLambdaPort(int lambdaPort) {
         this.lambdaPort = lambdaPort;
+    }
+
+    @JsonProperty("lambdaType")
+    public String getLambdaType() {
+        return lambdaType;
+    }
+
+    @JsonProperty("lambdaType")
+    public void setLambdaType(String lambdaType) {
+        this.lambdaType = lambdaType;
     }
 
     @JsonProperty("lambdaConsole")

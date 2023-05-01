@@ -5,8 +5,7 @@ import org.graalvm.argo.lambda_manager.core.Environment;
 import org.graalvm.argo.lambda_manager.core.Lambda;
 import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
-import org.graalvm.argo.lambda_manager.utils.ConnectionTriplet;
-import io.micronaut.http.client.RxHttpClient;
+import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -30,7 +29,7 @@ public class StartHotspot extends StartLambda {
         List<String> command = new ArrayList<>();
 
         lambda.setExecutionMode(LambdaExecutionMode.HOTSPOT);
-        ConnectionTriplet<String, String, RxHttpClient> connectionTriplet = lambda.getConnectionTriplet();
+        LambdaConnection connection = lambda.getConnection();
 
         command.add("/usr/bin/time");
         command.add("--append");
@@ -41,8 +40,8 @@ public class StartHotspot extends StartLambda {
         command.add(function.getName());
         command.add(String.valueOf(pid));
         command.add(String.valueOf(function.getMemory()));
-        command.add(connectionTriplet.ip);
-        command.add(connectionTriplet.tap);
+        command.add(connection.ip);
+        command.add(connection.tap);
         command.add(Configuration.argumentStorage.getGateway());
         command.add(Configuration.argumentStorage.getMask());
         if (Configuration.argumentStorage.isLambdaConsoleActive()) {

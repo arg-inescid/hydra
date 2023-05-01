@@ -1,6 +1,5 @@
 package org.graalvm.argo.lambda_manager.core;
 
-import com.github.maltalex.ineter.base.IPv4Address;
 import com.github.maltalex.ineter.range.IPv4Subnet;
 import org.graalvm.argo.lambda_manager.client.LambdaManagerClient;
 import org.graalvm.argo.lambda_manager.encoders.Coder;
@@ -9,11 +8,10 @@ import org.graalvm.argo.lambda_manager.exceptions.user.ErrorDuringCreatingConnec
 import org.graalvm.argo.lambda_manager.function_storage.FunctionStorage;
 import org.graalvm.argo.lambda_manager.memory.FixedMemoryPool;
 import org.graalvm.argo.lambda_manager.memory.MemoryPool;
-import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
-import org.graalvm.argo.lambda_manager.processes.taps.CreateTaps;
 import org.graalvm.argo.lambda_manager.schedulers.Scheduler;
-import org.graalvm.argo.lambda_manager.utils.ConnectionTriplet;
+import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
 import org.graalvm.argo.lambda_manager.utils.Messages;
+import org.graalvm.argo.lambda_manager.utils.NetworkConfigurationUtils;
 import org.graalvm.argo.lambda_manager.utils.logger.ElapseTimer;
 import org.graalvm.argo.lambda_manager.utils.logger.LambdaManagerFormatter;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
@@ -21,7 +19,6 @@ import org.graalvm.argo.lambda_manager.utils.parser.LambdaManagerConfiguration;
 import org.graalvm.argo.lambda_manager.utils.parser.LambdaManagerConsole;
 import org.graalvm.argo.lambda_manager.utils.parser.LambdaManagerState;
 import io.micronaut.context.BeanContext;
-import io.micronaut.http.client.RxHttpClient;
 import io.reactivex.exceptions.UndeliverableException;
 import io.reactivex.plugins.RxJavaPlugins;
 
@@ -29,12 +26,8 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Random;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -44,7 +37,11 @@ public class ArgumentStorage {
     // TODO - could we just keep the LambdaManagerConfiguration and avoid most of these fields?
     private String gateway;
     private String mask;
-    private Iterator<IPv4Address> iPv4AddressIterator;
+
+    /**
+     * Type of workers: vm or container.
+     */
+    private LambdaType lambdaType;
 
     /**
      * Memory pool that controls memory allocation.
@@ -57,7 +54,7 @@ public class ArgumentStorage {
     private int maxTaps;
 
     // TODO - we should synchronize access to the connection pool.
-    private final ArrayList<ConnectionTriplet<String, String, RxHttpClient>> connectionPool;
+    private final ArrayList<LambdaConnection> connectionPool;
     private int timeout;
     private int healthCheck;
     private int lambdaPort;
@@ -70,14 +67,12 @@ public class ArgumentStorage {
         this.gateway = lambdaManagerConfiguration.getGateway().split("/")[0];
         IPv4Subnet gatewayWithMask = IPv4Subnet.of(lambdaManagerConfiguration.getGateway());
         this.mask = gatewayWithMask.getNetworkMask().toString();
-        this.iPv4AddressIterator = gatewayWithMask.iterator();
-        this.iPv4AddressIterator.next(); // Note: skip *.*.*.0
-        this.iPv4AddressIterator.next(); // Note: skip *.*.*.1
         this.memoryPool = new FixedMemoryPool(lambdaManagerConfiguration.getMaxMemory(), lambdaManagerConfiguration.getMaxMemory());
         this.maxTaps = lambdaManagerConfiguration.getMaxTaps();
         this.timeout = lambdaManagerConfiguration.getTimeout();
         this.healthCheck = lambdaManagerConfiguration.getHealthCheck();
         this.lambdaPort = lambdaManagerConfiguration.getLambdaPort();
+        this.lambdaType = LambdaType.fromString(lambdaManagerConfiguration.getLambdaType());
         this.isLambdaConsoleActive = lambdaManagerConfiguration.isLambdaConsole();
     }
 
@@ -111,21 +106,13 @@ public class ArgumentStorage {
         });
     }
 
-    private void prepareConnectionPool(BeanContext beanContext) throws ErrorDuringCreatingConnectionPool {
-        try {
-            for (int i = 0; i < maxTaps; i++) {
-                String ip = getNextIPAddress();
-                String tap = String.format("%s-%s", Environment.TAP_PREFIX, generateRandomString());
-                RxHttpClient client = beanContext.createBean(RxHttpClient.class,
-                                new URL("http", ip, lambdaPort, "/"));
-                connectionPool.add(new ConnectionTriplet<>(ip, tap, client));
-            }
-
-            ProcessBuilder createTaps = new CreateTaps().build();
-            createTaps.start();
-            createTaps.join();
-        } catch (InterruptedException | MalformedURLException e) {
-            throw new ErrorDuringCreatingConnectionPool(Messages.ERROR_POOL_CREATION, e);
+    private void prepareConnectionPool(BeanContext beanContext, String gatewayWithMask) throws ErrorDuringCreatingConnectionPool {
+        if (lambdaType == LambdaType.VM) {
+            NetworkConfigurationUtils.prepareVmConnectionPool(connectionPool, maxTaps, gatewayWithMask, lambdaPort, beanContext);
+        } else if (lambdaType == LambdaType.CONTAINER) {
+            NetworkConfigurationUtils.prepareContainerConnectionPool(connectionPool, maxTaps, beanContext);
+        } else {
+            throw new ErrorDuringCreatingConnectionPool(String.format(Messages.ERROR_LAMBDA_TYPE, lambdaType));
         }
     }
 
@@ -201,7 +188,7 @@ public class ArgumentStorage {
         initErrorHandler();
         prepareLogging(lambdaManagerConfiguration.getManagerConsole());
         prepareConfiguration(lambdaManagerConfiguration.getManagerState());
-        prepareConnectionPool(beanContext);
+        prepareConnectionPool(beanContext, lambdaManagerConfiguration.getGateway());
         ElapseTimer.init(); // Start internal timer.
     }
 
@@ -212,17 +199,8 @@ public class ArgumentStorage {
     }
 
     public void cleanupStorage() {
-        for (ConnectionTriplet<String, String, RxHttpClient> connectionTriplet : connectionPool) {
-            connectionTriplet.client.close();   // Close http client if it's not closed yet.
-        }
-    }
-
-    public String getNextIPAddress() {
-        String nextIPAddress = iPv4AddressIterator.next().toString();
-        if (nextIPAddress.equals(getGateway())) {
-            return iPv4AddressIterator.next().toString();
-        } else {
-            return nextIPAddress;
+        for (LambdaConnection connection : connectionPool) {
+            connection.client.close();   // Close http client if it's not closed yet.
         }
     }
 
@@ -234,18 +212,18 @@ public class ArgumentStorage {
         return this.memoryPool;
     }
 
-    public ArrayList<ConnectionTriplet<String, String, RxHttpClient>> getConnectionPool() {
+    public ArrayList<LambdaConnection> getConnectionPool() {
         return connectionPool;
     }
 
-    public ConnectionTriplet<String, String, RxHttpClient> nextConnectionTriplet() {
+    public LambdaConnection nextLambdaConnection() {
         // TODO - may throw exception if no more connections are available.
         return connectionPool.remove(0);
     }
 
-    public void returnConnectionTriplet(ConnectionTriplet<String, String, RxHttpClient> connectionTriplet) {
-        if (!connectionPool.contains(connectionTriplet)) {
-            connectionPool.add(connectionTriplet);
+    public void returnLambdaConnection(LambdaConnection connection) {
+        if (!connectionPool.contains(connection)) {
+            connectionPool.add(connection);
         }
     }
 
@@ -265,14 +243,11 @@ public class ArgumentStorage {
         return lambdaPort;
     }
 
-    public boolean isLambdaConsoleActive() {
-        return isLambdaConsoleActive;
+    public LambdaType getLambdaType() {
+        return lambdaType;
     }
 
-    public String generateRandomString() {
-        return new Random().ints('a', 'z' + 1)
-                        .limit(Environment.RAND_STRING_LEN)
-                        .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
-                        .toString();
+    public boolean isLambdaConsoleActive() {
+        return isLambdaConsoleActive;
     }
 }

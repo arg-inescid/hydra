@@ -5,6 +5,7 @@ import org.graalvm.argo.lambda_manager.core.Environment;
 import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.core.Lambda;
 import org.graalvm.argo.lambda_manager.core.LambdaManager;
+import org.graalvm.argo.lambda_manager.core.LambdaType;
 import org.graalvm.argo.lambda_manager.optimizers.FunctionStatus;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
@@ -13,9 +14,10 @@ import org.graalvm.argo.lambda_manager.processes.lambda.DefaultLambdaShutdownHan
 import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspot;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotWithAgent;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartLambda;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalvisor;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalvisorVM;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartCustomRuntime;
-import org.graalvm.argo.lambda_manager.utils.ConnectionTriplet;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalvisorContainer;
+import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
 import org.graalvm.argo.lambda_manager.utils.NetworkUtils;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 
@@ -73,7 +75,11 @@ public class RoundedRobinScheduler implements Scheduler {
                 process = new StartHotspot(lambda, function);
                 break;
             case GRAALVISOR:
-                process = new StartGraalvisor(lambda, function);
+                if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM) {
+                    process = new StartGraalvisorVM(lambda, function);
+                } else {
+                    process = new StartGraalvisorContainer(lambda, function);
+                }
                 break;
             case CUSTOM:
                 process = new StartCustomRuntime(lambda, function);
@@ -94,11 +100,11 @@ public class RoundedRobinScheduler implements Scheduler {
                 try {
                     long timeBefore = System.currentTimeMillis();
                     gate();
-                    ConnectionTriplet<String, String, RxHttpClient> triplet = Configuration.argumentStorage.nextConnectionTriplet();
-                    lambda.setConnectionTriplet(triplet);
+                    LambdaConnection connection = Configuration.argumentStorage.nextLambdaConnection();
+                    lambda.setConnection(connection);
                     ProcessBuilder process = whomToSpawn(lambda, function, targetMode).build();
                     process.start();
-                    if (NetworkUtils.waitForOpenPort(lambda.getConnectionTriplet().ip, Configuration.argumentStorage.getLambdaPort(), 25)) {
+                    if (NetworkUtils.waitForOpenPort(lambda.getConnection().ip, lambda.getConnection().port, 25)) {
                         lambda.resetTimer();
                         LambdaManager.lambdas.add(lambda);
                         Logger.log(Level.INFO, "Added new lambda for " + function.getName() + " with mode " + lambda.getExecutionMode() + ". It took " + (System.currentTimeMillis() - timeBefore) + " ms.");

@@ -1,18 +1,17 @@
 package org.graalvm.argo.lambda_manager.processes.lambda;
 
-import org.graalvm.argo.lambda_manager.core.Configuration;
-import org.graalvm.argo.lambda_manager.core.Lambda;
-import org.graalvm.argo.lambda_manager.core.Function;
-import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
-import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
-
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 
-public class StartCustomRuntime extends StartLambda {
+import org.graalvm.argo.lambda_manager.core.Configuration;
+import org.graalvm.argo.lambda_manager.core.Function;
+import org.graalvm.argo.lambda_manager.core.Lambda;
+import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
+import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
 
-    public StartCustomRuntime(Lambda lambda, Function function) {
+public class StartGraalvisorVM extends StartGraalvisor {
+
+    public StartGraalvisorVM(Lambda lambda, Function function) {
         super(lambda, function);
     }
 
@@ -20,7 +19,7 @@ public class StartCustomRuntime extends StartLambda {
     protected List<String> makeCommand() {
         List<String> command = new ArrayList<>();
 
-        lambda.setExecutionMode(LambdaExecutionMode.CUSTOM);
+        lambda.setExecutionMode(LambdaExecutionMode.GRAALVISOR);
         LambdaConnection connection = lambda.getConnection();
 
         command.add("/usr/bin/time");
@@ -28,7 +27,7 @@ public class StartCustomRuntime extends StartLambda {
         command.add(String.format("--output=%s", memoryFilename()));
         command.add("-v");
         command.add("bash");
-        command.add("src/scripts/start_cruntime.sh");
+        command.add("src/scripts/start_graalvisor_vm.sh");
         command.add(function.getName());
         command.add(String.valueOf(pid));
         command.add(String.valueOf(function.getMemory()));
@@ -41,33 +40,10 @@ public class StartCustomRuntime extends StartLambda {
         } else {
             command.add("--noconsole");
         }
-        command.add(function.getRuntime());
-        String lambdaId = generateLambdaId();
-        lambda.setCustomRuntimeId(lambdaId);
-        command.add(lambdaId);
+        command.add(TIMESTAMP_TAG + System.currentTimeMillis());
+        command.add(PORT_TAG + Configuration.argumentStorage.getLambdaPort());
+        command.add("LD_LIBRARY_PATH=/lib:/lib64:/tmp/apps:/usr/local/lib");
         return command;
     }
 
-    @Override
-    protected OnProcessFinishCallback callback() {
-        return new OnProcessFinishCallback() {
-
-			@Override
-			public void finish(int exitCode) {
-				lambda.resetRegisteredInLambda();
-			}
-		};
-    }
-
-    private static final String AB = "0123456789abcdef";
-    private static SecureRandom rnd = new SecureRandom();
-    private static final int ID_LEN = 32;
-
-    private String generateLambdaId() {
-        StringBuilder sb = new StringBuilder(ID_LEN);
-        for (int i = 0; i < ID_LEN; i++) {
-            sb.append(AB.charAt(rnd.nextInt(AB.length())));
-        }
-        return sb.toString();
-    }
 }

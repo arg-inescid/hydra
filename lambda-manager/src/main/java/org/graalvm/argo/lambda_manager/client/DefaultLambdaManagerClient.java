@@ -23,7 +23,7 @@ import io.reactivex.Flowable;
 public class DefaultLambdaManagerClient implements LambdaManagerClient {
 
     private String sendRequest(HttpRequest<?> request, Lambda lambda) {
-        try (RxHttpClient client = lambda.getConnectionTriplet().client) {
+        try (RxHttpClient client = lambda.getConnection().client) {
             Flowable<String> flowable = client.retrieve(request);
             for (int failures = 0; failures < Configuration.FAULT_TOLERANCE; failures++) {
                 try {

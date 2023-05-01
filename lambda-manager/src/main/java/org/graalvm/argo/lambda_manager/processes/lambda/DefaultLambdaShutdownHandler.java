@@ -4,6 +4,7 @@ import org.graalvm.argo.lambda_manager.core.Configuration;
 import org.graalvm.argo.lambda_manager.core.Environment;
 import org.graalvm.argo.lambda_manager.core.Lambda;
 import org.graalvm.argo.lambda_manager.core.LambdaManager;
+import org.graalvm.argo.lambda_manager.core.LambdaType;
 import org.graalvm.argo.lambda_manager.schedulers.RoundedRobinScheduler;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 import java.io.BufferedReader;
@@ -40,8 +41,13 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
         }
     }
 
-    private void shutdownVMMLambda(String lambdaPath) throws Throwable {
-        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_graalvisor.sh", lambda.getConnectionTriplet().tap).start();
+    private void shutdownGraalvisorLambda(String lambdaPath) throws Throwable {
+        Process p = null;
+        if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM) {
+            p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_graalvisor.sh", "vm", lambda.getConnection().tap).start();
+        } else {
+            p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_graalvisor.sh", "container", lambda.getLambdaName()).start();
+        }
         p.waitFor();
         if (p.exitValue() != 0) {
             Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", lambda.getLambdaID()));
@@ -66,7 +72,7 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
                     shutdownHotSpotLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());
                     break;
                 case GRAALVISOR:
-                    shutdownVMMLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());
+                    shutdownGraalvisorLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());
                     break;
                 case CUSTOM:
                     shutdownCustomLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());
@@ -103,7 +109,7 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
         lambda.resetClosedRequestCount();
 
         // Return connection to connection pool.
-        Configuration.argumentStorage.returnConnectionTriplet(lambda.getConnectionTriplet());
+        Configuration.argumentStorage.returnLambdaConnection(lambda.getConnection());
 
         // Return all memory to the memory pool.
         Configuration.argumentStorage.getMemoryPool().deallocateMemoryLambda(lambda.getMemoryPool().getMaxMemory());
