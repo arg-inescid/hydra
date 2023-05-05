@@ -9,12 +9,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.graalvm.argo.graalvisor.function.PolyglotFunction;
+import org.graalvm.argo.graalvisor.sandboxing.NativeSandboxInterface;
 import org.graalvm.argo.graalvisor.sandboxing.SandboxHandle;
 
 /**
  * A runtime proxy that runs requests on Native image-based sandboxes.
  */
 public class SubstrateVMProxy extends RuntimeProxy {
+
+    private static int namespaceIpCounter = 1;
 
     /**
      * A Request object is used as a communication packet between a foreground thread and a background thread.
@@ -164,16 +167,32 @@ public class SubstrateVMProxy extends RuntimeProxy {
     }
 
     private static SandboxHandle prepareSandbox(PolyglotFunction function) throws Exception {
-        long start = System.nanoTime();
+        long start, finish;
+        start = System.nanoTime();
         SandboxHandle worker = function.getSandboxProvider().createSandbox();
-        long finish = System.nanoTime();
+        finish = System.nanoTime();
         System.out.println(String.format("[thread %s] New %s sandbox %s in %s us", Thread.currentThread().getId(), function.getSandboxProvider().getName(), worker, (finish - start)/1000));
+
+        final String name = "test123";
+        start = System.nanoTime();
+        NativeSandboxInterface.createNetworkNamespace(name, namespaceIpCounter++);
+        finish = System.nanoTime();
+        System.out.println(String.format("[thread %s] New %s network namespace %s in %s us", Thread.currentThread().getId(), function.getSandboxProvider().getName(), name, (finish - start)/1000));
+
         return worker;
     }
 
     private static void destroySandbox(PolyglotFunction function, SandboxHandle shandle) throws Exception {
+        long start, finish;
+        final String name = "test123";
+        start = System.nanoTime();
+        NativeSandboxInterface.deleteNetworkNamespace(name);
+        finish = System.nanoTime();
+
         System.out.println(String.format("[thread %s] Destroying %s sandbox %s", Thread.currentThread().getId(), function.getSandboxProvider().getName(), shandle));
         function.getSandboxProvider().destroySandbox(shandle);
+
+        System.out.println(String.format("[thread %s] Destroyed %s network namespace %s in %s us", Thread.currentThread().getId(), function.getSandboxProvider().getName(), name, (finish - start)/1000));
     }
 
     @Override
