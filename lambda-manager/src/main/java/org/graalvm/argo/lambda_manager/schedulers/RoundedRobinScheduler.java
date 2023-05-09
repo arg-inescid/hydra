@@ -11,10 +11,12 @@ import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
 import org.graalvm.argo.lambda_manager.processes.lambda.BuildSO;
 import org.graalvm.argo.lambda_manager.processes.lambda.DefaultLambdaShutdownHandler;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspot;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotWithAgent;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotVM;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotWithAgentContainer;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotWithAgentVM;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartLambda;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalvisorVM;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotContainer;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartCustomRuntime;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalvisorContainer;
 import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
@@ -65,14 +67,23 @@ public class RoundedRobinScheduler implements Scheduler {
         StartLambda process;
         switch (targetMode) {
             case HOTSPOT_W_AGENT:
-                process = new StartHotspotWithAgent(lambda, function);
+                // TODO: exact type of process (VM/Container) should be resolved in a factory.
+                if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM) {
+                    process = new StartHotspotWithAgentVM(lambda, function);
+                } else {
+                    process = new StartHotspotWithAgentContainer(lambda, function);
+                }
                 break;
             case HOTSPOT:
                 if (function.getStatus() == FunctionStatus.NOT_BUILT_CONFIGURED) {
                     new BuildSO(function).build().start();
                     Logger.log(Level.INFO, "Starting new .so build for function " + function.getName());
                 }
-                process = new StartHotspot(lambda, function);
+                if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM) {
+                    process = new StartHotspotVM(lambda, function);
+                } else {
+                    process = new StartHotspotContainer(lambda, function);
+                }
                 break;
             case GRAALVISOR:
                 if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM) {

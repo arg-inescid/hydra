@@ -70,6 +70,7 @@ public class GuestAPI {
                 Object resultObject;
                 try {
                     resultObject = method.invoke(null, new Object[]{input});
+                    // TODO: catch ReflectiveOperationException | JNI exception
                 } catch (Throwable t) {
                     Throwable cause = t.getCause() != null ? t.getCause() : t;
                     resultObject = "Exception in user function: " + cause.getClass().getCanonicalName() + ": " + cause.getMessage();

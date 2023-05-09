@@ -5,6 +5,7 @@ import org.graalvm.argo.lambda_manager.core.Environment;
 import org.graalvm.argo.lambda_manager.core.Lambda;
 import org.graalvm.argo.lambda_manager.core.LambdaManager;
 import org.graalvm.argo.lambda_manager.core.LambdaType;
+import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.schedulers.RoundedRobinScheduler;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 import java.io.BufferedReader;
@@ -42,12 +43,7 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
     }
 
     private void shutdownGraalvisorLambda(String lambdaPath) throws Throwable {
-        Process p = null;
-        if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM) {
-            p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_graalvisor.sh", "vm", lambda.getConnection().tap).start();
-        } else {
-            p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_graalvisor.sh", "container", lambda.getLambdaName()).start();
-        }
+        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_graalvisor.sh", lambda.getConnection().tap).start();
         p.waitFor();
         if (p.exitValue() != 0) {
             Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", lambda.getLambdaID()));
@@ -64,21 +60,35 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
         }
     }
 
+    private void shutdownContainerLambda(String lambdaPath, LambdaExecutionMode mode) throws Throwable {
+        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_container.sh", lambda.getLambdaName(),
+                String.valueOf(mode == LambdaExecutionMode.HOTSPOT || mode == LambdaExecutionMode.HOTSPOT_W_AGENT)).start();
+        p.waitFor();
+        if (p.exitValue() != 0) {
+            Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", lambda.getLambdaID()));
+            printStream(Level.WARNING, p.getErrorStream());
+        }
+    }
+
     private void shutdownLambda() {
         try {
-            switch (lambda.getExecutionMode()) {
-                case HOTSPOT:
-                case HOTSPOT_W_AGENT:
-                    shutdownHotSpotLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());
-                    break;
-                case GRAALVISOR:
-                    shutdownGraalvisorLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());
-                    break;
-                case CUSTOM:
-                    shutdownCustomLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());
-                    break;
-                default:
-                    Logger.log(Level.WARNING, String.format("Lambda ID=%d has no known execution mode: %s", lambda.getLambdaID(), lambda.getExecutionMode()));
+            if (Configuration.argumentStorage.getLambdaType() == LambdaType.CONTAINER) {
+                shutdownContainerLambda(Environment.CODEBASE + "/" + lambda.getLambdaName(), lambda.getExecutionMode());
+            } else {
+                switch (lambda.getExecutionMode()) {
+                    case HOTSPOT:
+                    case HOTSPOT_W_AGENT:
+                        shutdownHotSpotLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());
+                        break;
+                    case GRAALVISOR:
+                        shutdownGraalvisorLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());
+                        break;
+                    case CUSTOM:
+                        shutdownCustomLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());
+                        break;
+                    default:
+                        Logger.log(Level.WARNING, String.format("Lambda ID=%d has no known execution mode: %s", lambda.getLambdaID(), lambda.getExecutionMode()));
+                }
             }
         } catch (Throwable t) {
             Logger.log(Level.SEVERE, String.format("Lambda ID=%d failed to shutdown: %s", lambda.getLambdaID(), t.getMessage()));

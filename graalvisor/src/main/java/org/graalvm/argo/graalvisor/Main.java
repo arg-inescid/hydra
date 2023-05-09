@@ -30,15 +30,14 @@ public abstract class Main {
 
         System.out.println(String.format("Graalvisor listening on port %s.", lambda_port));
 
-        // Initialize our native sandbox interface.
-        NativeSandboxInterface.ginit();
-
         // Create the directory where function code will be placed.
         new File(APP_DIR).mkdirs();
 
         int port = Integer.parseInt(lambda_port);
 
         if (System.getProperty("java.vm.name").equals("Substrate VM")) {
+            // Initialize our native sandbox interface.
+            NativeSandboxInterface.ginit();
            new SubstrateVMProxy(port).start();
         } else {
            new HotSpotProxy(port, lambda_entry_point).start();
