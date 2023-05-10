@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <sys/mount.h>
 #include <limits.h>
+#include <sys/time.h>
 
 #define NETNS_RUN_DIR "/var/run/netns"
 
@@ -65,7 +66,7 @@ int create_netns_dir()
     return 0;
 }
 
-void switchToDefaultNetworkNamespace() {
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_switchToDefaultNetworkNamespace(JNIEnv *env, jobject thisObj) {
     int fd = open("/proc/1/ns/net", O_RDONLY);
     if (setns(fd, CLONE_NEWNET) < 0) {
         fprintf(stderr, "could not change to default network namespace. errno: %s", strerror(errno));
@@ -74,10 +75,11 @@ void switchToDefaultNetworkNamespace() {
     close(fd);
 }
 
-void switchNetworkNamespace(const char *name) {
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_switchNetworkNamespace(JNIEnv *env, jobject thisObj, jstring jName) {
+    const char *ns_name = (*env)->GetStringUTFChars(env, jName, 0);
     int namespace;
     char path[PATH_MAX];
-    snprintf(path, sizeof(path), "/var/run/netns/%s", name);
+    snprintf(path, sizeof(path), "/var/run/netns/%s", ns_name);
     namespace = open(path, O_RDONLY);
     if (namespace == -1) {
         printf("Error while opening network namespace file\n");
@@ -87,6 +89,7 @@ void switchNetworkNamespace(const char *name) {
         printf("Error while setting new namespace\n");
         exit(0);
     }
+    (*env)->ReleaseStringUTFChars(env, jName, ns_name);
 }
 
 void deleteVeth(const char *veth_name) {
@@ -95,7 +98,6 @@ void deleteVeth(const char *veth_name) {
         printf("Error formatting delete_veth command\n");
         exit(0);
     }
-    printf("cmd: %s\n", command);
     if (system(command) == -1) {
         printf("Error while running delete_veth command\n");
         exit(0);
@@ -108,7 +110,6 @@ void createVeth(char *entrypointVethName, char *containerVethName) {
         printf("Error formatting create_veth command\n");
         exit(0);
     }
-    printf("cmd: %s\n", command);
     if (system(command) == -1) {
         printf("Error while running create_veth command\n");
         exit(0);
@@ -121,7 +122,6 @@ void linkVeth(char *containerVethName, const char *namespaceName) {
         printf("Error formatting create_veth command\n");
         exit(0);
     }
-    printf("cmd: %s\n", command);
     if (system(command) == -1) {
         printf("Error while running create_veth command\n");
         exit(0);
@@ -134,7 +134,6 @@ void addAddressToEntrypointNamespace(char *ipAddress, char *entrypointVethName) 
         printf("Error formatting add_address_to_entrypoint_namespace command\n");
         exit(0);
     }
-    printf("cmd: %s\n", command);
     if (system(command) == -1) {
         printf("Error while running add_address_to_entrypoint_namespace command\n");
         exit(0);
@@ -147,7 +146,6 @@ void addAddressToContainerNamespace(const char *ns_name, char *ipAddress, char *
         printf("Error formatting add_address_to_container_namespace command\n");
         exit(0);
     }
-    printf("cmd: %s\n", command);
     if (system(command) == -1) {
         printf("Error while running add_address_to_container_namespace command\n");
         exit(0);
@@ -160,7 +158,6 @@ void containerEnableVeth(const char *ns_name, char *containerVethName) {
         printf("Error formatting container_enable_veth command\n");
         exit(0);
     }
-    printf("cmd: %s\n", command);
     if (system(command) == -1) {
         printf("Error while running container_enable_veth command\n");
         exit(0);
@@ -173,7 +170,6 @@ void entrypointEnableVeth(char *entrypointVethName) {
         printf("Error formatting entrypoint_enable_veth command\n");
         exit(0);
     }
-    printf("cmd: %s\n", command);
     if (system(command) == -1) {
         printf("Error while running entrypoint_enable_veth command\n");
         exit(0);
@@ -186,7 +182,6 @@ void setContainerDefaultNetworkGateway(const char *namespaceName, char *ip, char
         printf("Error formatting set_network_gateway command\n");
         exit(0);
     }
-    printf("cmd: %s\n", command);
     if (system(command) == -1) {
         printf("Error while running set_network_gateway command\n");
         exit(0);
@@ -216,25 +211,59 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
         unshare(CLONE_NEWNET);
         mount("/proc/self/ns/net", ns_path, "none", MS_BIND, NULL);*/
 
+    struct timeval tbegin, tend;
+    gettimeofday(&tbegin, NULL);
     char command[256];
     if (sprintf(command, CREATE_NETWORK_NAMESPACE, ns_name) < 0) {
         printf("Error formatting create_network_namespace command\n");
         exit(0);
     }
-    printf("cmd: %s\n", command);
     if (system(command) == -1) {
         printf("Error while running create_network_namespace command\n");
         exit(0);
     }
 
+    gettimeofday(&tend, NULL);
+    printf("time create_netns %ld\n", (tend.tv_sec * 1000000 + tend.tv_usec) - (tbegin.tv_sec * 1000000 + tbegin.tv_usec));
+
+    gettimeofday(&tbegin, NULL);
     createVeth(entrypointVethName, containerVethName);
+    gettimeofday(&tend, NULL);
+    printf("time create_veth %ld\n", (tend.tv_sec * 1000000 + tend.tv_usec) - (tbegin.tv_sec * 1000000 + tbegin.tv_usec));
+
+    gettimeofday(&tbegin, NULL);
     linkVeth(containerVethName, ns_name);
+    gettimeofday(&tend, NULL);
+    printf("time link_veth %ld\n", (tend.tv_sec * 1000000 + tend.tv_usec) - (tbegin.tv_sec * 1000000 + tbegin.tv_usec));
+
+    gettimeofday(&tbegin, NULL);
     addAddressToEntrypointNamespace(entrypointIp, entrypointVethName);
+    gettimeofday(&tend, NULL);
+    printf("time address_ent_ns %ld\n", (tend.tv_sec * 1000000 + tend.tv_usec) - (tbegin.tv_sec * 1000000 + tbegin.tv_usec));
+
+    gettimeofday(&tbegin, NULL);
     addAddressToContainerNamespace(ns_name, containerIp, containerVethName);
+    gettimeofday(&tend, NULL);
+    printf("time address_cont_ns %ld\n", (tend.tv_sec * 1000000 + tend.tv_usec) - (tbegin.tv_sec * 1000000 + tbegin.tv_usec));
+
+    gettimeofday(&tbegin, NULL);
     entrypointEnableVeth(entrypointVethName);
+    gettimeofday(&tend, NULL);
+    printf("time enable_ent_veth %ld\n", (tend.tv_sec * 1000000 + tend.tv_usec) - (tbegin.tv_sec * 1000000 + tbegin.tv_usec));
+
+    gettimeofday(&tbegin, NULL);
     containerEnableVeth(ns_name, containerVethName);
+    gettimeofday(&tend, NULL);
+    printf("time enable_cont_veth %ld\n", (tend.tv_sec * 1000000 + tend.tv_usec) - (tbegin.tv_sec * 1000000 + tbegin.tv_usec));
+
+    gettimeofday(&tbegin, NULL);
     setContainerDefaultNetworkGateway(ns_name, defaultGateway, containerVethName);
-    switchNetworkNamespace(ns_name);
+    gettimeofday(&tend, NULL);
+    printf("time def_cont_netw_gate %ld\n", (tend.tv_sec * 1000000 + tend.tv_usec) - (tbegin.tv_sec * 1000000 + tbegin.tv_usec));
+
+    gettimeofday(&tbegin, NULL);
+    gettimeofday(&tend, NULL);
+    printf("time switch_netns %ld\n", (tend.tv_sec * 1000000 + tend.tv_usec) - (tbegin.tv_sec * 1000000 + tbegin.tv_usec));
 
     (*env)->ReleaseStringUTFChars(env, jName, ns_name);
 }
@@ -245,7 +274,6 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     char entrypointVethName[1024];
     snprintf(entrypointVethName, sizeof(entrypointVethName), "%s_ep", ns_name);
 
-    switchToDefaultNetworkNamespace();
     deleteVeth(entrypointVethName);
 
     char command[256];
@@ -253,7 +281,6 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
         printf("Error formatting delete_network_namespace command\n");
         exit(0);
     }
-    printf("cmd: %s\n", command);
     if (system(command) == -1) {
         printf("Error while running delete_network_namespace command\n");
         exit(0);

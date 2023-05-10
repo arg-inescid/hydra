@@ -9,4 +9,8 @@ public class NativeSandboxInterface {
     public static native void createNetworkNamespace(String jName, int jNumber);
 
     public static native void deleteNetworkNamespace(String jName);
+
+    public static native void switchNetworkNamespace(String jName);
+
+    public static native void switchToDefaultNetworkNamespace();
 }
