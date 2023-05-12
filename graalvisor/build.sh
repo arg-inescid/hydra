@@ -50,47 +50,68 @@ cd "$DIR" || {
   exit 1
 }
 
-LANGS=""
-read -p "Javascript support (y or Y, everything else as no)? " -n 1 -r
-echo    # move to a new line
-if [[ $REPLY =~ ^[Yy]$ ]]
-then
-    LANGS="$LANGS --language:js"
-    echo "JavaScript support added!"
+EXECUTION_ENVIRONMENT=$1
+BUILD_VM_IMAGE="false"
+BUILD_CONTAINER_IMAGE="false"
+if [[ "$EXECUTION_ENVIRONMENT" != "in-container" ]]; then
+    read -p "Build vm image (y or Y, everything else as no)? " -n 1 -r
+    echo    # move to a new line
+    if [[ $REPLY =~ ^[Yy]$ ]]
+    then
+        BUILD_VM_IMAGE="true"
+    fi
+
+    read -p "Build container image (y or Y, everything else as no)? " -n 1 -r
+    echo    # move to a new line
+    if [[ $REPLY =~ ^[Yy]$ ]]
+    then
+        BUILD_CONTAINER_IMAGE="true"
+    fi
 fi
 
-read -p "Python support (y or Y, everything else as no)? " -n 1 -r
-echo    # move to a new line
-if [[ $REPLY =~ ^[Yy]$ ]]
-then
-    LANGS="$LANGS --language:python"
-    echo "Python support added!"
+if [[ "$BUILD_VM_IMAGE" == "true" ]] || [[ "$BUILD_CONTAINER_IMAGE" == "true" ]]
+then  # Build native image inside Docker container.
+    docker run -it -v $JAVA_HOME:/jvm -v $ARGO_HOME:/argo --rm argo-builder /argo/graalvisor/build.sh in-container
+    sudo chown -R $USER:$USER build
+else  # Build native image locally.
+    LANGS=""
+    read -p "Javascript support (y or Y, everything else as no)? " -n 1 -r
+    echo    # move to a new line
+    if [[ $REPLY =~ ^[Yy]$ ]]
+    then
+        LANGS="$LANGS --language:js"
+        echo "JavaScript support added!"
+    fi
+
+    read -p "Python support (y or Y, everything else as no)? " -n 1 -r
+    echo    # move to a new line
+    if [[ $REPLY =~ ^[Yy]$ ]]
+    then
+        LANGS="$LANGS --language:python"
+        echo "Python support added!"
+    fi
+
+    echo -e "${GREEN}Building graalvisor jar...${NC}"
+    ./gradlew clean shadowJar javaProxy
+    echo -e "${GREEN}Building graalvisor jar... done!${NC}"
+
+    echo -e "${GREEN}Building graalvisor native sandbox interface...${NC}"
+    build_nsi
+    echo -e "${GREEN}Building graalvisor native sandbox interface... done!${NC}"
+
+    echo -e "${GREEN}Building graalvisor Native Image...${NC}"
+    build_ni
+    echo -e "${GREEN}Building graalvisor Native Image... done!${NC}"
 fi
 
-echo -e "${GREEN}Building graalvisor jar...${NC}"
-./gradlew clean shadowJar javaProxy
-echo -e "${GREEN}Building graalvisor jar... done!${NC}"
-
-echo -e "${GREEN}Building graalvisor native sandbox interface...${NC}"
-build_nsi
-echo -e "${GREEN}Building graalvisor native sandbox interface... done!${NC}"
-
-echo -e "${GREEN}Building graalvisor Native Image...${NC}"
-build_ni
-echo -e "${GREEN}Building graalvisor Native Image... done!${NC}"
-
-read -p "Build vm image (y or Y, everything else as no)? " -n 1 -r
-echo    # move to a new line
-if [[ $REPLY =~ ^[Yy]$ ]]
+if [[ "$BUILD_VM_IMAGE" == "true" ]]
 then
     echo -e "${GREEN}Building vm image...${NC}"
     build_vm_image
     echo -e "${GREEN}Building vm image... done!${NC}"
 fi
 
-read -p "Build container image (y or Y, everything else as no)? " -n 1 -r
-echo    # move to a new line
-if [[ $REPLY =~ ^[Yy]$ ]]
+if [[ "$BUILD_CONTAINER_IMAGE" == "true" ]]
 then
     echo -e "${GREEN}Building container image...${NC}"
     build_container_image
