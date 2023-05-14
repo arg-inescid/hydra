@@ -64,13 +64,13 @@ else
 fi
 
 docker run --rm --name="$LAMBDA_NAME" \
+  -v "$JAVA_HOME":/jvm \
   -v "$LAMBDA_HOME"/shared:/shared \
   -w /shared \
-  -e JAVA_HOME=/usr/lib64/graalvm/graalvm22-ee-java11 \
 	${ARGS[@]} \
 	--network host \
-	container-registry.oracle.com/graalvm/jdk-ee:ol7-java11-22.1.0 \
-  java -Djava.library.path=/usr/lib64/graalvm/graalvm22-ee-java11/lib -agentlib:native-image-agent=config-merge-dir=config,caller-filter-file=caller-filter-config.json -cp graalvisor-1.0-all.jar:$FUNCTION_NAME org.graalvm.argo.graalvisor.Main &
+	argo-builder \
+  /jvm/bin/java -Djava.library.path=/jvm/lib -agentlib:native-image-agent=config-merge-dir=config,caller-filter-file=caller-filter-config.json -cp graalvisor-1.0-all.jar:$FUNCTION_NAME org.graalvm.argo.graalvisor.Main &
 
 echo "$!" > "$LAMBDA_HOME"/lambda.pid
 

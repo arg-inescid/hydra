@@ -44,13 +44,13 @@ echo $(date) >> "$LAMBDA_HOME"/shared/run.log
 cp "$PROXY_JAR" "$FUNCTION_CODE" "$LAMBDA_HOME"/shared
 
 docker run --rm --name="$LAMBDA_NAME" \
+  -v "$JAVA_HOME":/jvm \
   -v "$LAMBDA_HOME"/shared:/shared \
   -w /shared \
-  -e JAVA_HOME=/usr/lib64/graalvm/graalvm22-ee-java11 \
 	${ARGS[@]} \
 	--network host \
-	container-registry.oracle.com/graalvm/jdk-ee:ol7-java11-22.1.0 \
-  java -cp graalvisor-1.0-all.jar:$FUNCTION_NAME org.graalvm.argo.graalvisor.Main &
+	argo-builder \
+  /jvm/bin/java -cp graalvisor-1.0-all.jar:$FUNCTION_NAME org.graalvm.argo.graalvisor.Main &
 
 echo "$!" > "$LAMBDA_HOME"/lambda.pid
 
