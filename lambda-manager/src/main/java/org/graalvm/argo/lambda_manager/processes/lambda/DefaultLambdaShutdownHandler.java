@@ -5,7 +5,6 @@ import org.graalvm.argo.lambda_manager.core.Environment;
 import org.graalvm.argo.lambda_manager.core.Lambda;
 import org.graalvm.argo.lambda_manager.core.LambdaManager;
 import org.graalvm.argo.lambda_manager.core.LambdaType;
-import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.schedulers.RoundedRobinScheduler;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 import java.io.BufferedReader;
@@ -34,7 +33,8 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
     }
 
     private void shutdownHotSpotLambda(String lambdaPath) throws Throwable {
-        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_hotspot.sh", lambdaPath).start();
+        String lambdaMode = lambda.getExecutionMode().toString();
+        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_hotspot.sh", lambdaPath, String.valueOf(lambda.getConnection().port), lambdaMode).start();
         p.waitFor();
         if (p.exitValue() != 0) {
             Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", lambda.getLambdaID()));
@@ -60,9 +60,10 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
         }
     }
 
-    private void shutdownContainerLambda(String lambdaPath, LambdaExecutionMode mode) throws Throwable {
-        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_container.sh", lambda.getLambdaName(),
-                String.valueOf(mode == LambdaExecutionMode.HOTSPOT || mode == LambdaExecutionMode.HOTSPOT_W_AGENT)).start();
+    private void shutdownContainerLambda(String lambdaPath) throws Throwable {
+        String lambdaMode = lambda.getExecutionMode().toString();
+        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_container.sh", lambda.getLambdaName(), lambdaMode,
+                lambda.getConnection().ip, String.valueOf(lambda.getConnection().port), lambdaPath).start();
         p.waitFor();
         if (p.exitValue() != 0) {
             Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", lambda.getLambdaID()));
@@ -73,7 +74,7 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
     private void shutdownLambda() {
         try {
             if (Configuration.argumentStorage.getLambdaType() == LambdaType.CONTAINER) {
-                shutdownContainerLambda(Environment.CODEBASE + "/" + lambda.getLambdaName(), lambda.getExecutionMode());
+                shutdownContainerLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());
             } else {
                 switch (lambda.getExecutionMode()) {
                     case HOTSPOT:

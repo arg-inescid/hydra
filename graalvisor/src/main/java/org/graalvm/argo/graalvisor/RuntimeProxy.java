@@ -71,7 +71,7 @@ public abstract class RuntimeProxy {
     /**
      * Simple Http server. It uses a cached thread pool for managing threads.
      */
-    private static HttpServer server;
+    protected static HttpServer server;
 
     public RuntimeProxy(int port) throws IOException {
         server = HttpServer.create(new InetSocketAddress(port), -1);
