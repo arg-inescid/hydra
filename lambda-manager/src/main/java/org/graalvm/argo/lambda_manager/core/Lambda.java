@@ -50,9 +50,6 @@ public class Lambda {
 		this.memoryPool = function.canCollocateInvocation()
 				? new ElasticMemoryPool(Configuration.argumentStorage.getMemoryPool())
 				: new FixedMemoryPool(function.getMemory(), function.getMemory());
-		if (!function.requiresRegistration()) {
-			this.registeredFunctions.put(function.getName(), function);
-		}
 		this.username = Configuration.coder.decodeUsername(function.getName());
         this.requiresFunctionUpload = ConcurrentHashMap.newKeySet();
 	}
@@ -157,9 +154,7 @@ public class Lambda {
 	}
 
 	public void resetRegisteredInLambda(Function function) {
-		if (function.requiresRegistration()) {
-			this.registeredFunctions.remove(function.getName());
-		}
+		this.registeredFunctions.remove(function.getName());
 	}
 
 	public void resetRegisteredInLambda() {

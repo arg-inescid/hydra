@@ -104,16 +104,6 @@ public class Function {
         return memory;
     }
 
-    public boolean requiresRegistration() {
-        switch (getLambdaExecutionMode()) {
-        case HOTSPOT_W_AGENT:
-        case HOTSPOT:
-            return false;
-        default:
-            return true;
-        }
-    }
-
     public Path buildFunctionSourceCodePath() {
         if (canRebuild && getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
             // The function was uploaded for GV target and its .so is built

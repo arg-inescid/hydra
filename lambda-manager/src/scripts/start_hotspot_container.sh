@@ -29,7 +29,7 @@ if [ ! -f "$PROXY_JAR" ]; then
   exit 1
 fi
 
-# Tags to set up lambda_timestamp, lambda_entry_point and lambda_port.
+# Tags to set up lambda_timestamp and lambda_port.
 ARGS=( "${@:4}" )
 ARGS=( "${ARGS[@]/#/'-e '}" )
 
@@ -37,20 +37,12 @@ FUNCTION_HOME=$CODEBASE_HOME/"$FUNCTION_NAME"
 FUNCTION_CODE=$FUNCTION_HOME/$FUNCTION_NAME
 LAMBDA_HOME=$CODEBASE_HOME/lambda_"$LAMBDA_ID"_HOTSPOT
 mkdir "$LAMBDA_HOME" &> /dev/null
-mkdir "$LAMBDA_HOME"/shared &> /dev/null
-
-echo $(date) >> "$LAMBDA_HOME"/shared/run.log
-
-cp "$PROXY_JAR" "$FUNCTION_CODE" "$LAMBDA_HOME"/shared
 
 docker run --rm --name="$LAMBDA_NAME" \
-  -v "$JAVA_HOME":/jvm \
-  -v "$LAMBDA_HOME"/shared:/shared \
-  -w /shared \
 	${ARGS[@]} \
 	--network host \
 	argo-builder \
-  /jvm/bin/java -cp graalvisor-1.0-all.jar:$FUNCTION_NAME org.graalvm.argo.graalvisor.Main &
+  /jvm/bin/java -cp graalvisor-1.0-all.jar org.graalvm.argo.graalvisor.Main &
 
 echo "$!" > "$LAMBDA_HOME"/lambda.pid
 

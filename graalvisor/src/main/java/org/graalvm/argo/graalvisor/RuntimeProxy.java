@@ -12,13 +12,18 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 
+import org.graalvm.argo.graalvisor.function.HotSpotFunction;
 import org.graalvm.argo.graalvisor.function.NativeFunction;
 import org.graalvm.argo.graalvisor.function.PolyglotFunction;
 import org.graalvm.argo.graalvisor.function.TruffleFunction;
@@ -199,7 +204,6 @@ public abstract class RuntimeProxy {
 
         @Override
         public void handleInternal(HttpExchange t) throws IOException {
-            long start = System.currentTimeMillis();
             String[] params = t.getRequestURI().getQuery().split("&");
             Map<String, String> metaData = new HashMap<>();
             for (String param : params) {
@@ -207,13 +211,52 @@ public abstract class RuntimeProxy {
                 metaData.put(keyValue[0], keyValue[1]);
             }
             String functionName = metaData.get("name");
-            String soFileName = APP_DIR + functionName;
+            String codeFileName = APP_DIR + functionName;
             String functionEntryPoint = metaData.get("entryPoint");
             String functionLanguage = metaData.get("language");
             String sandboxName = metaData.get("sandbox");
+
+            if (System.getProperty("java.vm.name").equals("Substrate VM") || !functionLanguage.equalsIgnoreCase("java")) {
+                handlePolyglotRegistration(t, functionName, codeFileName, functionEntryPoint, functionLanguage, sandboxName);
+            } else {
+                handleHotSpotRegistration(t, functionName, codeFileName, functionEntryPoint);
+            }
+        }
+
+        private void handleHotSpotRegistration(HttpExchange t, String functionName, String jarFileName, String functionEntryPoint) throws IOException {
+            long start = System.currentTimeMillis();
+            // This lock will be acquired at most once since only 1 function can be registered in HotSpot mode.
+            synchronized (FTABLE) {
+                if (!FTABLE.isEmpty()) {
+                    writeResponse(t, 200, String.format("Function has already been registered!"));
+                    return;
+                }
+
+                try (OutputStream fos = new FileOutputStream(jarFileName); InputStream bis = new BufferedInputStream(t.getRequestBody(), 4096)) {
+                    // Write JAR to a file.
+                    bis.transferTo(fos);
+
+                    // Use class loader explicitly to load new classes from a JAR dynamically.
+                    URLClassLoader loader = new URLClassLoader(new URL[] { Paths.get(jarFileName).toUri().toURL() },
+                            this.getClass().getClassLoader());
+                    Class<?> cls = Class.forName(functionEntryPoint, true, loader);
+                    Method method = cls.getMethod("main", Map.class);
+                    HotSpotFunction function = new HotSpotFunction(functionName, functionEntryPoint, PolyglotLanguage.JAVA.toString(), method);
+                    FTABLE.put(functionName, function);
+                } catch (ReflectiveOperationException e) {
+                    e.printStackTrace(System.err);
+                    errorResponse(t, "An error has occurred (see logs for details): " + e);
+                    return;
+                }
+            }
+            System.out.println(String.format("Function %s registered in %s ms", functionName, (System.currentTimeMillis() - start)));
+            writeResponse(t, 200, String.format("Function %s registered!", functionName));
+        }
+
+        private void handlePolyglotRegistration(HttpExchange t, String functionName, String soFileName, String functionEntryPoint, String functionLanguage, String sandboxName) throws IOException {
+            long start = System.currentTimeMillis();
             PolyglotFunction function = null;
             SandboxProvider sprovider = null;
-
             synchronized (FTABLE) {
                 if (FTABLE.containsKey(functionName)) {
                     writeResponse(t, 200, String.format("Function %s has already been registered!", functionName));
@@ -242,7 +285,6 @@ public abstract class RuntimeProxy {
                 sprovider.loadProvider();
                 FTABLE.put(functionName, function);
             }
-
             System.out.println(String.format("Function %s registered with %s sandboxing in %s ms", functionName, sprovider.getName(), (System.currentTimeMillis() - start)));
             writeResponse(t, 200, String.format("Function %s registered!", functionName));
         }

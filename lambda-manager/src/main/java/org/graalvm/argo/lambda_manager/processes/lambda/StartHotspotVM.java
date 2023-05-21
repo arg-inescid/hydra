@@ -41,7 +41,6 @@ public class StartHotspotVM extends StartHotspot {
             command.add("--noconsole");
         }
         command.add(TIMESTAMP_TAG + System.currentTimeMillis());
-        command.add(ENTRY_POINT_TAG + function.getEntryPoint());
         command.add(PORT_TAG + Configuration.argumentStorage.getLambdaPort());
         return command;
     }

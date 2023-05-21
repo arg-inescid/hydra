@@ -31,7 +31,6 @@ public class StartHotspotContainer extends StartHotspot {
         command.add(String.valueOf(pid));
         command.add(lambda.getLambdaName());
         command.add(TIMESTAMP_TAG + System.currentTimeMillis());
-        command.add(ENTRY_POINT_TAG + function.getEntryPoint());
         command.add(PORT_TAG + connection.port);
         return command;
     }

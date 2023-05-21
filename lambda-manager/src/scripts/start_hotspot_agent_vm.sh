@@ -11,7 +11,7 @@ export_lambda_arguments "${@:1:9}"
 FUNCTION_HOME=$CODEBASE_HOME/"$FUNCTION_NAME"
 FUNCTION_CODE=$FUNCTION_HOME/$FUNCTION_NAME
 LAMBDA_HOME=$CODEBASE_HOME/lambda_"$LAMBDA_ID"_HOTSPOT_W_AGENT
-prepare_hotspot_lambda_directory "$LAMBDA_HOME"
+mkdir "$LAMBDA_HOME" &> /dev/null
 
 TIMESTAMP_TAG="${9}"
 if [ -z "$TIMESTAMP_TAG" ]; then

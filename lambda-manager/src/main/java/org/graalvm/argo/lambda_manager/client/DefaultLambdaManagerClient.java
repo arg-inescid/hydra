@@ -60,6 +60,8 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
                 }
             } else if (lambda.getExecutionMode() == LambdaExecutionMode.CUSTOM) {
                 path = "/init";
+            } else if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT || lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT) {
+                path = String.format("/register?name=%s&language=%s&entryPoint=%s", function.getName(), function.getLanguage().toString(), function.getEntryPoint());
             } else {
                 Logger.log(Level.WARNING, String.format("Unexpected lambda mode (%s) when registering function %s!", lambda.getExecutionMode(), function.getName()));
             }
@@ -94,7 +96,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
 
         if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT
                 || lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT) {
-            payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getEntryPoint());
+            payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getName());
         } else if (function.getRuntime().equals(Function.GV_DOCKER_RUNTIME) || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
             // Both canRebuild and readily-provided GV functions go here
             payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getName());

@@ -30,7 +30,6 @@ public class Environment {
     public static final String DEFAULT_FILENAME = "default_filename.log";
     public static final String OUTPUT = "output.log";
     public static final String MEMORY = "memory.log";
-    public static final String RUN_LOG = Paths.get("shared", "run.log").toString();
     public static final String MANAGER_LOG_FILENAME = Paths.get(MANAGER_LOGS, "lambda_manager.log").toString();
     public static final String CREATE_TAPS_FILENAME = Paths.get(MANAGER_LOGS, "create_taps.log").toString();
     public static final String REMOVE_TAPS_FILENAME = Paths.get(MANAGER_LOGS, "remove_taps.log").toString();

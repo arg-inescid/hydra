@@ -44,7 +44,7 @@ LAMBDA_HOME=$CODEBASE_HOME/lambda_"$LAMBDA_ID"_HOTSPOT_W_AGENT
   -DGraalVisorGuest=true \
   -Dcom.oracle.svm.graalvisor.libraryPath=$PROXY_HOME/build/resources/main/com.oracle.svm.graalvisor.headers \
   --initialize-at-run-time=com.oracle.svm.graalvisor.utils.JsonUtils \
-  -H:ConfigurationFileDirectories="$LAMBDA_HOME"/shared/config \
+  -H:ConfigurationFileDirectories="$LAMBDA_HOME"/config \
   -H:+ReportExceptionStackTraces \
   --shared \
   -H:Name=lib"$FUNCTION_NAME" \

@@ -33,7 +33,6 @@ public class StartHotspotWithAgentContainer extends StartHotspotWithAgent {
         command.add(lambda.getLambdaName());
         command.add(String.valueOf(function.getLastAgentPID()));
         command.add(TIMESTAMP_TAG + System.currentTimeMillis());
-        command.add(ENTRY_POINT_TAG + function.getEntryPoint());
         command.add(PORT_TAG + connection.port);
         return command;
     }

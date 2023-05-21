@@ -13,7 +13,6 @@ import org.graalvm.argo.lambda_manager.processes.AbstractProcess;
 public abstract class StartLambda extends AbstractProcess {
 
     protected static String TIMESTAMP_TAG = "lambda_timestamp=";
-    protected static String ENTRY_POINT_TAG = "lambda_entry_point=";
     protected static String PORT_TAG = "lambda_port=";
     protected final Lambda lambda;
     protected final Function function;

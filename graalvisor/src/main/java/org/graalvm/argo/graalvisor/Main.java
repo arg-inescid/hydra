@@ -13,7 +13,6 @@ public abstract class Main {
 
     public static void main(String[] args) throws Exception {
         String lambda_port = System.getenv("lambda_port");
-        String lambda_entry_point = System.getenv("lambda_entry_point");
         String lambda_timestamp = System.getenv("lambda_timestamp");
 
         if (lambda_timestamp != null) {
@@ -40,7 +39,7 @@ public abstract class Main {
             NativeSandboxInterface.ginit();
            new SubstrateVMProxy(port).start();
         } else {
-           new HotSpotProxy(port, lambda_entry_point).start();
+           new HotSpotProxy(port).start();
         }
     }
 }

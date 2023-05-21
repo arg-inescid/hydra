@@ -26,16 +26,9 @@ import com.oracle.svm.graalvisor.polyglot.PolyglotLanguage;
  */
 public class HotSpotProxy extends RuntimeProxy {
 
-    public HotSpotProxy(int port, String entryPoint) throws Exception {
+    public HotSpotProxy(int port) throws Exception {
         super(port);
         server.createContext("/agentconfig", new RetrieveAgentConfigHandler());
-        if (entryPoint != null) {
-            Class<?> cls = Class.forName(entryPoint);
-            Method method = cls.getMethod("main", Map.class);
-            // Here function name doesn't matter, so we can put entryPoint as name
-            HotSpotFunction function = new HotSpotFunction(entryPoint, entryPoint, PolyglotLanguage.JAVA.toString(), method);
-            FTABLE.put(entryPoint, function);
-        }
     }
 
     @Override
