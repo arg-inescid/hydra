@@ -36,6 +36,7 @@ public class Environment {
 
     // Graalvisor runtime identifier.
     public static final String GRAALVISOR_RUNTIME = "graalvisor";
+    public static final String GRAALVISOR_DOCKER_RUNTIME = "docker.io/sergiyivan/large-scale-experiment:graalvisor";
 
     public synchronized static long pid() {
         return NEXT_ID++;

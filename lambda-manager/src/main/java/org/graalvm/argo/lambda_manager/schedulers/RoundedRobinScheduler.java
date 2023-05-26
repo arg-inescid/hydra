@@ -93,6 +93,7 @@ public class RoundedRobinScheduler implements Scheduler {
                 }
                 break;
             case CUSTOM:
+            case GRAALVISOR_CONTAINERD:
                 process = new StartCustomRuntime(lambda, function);
                 break;
             default:

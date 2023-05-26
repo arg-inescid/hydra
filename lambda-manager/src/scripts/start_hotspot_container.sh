@@ -41,8 +41,7 @@ mkdir "$LAMBDA_HOME" &> /dev/null
 docker run --rm --name="$LAMBDA_NAME" \
 	${ARGS[@]} \
 	--network host \
-	argo-builder \
-  /jvm/bin/java -cp graalvisor-1.0-all.jar org.graalvm.argo.graalvisor.Main &
+	argo-hotspot &
 
 echo "$!" > "$LAMBDA_HOME"/lambda.pid
 

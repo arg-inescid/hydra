@@ -50,8 +50,7 @@ mkdir "$LAMBDA_HOME"/config &> /dev/null
 docker run --rm --name="$LAMBDA_NAME" \
 	${ARGS[@]} \
 	--network host \
-	argo-builder \
-  /jvm/bin/java -Djava.library.path=/jvm/lib -agentlib:native-image-agent=config-merge-dir=config,caller-filter-file=caller-filter-config.json,config-write-initial-delay-secs=20,config-write-period-secs=300 -cp graalvisor-1.0-all.jar org.graalvm.argo.graalvisor.Main &
+	argo-hotspot-agent &
 
 echo "$!" > "$LAMBDA_HOME"/lambda.pid
 

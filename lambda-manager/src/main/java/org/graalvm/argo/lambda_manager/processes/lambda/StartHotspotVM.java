@@ -11,6 +11,8 @@ import java.util.List;
 
 public class StartHotspotVM extends StartHotspot {
 
+    private static final String HOTSPOT_DOCKER_RUNTIME = "docker.io/sergiyivan/large-scale-experiment:argo-hotspot";
+
     public StartHotspotVM(Lambda lambda, Function function) {
         super(lambda, function);
     }
@@ -27,7 +29,7 @@ public class StartHotspotVM extends StartHotspot {
         command.add(String.format("--output=%s", memoryFilename()));
         command.add("-v");
         command.add("bash");
-        command.add("src/scripts/start_hotspot_vm.sh");
+        command.add("src/scripts/start_cruntime.sh");
         command.add(function.getName());
         command.add(String.valueOf(pid));
         command.add(String.valueOf(function.getMemory()));
@@ -40,8 +42,11 @@ public class StartHotspotVM extends StartHotspot {
         } else {
             command.add("--noconsole");
         }
-        command.add(TIMESTAMP_TAG + System.currentTimeMillis());
-        command.add(PORT_TAG + Configuration.argumentStorage.getLambdaPort());
+        command.add(HOTSPOT_DOCKER_RUNTIME);
+        String lambdaId = StartCustomRuntime.generateLambdaId();
+        lambda.setCustomRuntimeId(lambdaId);
+        command.add(lambdaId);
+        command.add(lambda.getLambdaName());
         return command;
     }
 }

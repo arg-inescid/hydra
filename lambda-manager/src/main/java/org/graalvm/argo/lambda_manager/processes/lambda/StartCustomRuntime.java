@@ -1,6 +1,7 @@
 package org.graalvm.argo.lambda_manager.processes.lambda;
 
 import org.graalvm.argo.lambda_manager.core.Configuration;
+import org.graalvm.argo.lambda_manager.core.Environment;
 import org.graalvm.argo.lambda_manager.core.Lambda;
 import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
@@ -20,7 +21,12 @@ public class StartCustomRuntime extends StartLambda {
     protected List<String> makeCommand() {
         List<String> command = new ArrayList<>();
 
-        lambda.setExecutionMode(LambdaExecutionMode.CUSTOM);
+        if (function.getRuntime().equals(Environment.GRAALVISOR_DOCKER_RUNTIME)) {
+            // Reuse custom runtime's infrastructure for Graalvisor in firecracker-containerd mode.
+            lambda.setExecutionMode(LambdaExecutionMode.GRAALVISOR_CONTAINERD);
+        } else {
+            lambda.setExecutionMode(LambdaExecutionMode.CUSTOM);
+        }
         LambdaConnection connection = lambda.getConnection();
 
         command.add("/usr/bin/time");
@@ -45,6 +51,7 @@ public class StartCustomRuntime extends StartLambda {
         String lambdaId = generateLambdaId();
         lambda.setCustomRuntimeId(lambdaId);
         command.add(lambdaId);
+        command.add(lambda.getLambdaName());
         return command;
     }
 
@@ -63,7 +70,7 @@ public class StartCustomRuntime extends StartLambda {
     private static SecureRandom rnd = new SecureRandom();
     private static final int ID_LEN = 32;
 
-    private String generateLambdaId() {
+    static String generateLambdaId() {
         StringBuilder sb = new StringBuilder(ID_LEN);
         for (int i = 0; i < ID_LEN; i++) {
             sb.append(AB.charAt(rnd.nextInt(AB.length())));

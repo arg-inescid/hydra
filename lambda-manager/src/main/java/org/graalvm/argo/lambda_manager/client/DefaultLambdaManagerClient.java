@@ -8,6 +8,7 @@ import java.util.logging.Level;
 import org.graalvm.argo.lambda_manager.core.Configuration;
 import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.core.Lambda;
+import org.graalvm.argo.lambda_manager.optimizers.FunctionStatus;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.core.FunctionLanguage;
 import org.graalvm.argo.lambda_manager.utils.JsonUtils;
@@ -51,7 +52,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         // TODO: optimization: read chunks of file and send it in parts.
         try (InputStream sourceFile = Files.newInputStream(function.buildFunctionSourceCodePath())) {
             String path = null;
-            if (function.getRuntime().equals(Function.GV_DOCKER_RUNTIME) || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
+            if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_CONTAINERD || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
                 String sandbox = function.getGraalvisorSandbox();
                 if (sandbox != null) {
                     path = String.format("/register?name=%s&language=%s&entryPoint=%s&sandbox=%s", function.getName(), function.getLanguage().toString(), function.getEntryPoint(), sandbox);
@@ -77,7 +78,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         String path = null;
         String payload = null;
 
-        if (function.getRuntime().equals(Function.GV_DOCKER_RUNTIME) || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
+        if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_CONTAINERD || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
             path ="/deregister";
             payload = JsonUtils.convertParametersIntoJsonObject(null, null, function.getName());
         } else if (lambda.getExecutionMode() == LambdaExecutionMode.CUSTOM) {
@@ -94,10 +95,9 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         String path ="/";
         String payload = "";
 
-        if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT
-                || lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT) {
+        if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT || lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT) {
             payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getName());
-        } else if (function.getRuntime().equals(Function.GV_DOCKER_RUNTIME) || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
+        } else if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_CONTAINERD || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
             // Both canRebuild and readily-provided GV functions go here
             payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getName());
         } else if (lambda.getExecutionMode() == LambdaExecutionMode.CUSTOM) {

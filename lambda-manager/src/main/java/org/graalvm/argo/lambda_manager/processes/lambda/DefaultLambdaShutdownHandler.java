@@ -34,7 +34,8 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
 
     private void shutdownHotSpotLambda(String lambdaPath) throws Throwable {
         String lambdaMode = lambda.getExecutionMode().toString();
-        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_hotspot.sh", lambdaPath, String.valueOf(lambda.getConnection().port), lambdaMode).start();
+        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_hotspot.sh", lambdaPath, lambda.getConnection().ip,
+                String.valueOf(lambda.getConnection().port), lambdaMode).start();
         p.waitFor();
         if (p.exitValue() != 0) {
             Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", lambda.getLambdaID()));
@@ -85,6 +86,7 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
                         shutdownGraalvisorLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());
                         break;
                     case CUSTOM:
+                    case GRAALVISOR_CONTAINERD:
                         shutdownCustomLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());
                         break;
                     default:

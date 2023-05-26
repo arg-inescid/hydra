@@ -36,11 +36,12 @@ fi
 
 FUNCTION_CODE=$FUNCTION_HOME/$FUNCTION_NAME
 LAMBDA_HOME=$CODEBASE_HOME/lambda_"$LAMBDA_ID"_HOTSPOT_W_AGENT
+GRAALVISOR_GUEST_JAR=$MANAGER_HOME/../graalvisor-lib/build/libs/graalvisor-lib-1.0-guest.jar
 
 "$JAVA_HOME"/bin/native-image \
   --no-fallback \
   -H:IncludeResources="logback.xml|application.yml" \
-  -cp "$FUNCTION_CODE" \
+  -cp "$FUNCTION_CODE":"$GRAALVISOR_GUEST_JAR" \
   -DGraalVisorGuest=true \
   -Dcom.oracle.svm.graalvisor.libraryPath=$PROXY_HOME/build/resources/main/com.oracle.svm.graalvisor.headers \
   --initialize-at-run-time=com.oracle.svm.graalvisor.utils.JsonUtils \

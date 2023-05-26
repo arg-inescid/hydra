@@ -11,7 +11,7 @@ gvbinary=$2
 
 if [ "$#" -ne 2 ]; then
     echo "Illegal number of parameters."
-    echo "Syntax: build_container_image.sh <graalvm home> <input graalvisor native-image binary path>"
+    echo "Syntax: build_graalvisor_container_image.sh <graalvm home> <input graalvisor native-image binary path>"
     exit 1
 fi
 
@@ -27,7 +27,7 @@ cp $gvbinary $DISK/polyglot-proxy
 cp $DIR/init $DISK
 
 # Build docker.
-docker build --tag=graalvisor $DIR
+docker build -f $DIR/Graalvisor.Dockerfile --tag=graalvisor $DIR
 
 # Remove directory used to create the image.
 rm -r $DISK

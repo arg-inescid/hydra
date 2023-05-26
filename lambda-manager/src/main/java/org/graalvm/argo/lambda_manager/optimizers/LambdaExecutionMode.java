@@ -10,6 +10,8 @@ public enum LambdaExecutionMode {
     HOTSPOT,
     // GraalVisor (multiple functions).
     GRAALVISOR,
+    // GraalVisor executing in firecracker-containerd (multiple functions).
+    GRAALVISOR_CONTAINERD,
     // Container VM (single function).
     CUSTOM
 }
