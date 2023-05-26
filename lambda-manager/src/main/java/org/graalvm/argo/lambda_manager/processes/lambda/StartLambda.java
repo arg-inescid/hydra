@@ -24,6 +24,17 @@ public abstract class StartLambda extends AbstractProcess {
     }
 
     @Override
+    protected OnProcessFinishCallback callback() {
+        return new OnProcessFinishCallback() {
+
+            @Override
+            public void finish(int exitCode) {
+                lambda.resetRegisteredInLambda();
+            }
+        };
+    }
+
+    @Override
     protected String outputFilename() {
         String dirPath = Paths.get(LAMBDA_LOGS, lambda.getLambdaName()).toString();
         new File(dirPath).mkdirs();

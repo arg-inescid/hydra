@@ -1,28 +1,26 @@
 package org.graalvm.argo.lambda_manager.processes.lambda;
 
-import org.graalvm.argo.lambda_manager.core.Configuration;
-import org.graalvm.argo.lambda_manager.core.Lambda;
-import org.graalvm.argo.lambda_manager.core.Function;
-import org.graalvm.argo.lambda_manager.optimizers.FunctionStatus;
-import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
-import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
-
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 
-public class StartHotspotWithAgentVM extends StartHotspotWithAgent {
+import org.graalvm.argo.lambda_manager.core.Configuration;
+import org.graalvm.argo.lambda_manager.core.Function;
+import org.graalvm.argo.lambda_manager.core.Lambda;
+import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
 
-    private static final String HOTSPOT_AGENT_DOCKER_RUNTIME = "docker.io/sergiyivan/large-scale-experiment:argo-hotspot-agent";
+public abstract class StartFirecrackerCtr extends StartLambda {
 
-    public StartHotspotWithAgentVM(Lambda lambda, Function function) {
+    private static final String AB = "0123456789abcdef";
+    private static SecureRandom rnd = new SecureRandom();
+    private static final int ID_LEN = 32;
+
+    public StartFirecrackerCtr(Lambda lambda, Function function) {
         super(lambda, function);
     }
 
-    @Override
-    protected List<String> makeCommand() {
+    protected List<String> prepareCommand(String runtimeName) {
         List<String> command = new ArrayList<>();
-        function.setStatus(FunctionStatus.CONFIGURING_OR_BUILDING);
-        lambda.setExecutionMode(LambdaExecutionMode.HOTSPOT_W_AGENT);
         LambdaConnection connection = lambda.getConnection();
 
         command.add("/usr/bin/time");
@@ -43,11 +41,20 @@ public class StartHotspotWithAgentVM extends StartHotspotWithAgent {
         } else {
             command.add("--noconsole");
         }
-        command.add(HOTSPOT_AGENT_DOCKER_RUNTIME);
-        String lambdaId = StartCustomRuntime.generateLambdaId();
+        command.add(runtimeName);
+        String lambdaId = generateLambdaId();
         lambda.setCustomRuntimeId(lambdaId);
         command.add(lambdaId);
         command.add(lambda.getLambdaName());
         return command;
     }
+
+    private final String generateLambdaId() {
+        StringBuilder sb = new StringBuilder(ID_LEN);
+        for (int i = 0; i < ID_LEN; i++) {
+            sb.append(AB.charAt(rnd.nextInt(AB.length())));
+        }
+        return sb.toString();
+    }
+
 }

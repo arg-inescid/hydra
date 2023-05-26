@@ -1,27 +1,24 @@
 package org.graalvm.argo.lambda_manager.processes.lambda;
 
-import org.graalvm.argo.lambda_manager.core.Configuration;
-import org.graalvm.argo.lambda_manager.core.Lambda;
-import org.graalvm.argo.lambda_manager.core.Function;
-import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
-import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
-
 import java.util.ArrayList;
 import java.util.List;
 
-public class StartHotspotVM extends StartHotspot {
+import org.graalvm.argo.lambda_manager.core.Configuration;
+import org.graalvm.argo.lambda_manager.core.Function;
+import org.graalvm.argo.lambda_manager.core.Lambda;
+import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
+import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
 
-    private static final String HOTSPOT_DOCKER_RUNTIME = "docker.io/sergiyivan/large-scale-experiment:argo-hotspot";
+public class StartGraalvisorFirecracker extends StartFirecracker {
 
-    public StartHotspotVM(Lambda lambda, Function function) {
+    public StartGraalvisorFirecracker(Lambda lambda, Function function) {
         super(lambda, function);
     }
 
     @Override
     protected List<String> makeCommand() {
         List<String> command = new ArrayList<>();
-
-        lambda.setExecutionMode(LambdaExecutionMode.HOTSPOT);
+        lambda.setExecutionMode(LambdaExecutionMode.GRAALVISOR);
         LambdaConnection connection = lambda.getConnection();
 
         command.add("/usr/bin/time");
@@ -29,7 +26,7 @@ public class StartHotspotVM extends StartHotspot {
         command.add(String.format("--output=%s", memoryFilename()));
         command.add("-v");
         command.add("bash");
-        command.add("src/scripts/start_cruntime.sh");
+        command.add("src/scripts/start_graalvisor_firecracker.sh");
         command.add(function.getName());
         command.add(String.valueOf(pid));
         command.add(String.valueOf(function.getMemory()));
@@ -42,11 +39,10 @@ public class StartHotspotVM extends StartHotspot {
         } else {
             command.add("--noconsole");
         }
-        command.add(HOTSPOT_DOCKER_RUNTIME);
-        String lambdaId = StartCustomRuntime.generateLambdaId();
-        lambda.setCustomRuntimeId(lambdaId);
-        command.add(lambdaId);
-        command.add(lambda.getLambdaName());
+        command.add(TIMESTAMP_TAG + System.currentTimeMillis());
+        command.add(PORT_TAG + Configuration.argumentStorage.getLambdaPort());
+        command.add("LD_LIBRARY_PATH=/lib:/lib64:/tmp/apps:/usr/local/lib");
         return command;
     }
+
 }

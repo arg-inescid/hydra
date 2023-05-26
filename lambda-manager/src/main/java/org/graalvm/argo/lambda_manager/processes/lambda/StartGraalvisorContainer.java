@@ -8,7 +8,7 @@ import org.graalvm.argo.lambda_manager.core.Lambda;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
 
-public class StartGraalvisorContainer extends StartGraalvisor {
+public class StartGraalvisorContainer extends StartContainer {
 
     public StartGraalvisorContainer(Lambda lambda, Function function) {
         super(lambda, function);
@@ -17,7 +17,6 @@ public class StartGraalvisorContainer extends StartGraalvisor {
     @Override
     protected List<String> makeCommand() {
         List<String> command = new ArrayList<>();
-
         lambda.setExecutionMode(LambdaExecutionMode.GRAALVISOR);
         LambdaConnection connection = lambda.getConnection();
 
@@ -34,5 +33,4 @@ public class StartGraalvisorContainer extends StartGraalvisor {
         command.add("LD_LIBRARY_PATH=/lib:/lib64:/tmp/apps:/usr/local/lib");
         return command;
     }
-
 }

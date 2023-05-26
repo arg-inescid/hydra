@@ -9,7 +9,7 @@ import org.graalvm.argo.lambda_manager.optimizers.FunctionStatus;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
 
-public class StartHotspotWithAgentContainer extends StartHotspotWithAgent {
+public class StartHotspotWithAgentContainer extends StartContainer {
 
     public StartHotspotWithAgentContainer(Lambda lambda, Function function) {
         super(lambda, function);
@@ -35,6 +35,19 @@ public class StartHotspotWithAgentContainer extends StartHotspotWithAgent {
         command.add(TIMESTAMP_TAG + System.currentTimeMillis());
         command.add(PORT_TAG + connection.port);
         return command;
+    }
+
+    @Override
+    protected OnProcessFinishCallback callback() {
+        return new OnProcessFinishCallback() {
+
+            @Override
+            public void finish(int exitCode) {
+                function.setLastAgentPID(lambda.getLambdaID());
+                function.setStatus(FunctionStatus.NOT_BUILT_CONFIGURED);
+                lambda.resetRegisteredInLambda();
+            }
+        };
     }
 
 }

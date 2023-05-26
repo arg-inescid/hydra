@@ -8,7 +8,7 @@ import org.graalvm.argo.lambda_manager.core.Lambda;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
 
-public class StartHotspotContainer extends StartHotspot {
+public class StartHotspotContainer extends StartContainer {
 
     public StartHotspotContainer(Lambda lambda, Function function) {
         super(lambda, function);
@@ -17,7 +17,6 @@ public class StartHotspotContainer extends StartHotspot {
     @Override
     protected List<String> makeCommand() {
         List<String> command = new ArrayList<>();
-
         lambda.setExecutionMode(LambdaExecutionMode.HOTSPOT);
         LambdaConnection connection = lambda.getConnection();
 
@@ -34,5 +33,4 @@ public class StartHotspotContainer extends StartHotspot {
         command.add(PORT_TAG + connection.port);
         return command;
     }
-
 }

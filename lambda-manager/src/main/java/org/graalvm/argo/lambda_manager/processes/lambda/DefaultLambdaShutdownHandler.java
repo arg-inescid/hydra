@@ -32,9 +32,9 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
         }
     }
 
-    private void shutdownHotSpotLambda(String lambdaPath) throws Throwable {
+    private void shutdownCustomLambda(String lambdaPath) throws Throwable {
         String lambdaMode = lambda.getExecutionMode().toString();
-        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_hotspot.sh", lambdaPath, lambda.getConnection().ip,
+        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_cruntime.sh", lambdaPath, lambda.getConnection().ip,
                 String.valueOf(lambda.getConnection().port), lambdaMode).start();
         p.waitFor();
         if (p.exitValue() != 0) {
@@ -43,17 +43,8 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
         }
     }
 
-    private void shutdownGraalvisorLambda(String lambdaPath) throws Throwable {
-        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_graalvisor.sh", lambda.getConnection().tap).start();
-        p.waitFor();
-        if (p.exitValue() != 0) {
-            Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", lambda.getLambdaID()));
-            printStream(Level.WARNING, p.getErrorStream());
-        }
-    }
-
-    private void shutdownCustomLambda(String lambdaPath) throws Throwable {
-        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_cruntime.sh", lambdaPath).start();
+    private void shutdownFirecrackerLambda(String lambdaPath) throws Throwable {
+        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_firecracker.sh", lambda.getConnection().tap).start();
         p.waitFor();
         if (p.exitValue() != 0) {
             Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", lambda.getLambdaID()));
@@ -78,13 +69,11 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
                 shutdownContainerLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());
             } else {
                 switch (lambda.getExecutionMode()) {
+                    case GRAALVISOR:
+                        shutdownFirecrackerLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());
+                        break;
                     case HOTSPOT:
                     case HOTSPOT_W_AGENT:
-                        shutdownHotSpotLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());
-                        break;
-                    case GRAALVISOR:
-                        shutdownGraalvisorLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());
-                        break;
                     case CUSTOM:
                     case GRAALVISOR_CONTAINERD:
                         shutdownCustomLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());

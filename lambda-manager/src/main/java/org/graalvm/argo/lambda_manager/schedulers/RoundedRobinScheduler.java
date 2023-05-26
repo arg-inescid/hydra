@@ -11,13 +11,14 @@ import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
 import org.graalvm.argo.lambda_manager.processes.lambda.BuildSO;
 import org.graalvm.argo.lambda_manager.processes.lambda.DefaultLambdaShutdownHandler;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotVM;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotFirecrackerCtr;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotWithAgentContainer;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotWithAgentVM;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotWithAgentFirecrackerCtr;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartLambda;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalvisorVM;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalvisorFirecracker;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalvisorFirecrackerCtr;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotContainer;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartCustomRuntime;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartOpenWhiskFirecrackerCtr;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalvisorContainer;
 import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
 import org.graalvm.argo.lambda_manager.utils.NetworkUtils;
@@ -69,7 +70,7 @@ public class RoundedRobinScheduler implements Scheduler {
             case HOTSPOT_W_AGENT:
                 // TODO: exact type of process (VM/Container) should be resolved in a factory.
                 if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM) {
-                    process = new StartHotspotWithAgentVM(lambda, function);
+                    process = new StartHotspotWithAgentFirecrackerCtr(lambda, function);
                 } else {
                     process = new StartHotspotWithAgentContainer(lambda, function);
                 }
@@ -80,21 +81,23 @@ public class RoundedRobinScheduler implements Scheduler {
                     Logger.log(Level.INFO, "Starting new .so build for function " + function.getName());
                 }
                 if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM) {
-                    process = new StartHotspotVM(lambda, function);
+                    process = new StartHotspotFirecrackerCtr(lambda, function);
                 } else {
                     process = new StartHotspotContainer(lambda, function);
                 }
                 break;
             case GRAALVISOR:
                 if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM) {
-                    process = new StartGraalvisorVM(lambda, function);
+                    process = new StartGraalvisorFirecracker(lambda, function);
                 } else {
                     process = new StartGraalvisorContainer(lambda, function);
                 }
                 break;
-            case CUSTOM:
             case GRAALVISOR_CONTAINERD:
-                process = new StartCustomRuntime(lambda, function);
+                process = new StartGraalvisorFirecrackerCtr(lambda, function);
+                break;
+            case CUSTOM:
+                process = new StartOpenWhiskFirecrackerCtr(lambda, function);
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + function.getStatus());

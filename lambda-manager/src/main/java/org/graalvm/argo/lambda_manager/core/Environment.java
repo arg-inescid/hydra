@@ -34,9 +34,11 @@ public class Environment {
     public static final String CREATE_TAPS_FILENAME = Paths.get(MANAGER_LOGS, "create_taps.log").toString();
     public static final String REMOVE_TAPS_FILENAME = Paths.get(MANAGER_LOGS, "remove_taps.log").toString();
 
-    // Graalvisor runtime identifier.
+    // Graalvisor runtime identifiers.
     public static final String GRAALVISOR_RUNTIME = "graalvisor";
     public static final String GRAALVISOR_DOCKER_RUNTIME = "docker.io/sergiyivan/large-scale-experiment:graalvisor";
+    public static final String HOTSPOT_DOCKER_RUNTIME = "docker.io/sergiyivan/large-scale-experiment:argo-hotspot";
+    public static final String HOTSPOT_AGENT_DOCKER_RUNTIME = "docker.io/sergiyivan/large-scale-experiment:argo-hotspot-agent";
 
     public synchronized static long pid() {
         return NEXT_ID++;
