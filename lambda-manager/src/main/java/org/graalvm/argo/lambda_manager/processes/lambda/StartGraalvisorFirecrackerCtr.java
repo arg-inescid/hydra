@@ -1,5 +1,6 @@
 package org.graalvm.argo.lambda_manager.processes.lambda;
 
+import org.graalvm.argo.lambda_manager.core.Environment;
 import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.core.Lambda;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
@@ -14,7 +15,7 @@ public class StartGraalvisorFirecrackerCtr extends StartFirecrackerCtr {
 
     @Override
     protected List<String> makeCommand() {
-        lambda.setExecutionMode(LambdaExecutionMode.GRAALVISOR_CONTAINERD);
-        return prepareCommand(function.getRuntime());
+        lambda.setExecutionMode(LambdaExecutionMode.GRAALVISOR);
+        return prepareCommand(Environment.GRAALVISOR_DOCKER_RUNTIME);
     }
 }

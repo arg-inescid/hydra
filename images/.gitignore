@@ -1,0 +1,3 @@
+# Ignore results of the build script execution.
+*.img
+*.o

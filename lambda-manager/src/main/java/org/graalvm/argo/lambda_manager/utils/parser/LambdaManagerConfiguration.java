@@ -48,7 +48,7 @@ public class LambdaManagerConfiguration implements Serializable {
      * @param healthCheck - Lambda's health will be checked in this time-span, after the first
      *            health response, no more checks are made.
      * @param lambdaPort - In which port the lambda will receive its requests.
-     * @param lambdaType - Type of the workers. Accepted values: [container,vm].
+     * @param lambdaType - Type of the workers. Accepted values: [container,vm_firecracker,vm_containerd].
      * @param lambdaConsole - Is console active during qemu's run.
      * @param lambdaManagerConsole - The class with information about manager logging.
      * @param lambdaManagerState - The class that represent state of one manager's instance.

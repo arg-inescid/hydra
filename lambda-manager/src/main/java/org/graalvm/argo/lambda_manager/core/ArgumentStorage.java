@@ -39,7 +39,7 @@ public class ArgumentStorage {
     private String mask;
 
     /**
-     * Type of workers: vm or container.
+     * Type of workers: vm_firecracker, vm_containerd, or container.
      */
     private LambdaType lambdaType;
 
@@ -107,7 +107,7 @@ public class ArgumentStorage {
     }
 
     private void prepareConnectionPool(BeanContext beanContext, String gatewayWithMask) throws ErrorDuringCreatingConnectionPool {
-        if (lambdaType == LambdaType.VM) {
+        if (lambdaType == LambdaType.VM_FIRECRACKER || lambdaType == LambdaType.VM_CONTAINERD) {
             NetworkConfigurationUtils.prepareVmConnectionPool(connectionPool, maxTaps, gatewayWithMask, lambdaPort, beanContext);
         } else if (lambdaType == LambdaType.CONTAINER) {
             NetworkConfigurationUtils.prepareContainerConnectionPool(connectionPool, maxTaps, beanContext);

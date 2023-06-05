@@ -11,21 +11,21 @@ if [ -z "$LAMBDA_HOME" ]; then
   exit 1
 fi
 
-LAMBDA_IP=$2
+LAMBDA_MODE=$2
+if [ -z "$LAMBDA_MODE" ]; then
+  echo "Lambda mode is not present."
+  exit 1
+fi
+
+LAMBDA_IP=$3
 if [ -z "$LAMBDA_IP" ]; then
   echo "Lambda ip is not present."
   exit 1
 fi
 
-LAMBDA_PORT=$3
+LAMBDA_PORT=$4
 if [ -z "$LAMBDA_PORT" ]; then
   echo "Lambda port is not present."
-  exit 1
-fi
-
-LAMBDA_MODE=$4
-if [ -z "$LAMBDA_MODE" ]; then
-  echo "Lambda mode is not present."
   exit 1
 fi
 

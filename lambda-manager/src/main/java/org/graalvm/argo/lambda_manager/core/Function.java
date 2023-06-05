@@ -58,15 +58,14 @@ public class Function {
         this.entryPoint = entryPoint;
         this.memory = Long.parseLong(memory);
         this.runtime = runtime;
-        this.canRebuild = (runtime.equals(Environment.GRAALVISOR_RUNTIME) || runtime.equals(Environment.GRAALVISOR_DOCKER_RUNTIME)) && this.isJar(functionCode);
+        this.canRebuild = runtime.equals(Environment.GRAALVISOR_RUNTIME) && this.isJar(functionCode);
         if (this.canRebuild) {
             this.status = FunctionStatus.NOT_BUILT_NOT_CONFIGURED;
         } else {
             this.status = FunctionStatus.READY;
         }
         this.functionIsolation = functionIsolation;
-        this.invocationCollocation = invocationCollocation || this.getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR
-                || this.getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR_CONTAINERD;
+        this.invocationCollocation = invocationCollocation || this.getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR;
         this.gvSandbox = gvSandbox;
     }
 
@@ -103,8 +102,7 @@ public class Function {
     }
 
     public Path buildFunctionSourceCodePath() {
-        if (canRebuild && (getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR
-                || getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR_CONTAINERD)) {
+        if (canRebuild && getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
             // The function was uploaded for GV target and its .so is built
             return Paths.get(Environment.CODEBASE, name, "build_so", "lib" + name + ".so");
         } else {
@@ -126,8 +124,6 @@ public class Function {
         case READY:
             if (getRuntime().equals(Environment.GRAALVISOR_RUNTIME)) {
                 return LambdaExecutionMode.GRAALVISOR;
-            } else if (getRuntime().equals(Environment.GRAALVISOR_DOCKER_RUNTIME)) {
-                return LambdaExecutionMode.GRAALVISOR_CONTAINERD;
             } else {
                 return LambdaExecutionMode.CUSTOM;
             }
@@ -144,8 +140,7 @@ public class Function {
         // Lambda execution mode can change from "non-collocatable" to "collocatable"
         // runtime and back throughout the function lifetime as the function might go
         // through the build pipeline and fallback
-        return this.invocationCollocation || this.getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR
-                || this.getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR_CONTAINERD;
+        return this.invocationCollocation || this.getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR;
     }
 
     public String getGraalvisorSandbox() {

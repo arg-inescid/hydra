@@ -3,7 +3,6 @@ package org.graalvm.argo.lambda_manager.core;
 import org.graalvm.argo.lambda_manager.memory.ElasticMemoryPool;
 import org.graalvm.argo.lambda_manager.memory.FixedMemoryPool;
 import org.graalvm.argo.lambda_manager.memory.MemoryPool;
-import org.graalvm.argo.lambda_manager.optimizers.FunctionStatus;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
 
@@ -143,7 +142,7 @@ public class Lambda {
 	}
 
 	public boolean canRegisterInLambda(Function function) {
-        if (executionMode == LambdaExecutionMode.GRAALVISOR_CONTAINERD || executionMode == LambdaExecutionMode.GRAALVISOR) {
+        if (executionMode == LambdaExecutionMode.GRAALVISOR) {
             if (function.isFunctionIsolated()) {
                 return (registeredFunctions.isEmpty() || registeredFunctions.contains(function)) && username.equals(Configuration.coder.decodeUsername(function.getName()));
             } else {

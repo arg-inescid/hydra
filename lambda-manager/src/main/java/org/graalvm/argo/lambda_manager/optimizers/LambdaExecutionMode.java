@@ -8,10 +8,8 @@ public enum LambdaExecutionMode {
     HOTSPOT_W_AGENT,
     // HotSpot JVM without Native Image Agent (one function only).
     HOTSPOT,
-    // GraalVisor (multiple functions).
+    // Graalvisor (multiple functions).
     GRAALVISOR,
-    // GraalVisor executing in firecracker-containerd (multiple functions).
-    GRAALVISOR_CONTAINERD,
     // Container VM (single function).
     CUSTOM
 }

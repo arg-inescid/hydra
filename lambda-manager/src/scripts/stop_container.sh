@@ -3,9 +3,9 @@
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 
 
-LAMBDA_NAME=$1
-if [ -z "$LAMBDA_NAME" ]; then
-  echo "Lambda name is not present."
+LAMBDA_HOME=$1
+if [ -z "$LAMBDA_HOME" ]; then
+  echo "Lambda home is not present."
   exit 1
 fi
 
@@ -27,9 +27,9 @@ if [ -z "$LAMBDA_PORT" ]; then
   exit 1
 fi
 
-LAMBDA_HOME=$5
-if [ -z "$LAMBDA_HOME" ]; then
-  echo "Lambda home is not present."
+LAMBDA_NAME=$5
+if [ -z "$LAMBDA_NAME" ]; then
+  echo "Lambda name is not present."
   exit 1
 fi
 
@@ -41,4 +41,4 @@ if [ "$LAMBDA_MODE" == "HOTSPOT_W_AGENT" ]; then
   done
 fi
 
-docker container kill $SIGNAL_OPTION $LAMBDA_NAME
+docker container kill $LAMBDA_NAME

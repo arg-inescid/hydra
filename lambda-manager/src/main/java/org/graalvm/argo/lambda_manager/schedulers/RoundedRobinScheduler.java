@@ -13,11 +13,14 @@ import org.graalvm.argo.lambda_manager.processes.lambda.BuildSO;
 import org.graalvm.argo.lambda_manager.processes.lambda.DefaultLambdaShutdownHandler;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotFirecrackerCtr;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotWithAgentContainer;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotWithAgentFirecracker;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotWithAgentFirecrackerCtr;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartLambda;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartOpenWhiskFirecracker;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalvisorFirecracker;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalvisorFirecrackerCtr;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotContainer;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotFirecracker;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartOpenWhiskFirecrackerCtr;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalvisorContainer;
 import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
@@ -69,7 +72,9 @@ public class RoundedRobinScheduler implements Scheduler {
         switch (targetMode) {
             case HOTSPOT_W_AGENT:
                 // TODO: exact type of process (VM/Container) should be resolved in a factory.
-                if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM) {
+                if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM_FIRECRACKER) {
+                    process = new StartHotspotWithAgentFirecracker(lambda, function);
+                } else if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM_CONTAINERD) {
                     process = new StartHotspotWithAgentFirecrackerCtr(lambda, function);
                 } else {
                     process = new StartHotspotWithAgentContainer(lambda, function);
@@ -80,24 +85,31 @@ public class RoundedRobinScheduler implements Scheduler {
                     new BuildSO(function).build().start();
                     Logger.log(Level.INFO, "Starting new .so build for function " + function.getName());
                 }
-                if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM) {
+                if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM_FIRECRACKER) {
+                    process = new StartHotspotFirecracker(lambda, function);
+                } else if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM_CONTAINERD) {
                     process = new StartHotspotFirecrackerCtr(lambda, function);
                 } else {
                     process = new StartHotspotContainer(lambda, function);
                 }
                 break;
             case GRAALVISOR:
-                if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM) {
+                if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM_FIRECRACKER) {
                     process = new StartGraalvisorFirecracker(lambda, function);
+                } else if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM_CONTAINERD) {
+                    process = new StartGraalvisorFirecrackerCtr(lambda, function);
                 } else {
                     process = new StartGraalvisorContainer(lambda, function);
                 }
                 break;
-            case GRAALVISOR_CONTAINERD:
-                process = new StartGraalvisorFirecrackerCtr(lambda, function);
-                break;
             case CUSTOM:
-                process = new StartOpenWhiskFirecrackerCtr(lambda, function);
+                if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM_FIRECRACKER) {
+                    process = new StartOpenWhiskFirecracker(lambda, function);
+                } else if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM_CONTAINERD) {
+                    process = new StartOpenWhiskFirecrackerCtr(lambda, function);
+                } else {
+                    throw new IllegalStateException("Custom runtime is not yet supported in container mode.");
+                }
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + function.getStatus());
@@ -142,8 +154,10 @@ public class RoundedRobinScheduler implements Scheduler {
         Lambda result = null;
         for (Lambda lambda : lambdas) {
 
+            boolean hotSpotMatch = targetMode == LambdaExecutionMode.HOTSPOT && lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT;
+            boolean modeMatch = targetMode == lambda.getExecutionMode() || hotSpotMatch;
             // If lambda is decomissioned, not of the correct target, or cannot register this function, skip.
-            if (lambda.isDecommissioned() || lambda.getExecutionMode() != targetMode || !lambda.canRegisterInLambda(function)) {
+            if (lambda.isDecommissioned() || !modeMatch || !lambda.canRegisterInLambda(function)) {
                 continue;
             }
 

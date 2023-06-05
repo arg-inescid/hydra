@@ -2,9 +2,14 @@ package org.graalvm.argo.lambda_manager.core;
 
 import org.graalvm.argo.lambda_manager.utils.Messages;
 
+/**
+ * This enum describes the type of the lambda virtualization technology.
+ */
 public enum LambdaType {
-    // Lambda to be deployed as VM.
-    VM("VM"),
+    // Lambda to be deployed as Firecracker VM.
+    VM_FIRECRACKER("VM_FIRECRACKER"),
+    // Lambda to be deployed as Firecracker Containerd VM.
+    VM_CONTAINERD("VM_CONTAINERD"),
     // Lambda to be deployed as container.
     CONTAINER("CONTAINER");
 

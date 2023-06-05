@@ -32,10 +32,10 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
         }
     }
 
-    private void shutdownCustomLambda(String lambdaPath) throws Throwable {
+    private void shutdownFirecrackerContainerdLambda(String lambdaPath) throws Throwable {
         String lambdaMode = lambda.getExecutionMode().toString();
-        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_cruntime.sh", lambdaPath, lambda.getConnection().ip,
-                String.valueOf(lambda.getConnection().port), lambdaMode).start();
+        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_cruntime.sh", lambdaPath, lambdaMode,
+                lambda.getConnection().ip, String.valueOf(lambda.getConnection().port)).start();
         p.waitFor();
         if (p.exitValue() != 0) {
             Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", lambda.getLambdaID()));
@@ -44,7 +44,9 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
     }
 
     private void shutdownFirecrackerLambda(String lambdaPath) throws Throwable {
-        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_firecracker.sh", lambda.getConnection().tap).start();
+        String lambdaMode = lambda.getExecutionMode().toString();
+        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_firecracker.sh", lambdaPath, lambdaMode,
+                lambda.getConnection().ip, String.valueOf(lambda.getConnection().port), lambda.getConnection().tap).start();
         p.waitFor();
         if (p.exitValue() != 0) {
             Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", lambda.getLambdaID()));
@@ -54,8 +56,8 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
 
     private void shutdownContainerLambda(String lambdaPath) throws Throwable {
         String lambdaMode = lambda.getExecutionMode().toString();
-        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_container.sh", lambda.getLambdaName(), lambdaMode,
-                lambda.getConnection().ip, String.valueOf(lambda.getConnection().port), lambdaPath).start();
+        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_container.sh", lambdaPath, lambdaMode,
+                lambda.getConnection().ip, String.valueOf(lambda.getConnection().port), lambda.getLambdaName()).start();
         p.waitFor();
         if (p.exitValue() != 0) {
             Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", lambda.getLambdaID()));
@@ -67,20 +69,12 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
         try {
             if (Configuration.argumentStorage.getLambdaType() == LambdaType.CONTAINER) {
                 shutdownContainerLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());
+            } else if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM_FIRECRACKER) {
+                shutdownFirecrackerLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());
+            } else if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM_CONTAINERD) {
+                shutdownFirecrackerContainerdLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());
             } else {
-                switch (lambda.getExecutionMode()) {
-                    case GRAALVISOR:
-                        shutdownFirecrackerLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());
-                        break;
-                    case HOTSPOT:
-                    case HOTSPOT_W_AGENT:
-                    case CUSTOM:
-                    case GRAALVISOR_CONTAINERD:
-                        shutdownCustomLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());
-                        break;
-                    default:
-                        Logger.log(Level.WARNING, String.format("Lambda ID=%d has no known execution mode: %s", lambda.getLambdaID(), lambda.getExecutionMode()));
-                }
+                Logger.log(Level.WARNING, String.format("Lambda ID=%d has no known execution mode: %s", lambda.getLambdaID(), lambda.getExecutionMode()));
             }
         } catch (Throwable t) {
             Logger.log(Level.SEVERE, String.format("Lambda ID=%d failed to shutdown: %s", lambda.getLambdaID(), t.getMessage()));
