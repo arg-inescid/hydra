@@ -8,7 +8,7 @@ hsdisk=$1
 
 if [ "$#" -ne 1 ]; then
     echo "Illegal number of parameters."
-    echo "Syntax: build.sh <output vm disk path>"
+    echo "Syntax: build_vm_image.sh <output vm disk path>"
     exit 1
 fi
 
@@ -29,8 +29,8 @@ then
     # Mount it, add permissions
     sudo mount $DIR/base.ext4 $DISK
     sudo chown -R $USER:$USER $DISK
-    # Use an argo-hotspot-agent docker to copy the entire image to the mounted dir.
-    docker export $(docker create argo-hotspot-agent:latest) | tar -xC $DISK
+    # Use an argo-hotspot docker to copy the entire image to the mounted dir.
+    docker export $(docker create argo-hotspot:latest) | tar -xC $DISK
     # Revert permissions and unmount.
     sudo chown -R root:root $DISK
     sudo umount $DISK
@@ -47,4 +47,4 @@ cp $DIR/init $DISK
 # Unmount image and remove directory used for the mount.
 sudo chown -R root:root $DISK
 sudo umount $DISK
-rm -r $DISK
+rm -rf $DISK

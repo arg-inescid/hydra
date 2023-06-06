@@ -17,7 +17,9 @@ public class StartGraalvisorFirecracker extends StartFirecracker {
     protected List<String> makeCommand() {
         lambda.setExecutionMode(LambdaExecutionMode.GRAALVISOR);
 
-        List<String> command = prepareCommand("src/scripts/start_graalvisor_firecracker.sh");
+        List<String> command = prepareCommand("src/scripts/start_firecracker.sh");
+        command.add(lambda.getLambdaName());
+        command.add("graalvisor");
         command.add(TIMESTAMP_TAG + System.currentTimeMillis());
         command.add(PORT_TAG + Configuration.argumentStorage.getLambdaPort());
         command.add("LD_LIBRARY_PATH=/lib:/lib64:/tmp/apps:/usr/local/lib");

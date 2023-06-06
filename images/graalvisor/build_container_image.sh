@@ -6,14 +6,7 @@ source $DIR/build_shared.sh
 
 DISK=$DIR/disk
 
-ghome=$1
-gvbinary=$2
-
-if [ "$#" -ne 2 ]; then
-    echo "Illegal number of parameters."
-    echo "Syntax: build_graalvisor_container_image.sh <graalvm home> <input graalvisor native-image binary path>"
-    exit 1
-fi
+GRAALVISOR_BINARY=$DIR/../../graalvisor/build/native-image/polyglot-proxy
 
 # Prepare directory used to setup the filesystem.
 rm -rf $DISK &> /dev/null
@@ -23,11 +16,10 @@ mkdir -p $DISK
 copy_polyglot_deps
 
 # Copy graalvisor and init.
-cp $gvbinary $DISK/polyglot-proxy
-cp $DIR/init $DISK
+cp $GRAALVISOR_BINARY $DISK/polyglot-proxy
 
 # Build docker.
-docker build -f $DIR/Graalvisor.Dockerfile --tag=graalvisor $DIR
+docker build --tag=graalvisor $DIR
 
 # Remove directory used to create the image.
 rm -r $DISK

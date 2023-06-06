@@ -18,7 +18,7 @@ public class StartHotspotWithAgentFirecracker extends StartFirecracker {
         function.setStatus(FunctionStatus.CONFIGURING_OR_BUILDING);
         lambda.setExecutionMode(LambdaExecutionMode.HOTSPOT_W_AGENT);
 
-        List<String> command = prepareCommand("src/scripts/start_generic_firecracker.sh");
+        List<String> command = prepareCommand("src/scripts/start_firecracker.sh");
         command.add(lambda.getLambdaName());
         command.add("hotspot-agent");
         return command;

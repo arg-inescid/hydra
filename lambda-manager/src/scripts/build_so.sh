@@ -46,7 +46,7 @@ docker run --rm \
   -v "$JAVA_HOME":/jvm \
   -v "$ARGO_HOME":/argo \
   -w "$BUILD_OUTPUT_HOME_CONTAINER" \
-	argo-builder \
+  argo-builder \
     /jvm/bin/native-image \
       --no-fallback \
       -H:IncludeResources="logback.xml|application.yml" \

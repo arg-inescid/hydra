@@ -25,4 +25,4 @@ bash $NIUK_HOME/run_niuk.sh \
 	--gateway "$LAMBDA_GATEWAY" \
 	--mask "$LAMBDA_MASK" \
 	"$LAMBDA_CONSOLE" \
-	"${@:9}"
+	"${@:11}"

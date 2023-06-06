@@ -16,9 +16,9 @@ public class StartOpenWhiskFirecracker extends StartFirecracker {
     protected List<String> makeCommand() {
         lambda.setExecutionMode(LambdaExecutionMode.CUSTOM);
 
-        List<String> command = prepareCommand("src/scripts/start_generic_firecracker.sh");
+        List<String> command = prepareCommand("src/scripts/start_firecracker.sh");
         command.add(lambda.getLambdaName());
-        command.add("java_openwhisk");
+        command.add("java-openwhisk");
         return command;
     }
 
