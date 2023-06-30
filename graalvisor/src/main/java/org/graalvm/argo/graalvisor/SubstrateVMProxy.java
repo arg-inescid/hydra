@@ -9,9 +9,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.graalvm.argo.graalvisor.function.PolyglotFunction;
-import org.graalvm.argo.graalvisor.sandboxing.NativeSandboxInterface;
-import org.graalvm.argo.graalvisor.sandboxing.NetworkNamespaceHandle;
-import org.graalvm.argo.graalvisor.sandboxing.NetworkNamespaceProvider;
 import org.graalvm.argo.graalvisor.sandboxing.SandboxHandle;
 
 /**
@@ -56,13 +53,11 @@ public class SubstrateVMProxy extends RuntimeProxy {
             this.pipeline = pipeline;
         }
 
-        private void processRequest(SandboxHandle shandle, Request req, NetworkNamespaceHandle networkNamespaceHandle) {
+        private void processRequest(SandboxHandle shandle, Request req, NetworkNamespace networkNamespace) {
             synchronized (req) {
                 // Get input from request, invoke function in isolate, fill output.
                 try {
-                    networkNamespaceHandle.switchToNetworkNamespace();
                     req.setOutput(shandle.invokeSandbox(req.getInput()));
-                    networkNamespaceHandle.switchToDefaultNetworkNamespace();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -73,19 +68,21 @@ public class SubstrateVMProxy extends RuntimeProxy {
 
         public void runInternal() throws Exception {
             SandboxHandle shandle = prepareSandbox(pipeline.getFunction());
-            NetworkNamespaceHandle networkNamespaceHandle = prepareNetworkNamespace();
             Request req = null;
+            NetworkNamespace networkNamespace = prepareNetworkNamespace();
+            networkNamespace.switchToNetworkNamespace();
 
             try {
                 while ((req = pipeline.queue.poll(60, TimeUnit.SECONDS)) != null) {
-                    processRequest(shandle, req, networkNamespaceHandle);
+                    processRequest(shandle, req, networkNamespace);
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
 
+            networkNamespace.switchToDefaultNetworkNamespace();
+            freeNetworkNamespace(networkNamespace);
             pipeline.workers.decrementAndGet();
-            deleteNetworkNamespace(networkNamespaceHandle);
             destroySandbox(pipeline.getFunction(), shandle);
         }
 
@@ -187,17 +184,10 @@ public class SubstrateVMProxy extends RuntimeProxy {
         return worker;
     }
 
-    private static NetworkNamespaceHandle prepareNetworkNamespace() {
-        long start, finish;
-        start = System.nanoTime();
-        final NetworkNamespaceHandle networkNamespaceHandle = networkNamespaceProvider.createNetworkNamespace();
-        finish = System.nanoTime();
-        System.out.println(String.format(
-            "[thread %s] New network namespace %s in %s us",
-            Thread.currentThread().getId(),
-            networkNamespaceHandle.getName(),
-            (finish - start)/1000));
-        return networkNamespaceHandle;
+    private static NetworkNamespace prepareNetworkNamespace() {
+        final NetworkNamespace networkNamespace = networkNamespaceProvider.getAvailableNetworkNamespace();
+        System.out.println("Using network namespace: " + networkNamespace.getName());
+        return networkNamespace;
     }
 
     private static void destroySandbox(PolyglotFunction function, SandboxHandle shandle) throws Exception {
@@ -209,31 +199,25 @@ public class SubstrateVMProxy extends RuntimeProxy {
         function.getSandboxProvider().destroySandbox(shandle);
     }
 
-    private static void deleteNetworkNamespace(final NetworkNamespaceHandle networkNamespaceHandle) {
-        long start, finish;
-        start = System.nanoTime();
-        networkNamespaceProvider.deleteNetworkNamespace(networkNamespaceHandle);
-        finish = System.nanoTime();
-        System.out.println(String.format(
-            "[thread %s] Deleted network namespace %s in %s us",
-            Thread.currentThread().getId(),
-            networkNamespaceHandle.getName(),
-            (finish - start) / 1000));
+    private static void freeNetworkNamespace(final NetworkNamespace networkNamespace) {
+        System.out.println("Freeing network namespace: " + networkNamespace.getName());
+        networkNamespaceProvider.freeNetworkNamespace(networkNamespace);
     }
 
     @Override
     protected String invoke(PolyglotFunction function, boolean cached, boolean warmup, String arguments) throws Exception {
         String res;
-
         if (warmup) {
             res = function.getSandboxProvider().warmupProvider(arguments);
         } else if (cached) {
             res = getFunctionPipeline(function).invokeInCachedSandbox(arguments);
         } else {
             SandboxHandle shandle = prepareSandbox(function);
-            NetworkNamespaceHandle networkNamespaceHandle = prepareNetworkNamespace();
+            NetworkNamespace networkNamespace = prepareNetworkNamespace();
+            networkNamespace.switchToNetworkNamespace();
             res = shandle.invokeSandbox(arguments);
-            deleteNetworkNamespace(networkNamespaceHandle);
+            networkNamespace.switchToDefaultNetworkNamespace();
+            freeNetworkNamespace(networkNamespace);
             destroySandbox(function, shandle);
         }
 

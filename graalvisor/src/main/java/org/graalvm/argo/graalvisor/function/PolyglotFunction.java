@@ -1,10 +1,9 @@
 package org.graalvm.argo.graalvisor.function;
 
-import java.util.Locale;
-
+import com.oracle.svm.graalvisor.polyglot.PolyglotLanguage;
 import org.graalvm.argo.graalvisor.sandboxing.SandboxProvider;
 
-import com.oracle.svm.graalvisor.polyglot.PolyglotLanguage;
+import java.util.Locale;
 
 public class PolyglotFunction {
     private final String name;
@@ -37,4 +36,5 @@ public class PolyglotFunction {
     public SandboxProvider getSandboxProvider() {
         return this.sprovider;
     }
+
 }

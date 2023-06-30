@@ -67,15 +67,24 @@ int create_netns_dir()
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_switchToDefaultNetworkNamespace(JNIEnv *env, jobject thisObj) {
+    struct timeval tbegin, tend;
+    gettimeofday(&tbegin, NULL);
+
     int fd = open("/proc/1/ns/net", O_RDONLY);
     if (setns(fd, CLONE_NEWNET) < 0) {
         fprintf(stderr, "could not change to default network namespace. errno: %s", strerror(errno));
         close(fd);
     }
     close(fd);
+
+    gettimeofday(&tend, NULL);
+    printf("time switch_netns %ld\n", (tend.tv_sec * 1000000 + tend.tv_usec) - (tbegin.tv_sec * 1000000 + tbegin.tv_usec));
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_switchNetworkNamespace(JNIEnv *env, jobject thisObj, jstring jName) {
+    struct timeval tbegin, tend;
+    gettimeofday(&tbegin, NULL);
+
     const char *ns_name = (*env)->GetStringUTFChars(env, jName, 0);
     int namespace;
     char path[PATH_MAX];
@@ -90,6 +99,9 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
         exit(0);
     }
     (*env)->ReleaseStringUTFChars(env, jName, ns_name);
+
+    gettimeofday(&tend, NULL);
+    printf("time switch_netns %ld\n", (tend.tv_sec * 1000000 + tend.tv_usec) - (tbegin.tv_sec * 1000000 + tbegin.tv_usec));
 }
 
 void deleteVeth(const char *veth_name) {
@@ -260,10 +272,6 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     setContainerDefaultNetworkGateway(ns_name, defaultGateway, containerVethName);
     gettimeofday(&tend, NULL);
     printf("time def_cont_netw_gate %ld\n", (tend.tv_sec * 1000000 + tend.tv_usec) - (tbegin.tv_sec * 1000000 + tbegin.tv_usec));
-
-    gettimeofday(&tbegin, NULL);
-    gettimeofday(&tend, NULL);
-    printf("time switch_netns %ld\n", (tend.tv_sec * 1000000 + tend.tv_usec) - (tbegin.tv_sec * 1000000 + tbegin.tv_usec));
 
     (*env)->ReleaseStringUTFChars(env, jName, ns_name);
 }
