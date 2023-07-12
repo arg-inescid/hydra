@@ -83,7 +83,9 @@ public class LambdaMemoryUtils {
             while ((line = reader.readLine()) != null) {
                 String rssString = line.substring(0, line.indexOf(' '));
                 double rss = rssString.isEmpty() ? 0 : kilobytesToMegabytes(Double.parseDouble(rssString));
-                String lambdaId = line.substring(line.lastIndexOf(' ') + 1);
+                // Each line has the the following format: "firecracker --socket /tmp/tapname.socket".
+                // Here, we retrieve "tapname" as a unique identifier of a Firecracker VM.
+                String lambdaId = line.substring(line.lastIndexOf("/tmp/") + 5, line.lastIndexOf('.'));
                 rssRecords.put(lambdaId, rss);
             }
         }

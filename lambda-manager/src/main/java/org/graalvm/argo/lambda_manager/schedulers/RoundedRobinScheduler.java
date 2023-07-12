@@ -71,45 +71,20 @@ public class RoundedRobinScheduler implements Scheduler {
         StartLambda process;
         switch (targetMode) {
             case HOTSPOT_W_AGENT:
-                // TODO: exact type of process (VM/Container) should be resolved in a factory.
-                if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM_FIRECRACKER) {
-                    process = new StartHotspotWithAgentFirecracker(lambda, function);
-                } else if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM_CONTAINERD) {
-                    process = new StartHotspotWithAgentFirecrackerCtr(lambda, function);
-                } else {
-                    process = new StartHotspotWithAgentContainer(lambda, function);
-                }
+                process = Configuration.argumentStorage.getLambdaFactory().createHotspotWithAgent(lambda, function);
                 break;
             case HOTSPOT:
                 if (function.getStatus() == FunctionStatus.NOT_BUILT_CONFIGURED) {
                     new BuildSO(function).build().start();
                     Logger.log(Level.INFO, "Starting new .so build for function " + function.getName());
                 }
-                if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM_FIRECRACKER) {
-                    process = new StartHotspotFirecracker(lambda, function);
-                } else if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM_CONTAINERD) {
-                    process = new StartHotspotFirecrackerCtr(lambda, function);
-                } else {
-                    process = new StartHotspotContainer(lambda, function);
-                }
+                process = Configuration.argumentStorage.getLambdaFactory().createHotspot(lambda, function);
                 break;
             case GRAALVISOR:
-                if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM_FIRECRACKER) {
-                    process = new StartGraalvisorFirecracker(lambda, function);
-                } else if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM_CONTAINERD) {
-                    process = new StartGraalvisorFirecrackerCtr(lambda, function);
-                } else {
-                    process = new StartGraalvisorContainer(lambda, function);
-                }
+                process = Configuration.argumentStorage.getLambdaFactory().createGraalvisor(lambda, function);
                 break;
             case CUSTOM:
-                if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM_FIRECRACKER) {
-                    process = new StartOpenWhiskFirecracker(lambda, function);
-                } else if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM_CONTAINERD) {
-                    process = new StartOpenWhiskFirecrackerCtr(lambda, function);
-                } else {
-                    throw new IllegalStateException("Custom runtime is not yet supported in container mode.");
-                }
+                process = Configuration.argumentStorage.getLambdaFactory().createOpenWhisk(lambda, function);
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + function.getStatus());

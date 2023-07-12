@@ -8,6 +8,11 @@ import org.graalvm.argo.lambda_manager.exceptions.user.ErrorDuringCreatingConnec
 import org.graalvm.argo.lambda_manager.function_storage.FunctionStorage;
 import org.graalvm.argo.lambda_manager.memory.FixedMemoryPool;
 import org.graalvm.argo.lambda_manager.memory.MemoryPool;
+import org.graalvm.argo.lambda_manager.processes.lambda.factory.AbstractLambdaFactory;
+import org.graalvm.argo.lambda_manager.processes.lambda.factory.ContainerLambdaFactory;
+import org.graalvm.argo.lambda_manager.processes.lambda.factory.FirecrackerCtrLambdaFactory;
+import org.graalvm.argo.lambda_manager.processes.lambda.factory.FirecrackerLambdaFactory;
+import org.graalvm.argo.lambda_manager.processes.lambda.factory.FirecrackerSnapshotLambdaFactory;
 import org.graalvm.argo.lambda_manager.schedulers.Scheduler;
 import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
 import org.graalvm.argo.lambda_manager.utils.Messages;
@@ -44,6 +49,11 @@ public class ArgumentStorage {
     private LambdaType lambdaType;
 
     /**
+     * Factory to instantiate heterogeneous lambda processes.
+     */
+    private AbstractLambdaFactory lambdaFactory;
+
+    /**
      * Memory pool that controls memory allocation.
      */
     private MemoryPool memoryPool;
@@ -73,7 +83,27 @@ public class ArgumentStorage {
         this.healthCheck = lambdaManagerConfiguration.getHealthCheck();
         this.lambdaPort = lambdaManagerConfiguration.getLambdaPort();
         this.lambdaType = LambdaType.fromString(lambdaManagerConfiguration.getLambdaType());
+        initLambdaFactory(this.lambdaType);
         this.isLambdaConsoleActive = lambdaManagerConfiguration.isLambdaConsole();
+    }
+
+    private void initLambdaFactory(LambdaType lambdaType) {
+        switch (lambdaType) {
+            case VM_FIRECRACKER:
+                this.lambdaFactory = new FirecrackerLambdaFactory();
+                break;
+            case VM_FIRECRACKER_SNAPSHOT:
+                this.lambdaFactory = new FirecrackerSnapshotLambdaFactory();
+                break;
+            case VM_CONTAINERD:
+                this.lambdaFactory = new FirecrackerCtrLambdaFactory();
+                break;
+            case CONTAINER:
+                this.lambdaFactory = new ContainerLambdaFactory();
+                break;
+            default:
+                throw new IllegalStateException("Could not instantiate lambda factory due to unknown lambda type: " + lambdaType);
+        }
     }
 
     private void initErrorHandler() {
@@ -107,7 +137,7 @@ public class ArgumentStorage {
     }
 
     private void prepareConnectionPool(BeanContext beanContext, String gatewayWithMask) throws ErrorDuringCreatingConnectionPool {
-        if (lambdaType == LambdaType.VM_FIRECRACKER || lambdaType == LambdaType.VM_CONTAINERD) {
+        if (lambdaType == LambdaType.VM_FIRECRACKER || lambdaType == LambdaType.VM_FIRECRACKER_SNAPSHOT || lambdaType == LambdaType.VM_CONTAINERD) {
             NetworkConfigurationUtils.prepareVmConnectionPool(connectionPool, maxTaps, gatewayWithMask, lambdaPort, beanContext);
         } else if (lambdaType == LambdaType.CONTAINER) {
             NetworkConfigurationUtils.prepareContainerConnectionPool(connectionPool, maxTaps, beanContext);
@@ -245,6 +275,14 @@ public class ArgumentStorage {
 
     public LambdaType getLambdaType() {
         return lambdaType;
+    }
+
+    public boolean isSnapshotEnabled() {
+        return lambdaType == LambdaType.VM_FIRECRACKER_SNAPSHOT;
+    }
+
+    public AbstractLambdaFactory getLambdaFactory() {
+        return lambdaFactory;
     }
 
     public boolean isLambdaConsoleActive() {

@@ -133,14 +133,14 @@ public class Function {
     }
 
     public boolean isFunctionIsolated() {
-        return this.functionIsolation;
+        return this.functionIsolation || Configuration.argumentStorage.isSnapshotEnabled();
     }
 
     public boolean canCollocateInvocation() {
         // Lambda execution mode can change from "non-collocatable" to "collocatable"
         // runtime and back throughout the function lifetime as the function might go
         // through the build pipeline and fallback
-        return this.invocationCollocation || this.getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR;
+        return !Configuration.argumentStorage.isSnapshotEnabled() && (this.invocationCollocation || this.getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR);
     }
 
     public String getGraalvisorSandbox() {

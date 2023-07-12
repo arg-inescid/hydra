@@ -39,7 +39,7 @@ public class MetricsProvider {
         Set<String> activeUsers = new HashSet<>(64);
         Map<String, Double> memoryTraces = LambdaMemoryUtils.collectMemoryMetrics();
         for (Lambda lambda : LambdaManager.lambdas) {
-            double lambdaMemory = memoryTraces.getOrDefault(lambda.getCustomRuntimeId(), 0.0);
+            double lambdaMemory = memoryTraces.getOrDefault(lambda.getConnection().tap, 0.0);
             totalMemory += lambdaMemory;
             openRequests += lambda.getOpenRequestCount();
             responseBuilder.append(String.format(LAMBDA_FOOTPRINT, lambda.getLambdaName(), lambdaMemory, timestamp));

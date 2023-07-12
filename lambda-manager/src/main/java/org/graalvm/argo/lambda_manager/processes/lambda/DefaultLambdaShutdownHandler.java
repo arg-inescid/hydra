@@ -43,10 +43,12 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
         }
     }
 
-    private void shutdownFirecrackerLambda(String lambdaPath) throws Throwable {
+    private void shutdownFirecrackerLambda(String lambdaPath, LambdaType lambdaType) throws Throwable {
         String lambdaMode = lambda.getExecutionMode().toString();
+        // Append lambda ID to command only if lambda was restored from snapshot (to terminate it properly).
+        String lambdaId = lambdaType == LambdaType.VM_FIRECRACKER_SNAPSHOT ? String.valueOf(lambda.getLambdaID()) : "";
         Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_firecracker.sh", lambdaPath, lambdaMode,
-                lambda.getConnection().ip, String.valueOf(lambda.getConnection().port), lambda.getConnection().tap).start();
+                lambda.getConnection().ip, String.valueOf(lambda.getConnection().port), lambda.getConnection().tap, lambdaId).start();
         p.waitFor();
         if (p.exitValue() != 0) {
             Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", lambda.getLambdaID()));
@@ -67,11 +69,12 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
 
     private void shutdownLambda() {
         try {
-            if (Configuration.argumentStorage.getLambdaType() == LambdaType.CONTAINER) {
+            LambdaType lambdaType = Configuration.argumentStorage.getLambdaType();
+            if (lambdaType == LambdaType.CONTAINER) {
                 shutdownContainerLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());
-            } else if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM_FIRECRACKER) {
-                shutdownFirecrackerLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());
-            } else if (Configuration.argumentStorage.getLambdaType() == LambdaType.VM_CONTAINERD) {
+            } else if (lambdaType == LambdaType.VM_FIRECRACKER || lambdaType == LambdaType.VM_FIRECRACKER_SNAPSHOT) {
+                shutdownFirecrackerLambda(Environment.CODEBASE + "/" + lambda.getLambdaName(), lambdaType);
+            } else if (lambdaType == LambdaType.VM_CONTAINERD) {
                 shutdownFirecrackerContainerdLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());
             } else {
                 Logger.log(Level.WARNING, String.format("Lambda ID=%d has no known execution mode: %s", lambda.getLambdaID(), lambda.getExecutionMode()));

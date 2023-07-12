@@ -33,6 +33,25 @@ if [ -z "$VMM_TAP_NAME" ]; then
   exit 1
 fi
 
+LAMBDA_ID=$6
+
+function stop_firecracker {
+  LAMBDA_PID=$(sudo fuser /tmp/$VMM_TAP_NAME.socket 2>&1 | grep /tmp/$VMM_TAP_NAME.socket | awk '{print $2}')
+  sudo kill $LAMBDA_PID
+  # Remove VM image to save disk space.
+  rm "$LAMBDA_HOME"/*.img
+}
+
+function stop_firecracker_snapshot {
+  FIRECRACKER_ID=lambda"$LAMBDA_ID"id
+  LAMBDA_PID=$(ps aux | grep $FIRECRACKER_ID | grep firecracker | awk '{print $2}')
+  sudo kill $LAMBDA_PID
+  # Delete namespace.
+  sudo ip netns delete ns$LAMBDA_ID
+  # Remove VM files to save disk space.
+  rm -rf "$LAMBDA_HOME"/chroot
+}
+
 if [ "$LAMBDA_MODE" == "HOTSPOT_W_AGENT" ]; then
   # Collect configuration.
   mkdir "$LAMBDA_HOME"/config
@@ -41,8 +60,10 @@ if [ "$LAMBDA_MODE" == "HOTSPOT_W_AGENT" ]; then
   done
 fi
 
-LAMBDA_PID=$(sudo fuser /tmp/$VMM_TAP_NAME.socket 2>&1 | grep /tmp/$VMM_TAP_NAME.socket | awk '{print $2}')
-sudo kill $LAMBDA_PID
-
-# Remove VM image to save disk space.
-rm "$LAMBDA_HOME"/*.img
+if [[ -z "$LAMBDA_ID" ]]; then
+  # Lambda was created normally.
+  stop_firecracker
+else
+  # Lambda ID was provided -> lambda was created from snapshot.
+  stop_firecracker_snapshot
+fi

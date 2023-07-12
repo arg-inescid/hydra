@@ -8,6 +8,8 @@ import org.graalvm.argo.lambda_manager.utils.Messages;
 public enum LambdaType {
     // Lambda to be deployed as Firecracker VM.
     VM_FIRECRACKER("VM_FIRECRACKER"),
+    // Lambda to be deployed as Firecracker VM with snapshotting.
+    VM_FIRECRACKER_SNAPSHOT("VM_FIRECRACKER_SNAPSHOT"),
     // Lambda to be deployed as Firecracker Containerd VM.
     VM_CONTAINERD("VM_CONTAINERD"),
     // Lambda to be deployed as container.
