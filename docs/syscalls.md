@@ -1,88 +1,88 @@
+<style>
+o { color: orange }
+lg { color: lightgreen }
+x {color: gray }
+</style>
+
 <!-- time -->
 
-### Time
+## Time
 
-```c
-adjtimex(struct timex *buf)
-clock_adjtime(clockid_t clk_id, struct timex *buf)
-clock_adjtime64(clockid_t clk_id, struct timex *buf)
-clock_getres(clockid_t clockid, struct timespec *_Nullable res)
-clock_getres_time64(clockid_t clockid, struct timespec *_Nullable res)
-clock_gettime(clockid_t clockid, struct timespec *tp)
-clock_gettime64(clockid_t clockid, struct timespec *tp)
-clock_nanosleep(clockid_t clockid, int flags, const struct timespec *request, struct timespec *_Nullable remain)
-clock_nanosleep_time64(clockid_t clockid, int flags, const struct timespec *request, struct timespec *_Nullable remain)
-getitimer(int which, struct itimerval *curr_value)
-gettimeofday(struct timeval *restrict tv, struct timezone *_Nullable restrict tz)
-nanosleep(const struct timespec *req, struct timespec *_Nullable rem)
-setitimer(int which, const struct itimerval *restrict new_value, struct itimerval *_Nullable restrict old_value)
-time(time_t *_Nullable tloc)
-timer_create(clockid_t clockid, struct sigevent *_Nullable restrict sevp, timer_t *restrict timerid)
-timer_delete(timer_t timerid)
-timer_getoverrun(timer_t timerid)
-timer_gettime(timer_t timerid, struct itimerspec *curr_value)
-timer_gettime64(timer_t timerid, struct itimerspec *curr_value)
-timer_settime(timer_t timerid, int flags, const struct itimerspec *restrict new_value, struct itimerspec *_Nullable restrict old_value)
-timer_settime64(timer_t timerid, int flags, const struct itimerspec *restrict new_value, struct itimerspec *_Nullable restrict old_value)
-timerfd_create(int clockid, int flags)
-timerfd_gettime(int fd, struct itimerspec *curr_value)
-timerfd_gettime64(int fd, struct itimerspec *curr_value)
-timerfd_settime(int fd, int flags, const struct itimerspec *new_value, struct itimerspec *_Nullable old_value)
-timerfd_settime64(int fd, int flags, const struct itimerspec *new_value, struct itimerspec *_Nullable old_value)
-times(struct tms *buf)
-```
+adjtimex<x>(struct timex *buf)</x><br>
+clock_adjtime<x>(clockid_t clk_id, struct timex *buf)</x><br>
+clock_adjtime64<x>(clockid_t clk_id, struct timex *buf)</x><br>
+clock_getres<x>(clockid_t clockid, struct timespec *_Nullable res)</x><br>
+clock_getres_time64<x>(clockid_t clockid, struct timespec *_Nullable res)</x><br>
+clock_gettime<x>(clockid_t clockid, struct timespec *tp)</x><br>
+clock_gettime64<x>(clockid_t clockid, struct timespec *tp)</x><br>
+clock_nanosleep<x>(clockid_t clockid, int flags, const struct timespec *request, struct timespec *_Nullable remain)</x><br>
+clock_nanosleep_time64<x>(clockid_t clockid, int flags, const struct timespec *request, struct timespec *_Nullable remain)</x><br>
+getitimer<x>(int which, struct itimerval *curr_value)</x><br>
+gettimeofday<x>(struct timeval *restrict tv, struct timezone *_Nullable restrict tz)</x><br>
+nanosleep<x>(const struct timespec *req, struct timespec *_Nullable rem)</x><br>
+setitimer<x>(int which, const struct itimerval *restrict new_value, struct itimerval *_Nullable restrict old_value)</x><br>
+time<x>(time_t *_Nullable tloc)</x><br>
+timer_create<x>(clockid_t clockid, struct sigevent *_Nullable restrict sevp, timer_t *restrict timerid)</x><br>
+timer_delete<x>(timer_t timerid)</x><br>
+timer_getoverrun<x>(timer_t timerid)</x><br>
+timer_gettime<x>(timer_t timerid, struct itimerspec *curr_value)</x><br>
+timer_gettime64<x>(timer_t timerid, struct itimerspec *curr_value)</x><br>
+timer_settime<x>(timer_t timerid, int flags, const struct itimerspec *restrict new_value, struct itimerspec *_Nullable restrict old_value)</x><br>
+timer_settime64<x>(timer_t timerid, int flags, const struct itimerspec *restrict new_value, struct itimerspec *_Nullable restrict old_value)</x><br>
+timerfd_create<x>(int clockid, int flags)</x><br>
+timerfd_gettime<x>(int fd, struct itimerspec *curr_value)</x><br>
+timerfd_gettime64<x>(int fd, struct itimerspec *curr_value)</x><br>
+timerfd_settime<x>(int fd, int flags, const struct itimerspec *new_value, struct itimerspec *_Nullable old_value)</x><br>
+timerfd_settime64<x>(int fd, int flags, const struct itimerspec *new_value, struct itimerspec *_Nullable old_value)</x><br>
+times<x>(struct tms *buf)</x><br>
 
-### Network
+## Network
 <!-- network -->
 
-```c
-accept(int sockfd, struct sockaddr *_Nullable restrict addr, socklen_t *_Nullable restrict addrlen)
-accept4(int sockfd, struct sockaddr *_Nullable restrict addr, socklen_t *_Nullable restrict addrlen, int flags)
-bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
-connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
-getpeername(int sockfd, struct sockaddr *restrict addr, socklen_t *restrict addrlen)
-getsockname(int sockfd, struct sockaddr *restrict addr, socklen_t *restrict addrlen)
-getsockopt(int sockfd, int level, int optname, void optval[restrict *.optlen], socklen_t *restrict optlen)
-listen(int sockfd, int backlog)
-recv(int sockfd, void buf[.len], size_t len, int flags)
-recvfrom(int sockfd, void buf[restrict .len], size_t len, int flags, struct sockaddr *_Nullable restrict src_addr, socklen_t *_Nullable restrict addrlen)
-recvmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags, struct timespec *timeout)
-recvmmsg_time64(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags, struct timespec *timeout)
-recvmsg(int sockfd, struct msghdr *msg, int flags)
-send(int sockfd, const void buf[.len], size_t len, int flags)
-sendmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags)
-sendmsg(int sockfd, const struct msghdr *msg, int flags)
-sendto(int sockfd, const void buf[.len], size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen)
-setsockopt(int sockfd, int level, int optname, const void optval[.optlen], socklen_t optlen)
-shutdown(int sockfd, int how)
-socketcall(int call, unsigned long *args)
-socketpair(int domain, int type, int protocol, int sv[2])
-```
+<lg>accept</lg><x>(int sockfd, struct sockaddr *_Nullable restrict addr, socklen_t *_Nullable restrict addrlen)</x><br>
+<lg>accept4</lg><x>(int sockfd, struct sockaddr *_Nullable restrict addr, socklen_t *_Nullable restrict addrlen, int flags)</x><br>
+<lg>bind</lg><x>(int sockfd, const struct sockaddr *addr, socklen_t addrlen)</x><br>
+<lg>connect</lg><x>(int sockfd, const struct sockaddr *addr, socklen_t addrlen)</x><br>
+<lg>getpeername</lg><x>(int sockfd, struct sockaddr *restrict addr, socklen_t *restrict addrlen)</x><br>
+<lg>getsockname</lg><x>(int sockfd, struct sockaddr *restrict addr, socklen_t *restrict addrlen)</x><br>
+<lg>getsockopt</lg><x>(int sockfd, int level, int optname, void optval[restrict *.optlen], socklen_t *restrict optlen)</x><br>
+<lg>listen</lg><x>(int sockfd, int backlog)</x><br>
+<lg>recv</lg><x>(int sockfd, void buf[.len], size_t len, int flags)</x><br>
+<lg>recvfrom</lg><x>(int sockfd, void buf[restrict .len], size_t len, int flags, struct sockaddr *_Nullable restrict src_addr, socklen_t *_Nullable restrict addrlen)</x><br>
+<lg>recvmmsg</lg><x>(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags, struct timespec *timeout)</x><br>
+<lg>recvmmsg_time64</lg><x>(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags, struct timespec *timeout)</x><br>
+<lg>recvmsg</lg><x>(int sockfd, struct msghdr *msg, int flags)</x><br>
+<lg>send</lg><x>(int sockfd, const void buf[.len], size_t len, int flags)</x><br>
+<lg>sendmmsg</lg><x>(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags)</x><br>
+<lg>sendmsg</lg><x>(int sockfd, const struct msghdr *msg, int flags)</x><br>
+<lg>sendto</lg><x>(int sockfd, const void buf[.len], size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen)</x><br>
+<lg>setsockopt</lg><x>(int sockfd, int level, int optname, const void optval[.optlen], socklen_t optlen)</x><br>
+<lg>shutdown</lg><x>(int sockfd, int how)</x><br>
+socketcall<x>(int call, unsigned long *args)</x><br>
+socketpair<x>(int domain, int type, int protocol, int sv[2])</x><br>
 
-### Signals
+## Signals
 <!-- signals -->
 
-```c
-alarm(unsigned int seconds)
-kill(pid_t pid, int sig)
-pause(void)
-rt_sigaction(int signum, const struct sigaction *_Nullable restrict act, struct sigaction *_Nullable restrict oldact, size_t sigsetsize)
-rt_sigpending(sigset_t *set, size_t sigsetsize)
-rt_sigprocmask(int how, const kernel_sigset_t *_Nullable set, kernel_sigset_t *_Nullable oldset, size_t sigsetsize)
-rt_sigqueueinfo(pid_t tgid, int sig, siginfo_t *info)
-rt_sigreturn()
-rt_sigsuspend(const sigset_t *mask, size_t sigsetsize)
-rt_sigtimedwait(const sigset_t *restrict set, siginfo_t *restrict info, const struct timespec *restrict timeout, size_t sigsetsize)
-rt_sigtimedwait_time64(const sigset_t *restrict set, siginfo_t *restrict info, const struct timespec *restrict timeout, size_t sigsetsize)
-rt_tgsigqueueinfo(pid_t tgid, pid_t tid, int sig, siginfo_t *info)
-sigaltstack(const stack_t *_Nullable restrict ss, stack_t *_Nullable restrict old_ss)
-signalfd(int fd, const sigset_t *mask, int flags)
-signalfd4(int fd, const sigset_t *mask, int flags)
-sigprocmask(int how, const sigset_t *_Nullable restrict set, sigset_t *_Nullable restrict oldset)
-sigreturn()
-tgkill(pid_t tgid, pid_t tid, int sig)
-tkill(pid_t tid, int sig)
-```
+alarm<x>(unsigned int seconds)</x><br>
+kill<x>(pid_t pid, int sig)</x><br>
+pause<x>(void)</x><br>
+rt_sigaction<x>(int signum, const struct sigaction *_Nullable restrict act, struct sigaction *_Nullable restrict oldact, size_t sigsetsize)</x><br>
+rt_sigpending<x>(sigset_t *set, size_t sigsetsize)</x><br>
+rt_sigprocmask<x>(int how, const kernel_sigset_t *_Nullable set, kernel_sigset_t *_Nullable oldset, size_t sigsetsize)</x><br>
+rt_sigqueueinfo<x>(pid_t tgid, int sig, siginfo_t *info)</x><br>
+rt_sigreturn<x>()</x><br>
+rt_sigsuspend<x>(const sigset_t *mask, size_t sigsetsize)</x><br>
+rt_sigtimedwait<x>(const sigset_t *restrict set, siginfo_t *restrict info, const struct timespec *restrict timeout, size_t sigsetsize)</x><br>
+rt_sigtimedwait_time64<x>(const sigset_t *restrict set, siginfo_t *restrict info, const struct timespec *restrict timeout, size_t sigsetsize)</x><br>
+rt_tgsigqueueinfo<x>(pid_t tgid, pid_t tid, int sig, siginfo_t *info)</x><br>
+sigaltstack<x>(const stack_t *_Nullable restrict ss, stack_t *_Nullable restrict old_ss)</x><br>
+signalfd<x>(int fd, const sigset_t *mask, int flags)</x><br>
+signalfd4<x>(int fd, const sigset_t *mask, int flags)</x><br>
+sigprocmask<x>(int how, const sigset_t *_Nullable restrict set, sigset_t *_Nullable restrict oldset)</x><br>
+sigreturn<x>()</x><br>
+tgkill<x>(pid_t tgid, pid_t tid, int sig)</x><br>
+tkill<x>(pid_t tid, int sig)</x><br>
 
 # File System
 <!-- 
@@ -91,174 +91,157 @@ tkill(pid_t tid, int sig)
 ###############################################################################
 -->
 
-### File attributes
+## File attributes
 <!-- file attributes -->
 
-```c
-access(const char *pathname, int mode)
-chown(const char *pathname, uid_t owner, gid_t group)
-chown32(const char *pathname, uid_t owner, gid_t group)
-chmod(const char *pathname, mode_t mode)
-faccessat(int dirfd, const char *pathname, int mode, int flags)
-faccessat2(int dirfd, const char *pathname, int mode, int flags)
-fchmod(int fd, mode_t mode)
-fchmodat(int dirfd, const char *pathname, mode_t mode, int flags)
-fchown(int fd, uid_t owner, gid_t group)
-fchown32(int fd, uid_t owner, gid_t group)
-fchownat(int dirfd, const char *pathname, uid_t owner, gid_t group, int flags)
-fstat(int fd, struct stat *statbuf)
-fstat64(int fd, struct stat *statbuf)
-fstatat64(int dirfd, const char *restrict pathname, struct stat *restrict statbuf, int flag)
-futimesat(int dirfd, const char *pathname, const struct timeval times[2])
-lchown(const char *pathname, uid_t owner, gid_t group)
-lchown32(const char *pathname, uid_t owner, gid_t group)
-_llseek(unsigned int fd, unsigned long offset_high, unsigned long offset_low, loff_t *result, unsigned int whence)
-lseek(int fd, off_t offset, int whence)
-lstat(const char *restrict pathname, struct stat *restrict statbuf)
-lstat64(const char *restrict pathname, struct stat *restrict statbuf)
-newfstatat(int dirfd, const char *restrict pathname, struct stat *restrict statbuf, int flag)
-stat(const char *restrict pathname, struct stat *restrict statbuf)
-stat64(const char *restrict pathname, struct stat *restrict statbuf)
-statx(int dirfd, const char *restrict pathname, int flags,unsigned int mask, struct statx *restrict statxbuf)
-umask(mode_t mask)
-utime(const char *filename, const struct utimbuf *_Nullable times)
-utimensat(int dirfd, const char *pathname, const struct timespec times[_Nullable 2], int flags)
-utimensat_time64(int dirfd, const char *pathname, const struct timespec times[_Nullable 2], int flags)
-utimes(const char *filename, const struct timeval times[_Nullable 2])
-```
+access<x>(const char *pathname, int mode)</x><br>
+chown<x>(const char *pathname, uid_t owner, gid_t group)</x><br>
+chown32<x>(const char *pathname, uid_t owner, gid_t group)</x><br>
+chmod<x>(const char *pathname, mode_t mode)</x><br>
+faccessat<x>(int dirfd, const char *pathname, int mode, int flags)</x><br>
+faccessat2<x>(int dirfd, const char *pathname, int mode, int flags)</x><br>
+<lg>fchmod</lg><x>(int fd, mode_t mode)</x><br>
+fchmodat<x>(int dirfd, const char *pathname, mode_t mode, int flags)</x><br>
+<lg>fchown</lg><x>(int fd, uid_t owner, gid_t group)</x><br>
+<lg>fchown32</lg><x>(int fd, uid_t owner, gid_t group)</x><br>
+fchownat<x>(int dirfd, const char *pathname, uid_t owner, gid_t group, int flags)</x><br>
+<lg>fstat</lg><x>(int fd, struct stat *statbuf)</x><br>
+<lg>fstat64</lg><x>(int fd, struct stat *statbuf)</x><br>
+fstatat64<x>(int dirfd, const char *restrict pathname, struct stat *restrict statbuf, int flag)</x><br>
+futimesat<x>(int dirfd, const char *pathname, const struct timeval times[2])</x><br>
+lchown<x>(const char *pathname, uid_t owner, gid_t group)</x><br>
+lchown32<x>(const char *pathname, uid_t owner, gid_t group)</x><br>
+<lg>_llseek</lg><x>(unsigned int fd, unsigned long offset_high, unsigned long offset_low, loff_t *result, unsigned int whence)</x><br>
+<lg>lseek</lg><x>(int fd, off_t offset, int whence)</x><br>
+lstat<x>(const char *restrict pathname, struct stat *restrict statbuf)</x><br>
+lstat64<x>(const char *restrict pathname, struct stat *restrict statbuf)</x><br>
+newfstatat<x>(int dirfd, const char *restrict pathname, struct stat *restrict statbuf, int flag)</x><br>
+stat<x>(const char *restrict pathname, struct stat *restrict statbuf)</x><br>
+stat64<x>(const char *restrict pathname, struct stat *restrict statbuf)</x><br>
+<lg>statx</lg><x>(int dirfd, const char *restrict pathname, int flags,unsigned int mask, struct statx *restrict statxbuf)</x><br>
+umask<x>(mode_t mask)</x><br>
+utime<x>(const char *filename, const struct utimbuf *_Nullable times)</x><br>
+utimensat<x>(int dirfd, const char *pathname, const struct timespec times[_Nullable 2], int flags)</x><br>
+utimensat_time64<x>(int dirfd, const char *pathname, const struct timespec times[_Nullable 2], int flags)</x><br>
+utimes<x>(const char *filename, const struct timeval times[_Nullable 2])</x><br>
 
-### Extended File Attributes
+## Extended File Attributes
 <!-- extended file attributes -->
 
-```c
-fgetxattr(int fd, const char *name,
-                        void value[.size], size_t size)
-flistxattr(int fd, char *_Nullable list, size_t size)
-fremovexattr(int fd, const char *name)
-fsetxattr(int fd, const char *name, const void value[.size], size_t size, int flags)
-getxattr(const char *path, const char *name, void value[.size], size_t size)
-lgetxattr(const char *path, const char *name, void value[.size], size_t size)
-listxattr(const char *path, char *_Nullable list, size_t size)
-llistxattr(const char *path, char *_Nullable list, size_t size)
-lremovexattr(const char *path, const char *name)
-lsetxattr(const char *path, const char *name, const void value[.size], size_t size, int flags)
-removexattr(const char *path, const char *name)
-setxattr(const char *path, const char *name, const void value[.size], size_t size, int flags)
-```
+<lg>fgetxattr</lg><x>(int fd, const char *name, void value[.size], size_t size)</x><br>
+<lg>flistxattr</lg><x>(int fd, char *_Nullable list, size_t size)</x><br>
+<lg>fremovexattr</lg><x>(int fd, const char *name)</x><br>
+<lg>fsetxattr</lg><x>(int fd, const char *name, const void value[.size], size_t size, int flags)</x><br>
+getxattr<x>(const char *path, const char *name, void value[.size], size_t size)</x><br>
+lgetxattr<x>(const char *path, const char *name, void value[.size], size_t size)</x><br>
+listxattr<x>(const char *path, char *_Nullable list, size_t size)</x><br>
+llistxattr<x>(const char *path, char *_Nullable list, size_t size)</x><br>
+lremovexattr<x>(const char *path, const char *name)</x><br>
+lsetxattr<x>(const char *path, const char *name, const void value[.size], size_t size, int flags)</x><br>
+removexattr<x>(const char *path, const char *name)</x><br>
+setxattr<x>(const char *path, const char *name, const void value[.size], size_t size, int flags)</x><br>
 
-### File Operations
+## File Operations
 <!-- file operations -->
 
-```c
-creat(const char *pathname, mode_t mode)
-copy_file_range(int fd_in, off64_t *_Nullable off_in, int fd_out, off64_t *_Nullable off_out, size_t len, unsigned int flags)
-fadvise64(int fd, off_t offset, size_t len, int advice)
-fadvise64_64(int fd, off_t offset, loff_t len, int advice)
-fallocate(int fd, int mode, off_t offset, off_t len)
-fdatasync(int fd)
-fsync(int fd)
-ftruncate(int fd, off_t length)
-ftruncate64(int fd, off_t length)
-memfd_create(const char *name, unsigned int flags)
-memfd_secret(unsigned int flags)
-mknod(const char *pathname, mode_t mode, dev_t dev)
-mknodat(int dirfd, const char *pathname, mode_t mode, dev_t dev)
-name_to_handle_at(int dirfd, const char *pathname, struct file_handle *handle, int *mount_id, int flags)
-open(const char *pathname, int flags)
-openat(int dirfd, const char *pathname, int flags)
-openat2(int dirfd, const char *pathname, const struct open_how *how, size_t size)
-readahead(int fd, off64_t offset, size_t count)
-rename(const char *oldpath, const char *newpath)
-renameat(int olddirfd, const char *oldpath, int newdirfd, const char *newpath)
-renameat2(int olddirfd, const char *oldpath, int newdirfd, const char *newpath, unsigned int flags)
-sync_file_range(int fd, off64_t offset, off64_t nbytes, unsigned int flags)
-truncate(const char *path, off_t length)
-truncate64(const char *path, off_t length)
-```
+creat<x>(const char *pathname, mode_t mode)</x><br>
+<lg>copy_file_range</lg><x>(int fd_in, off64_t *_Nullable off_in, int fd_out, off64_t *_Nullable off_out, size_t len, unsigned int flags)</x><br>
+<lg>fadvise64</lg><x>(int fd, off_t offset, size_t len, int advice)</x><br>
+<lg>fadvise64_64</lg><x>(int fd, off_t offset, loff_t len, int advice)</x><br>
+<lg>fallocate</lg><x>(int fd, int mode, off_t offset, off_t len)</x><br>
+<lg>fdatasync</lg><x>(int fd)</x><br>
+<lg>fsync</lg><x>(int fd)</x><br>
+<lg>ftruncate</lg><x>(int fd, off_t length)</x><br>
+<lg>ftruncate64</lg><x>(int fd, off_t length)</x><br>
+memfd_create<x>(const char *name, unsigned int flags)</x><br>
+memfd_secret<x>(unsigned int flags)</x><br>
+mknod<x>(const char *pathname, mode_t mode, dev_t dev)</x><br>
+mknodat<x>(int dirfd, const char *pathname, mode_t mode, dev_t dev)</x><br>
+name_to_handle_at<x>(int dirfd, const char *pathname, struct file_handle *handle, int *mount_id, int flags)</x><br>
+open<x>(const char *pathname, int flags)</x><br>
+openat<x>(int dirfd, const char *pathname, int flags)</x><br>
+openat2<x>(int dirfd, const char *pathname, const struct open_how *how, size_t size)</x><br>
+<lg>readahead</lg><x>(int fd, off64_t offset, size_t count)</x><br>
+rename<x>(const char *oldpath, const char *newpath)</x><br>
+renameat<x>(int olddirfd, const char *oldpath, int newdirfd, const char *newpath)</x><br>
+renameat2<x>(int olddirfd, const char *oldpath, int newdirfd, const char *newpath, unsigned int flags)</x><br>
+<lg>sync_file_range</lg><x>(int fd, off64_t offset, off64_t nbytes, unsigned int flags)</x><br>
+truncate<x>(const char *path, off_t length)</x><br>
+truncate64<x>(const char *path, off_t length)</x><br>
 
-### Link Operations
+## Link Operations
 <!-- link operations -->
 
-```c
-link(const char *oldpath, const char *newpath)
-linkat(int olddirfd, const char *oldpath, int newdirfd, const char *newpath, int flags)
-readlink(const char *restrict pathname, char *restrict buf, size_t bufsiz)
-readlinkat(int dirfd, const char *restrict pathname, char *restrict buf, size_t bufsiz)
-symlink(const char *target, const char *linkpath)
-symlinkat(const char *target, int newdirfd, const char *linkpath)
-unlink(const char *pathname)
-unlinkat(int dirfd, const char *pathname, int flags)
-```
+link<x>(const char *oldpath, const char *newpath)</x><br>
+linkat<x>(int olddirfd, const char *oldpath, int newdirfd, const char *newpath, int flags)</x><br>
+readlink<x>(const char *restrict pathname, char *restrict buf, size_t bufsiz)</x><br>
+readlinkat<x>(int dirfd, const char *restrict pathname, char *restrict buf, size_t bufsiz)</x><br>
+symlink<x>(const char *target, const char *linkpath)</x><br>
+symlinkat<x>(const char *target, int newdirfd, const char *linkpath)</x><br>
+unlink<x>(const char *pathname)</x><br>
+unlinkat<x>(int dirfd, const char *pathname, int flags)</x><br>
 
-### Directory Operations
+## Directory Operations
 <!-- directoriy operations -->
 
-```c
-chdir(const char *path)
-fchdir(int fd)
-getcwd(char buf[.size], size_t size)
-getdents(unsigned int fd, struct linux_dirent *dirp, unsigned int count)
-getdents64(unsigned int fd, struct linux_dirent *dirp, unsigned int count)
-mkdir(const char *pathname, mode_t mode)
-mkdirat(int dirfd, const char *pathname, mode_t mode)
-rmdir(const char *pathname)
-```
+chdir<x>(const char *path)</x><br>
+<lg>fchdir</lg><x>(int fd)</x><br>
+getcwd<x>(char buf[.size], size_t size)</x><br>
+<lg>getdents</lg><x>(unsigned int fd, struct linux_dirent *dirp, unsigned int count)</x><br>
+<lg>getdents64</lg><x>(unsigned int fd, struct linux_dirent *dirp, unsigned int count)</x><br>
+mkdir<x>(const char *pathname, mode_t mode)</x><br>
+mkdirat<x>(int dirfd, const char *pathname, mode_t mode)</x><br>
+rmdir<x>(const char *pathname)</x><br>
 
-### File System Operations
+## File System Operations
 <!-- file system operations -->
 
-```c
-fanotify_mark(int fanotify_fd, unsigned int flags, uint64_t mask, int dirfd, const char *_Nullable pathname)
-fstatfs(int fd, struct statfs *buf)
-fstatfs64(int fd, struct statfs *buf)
-inotify_add_watch(int fd, const char *pathname, uint32_t mask)
-inotify_init(void)
-inotify_init1(int flags)
-inotify_rm_watch(int fd, int wd)
-statfs(const char *path, struct statfs *buf)
-statfs64(const char *path, struct statfs *buf)
-sync(void)
-syncfs(int fd)
-```
+<lg>fanotify_mark</lg><x>(int fanotify_fd, unsigned int flags, uint64_t mask, int dirfd, const char *_Nullable pathname)</x><br>
+<lg>fstatfs</lg><x>(int fd, struct statfs *buf)</x><br>
+<lg>fstatfs64</lg><x>(int fd, struct statfs *buf)</x><br>
+<lg>inotify_add_watch</lg><x>(int fd, const char *pathname, uint32_t mask)</x><br>
+inotify_init<x>(void)</x><br>
+inotify_init1<x>(int flags)</x><br>
+<lg>inotify_rm_watch</lg><x>(int fd, int wd)</x><br>
+statfs<x>(const char *path, struct statfs *buf)</x><br>
+statfs64<x>(const char *path, struct statfs *buf)</x><br>
+sync<x>(void)</x><br>
+<lg>syncfs</lg><x>(int fd)</x><br>
 
-### File descriptors
+## File descriptors
 <!-- file descriptors -->
 
-```c
-close(int fd)
-close_range(unsigned int first, unsigned int last, unsigned int flags)
-dup(int oldfd)
-dup2(int oldfd, int newfd)
-dup3(int oldfd, int newfd, int flag)
-eventfd(unsigned int initval)
-eventfd2(unsigned int initval, int flags)
-fcntl(int fd, int cmd, ... /* arg */ )
-fcntl64(int fd, int cmd, ... /* arg */ )
-flock(int fd, int operation)
-ioctl(int fd, unsigned long request, ...)
-pidfd_open(pid_t pid, unsigned int flags)
-pidfd_send_signal(int pidfd, int sig, siginfo_t *_Nullable info, unsigned int flags)
-sendfile(int out_fd, int in_fd, off_t *_Nullable offset, size_t count)
-sendfile64(int out_fd, int in_fd, off_t *_Nullable offset, size_t count)
-```
+<lg>close</lg><x>(int fd)</x><br>
+<lg>close_range</lg><x>(unsigned int first, unsigned int last, unsigned int flags)</x><br>
+<lg>dup</lg><x>(int oldfd)</x><br>
+<lg>dup2</lg><x>(int oldfd, int newfd)</x><br>
+<lg>dup3</lg><x>(int oldfd, int newfd, int flag)</x><br>
+eventfd<x>(unsigned int initval)</x><br>
+eventfd2<x>(unsigned int initval, int flags)</x><br>
+<lg>fcntl</lg><x>(int fd, int cmd, ... /* arg */ )</x><br>
+<lg>fcntl64</lg><x>(int fd, int cmd, ... /* arg */ )</x><br>
+<lg>flock</lg><x>(int fd, int operation)</x><br>
+<lg>ioctl</lg><x>(int fd, unsigned long request, ...)</x><br>
+pidfd_open<x>(pid_t pid, unsigned int flags)</x><br>
+pidfd_send_signal<x>(int pidfd, int sig, siginfo_t *_Nullable info, unsigned int flags)</x><br>
+<lg>sendfile</lg><x>(int out_fd, int in_fd, off_t *_Nullable offset, size_t count)</x><br>
+<lg>sendfile64</lg><x>(int out_fd, int in_fd, off_t *_Nullable offset, size_t count)</x><br>
 
-### IO
+## IO
 <!-- IO -->
 
-```c
-io_cancel(aio_context_t ctx_id, struct iocb *iocb, struct io_event *result)
-io_destroy(aio_context_t ctx_id)
-io_getevents(aio_context_t ctx_id, long min_nr, long nr, struct io_event *events, struct timespec *timeout)
-io_pgetevents(aio_context_t ctx_id, long, min_nr, long, nr, struct io_event __user *events, struct timespec __user *timeout, const struct __aio_sigset __user *usig)
-io_pgetevents_time64(aio_context_t ctx_id, long, min_nr, long, nr, struct io_event __user *events, struct timespec __user *timeout, const struct __aio_sigset __user *usig)
-ioprio_get(int which, int who)
-ioprio_set(int which, int who, int ioprio)
-io_setup(unsigned int nr_events, aio_context_t *ctx_idp)
-io_submit(aio_context_t ctx_id, long nr, struct iocb **iocbpp)
-io_uring_enter(unsigned int fd, unsigned int to_submit, unsigned int min_complete, unsigned int flags, sigset_t *sig)
-io_uring_register(unsigned int fd, unsigned int opcode, void *arg, unsigned int nr_args)
-io_uring_setup(u32 entries, struct io_uring_params *p)
-```
+io_cancel<x>(aio_context_t ctx_id, struct iocb *iocb, struct io_event *result)</x><br>
+io_destroy<x>(aio_context_t ctx_id)</x><br>
+io_getevents<x>(aio_context_t ctx_id, long min_nr, long nr, struct io_event *events, struct timespec *timeout)</x><br>
+io_pgetevents<x>(aio_context_t ctx_id, long, min_nr, long, nr, struct io_event __user *events, struct timespec __user *timeout, const struct __aio_sigset __user *usig)</x><br>
+io_pgetevents_time64<x>(aio_context_t ctx_id, long, min_nr, long, nr, struct io_event __user *events, struct timespec __user *timeout, const struct __aio_sigset __user *usig)</x><br>
+ioprio_get<x>(int which, int who)</x><br>
+ioprio_set<x>(int which, int who, int ioprio)</x><br>
+io_setup<x>(unsigned int nr_events, aio_context_t *ctx_idp)</x><br>
+io_submit<x>(aio_context_t ctx_id, long nr, struct iocb **iocbpp)</x><br>
+<lg>io_uring_enter</lg><x>(unsigned int fd, unsigned int to_submit, unsigned int min_complete, unsigned int flags, sigset_t *sig)</x><br>
+<lg>io_uring_register</lg><x>(unsigned int fd, unsigned int opcode, void *arg, unsigned int nr_args)</x><br>
+io_uring_setup<x>(u32 entries, struct io_uring_params *p)</x><br>
 
 # Programs
 <!--
@@ -267,137 +250,123 @@ io_uring_setup(u32 entries, struct io_uring_params *p)
 ###############################################################################
 -->
 
-### Processes
+## Processes
 <!-- processes -->
 
-```c
-execve(const char *pathname, char *const _Nullable argv[], char *const _Nullable envp[])
-execveat(int dirfd, const char *pathname, char *const _Nullable argv[], char *const _Nullable envp[], int flags)
-exit(int status)
-exit_group(int status)
-fork(void)
-getpriority(int which, id_t who)
-process_mrelease(int pidfd, unsigned int flags)
-restart_syscall(void)
-setpriority(int which, id_t who, int prio)
-vfork(void)
-wait4(pid_t pid, int *_Nullable wstatus, int options, struct rusage *_Nullable rusage)
-waitid(idtype_t idtype, id_t id, siginfo_t *infop, int options)
-waitpid(pid_t pid, int *_Nullable wstatus, int options)
-```
+execve<x>(const char *pathname, char *const _Nullable argv[], char *const _Nullable envp[])</x><br>
+execveat<x>(int dirfd, const char *pathname, char *const _Nullable argv[], char *const _Nullable envp[], int flags)</x><br>
+exit<x>(int status)</x><br>
+exit_group<x>(int status)</x><br>
+fork<x>(void)</x><br>
+getpriority<x>(int which, id_t who)</x><br>
+process_mrelease<x>(int pidfd, unsigned int flags)</x><br>
+restart_syscall<x>(void)</x><br>
+setpriority<x>(int which, id_t who, int prio)</x><br>
+vfork<x>(void)</x><br>
+wait4<x>(pid_t pid, int *_Nullable wstatus, int options, struct rusage *_Nullable rusage)</x><br>
+waitid<x>(idtype_t idtype, id_t id, siginfo_t *infop, int options)</x><br>
+waitpid<x>(pid_t pid, int *_Nullable wstatus, int options)</x><br>
 
-### Threads
+## Threads
 <!-- threads -->
 
-```c
-capget(cap_user_header_t hdrp, cap_user_data_t datap)
-capset(cap_user_header_t hdrp, const cap_user_data_t datap)
-get_thread_area(struct user_desc *u_info)
-gettid(void)
-prctl(int option, unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5)
-seccomp(unsigned int operation, unsigned int flags, void *args)
-set_thread_area(struct user_desc *u_info)
-set_tid_address(int *tidptr)
-```
+capget<x>(cap_user_header_t hdrp, cap_user_data_t datap)</x><br>
+capset<x>(cap_user_header_t hdrp, const cap_user_data_t datap)</x><br>
+get_thread_area<x>(struct user_desc *u_info)</x><br>
+gettid<x>(void)</x><br>
+prctl<x>(int option, unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5)</x><br>
+seccomp<x>(unsigned int operation, unsigned int flags, void *args)</x><br>
+set_thread_area<x>(struct user_desc *u_info)</x><br>
+set_tid_address<x>(int *tidptr)</x><br>
 
-Scheduling:
+### Scheduling:
 <!-- threads.scheduling -->
 
-```c
-sched_getaffinity(pid_t pid, size_t cpusetsize, cpu_set_t *mask)
-sched_getattr(pid_t pid, struct sched_attr *attr, unsigned int size, unsigned int flags)
-sched_getparam(pid_t pid, struct sched_param *param)
-sched_get_priority_max(int policy)
-sched_get_priority_min(int policy)
-sched_getscheduler(pid_t pid)
-sched_rr_get_interval(pid_t pid, struct timespec *tp)
-sched_rr_get_interval_time64(pid_t pid, struct timespec *tp)
-sched_setaffinity(pid_t pid, size_t cpusetsize, const cpu_set_t *mask)
-sched_setattr(pid_t pid, struct sched_attr *attr, unsigned int flags)
-sched_setparam(pid_t pid, const struct sched_param *param)
-sched_setscheduler(pid_t pid, int policy, const struct sched_param *para)
-sched_yield(void)
-```
+sched_getaffinity<x>(pid_t pid, size_t cpusetsize, cpu_set_t *mask)</x><br>
+sched_getattr<x>(pid_t pid, struct sched_attr *attr, unsigned int size, unsigned int flags)</x><br>
+sched_getparam<x>(pid_t pid, struct sched_param *param)</x><br>
+sched_get_priority_max<x>(int policy)</x><br>
+sched_get_priority_min<x>(int policy)</x><br>
+sched_getscheduler<x>(pid_t pid)</x><br>
+sched_rr_get_interval<x>(pid_t pid, struct timespec *tp)</x><br>
+sched_rr_get_interval_time64<x>(pid_t pid, struct timespec *tp)</x><br>
+sched_setaffinity<x>(pid_t pid, size_t cpusetsize, const cpu_set_t *mask)</x><br>
+sched_setattr<x>(pid_t pid, struct sched_attr *attr, unsigned int flags)</x><br>
+sched_setparam<x>(pid_t pid, const struct sched_param *param)</x><br>
+sched_setscheduler<x>(pid_t pid, int policy, const struct sched_param *para)</x><br>
+sched_yield<x>(void)</x><br>
 
-### Memory
+## Memory
 <!-- memory -->
 
-```c
-brk(void *addr)
-madvise(void addr[.length], size_t length, int advice)
-membarrier(int cmd, unsigned int flags, int cpu_id)
-mincore(void addr[.length], size_t length, unsigned char *vec)
-mmap(void addr[.length], size_t length, int prot, int flags, int fd, off_t offset)
-mmap2(unsigned long addr, unsigned long length, unsigned long prot, unsigned long flags, unsigned long fd, unsigned long pgoffset)
-mprotect(void addr[.len], size_t len, int prot)
-mlock(const void addr[.len], size_t len)
-mlock2(const void addr[.len], size_t len, unsigned int flags)
-mlockall(int flags)
-mremap(void old_address[.old_size], size_t old_size, size_t new_size, int flags, ... /* void *new_address */)
-msync(void addr[.length], size_t length, int flags)
-munlock(const void addr[.len], size_t len)
-munlockall(void)
-munmap(void addr[.length], size_t length)
-remap_file_pages(void addr[.size], size_t size, int prot, size_t pgoff, int flags)
-```
+brk<x>(void *addr)</x><br>
+madvise<x>(void addr[.length], size_t length, int advice)</x><br>
+membarrier<x>(int cmd, unsigned int flags, int cpu_id)</x><br>
+mincore<x>(void addr[.length], size_t length, unsigned char *vec)</x><br>
+<lg>mmap</lg><x>(void addr[.length], size_t length, int prot, int flags, int fd, off_t offset)</x><br>
+<lg>mmap2</lg><x>(unsigned long addr, unsigned long length, unsigned long prot, unsigned long flags, unsigned long fd, unsigned long pgoffset)</x><br>
+mprotect<x>(void addr[.len], size_t len, int prot)</x><br>
+mlock<x>(const void addr[.len], size_t len)</x><br>
+mlock2<x>(const void addr[.len], size_t len, unsigned int flags)</x><br>
+mlockall<x>(int flags)</x><br>
+mremap<x>(void old_address[.old_size], size_t old_size, size_t new_size, int flags, ... /* void *new_address */)</x><br>
+msync<x>(void addr[.length], size_t length, int flags)</x><br>
+munlock<x>(const void addr[.len], size_t len)</x><br>
+munlockall<x>(void)</x><br>
+munmap<x>(void addr[.length], size_t length)</x><br>
+remap_file_pages<x>(void addr[.size], size_t size, int prot, size_t pgoff, int flags)</x><br>
 
-### Resources
+## Resources
 <!-- resources -->
 
-```c
-getrlimit(int resource, struct rlimit *rlim)
-getrusage(int who, struct rusage *usage)
-prlimit64(pid_t pid, int resource,
-                   const struct rlimit *_Nullable new_limit,
-                   struct rlimit *_Nullable old_limit)
-setrlimit(int resource, const struct rlimit *rlim)
-ugetrlimit(int resource, struct rlimit *rlim)
-```
+getrlimit<x>(int resource, struct rlimit *rlim)</x><br>
+getrusage<x>(int who, struct rusage *usage)</x><br>
+prlimit64<x>(pid_t pid, int resource, const struct rlimit *_Nullable new_limit, struct rlimit *_Nullable old_limit)</x><br>
+setrlimit<x>(int resource, const struct rlimit *rlim)</x><br>
+ugetrlimit<x>(int resource, struct rlimit *rlim)</x><br>
 
-### Identifiers
+## Identifiers
 <!-- identifiers -->
 
-```c
-getegid(void)
-getegid32(void)
-geteuid(void)
-geteuid32(void)
-getgid(void)
-getgid32(void)
-getgroups(int size, gid_t list[])
-getgroups32(int size, gid_t list[])
-getpgid(pid_t pid)
-getpgrp(void)
-getpid(void)
-getppid(void)
-getresgid(gid_t *rgid, gid_t *egid, gid_t *sgid)
-getresgid32(gid_t *rgid, gid_t *egid, gid_t *sgid)
-getresuid(uid_t *ruid, uid_t *euid, uid_t *suid)
-getresuid32(uid_t *ruid, uid_t *euid, uid_t *suid)
-getsid(pid_t pid)
-getuid(void)
-getuid32(void)
-setfsgid(gid_t fsgid)
-setfsgid32(gid_t fsgid)
-setfsuid(uid_t fsuid)
-setfsuid32(uid_t fsuid)
-setgid(gid_t gid)
-setgid32(gid_t gid)
-setgroups(size_t size, const gid_t *_Nullable list)
-setgroups32(size_t size, const gid_t *_Nullable list)
-setpgid(pid_t pid, pid_t pgid)
-setregid(gid_t rgid, gid_t egid)
-setregid32(gid_t rgid, gid_t egid)
-setresgid(gid_t rgid, gid_t egid, gid_t sgid)
-setresgid32(gid_t rgid, gid_t egid, gid_t sgid)
-setresuid(uid_t ruid, uid_t euid, uid_t suid)
-setresuid32(uid_t ruid, uid_t euid, uid_t suid)
-setreuid(uid_t ruid, uid_t euid)
-setreuid32(uid_t ruid, uid_t euid)
-setsid(void)
-setuid(uid_t uid)
-setuid32(uid_t uid)
-```
+getegid<x>(void)</x><br>
+getegid32<x>(void)</x><br>
+geteuid<x>(void)</x><br>
+geteuid32<x>(void)</x><br>
+getgid<x>(void)</x><br>
+getgid32<x>(void)</x><br>
+getgroups<x>(int size, gid_t list[])</x><br>
+getgroups32<x>(int size, gid_t list[])</x><br>
+getpgid<x>(pid_t pid)</x><br>
+getpgrp<x>(void)</x><br>
+getpid<x>(void)</x><br>
+getppid<x>(void)</x><br>
+getresgid<x>(gid_t *rgid, gid_t *egid, gid_t *sgid)</x><br>
+getresgid32<x>(gid_t *rgid, gid_t *egid, gid_t *sgid)</x><br>
+getresuid<x>(uid_t *ruid, uid_t *euid, uid_t *suid)</x><br>
+getresuid32<x>(uid_t *ruid, uid_t *euid, uid_t *suid)</x><br>
+getsid<x>(pid_t pid)</x><br>
+getuid<x>(void)</x><br>
+getuid32<x>(void)</x><br>
+setfsgid<x>(gid_t fsgid)</x><br>
+setfsgid32<x>(gid_t fsgid)</x><br>
+setfsuid<x>(uid_t fsuid)</x><br>
+setfsuid32<x>(uid_t fsuid)</x><br>
+setgid<x>(gid_t gid)</x><br>
+setgid32<x>(gid_t gid)</x><br>
+setgroups<x>(size_t size, const gid_t *_Nullable list)</x><br>
+setgroups32<x>(size_t size, const gid_t *_Nullable list)</x><br>
+setpgid<x>(pid_t pid, pid_t pgid)</x><br>
+setregid<x>(gid_t rgid, gid_t egid)</x><br>
+setregid32<x>(gid_t rgid, gid_t egid)</x><br>
+setresgid<x>(gid_t rgid, gid_t egid, gid_t sgid)</x><br>
+setresgid32<x>(gid_t rgid, gid_t egid, gid_t sgid)</x><br>
+setresuid<x>(uid_t ruid, uid_t euid, uid_t suid)</x><br>
+setresuid32<x>(uid_t ruid, uid_t euid, uid_t suid)</x><br>
+setreuid<x>(uid_t ruid, uid_t euid)</x><br>
+setreuid32<x>(uid_t ruid, uid_t euid)</x><br>
+setsid<x>(void)</x><br>
+setuid<x>(uid_t uid)</x><br>
+setuid32<x>(uid_t uid)</x><br>
 
 # Inter Process Communication
 <!-- 
@@ -406,79 +375,65 @@ setuid32(uid_t uid)
 ###############################################################################
 -->
 
-### Message Queue
+## Message Queue
 <!-- message queue -->
 
-```c
-mq_getsetattr(mqd_t mqdes, const struct mq_attr *newattr, struct mq_attr *oldattr)
-mq_notify(mqd_t mqdes, const struct sigevent *sevp)
-mq_open(const char *name, int oflag)
-mq_timedreceive(mqd_t mqdes, char *restrict msg_ptr[.msg_len], size_t msg_len, unsigned int *restrict msg_prio, const struct timespec *restrict abs_timeout)
-mq_timedreceive_time64(mqd_t mqdes, char *restrict msg_ptr[.msg_len], size_t msg_len, unsigned int *restrict msg_prio, const struct timespec *restrict abs_timeout)
-mq_timedsend(mqd_t mqdes, const char msg_ptr[.msg_len], size_t msg_len, unsigned int msg_prio, const struct timespec *abs_timeout)
-mq_timedsend_time64(mqd_t mqdes, const char msg_ptr[.msg_len], size_t msg_len, unsigned int msg_prio, const struct timespec *abs_timeout)
-mq_unlink(const char *name)
-```
+mq_getsetattr<x>(mqd_t mqdes, const struct mq_attr *newattr, struct mq_attr *oldattr)</x><br>
+mq_notify<x>(mqd_t mqdes, const struct sigevent *sevp)</x><br>
+mq_open<x>(const char *name, int oflag)</x><br>
+mq_timedreceive<x>(mqd_t mqdes, char *restrict msg_ptr[.msg_len], size_t msg_len, unsigned int *restrict msg_prio, const struct timespec *restrict abs_timeout)</x><br>
+mq_timedreceive_time64<x>(mqd_t mqdes, char *restrict msg_ptr[.msg_len], size_t msg_len, unsigned int *restrict msg_prio, const struct timespec *restrict abs_timeout)</x><br>
+mq_timedsend<x>(mqd_t mqdes, const char msg_ptr[.msg_len], size_t msg_len, unsigned int msg_prio, const struct timespec *abs_timeout)</x><br>
+mq_timedsend_time64<x>(mqd_t mqdes, const char msg_ptr[.msg_len], size_t msg_len, unsigned int msg_prio, const struct timespec *abs_timeout)</x><br>
+mq_unlink<x>(const char *name)</x><br>
 
-### System V
+## System V
 <!-- System V -->
 
-```c
-ipc(unsigned int call, int first, unsigned long second, unsigned long third, void *ptr, long fifth)
-```
+ipc<x>(unsigned int call, int first, unsigned long second, unsigned long third, void *ptr, long fifth)</x><br>
 
-Message Queue:
+### Message Queue:
 <!-- System V.message queue -->
 
-```c
-msgctl(int msqid, int cmd, struct msqid_ds *buf)
-msgget(key_t key, int msgflg)
-msgrcv(int msqid, void msgp[.msgsz], size_t msgsz, long msgtyp, int msgflg)
-msgsnd(int msqid, const void msgp[.msgsz], size_t msgsz, int msgflg)
-```
+msgctl<x>(int msqid, int cmd, struct msqid_ds *buf)</x><br>
+msgget<x>(key_t key, int msgflg)</x><br>
+msgrcv<x>(int msqid, void msgp[.msgsz], size_t msgsz, long msgtyp, int msgflg)</x><br>
+msgsnd<x>(int msqid, const void msgp[.msgsz], size_t msgsz, int msgflg)</x><br>
 
-Semaphores:
+### Semaphores:
 <!-- System V.semaphore -->
 
-```c
-semctl(int semid, int semnum, int cmd, ...)
-semget(key_t key, int nsems, int semflg)
-semop(int semid, struct sembuf *sops, size_t nsops)
-semtimedop(int semid, struct sembuf *sops, size_t nsops, const struct timespec *_Nullable timeout)
-semtimedop_time64(int semid, struct sembuf *sops, size_t nsops, const struct timespec *_Nullable timeout)
-```
+semctl<x>(int semid, int semnum, int cmd, ...)</x><br>
+semget<x>(key_t key, int nsems, int semflg)</x><br>
+semop<x>(int semid, struct sembuf *sops, size_t nsops)</x><br>
+semtimedop<x>(int semid, struct sembuf *sops, size_t nsops, const struct timespec *_Nullable timeout)</x><br>
+semtimedop_time64<x>(int semid, struct sembuf *sops, size_t nsops, const struct timespec *_Nullable timeout)</x><br>
 
-Shared Memory:
+### Shared Memory:
 <!-- System V.shared memory -->
 
-```c
-shmat(int shmid, const void *_Nullable shmaddr, int shmflg)
-shmctl(int shmid, int cmd, struct shmid_ds *buf)
-shmdt(const void *shmaddr)
-shmget(key_t key, size_t size, int shmflg)
-```
+shmat<x>(int shmid, const void *_Nullable shmaddr, int shmflg)</x><br>
+shmctl<x>(int shmid, int cmd, struct shmid_ds *buf)</x><br>
+shmdt<x>(const void *shmaddr)</x><br>
+shmget<x>(key_t key, size_t size, int shmflg)</x><br>
 
-### Pipes
+## Pipes
 <!-- pipes -->
 
-```c
-pipe(int pipefd[2])
-pipe2(int pipefd[2], int flags)
-splice(int fd_in, off64_t *_Nullable off_in, int fd_out, off64_t *_Nullable off_out, size_t len, unsigned int flags)
-tee(int fd_in, int fd_out, size_t len, unsigned int flags)
-vmsplice(int fd, const struct iovec *iov, size_t nr_segs, unsigned int flags)
-```
+pipe<x>(int pipefd[2])</x><br>
+pipe2<x>(int pipefd[2], int flags)</x><br>
+<lg>splice</lg><x>(int fd_in, off64_t *_Nullable off_in, int fd_out, off64_t *_Nullable off_out, size_t len, unsigned int flags)</x><br>
+<lg>tee</lg><x>(int fd_in, int fd_out, size_t len, unsigned int flags)</x><br>
+<lg>vmsplice</lg><x>(int fd, const struct iovec *iov, size_t nr_segs, unsigned int flags)</x><br>
 
-### Futexes
+## Futexes
 <!-- futexes -->
 
-```c
-futex(uint32_t *uaddr, int futex_op, uint32_t val, const struct timespec *timeout,   /* or: uint32_t val2 */ uint32_t *uaddr2, uint32_t val3)
-futex_time64(uint32_t *uaddr, int futex_op, uint32_t val, const struct timespec *timeout,   /* or: uint32_t val2 */ uint32_t *uaddr2, uint32_t val3)
-futex_waitv(struct futex_waitv *waiters, unsigned int nr_futexes, unsigned int flags, struct timespec *timo)
-get_robust_list(int pid, struct robust_list_head **head_ptr, size_t *len_ptr)
-set_robust_list(struct robust_list_head *head, size_t len)
-```
+futex<x>(uint32_t *uaddr, int futex_op, uint32_t val, const struct timespec *timeout,   /* or: uint32_t val2 */ uint32_t *uaddr2, uint32_t val3)</x><br>
+futex_time64<x>(uint32_t *uaddr, int futex_op, uint32_t val, const struct timespec *timeout,   /* or: uint32_t val2 */ uint32_t *uaddr2, uint32_t val3)</x><br>
+futex_waitv<x>(struct futex_waitv *waiters, unsigned int nr_futexes, unsigned int flags, struct timespec *timo)</x><br>
+get_robust_list<x>(int pid, struct robust_list_head **head_ptr, size_t *len_ptr)</x><br>
+set_robust_list<x>(struct robust_list_head *head, size_t len)</x><br>
 
 # Operations on File Descriptors
 <!-- 
@@ -487,48 +442,42 @@ set_robust_list(struct robust_list_head *head, size_t len)
 ###############################################################################
 -->
 
-### Select/poll/epoll
+## Select/poll/epoll
 <!-- select/poll/epoll -->
 
-```c
-epoll_create(int size)
-epoll_create1(int flags)
-epoll_ctl(int epfd, int op, int fd, struct epoll_event *_Nullable event)
-epoll_ctl_old(int epfd, int op, struct epoll_event *_Nullable event)
-epoll_pwait(int epfd, struct epoll_event *events, int maxevents, int timeout, const sigset_t *_Nullable sigmask)
-epoll_pwait2(int epfd, struct epoll_event *events, int maxevents, const struct timespec *_Nullable timeout, const sigset_t *_Nullable sigmask)
-epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout)
-epoll_wait_old(int epfd, struct epoll_event *events, int maxevents)
-_newselect(int nfds, fd_set *_Nullable restrict readfds, fd_set *_Nullable restrict writefds, fd_set *_Nullable restrict exceptfds, struct timeval *_Nullable restrict timeout)
-poll(struct pollfd *fds, nfds_t nfds, int timeout)
-ppoll(struct pollfd *fds, nfds_t nfds, const struct timespec *_Nullable tmo_p, const sigset_t *_Nullable sigmask)
-ppoll_time64(struct pollfd *fds, nfds_t nfds, const struct timespec *_Nullable tmo_p, const sigset_t *_Nullable sigmask)
-pselect6(int nfds, fd_set *_Nullable restrict readfds, fd_set *_Nullable restrict writefds, fd_set *_Nullable restrict exceptfds, const struct timespec *_Nullable restrict timeout, const sigset_t *_Nullable restrict sigmask)
-pselect6_time64(int nfds, fd_set *_Nullable restrict readfds, fd_set *_Nullable restrict writefds, fd_set *_Nullable restrict exceptfds, const struct timespec *_Nullable restrict timeout, const sigset_t *_Nullable restrict sigmask)
-select(int nfds, fd_set *_Nullable restrict readfds, fd_set *_Nullable restrict writefds, fd_set *_Nullable restrict exceptfds, struct timeval *_Nullable restrict timeout)
-```
+epoll_create<x>(int size)</x><br>
+epoll_create1<x>(int flags)</x><br>
+<lg>epoll_ctl</lg><x>(int epfd, int op, int fd, struct epoll_event *_Nullable event)</x><br>
+<lg>epoll_ctl_old</lg><x>(int epfd, int op, struct epoll_event *_Nullable event)</x><br>
+<lg>epoll_pwait</lg><x>(int epfd, struct epoll_event *events, int maxevents, int timeout, const sigset_t *_Nullable sigmask)</x><br>
+<lg>epoll_pwait2</lg><x>(int epfd, struct epoll_event *events, int maxevents, const struct timespec *_Nullable timeout, const sigset_t *_Nullable sigmask)</x><br>
+<lg>epoll_wait</lg><x>(int epfd, struct epoll_event *events, int maxevents, int timeout)</x><br>
+<lg>epoll_wait_old</lg><x>(int epfd, struct epoll_event *events, int maxevents)</x><br>
+<lg>_newselect</lg><x>(int nfds, fd_set *_Nullable restrict readfds, fd_set *_Nullable restrict writefds, fd_set *_Nullable restrict exceptfds, struct timeval *_Nullable restrict timeout)</x><br>
+<lg>poll</lg><x>(struct pollfd *fds, nfds_t nfds, int timeout)</x><br>
+<lg>ppoll</lg><x>(struct pollfd *fds, nfds_t nfds, const struct timespec *_Nullable tmo_p, const sigset_t *_Nullable sigmask)</x><br>
+<lg>ppoll_time64</lg><x>(struct pollfd *fds, nfds_t nfds, const struct timespec *_Nullable tmo_p, const sigset_t *_Nullable sigmask)</x><br>
+<lg>pselect6</lg><x>(int nfds, fd_set *_Nullable restrict readfds, fd_set *_Nullable restrict writefds, fd_set *_Nullable restrict exceptfds, const struct timespec *_Nullable restrict timeout, const sigset_t *_Nullable restrict sigmask)</x><br>
+<lg>pselect6_time64</lg><x>(int nfds, fd_set *_Nullable restrict readfds, fd_set *_Nullable restrict writefds, fd_set *_Nullable restrict exceptfds, const struct timespec *_Nullable restrict timeout, const sigset_t *_Nullable restrict sigmask)</x><br>
+<lg>select</lg><x>(int nfds, fd_set *_Nullable restrict readfds, fd_set *_Nullable restrict writefds, fd_set *_Nullable restrict exceptfds, struct timeval *_Nullable restrict timeout)</x><br>
 
-### Read
+## Read
 <!-- read -->
 
-```c
-pread64(int fd, void buf[.count], size_t count, off_t offset)
-preadv(int fd, const struct iovec *iov, int iovcnt, off_t offset)
-preadv2(int fd, const struct iovec *iov, int iovcnt, off_t offset, int flags)
-read(int fd, void buf[.count], size_t count)
-readv(int fd, const struct iovec *iov, int iovcnt)
-```
+<lg>pread64</lg><x>(int fd, void buf[.count], size_t count, off_t offset)</x><br>
+<lg>preadv</lg><x>(int fd, const struct iovec *iov, int iovcnt, off_t offset)</x><br>
+<lg>preadv2</lg><x>(int fd, const struct iovec *iov, int iovcnt, off_t offset, int flags)</x><br>
+<lg>read</lg><x>(int fd, void buf[.count], size_t count)</x><br>
+<lg>readv</lg><x>(int fd, const struct iovec *iov, int iovcnt)</x><br>
 
-### Write
+## Write
 <!-- write -->
 
-```c
-pwrite64(int fd, const void buf[.count], size_t count, off_t offset)
-pwritev(int fd, const struct iovec *iov, int iovcnt, off_t offset)
-pwritev2(int fd, const struct iovec *iov, int iovcnt, off_t offset, int flags)
-write(int fd, const void buf[.count], size_t count)
-writev(int fd, const struct iovec *iov, int iovcn)
-```
+<lg>pwrite64</lg><x>(int fd, const void buf[.count], size_t count, off_t offset)</x><br>
+<lg>pwritev</lg><x>(int fd, const struct iovec *iov, int iovcnt, off_t offset)</x><br>
+<lg>pwritev2</lg><x>(int fd, const struct iovec *iov, int iovcnt, off_t offset, int flags)</x><br>
+<lg>write</lg><x>(int fd, const void buf[.count], size_t count)</x><br>
+<lg>writev</lg><x>(int fd, const struct iovec *iov, int iovcn)</x><br>
 
 # Miscellaneous
 <!-- 
@@ -537,16 +486,14 @@ writev(int fd, const struct iovec *iov, int iovcn)
 ###############################################################################
 -->
 
-```c
-getcpu(unsigned int *_Nullable cpu, unsigned int *_Nullable node)
-getrandom(void buf[.buflen], size_t buflen, unsigned int flags)
-landlock_add_rule(int ruleset_fd, enum landlock_rule_type rule_type, const void *rule_attr, uint32_t flags)
-landlock_create_ruleset(const struct landlock_ruleset_attr *attr, size_t size , uint32_t flags)
-landlock_restrict_self(int ruleset_fd, uint32_t flags)
-pkey_alloc(unsigned int flags, unsigned int access_rights)
-pkey_free(int pkey)
-pkey_mprotect(void addr[.len], size_t len, int prot, int pkey)
-rseq(struct rseq *rseq, uint32_t rseq_len, int flags, uint32_t sig )
-sysinfo(struct sysinfo *info)
-uname(struct utsname *buf)
-```
+getcpu<x>(unsigned int *_Nullable cpu, unsigned int *_Nullable node)</x><br>
+getrandom<x>(void buf[.buflen], size_t buflen, unsigned int flags)</x><br>
+<lg>landlock_add_rule</lg><x>(int ruleset_fd, enum landlock_rule_type rule_type, const void *rule_attr, uint32_t flags)</x><br>
+landlock_create_ruleset<x>(const struct landlock_ruleset_attr *attr, size_t size , uint32_t flags)</x><br>
+<lg>landlock_restrict_self</lg><x>(int ruleset_fd, uint32_t flags)</x><br>
+pkey_alloc<x>(unsigned int flags, unsigned int access_rights)</x><br>
+pkey_free<x>(int pkey)</x><br>
+pkey_mprotect<x>(void addr[.len], size_t len, int prot, int pkey)</x><br>
+rseq<x>(struct rseq *rseq, uint32_t rseq_len, int flags, uint32_t sig )</x><br>
+sysinfo<x>(struct sysinfo *info)</x><br>
+uname<x>(struct utsname *buf)</x><br>
