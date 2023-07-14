@@ -12,7 +12,7 @@ function build_lazyisolation {
 	release=${release#*.}
 	minor_version=${release%%.*}
 
-	if [ $major_version -ge 5 ] && [ $minor_version -ge 6 ]; then
+	if [ $major_version -ge 5 ] && [ $minor_version -ge 10 ]; then
         	gcc -c -I"$LAZY_DIR" -o $LIB_DIR/lazyisolation.o $LAZY_DIR/lazyisolation.c
 	    	gcc -c -I"$LAZY_DIR" -o $LIB_DIR/shared_queue.o $LAZY_DIR/shared_queue.c
 	    	gcc -c -I"$LAZY_DIR" -o $LIB_DIR/filters.o $LAZY_DIR/filters.c
@@ -47,6 +47,7 @@ function build_ni {
         --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.jdk=ALL-UNNAMED \
         --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.hosted=ALL-UNNAMED \
         --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.hosted.c=ALL-UNNAMED \
+        --features=org.graalvm.argo.graalvisor.sandboxing.NativeSandboxInterfaceFeature \
         -DGraalVisorHost \
         -Dcom.oracle.svm.graalvisor.libraryPath=$DIR/build/resources/main/com.oracle.svm.graalvisor.headers \
         $LANGS \
