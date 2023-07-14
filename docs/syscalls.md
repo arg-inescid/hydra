@@ -41,7 +41,7 @@ times<x>(struct tms \*buf)</x><br>
 ## Network
 <!-- network -->
 
-<span style="color:lightgreen">accept</span><x>(int sockfd, struct sockaddr \*_Nullable restrict addr, socklen_t \*_Nullable restrict addrlen)</x><br>
+${\color{lightgreen}accept}$<br>
 <lg>accept</lg><x>(int sockfd, struct sockaddr \*_Nullable restrict addr, socklen_t \*_Nullable restrict addrlen)</x><br>
 <lg>accept4</lg><x>(int sockfd, struct sockaddr \*_Nullable restrict addr, socklen_t \*_Nullable restrict addrlen, int flags)</x><br>
 <lg>bind</lg><x>(int sockfd, const struct sockaddr \*addr, socklen_t addrlen)</x><br>
