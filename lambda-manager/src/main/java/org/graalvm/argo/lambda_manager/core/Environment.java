@@ -33,6 +33,8 @@ public class Environment {
     public static final String MANAGER_LOG_FILENAME = Paths.get(MANAGER_LOGS, "lambda_manager.log").toString();
     public static final String CREATE_TAPS_FILENAME = Paths.get(MANAGER_LOGS, "create_taps.log").toString();
     public static final String REMOVE_TAPS_FILENAME = Paths.get(MANAGER_LOGS, "remove_taps.log").toString();
+    public static final String PREPARE_DEVMAPPER_BASE_FILENAME = Paths.get(MANAGER_LOGS, "prepare_devmapper_base.log").toString();
+    public static final String DELETE_DEVMAPPER_BASE_FILENAME = Paths.get(MANAGER_LOGS, "delete_devmapper_base.log").toString();
 
     // Graalvisor runtime identifiers.
     public static final String GRAALVISOR_RUNTIME = "graalvisor";

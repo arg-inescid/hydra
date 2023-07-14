@@ -12,12 +12,18 @@ VM_IMAGE=${10}
 LAMBDA_HOME="$CODEBASE_HOME"/"$LAMBDA_NAME"
 
 mkdir "$LAMBDA_HOME" &> /dev/null
-cp "$MANAGER_HOME"/../images/$VM_IMAGE/$VM_IMAGE.img "$LAMBDA_HOME"
+
+# Instead of just copying an image, we create an overlay for it to use devmapper.
+bash "$DIR"/devmapper/prepare_overlay_image.sh \
+    "$VM_IMAGE" \
+    "$MANAGER_HOME"/../images/"$VM_IMAGE"/"$VM_IMAGE".img \
+    "$LAMBDA_NAME" \
+    "$LAMBDA_HOME"/"$VM_IMAGE".img
 
 cd "$LAMBDA_HOME"
 bash $NIUK_HOME/run_niuk.sh \
 	--vmm firecracker \
-	--disk "$LAMBDA_HOME"/$VM_IMAGE.img \
+	--disk /dev/mapper/"$LAMBDA_NAME" \
 	--kernel "$RES_HOME"/hello-vmlinux.bin \
 	--memory "$LAMBDA_MEMORY" \
 	--ip "$LAMBDA_IP" \

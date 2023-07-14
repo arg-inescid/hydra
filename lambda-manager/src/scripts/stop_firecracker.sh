@@ -9,46 +9,62 @@ if [ -z "$LAMBDA_HOME" ]; then
   exit 1
 fi
 
-LAMBDA_MODE=$2
+LAMBDA_NAME=$2
+if [ -z "$LAMBDA_NAME" ]; then
+  echo "Lambda name is not present."
+  exit 1
+fi
+
+LAMBDA_MODE=$3
 if [ -z "$LAMBDA_MODE" ]; then
   echo "Lambda mode is not present."
   exit 1
 fi
 
-LAMBDA_IP=$3
+LAMBDA_IP=$4
 if [ -z "$LAMBDA_IP" ]; then
   echo "Lambda ip is not present."
   exit 1
 fi
 
-LAMBDA_PORT=$4
+LAMBDA_PORT=$5
 if [ -z "$LAMBDA_PORT" ]; then
   echo "Lambda port is not present."
   exit 1
 fi
 
-VMM_TAP_NAME=$5
+VMM_TAP_NAME=$6
 if [ -z "$VMM_TAP_NAME" ]; then
   echo "Lambda tap is not present."
   exit 1
 fi
 
-LAMBDA_ID=$6
+LAMBDA_ID=$7
 
 function stop_firecracker {
   LAMBDA_PID=$(sudo fuser /tmp/$VMM_TAP_NAME.socket 2>&1 | grep /tmp/$VMM_TAP_NAME.socket | awk '{print $2}')
   sudo kill $LAMBDA_PID
-  # Remove VM image to save disk space.
-  rm "$LAMBDA_HOME"/*.img
+  # Sleep to ensure that devmapper resources are released.
+  sleep 1
+  # Cleanup overlay.
+  sudo bash "$DIR"/devmapper/delete_overlay_image.sh "$LAMBDA_NAME" "$LAMBDA_HOME"/*.img
 }
 
 function stop_firecracker_snapshot {
   FIRECRACKER_ID=lambda"$LAMBDA_ID"id
   LAMBDA_PID=$(ps aux | grep $FIRECRACKER_ID | grep firecracker | awk '{print $2}')
   sudo kill $LAMBDA_PID
+  # Sleep to ensure that devmapper resources are released.
+  sleep 1
   # Delete namespace.
   sudo ip netns delete ns$LAMBDA_ID
-  # Remove VM files to save disk space.
+  # Cleanup overlay.
+  sudo umount "$LAMBDA_HOME"/chroot/root/*.img
+  sudo umount "$LAMBDA_HOME"/chroot/root/hello-vmlinux.bin
+  sudo umount "$LAMBDA_HOME"/chroot/root/snapshot_file
+  sudo umount "$LAMBDA_HOME"/chroot/root/mem_file
+  sudo bash "$DIR"/devmapper/delete_overlay_image.sh "$LAMBDA_NAME" "$LAMBDA_HOME"/chroot/root/*.img
+  # Remove other unused files.
   rm -rf "$LAMBDA_HOME"/chroot
 }
 

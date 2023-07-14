@@ -76,18 +76,39 @@ function gen_vmns_veth_ip {
     echo "$byte1.$byte2.$byte3.$byte4"
 }
 
+function bind_mount {
+  SRC=$1
+  DST=$2
+  MOUNT_MODE=$3
+  sudo touch "$DST"
+  sudo mount --bind "$SRC" "$DST"
+  if [ "$MOUNT_MODE" == "read-only" ]; then
+    sudo mount -o bind,remount,ro "$DST"
+  fi
+}
+
 function load_snapshot {
     # Snapshot file paths (files inside the chroot).
     VM_SNAP_FILE=snapshot_file
     VM_SNAP_MEM=mem_file
 
-    SNAPSHOT_DIR=$DIR/../../../../benchmarks/virtualization/snapshots/$VM_IMAGE/172.18.0.3/root
+    SNAPSHOT_DIR=$DIR/../../../images/snapshots/$VM_IMAGE/172.18.0.3/root
 
-    # Copy snapshot (and disk) from the snapshot directory.
-    sudo cp -r $SNAPSHOT_DIR/$VM_IMAGE.img     $VM_DIR
-    sudo cp -r $SNAPSHOT_DIR/hello-vmlinux.bin $VM_DIR
-    sudo cp -r $SNAPSHOT_DIR/$VM_SNAP_FILE     $VM_DIR
-    sudo cp -r $SNAPSHOT_DIR/$VM_SNAP_MEM      $VM_DIR
+    # Instead of just copying an image, we create an overlay for it to use devmapper.
+    bash "$DIR"/devmapper/prepare_overlay_image.sh \
+        "$VM_IMAGE" \
+        "$SNAPSHOT_DIR"/"$VM_IMAGE".img \
+        "$LAMBDA_NAME" \
+        "$VM_DIR"/"$VM_IMAGE".img.overlay
+
+    # Creating a bind mount for disk image to work with devmapper.
+    bind_mount /dev/mapper/"$LAMBDA_NAME" "$VM_DIR"/"$VM_IMAGE".img
+
+    # Bind mounting the kernel file to the VM directory.
+    bind_mount "$SNAPSHOT_DIR"/hello-vmlinux.bin "$VM_DIR"/hello-vmlinux.bin read-only
+    # Bind mounting the snapshot files to the VM directory.
+    bind_mount "$SNAPSHOT_DIR"/"$VM_SNAP_FILE" "$VM_DIR"/"$VM_SNAP_FILE" read-only
+    bind_mount "$SNAPSHOT_DIR"/"$VM_SNAP_MEM" "$VM_DIR"/"$VM_SNAP_MEM" read-only
 
     sudo curl --unix-socket $VM_SOCKET -i \
         -X PUT "http://localhost/snapshot/load" \

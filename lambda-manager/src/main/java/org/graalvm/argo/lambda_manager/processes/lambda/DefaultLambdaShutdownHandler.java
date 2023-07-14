@@ -47,7 +47,7 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
         String lambdaMode = lambda.getExecutionMode().toString();
         // Append lambda ID to command only if lambda was restored from snapshot (to terminate it properly).
         String lambdaId = lambdaType == LambdaType.VM_FIRECRACKER_SNAPSHOT ? String.valueOf(lambda.getLambdaID()) : "";
-        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_firecracker.sh", lambdaPath, lambdaMode,
+        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_firecracker.sh", lambdaPath, lambda.getLambdaName(), lambdaMode,
                 lambda.getConnection().ip, String.valueOf(lambda.getConnection().port), lambda.getConnection().tap, lambdaId).start();
         p.waitFor();
         if (p.exitValue() != 0) {

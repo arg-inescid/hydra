@@ -8,11 +8,14 @@ import org.graalvm.argo.lambda_manager.exceptions.user.ErrorDuringCreatingConnec
 import org.graalvm.argo.lambda_manager.function_storage.FunctionStorage;
 import org.graalvm.argo.lambda_manager.memory.FixedMemoryPool;
 import org.graalvm.argo.lambda_manager.memory.MemoryPool;
+import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
+import org.graalvm.argo.lambda_manager.processes.devmapper.PrepareDevmapperBase;
 import org.graalvm.argo.lambda_manager.processes.lambda.factory.AbstractLambdaFactory;
 import org.graalvm.argo.lambda_manager.processes.lambda.factory.ContainerLambdaFactory;
 import org.graalvm.argo.lambda_manager.processes.lambda.factory.FirecrackerCtrLambdaFactory;
 import org.graalvm.argo.lambda_manager.processes.lambda.factory.FirecrackerLambdaFactory;
 import org.graalvm.argo.lambda_manager.processes.lambda.factory.FirecrackerSnapshotLambdaFactory;
+import org.graalvm.argo.lambda_manager.processes.taps.CreateTaps;
 import org.graalvm.argo.lambda_manager.schedulers.Scheduler;
 import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
 import org.graalvm.argo.lambda_manager.utils.Messages;
@@ -219,7 +222,20 @@ public class ArgumentStorage {
         prepareLogging(lambdaManagerConfiguration.getManagerConsole());
         prepareConfiguration(lambdaManagerConfiguration.getManagerState());
         prepareConnectionPool(beanContext, lambdaManagerConfiguration.getGateway());
+        if (lambdaType == LambdaType.VM_FIRECRACKER || lambdaType == LambdaType.VM_FIRECRACKER_SNAPSHOT) {
+            prepareDevmapper();
+        }
         ElapseTimer.init(); // Start internal timer.
+    }
+
+    private void prepareDevmapper() {
+        try {
+            ProcessBuilder prepareDevmapperBase = new PrepareDevmapperBase().build();
+            prepareDevmapperBase.start();
+            prepareDevmapperBase.join();
+        } catch (InterruptedException e) {
+            throw new IllegalStateException("Could not prepare devmapper base: " + e);
+        }
     }
 
     public static void initializeLambdaManager(LambdaManagerConfiguration lambdaManagerConfiguration, BeanContext beanContext)

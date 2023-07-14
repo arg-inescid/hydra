@@ -2,6 +2,7 @@ package org.graalvm.argo.lambda_manager.core;
 
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
+import org.graalvm.argo.lambda_manager.processes.devmapper.DeleteDevmapperBase;
 import org.graalvm.argo.lambda_manager.processes.lambda.DefaultLambdaShutdownHandler;
 import org.graalvm.argo.lambda_manager.processes.taps.RemoveTapsFromPool;
 import org.graalvm.argo.lambda_manager.processes.taps.RemoveTapsOutsidePool;
@@ -34,6 +35,12 @@ public class ShutdownHook implements ApplicationEventListener<ApplicationShutdow
         removeTapsOutsidePoolWorker.join();
     }
 
+    private void deleteDevmapperBase() throws InterruptedException {
+        ProcessBuilder deleteDevmapperBase = new DeleteDevmapperBase().build();
+        deleteDevmapperBase.start();
+        deleteDevmapperBase.join();
+    }
+
     private void shutdownLambdas() {
         for (Lambda lambda : LambdaManager.lambdas) {
             new DefaultLambdaShutdownHandler(lambda).run();
@@ -60,6 +67,10 @@ public class ShutdownHook implements ApplicationEventListener<ApplicationShutdow
                 shutdownLambdas();
                 removeTapsFromPool();
                 removeTapsOutsidePool();
+                LambdaType lambdaType = Configuration.argumentStorage.getLambdaType();
+                if (lambdaType == LambdaType.VM_FIRECRACKER || lambdaType == LambdaType.VM_FIRECRACKER_SNAPSHOT) {
+                    deleteDevmapperBase();
+                }
                 Configuration.argumentStorage.cleanupStorage();
             }
         } catch (InterruptedException interruptedException) {
