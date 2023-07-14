@@ -44,6 +44,9 @@ function build_ni {
         --initialize-at-run-time=com.oracle.svm.graalvisor.utils.JsonUtils \
         $LINKER_OPTIONS \
         -H:CLibraryPath=$LIB_DIR \
+        --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.jdk=ALL-UNNAMED \
+        --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.hosted=ALL-UNNAMED \
+        --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.hosted.c=ALL-UNNAMED \
         -DGraalVisorHost \
         -Dcom.oracle.svm.graalvisor.libraryPath=$DIR/build/resources/main/com.oracle.svm.graalvisor.headers \
         $LANGS \
@@ -57,6 +60,12 @@ function build_ni {
 if [ -z "$JAVA_HOME" ]
 then
     echo "Please set JAVA_HOME first. It should be a GraalVM with native-image available."
+    exit 1
+fi
+
+if [ -z "$ARGO_HOME" ]
+then
+    echo "Please set ARGO_HOME first. It should point to a checkout of github.com/graalvm/argo."
     exit 1
 fi
 
