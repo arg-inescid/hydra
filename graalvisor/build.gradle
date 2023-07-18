@@ -45,8 +45,8 @@ task javaProxy(type: ShadowJar) {
 }
 
 dependencies {
-    compileOnly 'org.graalvm.sdk:graal-sdk:22.1.0'
-    compileOnly 'org.graalvm.nativeimage:svm:22.1.0'
+    compileOnly 'org.graalvm.sdk:graal-sdk:23.0.0'
+    compileOnly 'org.graalvm.nativeimage:svm:23.0.0'
     implementation 'com.fasterxml.jackson.jr:jackson-jr-objects:2.13.0-rc2'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.0'
     implementation(files('../graalvisor-lib/build/libs/graalvisor-lib-1.0-host.jar'))
