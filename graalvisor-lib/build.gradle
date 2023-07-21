@@ -41,5 +41,5 @@ task hostLib(type: ShadowJar) {
 dependencies {
     implementation 'com.fasterxml.jackson.jr:jackson-jr-objects:2.13.0-rc2'
     compileOnly 'org.graalvm.sdk:graal-sdk:23.0.0'
-    compileOnly group: 'org.graalvm.nativeimage', name: 'svm', version: '23.0.0'
+    compileOnly 'org.graalvm.nativeimage:svm:23.0.0'
 }
