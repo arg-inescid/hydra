@@ -22,6 +22,16 @@ public class GraalVisor {
         ObjectHandle invoke(IsolateThread thread, CCharPointer cString);
     }
 
+    public interface HostObtainDBConnectionFunctionPointer extends CFunctionPointer {
+        @InvokeCFunctionPointer
+        ObjectHandle invoke(IsolateThread thread, CCharPointer connectionUrl, CCharPointer user, CCharPointer password);
+    }
+
+    public interface HostReturnDBConnectionFunctionPointer extends CFunctionPointer {
+        @InvokeCFunctionPointer
+        int invoke(IsolateThread thread);
+    }
+
     @CStruct("graal_visor_t")
     public interface GraalVisorStruct extends PointerBase {
 
@@ -30,6 +40,18 @@ public class GraalVisor {
 
         @CField("f_host_receive_string")
         void setHostReceiveStringFunction(HostReceiveStringFunctionPointer printFunction);
+
+        @CField("f_host_obtain_db_connection")
+        HostObtainDBConnectionFunctionPointer getHostObtainDBConnectionFunction();
+
+        @CField("f_host_obtain_db_connection")
+        void setHostObtainDBConnectionFunction(HostObtainDBConnectionFunctionPointer obtainConnectionFunction);
+
+        @CField("f_host_return_db_connection")
+        HostReturnDBConnectionFunctionPointer getHostReturnDBConnectionFunction();
+
+        @CField("f_host_return_db_connection")
+        void setHostReturnDBConnectionFunction(HostReturnDBConnectionFunctionPointer returnConnectionFunction);
     }
 
     static class GraalVisorAPIDirectives implements CContext.Directives {

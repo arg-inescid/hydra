@@ -19,6 +19,16 @@ public class GraalVisorImpl {
                     "hostReceiveString",
                     IsolateThread.class, CCharPointer.class);
 
+    private static final CEntryPointLiteral<GraalVisor.HostObtainDBConnectionFunctionPointer> hostObtainDBConnectionFunctionPointer = CEntryPointLiteral.create(
+                    GraalVisorImpl.class,
+                    "hostObtainDBConnection",
+                    IsolateThread.class, CCharPointer.class, CCharPointer.class, CCharPointer.class);
+
+    private static final CEntryPointLiteral<GraalVisor.HostReturnDBConnectionFunctionPointer> hostReturnDBConnectionFunctionPointer = CEntryPointLiteral.create(
+                    GraalVisorImpl.class,
+                    "hostReturnDBConnection",
+                    IsolateThread.class);
+
     private static GraalVisor.GraalVisorStruct graalVisorStructHost;
 
     public synchronized static GraalVisor.GraalVisorStruct getGraalVisorHostDescriptor() {
@@ -26,6 +36,8 @@ public class GraalVisorImpl {
             /* Note that malloc can only be invoked during runtime! */
             graalVisorStructHost = malloc(SizeOf.get(GraalVisor.GraalVisorStruct.class));
             graalVisorStructHost.setHostReceiveStringFunction(hostReceiveStringFunctionPointer.getFunctionPointer());
+            graalVisorStructHost.setHostObtainDBConnectionFunction(hostObtainDBConnectionFunctionPointer.getFunctionPointer());
+            graalVisorStructHost.setHostReturnDBConnectionFunction(hostReturnDBConnectionFunctionPointer.getFunctionPointer());
         }
         return graalVisorStructHost;
     }
@@ -35,5 +47,24 @@ public class GraalVisorImpl {
     private static ObjectHandle hostReceiveString(@CEntryPoint.IsolateThreadContext IsolateThread hostThread, CCharPointer cString) {
         String targetString = CTypeConversion.toJavaString(cString);
         return ObjectHandles.getGlobal().create(targetString);
+    }
+
+    @SuppressWarnings("unused")
+    @CEntryPoint(include = AsGraalVisorHost.class)
+    private static ObjectHandle hostObtainDBConnection(@CEntryPoint.IsolateThreadContext IsolateThread hostThread, CCharPointer сConnectionUrl, CCharPointer сUser, CCharPointer cPassword) {
+        String connectionUrl = CTypeConversion.toJavaString(сConnectionUrl);
+        String user = CTypeConversion.toJavaString(сUser);
+        String password = CTypeConversion.toJavaString(cPassword);
+        System.out.println("called hostObtainDBConnection");
+        // TODO: implement
+        return ObjectHandles.getGlobal().create("Hello from hostObtainConnection");
+    }
+
+    @SuppressWarnings("unused")
+    @CEntryPoint(include = AsGraalVisorHost.class)
+    private static int hostReturnDBConnection(@CEntryPoint.IsolateThreadContext IsolateThread hostThread) {
+        System.out.println("called hostReturnDBConnection");
+        // TODO: implement
+        return 1234;
     }
 }

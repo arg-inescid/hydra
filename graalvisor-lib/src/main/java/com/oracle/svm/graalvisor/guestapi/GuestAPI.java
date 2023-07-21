@@ -153,4 +153,17 @@ public class GuestAPI {
             return graalVisorStructHost.getHostReceiveStringFunction().invoke(hostThread, cStringHolder.get());
         }
     }
+
+    public static ObjectHandle obtainDBConnection(IsolateThread hostThread, String connectionUrl, String user, String password) {
+        try (CTypeConversion.CCharPointerHolder connectionUrlHolder = CTypeConversion.toCString(connectionUrl);
+                CTypeConversion.CCharPointerHolder userHolder = CTypeConversion.toCString(user);
+                CTypeConversion.CCharPointerHolder passwordHolder = CTypeConversion.toCString(password)) {
+            return graalVisorStructHost.getHostObtainDBConnectionFunction().invoke(hostThread, connectionUrlHolder.get(), userHolder.get(), passwordHolder.get());
+        }
+    }
+
+    public static int returnDBConnection(IsolateThread hostThread) {
+        // TODO: add parameters
+        return graalVisorStructHost.getHostReturnDBConnectionFunction().invoke(hostThread);
+    }
 }
