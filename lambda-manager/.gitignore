@@ -11,8 +11,6 @@ lambda_logs/*
 !lambda_logs/.gitkeep
 manager_logs/*
 !manager_logs/.gitkeep
-src/scripts/qemu-jvm/stretch/
-src/scripts/qemu-jvm/stretch.img
 .idea
 *.iml
 *.ipr

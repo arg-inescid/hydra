@@ -22,7 +22,6 @@ bash "$DIR"/devmapper/prepare_overlay_image.sh \
 
 cd "$LAMBDA_HOME"
 bash $NIUK_HOME/run_niuk.sh \
-	--vmm firecracker \
 	--disk /dev/mapper/"$LAMBDA_NAME" \
 	--kernel "$RES_HOME"/hello-vmlinux.bin \
 	--memory "$LAMBDA_MEMORY" \
