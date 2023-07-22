@@ -12,7 +12,7 @@ function build_lazyisolation {
 	release=${release#*.}
 	minor_version=${release%%.*}
 
-	if [ $major_version -ge 5 ] && [ $minor_version -ge 6 ]; then
+	if [ $major_version -ge 5 ] && [ $minor_version -ge 10 ]; then
         	gcc -c -I"$LAZY_DIR" -o $LIB_DIR/lazyisolation.o $LAZY_DIR/lazyisolation.c
 	    	gcc -c -I"$LAZY_DIR" -o $LIB_DIR/shared_queue.o $LAZY_DIR/shared_queue.c
 	    	gcc -c -I"$LAZY_DIR" -o $LIB_DIR/filters.o $LAZY_DIR/filters.c
@@ -44,6 +44,14 @@ function build_ni {
         --initialize-at-run-time=com.oracle.svm.graalvisor.utils.JsonUtils \
         $LINKER_OPTIONS \
         -H:CLibraryPath=$LIB_DIR \
+        --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.posix=ALL-UNNAMED \
+        --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.posix.headers=ALL-UNNAMED \
+        --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.c=ALL-UNNAMED \
+        --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.c.function=ALL-UNNAMED \
+        --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.jdk=ALL-UNNAMED \
+        --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.hosted=ALL-UNNAMED \
+        --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.hosted.c=ALL-UNNAMED \
+        --features=org.graalvm.argo.graalvisor.sandboxing.NativeSandboxInterfaceFeature \
         -DGraalVisorHost \
         -Dcom.oracle.svm.graalvisor.libraryPath=$DIR/build/resources/main/com.oracle.svm.graalvisor.headers \
         $LANGS \
@@ -57,6 +65,12 @@ function build_ni {
 if [ -z "$JAVA_HOME" ]
 then
     echo "Please set JAVA_HOME first. It should be a GraalVM with native-image available."
+    exit 1
+fi
+
+if [ -z "$ARGO_HOME" ]
+then
+    echo "Please set ARGO_HOME first. It should point to a checkout of github.com/graalvm/argo."
     exit 1
 fi
 
