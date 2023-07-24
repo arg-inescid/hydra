@@ -71,7 +71,7 @@ JNIEXPORT int JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxI
         // Close the unnecessary pipe ends.
         close(childPipeFDptr[PIPE_WRITE_END]);
         if (!lazyIsolation) {
-            close(childPipeFDptr[PIPE_READ_END]);
+            close(parentPipeFDptr[PIPE_READ_END]);
         }
 #ifdef LAZY_ISOLATION
         if (lazyIsolation) {
