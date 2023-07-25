@@ -2,6 +2,7 @@ bin/
 *.swp
 *.local
 .idea/
+.vscode/
 resources/*
 !resources/code-formatter/
 !resources/truffle-build/

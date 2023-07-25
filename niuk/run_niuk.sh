@@ -6,8 +6,7 @@ print_and_die() {
 }
 
 USAGE=$(cat << USAGE_END
-Usage: --vmm vmm --disk disk --kernel kernel --memory mem --ip ip --gateway gateway --mask mask --tap tapname [--console]
-       --vmm vmm - firecracker or qemu
+Usage: --disk disk --kernel kernel --memory mem --ip ip --gateway gateway --mask mask --tap tapname [--console]
        --disk disk - path to the VM disk image
        --kernel kernel - path to the VM kernel image
        --memory mem - VM RAM memory
@@ -22,8 +21,6 @@ USAGE_END
 )
 
 IMAGE_PATH_ON_DISK="/init"
-FILE_FORMAT="raw"
-VMM=
 VMM_KERNEL=
 VMM_DISK=
 VMM_MEM=
@@ -104,14 +101,6 @@ while :; do
             print_and_die "Flag --kernel requires an additional argument\n$USAGE"
         fi
         ;;
-    -v | --vmm)
-        if [ "$2" ]; then
-            VMM=$2
-            shift
-        else
-            print_and_die "Flag --vmm requires an additional argument\n$USAGE"
-        fi
-        ;;
     --console)
         VMM_CONSOLE=true
         ;;
@@ -124,7 +113,7 @@ while :; do
 done
 
 # Check if all mandatory arguments are present.
-if [ -z $VMM ] || [ -z $VMM_MEM ] || [ -z $VMM_GATEWAY ] || [ -z $VMM_MASK ] || [ -z $VMM_TAP_NAME ] || [ -z $VMM_IP ] || [ -z $VMM_DISK ] || [ -z $VMM_KERNEL ]; then
+if [ -z $VMM_MEM ] || [ -z $VMM_GATEWAY ] || [ -z $VMM_MASK ] || [ -z $VMM_TAP_NAME ] || [ -z $VMM_IP ] || [ -z $VMM_DISK ] || [ -z $VMM_KERNEL ]; then
     print_and_die "$USAGE"
 fi
 
@@ -137,55 +126,18 @@ fi
 # Setting args for vm.
 args=$@
 
-function run_firecracker {
-    rm /tmp/$VMM_TAP_NAME.socket &> /dev/null
+# Remove the old socket file.
+rm /tmp/$VMM_TAP_NAME.socket &> /dev/null
 
-
-    # Kernel opts example: https://github.com/firecracker-microvm/firecracker-demo/blob/main/start-firecracker.sh
-    firectl \
-            --kernel=$VMM_KERNEL \
-            --kernel-opts="init=$IMAGE_PATH_ON_DISK quiet rw tsc=reliable ipv6.disable=1 ip=$VMM_IP::$VMM_GATEWAY:$VMM_MASK::eth0:none::: nomodule $KERNEL_CONSOLE_ARGS reboot=k panic=1 pci=off $args" \
-            --root-drive=$VMM_DISK \
-            --memory=$VMM_MEM \
-            --ncpus=$VMM_CPU \
-            --tap-device=$VMM_TAP_NAME/$VMM_MAC \
-            --socket-path=/tmp/$VMM_TAP_NAME.socket &
-    echo "$!" > lambda.pid
-    echo "$VMM_IP" > lambda.ip
-    wait
-}
-
-function run_qemu {
-    NODEFAULT_ARGS=
-    if [ -z $VMM_CONSOLE ]; then
-        NODEFAULT_ARGS='-nodefaults -no-user-config -vga none'
-    fi
-    MACHINE_ARGS='-machine microvm,accel=kvm,kernel_irqchip=off'
-    KERNEL_PCI_SWITCH=pci=off
-    NET_DEV_ARGS="-device virtio-net-device,netdev=net1,mac=$VMM_MAC -device virtio-blk-device,drive=drive"
-
-    sudo qemu-system-x86_64 \
-        $NODEFAULT_ARGS \
-        $MACHINE_ARGS \
-        -cpu host,-vmx \
-        -kernel $VMM_KERNEL -m $VMM_MEM -smp 1 \
-        -append "$KERNEL_CONSOLE_ARGS quiet tsc=reliable init=${IMAGE_PATH_ON_DISK} no_timer_check root=/dev/vda nomodule rw noapic ${KERNEL_PCI_SWITCH} pci=lastbus=0 quiet ip=$VMM_IP::$VMM_GATEWAY:$VMM_MASK::eth0:none:::  noreplace-smp rcupdate.rcu_expedited=1 \
-        $args" \
-        -nographic \
-        -netdev type=tap,id=net1,vhost=on,ifname=$VMM_TAP_NAME,script=no \
-        ${NET_DEV_ARGS} \
-        -no-acpi \
-        -no-hpet \
-        -blockdev driver=$FILE_FORMAT,node-name=drive,file.locking=off,file.driver=file,file.filename=$VMM_DISK &
-        echo "$!" > lambda.pid
-        echo "$VMM_IP" > lambda.ip
-        wait
-}
-
-if [ "$VMM" == "firecracker" ]; then
-    run_firecracker
-elif [ "$VMM" == "qemu" ]; then
-    run_qemu
-else
-    print_and_die "Unknown VMM: $VMM."
-fi
+# Kernel opts example: https://github.com/firecracker-microvm/firecracker-demo/blob/main/start-firecracker.sh
+firectl \
+        --kernel=$VMM_KERNEL \
+        --kernel-opts="init=$IMAGE_PATH_ON_DISK quiet rw tsc=reliable ipv6.disable=1 ip=$VMM_IP::$VMM_GATEWAY:$VMM_MASK::eth0:none::: nomodule $KERNEL_CONSOLE_ARGS reboot=k panic=1 pci=off $args" \
+        --root-drive=$VMM_DISK \
+        --memory=$VMM_MEM \
+        --ncpus=$VMM_CPU \
+        --tap-device=$VMM_TAP_NAME/$VMM_MAC \
+        --socket-path=/tmp/$VMM_TAP_NAME.socket &
+echo "$!" > lambda.pid
+echo "$VMM_IP" > lambda.ip
+wait
