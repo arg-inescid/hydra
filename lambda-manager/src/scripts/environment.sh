@@ -1,16 +1,22 @@
 #!/bin/bash
 
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+if [[ -z "${ARGO_HOME}" ]]; then
+	echo "ARGO_HOME is not defined. Exiting..."
+	exit 1
+fi
+
+if [[ -z "${JAVA_HOME}" ]]; then
+	echo "JAVA_HOME is not defined. Exiting..."
+	exit 1
+fi
 
 # Note: this file may have variables that need to be adapted to your local environment.
-
-export RES_HOME=$DIR/../../../resources
-export MANAGER_HOME=$DIR/../../../lambda-manager
-export NIUK_HOME=$DIR/../../../niuk
-export BENCHMARKS_HOME=$DIR/../../../benchmarks
-export PROXY_HOME=$DIR/../../../graalvisor
+export RES_HOME=$ARGO_HOME/resources
+export MANAGER_HOME=$ARGO_HOME/lambda-manager
+export NIUK_HOME=$ARGO_HOME/niuk
+export BENCHMARKS_HOME=$ARGO_HOME/benchmarks
+export PROXY_HOME=$ARGO_HOME/graalvisor
 export PROXY_JAR=$PROXY_HOME/build/libs/graalvisor-1.0-all.jar
-export CODEBASE_HOME=$DIR/../../codebase
+export CODEBASE_HOME=$MANAGER_HOME/codebase
 export GRAALVISOR_HOME=$PROXY_HOME/build/native-image
-export JAVA_HOME=$(realpath $RES_HOME/graalvm-ee-java11-22.1.0)
-export CRUNTIME_HOME=$DIR/cruntime
+export CRUNTIME_HOME=$MANAGER_HOME/src/scripts/cruntime
