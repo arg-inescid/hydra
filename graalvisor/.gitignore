@@ -2,6 +2,7 @@
 .project
 .classpath
 .settings
+.vscode
 
 # Ignore java binary files
 *.class

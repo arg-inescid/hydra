@@ -60,12 +60,11 @@ public class ProcessSandboxHandle extends SandboxHandle {
         NativeFunction function = (NativeFunction) rsProvider.getFunction();
         GraalVisorAPI gvAPI = rsProvider.getGraalvisorAPI();
         IsolateThread ithread = gvAPI.createIsolate();
+        String line;
         try {
-            while(true) {
-                sender.write(String.format("%s\n", gvAPI.invokeFunction(ithread, function.getEntryPoint(), receiver.readLine())).getBytes());
+            while((line = receiver.readLine()) != null) {
+                sender.write(String.format("%s\n", gvAPI.invokeFunction(ithread, function.getEntryPoint(), line)).getBytes());
             }
-        } catch (IOException e) {
-            // Ignore, most likely the parent closed the input stream meaning that the child should quit.
         } catch(Exception e) {
             System.err.println(e.getMessage());
             e.printStackTrace();
