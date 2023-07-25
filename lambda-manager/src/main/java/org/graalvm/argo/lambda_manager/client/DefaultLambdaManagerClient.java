@@ -98,7 +98,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
             payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getName());
         } else if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
             // Both canRebuild and readily-provided GV functions go here
-            payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getName());
+            payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getName(), Configuration.argumentStorage.isDebugMode());
         } else if (lambda.getExecutionMode() == LambdaExecutionMode.CUSTOM) {
             path = "/run";
             if (function.getLanguage() == FunctionLanguage.JAVA) {

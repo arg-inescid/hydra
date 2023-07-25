@@ -102,6 +102,7 @@ public class ArgumentStorage {
                 this.lambdaFactory = new FirecrackerCtrLambdaFactory();
                 break;
             case CONTAINER:
+            case CONTAINER_DEBUG:
                 this.lambdaFactory = new ContainerLambdaFactory();
                 break;
             default:
@@ -142,7 +143,7 @@ public class ArgumentStorage {
     private void prepareConnectionPool(BeanContext beanContext, String gatewayWithMask) throws ErrorDuringCreatingConnectionPool {
         if (lambdaType == LambdaType.VM_FIRECRACKER || lambdaType == LambdaType.VM_FIRECRACKER_SNAPSHOT || lambdaType == LambdaType.VM_CONTAINERD) {
             NetworkConfigurationUtils.prepareVmConnectionPool(connectionPool, maxTaps, gatewayWithMask, lambdaPort, beanContext);
-        } else if (lambdaType == LambdaType.CONTAINER) {
+        } else if (lambdaType == LambdaType.CONTAINER || lambdaType == LambdaType.CONTAINER_DEBUG) {
             NetworkConfigurationUtils.prepareContainerConnectionPool(connectionPool, maxTaps, beanContext);
         } else {
             throw new ErrorDuringCreatingConnectionPool(String.format(Messages.ERROR_LAMBDA_TYPE, lambdaType));
@@ -295,6 +296,10 @@ public class ArgumentStorage {
 
     public boolean isSnapshotEnabled() {
         return lambdaType == LambdaType.VM_FIRECRACKER_SNAPSHOT;
+    }
+
+    public boolean isDebugMode() {
+        return lambdaType == LambdaType.CONTAINER_DEBUG;
     }
 
     public AbstractLambdaFactory getLambdaFactory() {

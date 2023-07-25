@@ -16,6 +16,10 @@ public class JsonUtils {
     private static final ObjectMapper mapper = new ObjectMapper();
 
     public static String convertParametersIntoJsonObject(String arguments, String entryPoint, String functionName) {
+        return convertParametersIntoJsonObject(arguments, entryPoint, functionName, false);
+    }
+
+    public static String convertParametersIntoJsonObject(String arguments, String entryPoint, String functionName, boolean debug) {
         ObjectNode inputObject = mapper.createObjectNode();
 
         if (arguments != null) {
@@ -28,6 +32,10 @@ public class JsonUtils {
 
         if (functionName != null) {
             inputObject.put("name", functionName);
+        }
+
+        if (debug) {
+            inputObject.put("debug", "true");
         }
 
         String resultJSON = "";

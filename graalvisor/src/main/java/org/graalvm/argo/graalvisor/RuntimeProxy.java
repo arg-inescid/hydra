@@ -133,8 +133,11 @@ public abstract class RuntimeProxy {
                 String arguments = (String) input.get("arguments");
                 String async = (String)input.get("async");
                 boolean cached = input.get("cached") == null ? true : Boolean.parseBoolean((String)input.get("cached"));
+                boolean debug = input.get("debug") == null ? false : Boolean.parseBoolean((String)input.get("debug"));
 
-                if (async != null && async.equals("true")) {
+                if (debug) {
+                    ProxyUtils.writeResponse(t, 200, "Returned from Graalvisor!");
+                } else if (async != null && async.equals("true")) {
                     ProxyUtils.writeResponse(t, 200, "Asynchronous request submitted!");
                     String output = invokeWrapper(functionName, cached, false, arguments);
                     System.out.println(output);

@@ -49,6 +49,7 @@ public class LambdaManager {
         String response = null;
         Function function = null;
         Lambda lambda = null;
+        long start = System.currentTimeMillis();
 
         if (!Configuration.isInitialized()) {
             Logger.log(Level.WARNING, Messages.NO_CONFIGURATION_UPLOADED);
@@ -65,7 +66,6 @@ public class LambdaManager {
 
         for (int i = 0; i < Configuration.LAMBDA_FAULT_TOLERANCE; i++) {
             try {
-                long start = System.currentTimeMillis();
                 lambda = Configuration.scheduler.schedule(function, targetMode);
 
                 synchronized (lambda) {
@@ -93,6 +93,9 @@ public class LambdaManager {
                     long spentTime = System.currentTimeMillis() - start;
                     MetricsProvider.reportRequestTime(spentTime);
                     Logger.log(Level.FINE, formatRequestSpentTimeMessage(lambda, function, spentTime));
+                    if (Configuration.argumentStorage.isDebugMode()) {
+                        response += "; time spent in LM (seconds): " + spentTime / 1000.0;
+                    }
                     break;
                 }
             } catch (Throwable throwable) {

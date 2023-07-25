@@ -146,7 +146,8 @@ public class Lambda {
             if (function.isFunctionIsolated()) {
                 return (registeredFunctions.isEmpty() || registeredFunctions.contains(function)) && username.equals(Configuration.coder.decodeUsername(function.getName()));
             } else {
-                return username.equals(Configuration.coder.decodeUsername(function.getName()));
+                // In Graalvisor, functions can be collocated only if they come from the same user. Debug mode allows collocating all functions from all users.
+                return Configuration.argumentStorage.isDebugMode() || username.equals(Configuration.coder.decodeUsername(function.getName()));
             }
         } else {
             return (registeredFunctions.isEmpty() || registeredFunctions.contains(function)) && username.equals(Configuration.coder.decodeUsername(function.getName()));

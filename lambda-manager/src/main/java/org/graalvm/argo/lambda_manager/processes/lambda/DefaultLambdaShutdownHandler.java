@@ -70,7 +70,7 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
     private void shutdownLambda() {
         try {
             LambdaType lambdaType = Configuration.argumentStorage.getLambdaType();
-            if (lambdaType == LambdaType.CONTAINER) {
+            if (lambdaType == LambdaType.CONTAINER || lambdaType == LambdaType.CONTAINER_DEBUG) {
                 shutdownContainerLambda(Environment.CODEBASE + "/" + lambda.getLambdaName());
             } else if (lambdaType == LambdaType.VM_FIRECRACKER || lambdaType == LambdaType.VM_FIRECRACKER_SNAPSHOT) {
                 shutdownFirecrackerLambda(Environment.CODEBASE + "/" + lambda.getLambdaName(), lambdaType);

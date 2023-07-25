@@ -13,7 +13,9 @@ public enum LambdaType {
     // Lambda to be deployed as Firecracker Containerd VM.
     VM_CONTAINERD("VM_CONTAINERD"),
     // Lambda to be deployed as container.
-    CONTAINER("CONTAINER");
+    CONTAINER("CONTAINER"),
+    // Lambda to be deployed as container; in Graalvisor mode users will be collocated.
+    CONTAINER_DEBUG("CONTAINER_DEBUG");
 
     private final String type;
 
