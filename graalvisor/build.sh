@@ -87,7 +87,7 @@ EXECUTION_ENVIRONMENT=$1
 if [[ "$EXECUTION_ENVIRONMENT" != "local" ]]
 then  # Build native image inside Docker container.
     docker run -it -v $JAVA_HOME:/jvm -v $ARGO_HOME:/argo --rm argo-builder /argo/graalvisor/build.sh "local"
-    sudo chown -R $USER:$USER build
+    sudo chown -R $(id -u -n):$(id -g -n) build
 else  # Build native image locally (inside container or directly on host).
     LANGS=""
     read -p "Javascript support (y or Y, everything else as no)? " -n 1 -r
