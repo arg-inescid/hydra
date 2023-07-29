@@ -28,7 +28,7 @@ then
     mkfs.ext4 $DIR/base.ext4
     # Mount it, add permissions
     sudo mount $DIR/base.ext4 $DISK
-    sudo chown -R $USER:$USER $DISK
+    sudo chown -R $(id -u -n):$(id -g -n) $DISK
     # Use an openwhisk docker to copy the entire image to the mounted dir.
     docker export $(docker create openwhisk/java8action:latest) | tar -xC $DISK
     # Revert permissions and unmount.
@@ -39,7 +39,7 @@ fi
 # Copy the base filesystem into a new one, mount, and setup permissions.
 cp $DIR/base.ext4 $owdisk
 sudo mount $owdisk $DISK
-sudo chown -R $USER:$USER $DISK
+sudo chown -R $(id -u -n):$(id -g -n) $DISK
 
 # Copy init.
 cp $DIR/init $DISK
