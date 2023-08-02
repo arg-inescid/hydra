@@ -45,8 +45,8 @@ public class ShutdownHook implements ApplicationEventListener<ApplicationShutdow
         for (Lambda lambda : LambdaManager.lambdas) {
             new DefaultLambdaShutdownHandler(lambda).run();
         }
-        for (Set<Lambda> set : LambdaManager.startingLambdas.values()) {
-            for (Lambda lambda : set) {
+        for (Map<String, Lambda> map : LambdaManager.startingLambdas.values()) {
+            for (Lambda lambda : map.values()) {
                 new DefaultLambdaShutdownHandler(lambda).run();
             }
         }

@@ -13,7 +13,6 @@ fi
 # Note: this file may have variables that need to be adapted to your local environment.
 export RES_HOME=$ARGO_HOME/resources
 export MANAGER_HOME=$ARGO_HOME/lambda-manager
-export NIUK_HOME=$ARGO_HOME/niuk
 export BENCHMARKS_HOME=$ARGO_HOME/benchmarks
 export PROXY_HOME=$ARGO_HOME/graalvisor
 export PROXY_JAR=$PROXY_HOME/build/libs/graalvisor-1.0-all.jar

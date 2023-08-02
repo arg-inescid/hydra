@@ -42,7 +42,7 @@ fi
 LAMBDA_ID=$7
 
 function stop_firecracker {
-  LAMBDA_PID=$(sudo fuser /tmp/$VMM_TAP_NAME.socket 2>&1 | grep /tmp/$VMM_TAP_NAME.socket | awk '{print $2}')
+  LAMBDA_PID=$(cat "$LAMBDA_HOME"/lambda.pid)
   sudo kill $LAMBDA_PID
   # Sleep to ensure that devmapper resources are released.
   sleep 1

@@ -42,30 +42,8 @@ import java.util.logging.Level;
 @SuppressWarnings("unused")
 public class RoundedRobinScheduler implements Scheduler {
 
-    private long prevLambdaStartTimestamp;
-
     // Wether a lambda is being decommissioned.
     public static volatile boolean hasDecommissionedLambdas;
-
-    private synchronized void gate() {
-        try {
-            Thread.sleep(timeToWait());
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private long timeToWait() {
-        long currentTime = System.currentTimeMillis();
-        long timeSpan = currentTime - prevLambdaStartTimestamp;
-        if (timeSpan <= Environment.LAMBDA_STARTUP_THRESHOLD) {
-            prevLambdaStartTimestamp += Environment.LAMBDA_STARTUP_THRESHOLD;
-            return Environment.LAMBDA_STARTUP_THRESHOLD - timeSpan;
-        } else {
-            prevLambdaStartTimestamp = currentTime;
-            return 0;
-        }
-    }
 
     private StartLambda whomToSpawn(Lambda lambda, Function function, LambdaExecutionMode targetMode) {
         StartLambda process;
@@ -93,36 +71,28 @@ public class RoundedRobinScheduler implements Scheduler {
         return process;
     }
 
-    private void startLambda(Function function, LambdaExecutionMode targetMode) {
-        Lambda lambda = new Lambda(function);
-        LambdaManager.startingLambdas.get(targetMode).add(lambda);
-        new Thread() {
-            @Override
-            public void run() {
-                try {
-                    long timeBefore = System.currentTimeMillis();
-                    gate();
-                    LambdaConnection connection = Configuration.argumentStorage.nextLambdaConnection();
-                    lambda.setConnection(connection);
-                    ProcessBuilder process = whomToSpawn(lambda, function, targetMode).build();
-                    process.start();
-                    if (NetworkUtils.waitForOpenPort(lambda.getConnection().ip, lambda.getConnection().port, 25)) {
-                        lambda.resetTimer();
-                        LambdaManager.lambdas.add(lambda);
-                        Logger.log(Level.INFO, "Added new lambda for " + function.getName() + " with mode " + lambda.getExecutionMode() + ". It took " + (System.currentTimeMillis() - timeBefore) + " ms.");
-                    } else {
-                        Configuration.argumentStorage.getMemoryPool().deallocateMemoryLambda(function.getMemory());
-                        new DefaultLambdaShutdownHandler(lambda).run();
-                        Logger.log(Level.SEVERE, "Failed to add new lambda for " + function.getName() + " with mode " + lambda.getExecutionMode());
-                    }
-                } catch (Exception e) {
-                    System.out.println("WARNING!");
-                    e.printStackTrace();
-                } finally {
-                    LambdaManager.startingLambdas.get(targetMode).remove(lambda);
-                }
+    private void startLambda(Lambda lambda, Function function, LambdaExecutionMode targetMode, String username) {
+        try {
+            long timeBefore = System.currentTimeMillis();
+            LambdaConnection connection = Configuration.argumentStorage.nextLambdaConnection();
+            lambda.setConnection(connection);
+            ProcessBuilder process = whomToSpawn(lambda, function, targetMode).build();
+            process.start();
+            if (NetworkUtils.waitForOpenPort(lambda.getConnection().ip, lambda.getConnection().port, 25)) {
+                lambda.resetTimer();
+                LambdaManager.lambdas.add(lambda);
+                Logger.log(Level.INFO, "Added new lambda for " + function.getName() + " with mode " + lambda.getExecutionMode() + ". It took " + (System.currentTimeMillis() - timeBefore) + " ms.");
+            } else {
+                Configuration.argumentStorage.getMemoryPool().deallocateMemoryLambda(function.getMemory());
+                new DefaultLambdaShutdownHandler(lambda).run();
+                Logger.log(Level.SEVERE, "Failed to add new lambda for " + function.getName() + " with mode " + lambda.getExecutionMode());
             }
-        }.start();
+        } catch (Exception e) {
+            System.out.println("WARNING!");
+            e.printStackTrace();
+        } finally {
+            LambdaManager.startingLambdas.get(targetMode).remove(username);
+        }
     }
 
     private Lambda findLambda(Function function, LambdaExecutionMode targetMode, Set<Lambda> lambdas) {
@@ -182,6 +152,7 @@ public class RoundedRobinScheduler implements Scheduler {
     public Lambda schedule(Function function, LambdaExecutionMode targetMode) {
         Lambda lambda = null;
         String username = Configuration.coder.decodeUsername(function.getName());
+        boolean startedLambda = false;
 
         while (Environment.notShutdownHookActive()) {
 
@@ -189,20 +160,20 @@ public class RoundedRobinScheduler implements Scheduler {
 
             // If we didn't find a lambda, try to allocate a new one.
             if (lambda == null) {
-                // This sync block protects from concurrent requests trying to allocate one lambda at the same time.
-                synchronized (LambdaManager.lambdas) {
-                    // Check if there are lambdas already starting with the execution mode for that user.
-                    if (!LambdaManager.startingLambdas.get(targetMode).stream().anyMatch(l -> l.getUsername().equals(username))) {
-                        // Acquire memory for a new lambda when needed.
-                        if (function.canCollocateInvocation() || Configuration.argumentStorage.getMemoryPool().allocateMemoryLambda(function.getMemory())) {
-                            // We successfully allocated memory!
-                            startLambda(function, targetMode);
-                        } else {
-                            Logger.log(Level.FINE, String.format("[function=%s, mode=%s]: No memory available to launch a new lambda, waiting.", function.getName(), targetMode));
-                        }
+                Lambda newLambda = new Lambda(function);
+                // Check if there are lambdas already starting with the execution mode for that user.
+                Lambda prevLambda = LambdaManager.startingLambdas.get(targetMode).putIfAbsent(username, newLambda);
+                if (prevLambda == null) {
+                    // Acquire memory for a new lambda when needed.
+                    if (function.canCollocateInvocation() || Configuration.argumentStorage.getMemoryPool().allocateMemoryLambda(function.getMemory())) {
+                        // We successfully allocated memory!
+                        startLambda(newLambda, function, targetMode, username);
+                        startedLambda = true;
                     } else {
-                        Logger.log(Level.FINE, String.format("[function=%s, mode=%s]: Already starting a new lambda, waiting.", function.getName(), targetMode));
+                        Logger.log(Level.FINE, String.format("[function=%s, mode=%s]: No memory available to launch a new lambda, waiting.", function.getName(), targetMode));
                     }
+                } else {
+                    Logger.log(Level.FINE, String.format("[function=%s, mode=%s]: Already starting a new lambda, waiting.", function.getName(), targetMode));
                 }
             } else {
                 // Cancel the lambda timeout timer.
@@ -213,11 +184,14 @@ public class RoundedRobinScheduler implements Scheduler {
                 break;
             }
 
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                // Ignored.
+            if (!startedLambda) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    // Ignored.
+                }
             }
+            startedLambda = false;
         }
 
         synchronized (function) {

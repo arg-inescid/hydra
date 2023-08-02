@@ -33,11 +33,11 @@ public class LambdaManager {
     /*
      * Map of starting Lambdas per execution mode.
      */
-    public static final Map<LambdaExecutionMode, Set<Lambda>> startingLambdas = Map.ofEntries(
-            Map.entry(LambdaExecutionMode.HOTSPOT_W_AGENT, Collections.newSetFromMap(new ConcurrentHashMap<Lambda, Boolean>())),
-            Map.entry(LambdaExecutionMode.HOTSPOT, Collections.newSetFromMap(new ConcurrentHashMap<Lambda, Boolean>())),
-            Map.entry(LambdaExecutionMode.GRAALVISOR, Collections.newSetFromMap(new ConcurrentHashMap<Lambda, Boolean>())),
-            Map.entry(LambdaExecutionMode.CUSTOM, Collections.newSetFromMap(new ConcurrentHashMap<Lambda, Boolean>())));
+    public static final Map<LambdaExecutionMode, Map<String, Lambda>> startingLambdas = Map.ofEntries(
+            Map.entry(LambdaExecutionMode.HOTSPOT_W_AGENT, new ConcurrentHashMap<String, Lambda>()),
+            Map.entry(LambdaExecutionMode.HOTSPOT, new ConcurrentHashMap<String, Lambda>()),
+            Map.entry(LambdaExecutionMode.GRAALVISOR, new ConcurrentHashMap<String, Lambda>()),
+            Map.entry(LambdaExecutionMode.CUSTOM, new ConcurrentHashMap<String, Lambda>()));
 
     private static String formatRequestSpentTimeMessage(Lambda lambda, Function function, long spentTime) {
         String username = Configuration.coder.decodeUsername(function.getName());

@@ -21,7 +21,7 @@ bash "$DIR"/devmapper/prepare_overlay_image.sh \
     "$LAMBDA_HOME"/"$VM_IMAGE".img
 
 cd "$LAMBDA_HOME"
-bash $NIUK_HOME/run_niuk.sh \
+bash "$DIR"/run_vm.sh \
 	--disk /dev/mapper/"$LAMBDA_NAME" \
 	--kernel "$RES_HOME"/hello-vmlinux.bin \
 	--memory "$LAMBDA_MEMORY" \
