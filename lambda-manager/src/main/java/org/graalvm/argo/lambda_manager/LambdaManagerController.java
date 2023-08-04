@@ -61,6 +61,7 @@ public class LambdaManagerController {
         return LambdaManager.removeFunction(username, functionName);
     }
 
+    // TODO - remove this endpoint, we don't need it.
     @Post(value = "/configure_manager", consumes = MediaType.APPLICATION_JSON)
     public Single<String> configureManager(@Body String lambdaManagerConfiguration) {
         return LambdaManager.configureManager(lambdaManagerConfiguration, beanContext);

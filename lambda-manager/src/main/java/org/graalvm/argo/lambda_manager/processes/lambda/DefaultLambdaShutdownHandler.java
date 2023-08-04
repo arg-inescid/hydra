@@ -108,10 +108,8 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
         lambda.resetClosedRequestCount();
 
         // Return connection to connection pool.
-        Configuration.argumentStorage.returnLambdaConnection(lambda.getConnection());
+        Configuration.argumentStorage.getLambdaPool().returnLambdaConnection(lambda.getConnection());
 
-        // Return all memory to the memory pool.
-        Configuration.argumentStorage.getMemoryPool().deallocateMemoryLambda(lambda.getMemoryPool().getMaxMemory());
         lambda.getMemoryPool().reset();
     }
 

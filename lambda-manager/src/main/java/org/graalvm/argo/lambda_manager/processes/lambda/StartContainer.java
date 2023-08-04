@@ -5,7 +5,7 @@ import org.graalvm.argo.lambda_manager.core.Lambda;
 
 public abstract class StartContainer extends StartLambda {
 
-    public StartContainer(Lambda lambda, Function function) {
-        super(lambda, function);
+    public StartContainer(Lambda lambda) {
+        super(lambda);
     }
 }

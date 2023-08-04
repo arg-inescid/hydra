@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.graalvm.argo.lambda_manager.core.Configuration;
-import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.core.Lambda;
 import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
 
@@ -15,8 +14,8 @@ public abstract class StartFirecrackerCtr extends StartLambda {
     private static SecureRandom rnd = new SecureRandom();
     private static final int ID_LEN = 32;
 
-    public StartFirecrackerCtr(Lambda lambda, Function function) {
-        super(lambda, function);
+    public StartFirecrackerCtr(Lambda lambda) {
+        super(lambda);
     }
 
     protected List<String> prepareCommand(String runtimeName) {
@@ -29,9 +28,8 @@ public abstract class StartFirecrackerCtr extends StartLambda {
         command.add("-v");
         command.add("bash");
         command.add("src/scripts/start_cruntime.sh");
-        command.add(function.getName());
         command.add(String.valueOf(pid));
-        command.add(String.valueOf(function.getMemory()));
+        command.add(String.valueOf(Configuration.argumentStorage.getLambdaMemory()));
         command.add(connection.ip);
         command.add(connection.tap);
         command.add(Configuration.argumentStorage.getGateway());

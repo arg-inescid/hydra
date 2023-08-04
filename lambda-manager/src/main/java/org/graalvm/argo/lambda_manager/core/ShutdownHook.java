@@ -1,10 +1,9 @@
 package org.graalvm.argo.lambda_manager.core;
 
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
-import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
 import org.graalvm.argo.lambda_manager.processes.devmapper.DeleteDevmapperBase;
+import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
 import org.graalvm.argo.lambda_manager.processes.lambda.DefaultLambdaShutdownHandler;
-import org.graalvm.argo.lambda_manager.processes.taps.RemoveTapsFromPool;
 import org.graalvm.argo.lambda_manager.processes.taps.RemoveTapsOutsidePool;
 import org.graalvm.argo.lambda_manager.utils.Messages;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
@@ -22,18 +21,6 @@ import java.util.logging.Level;
 @SuppressWarnings("unused")
 @Singleton
 public class ShutdownHook implements ApplicationEventListener<ApplicationShutdownEvent> {
-
-    private void removeTapsFromPool() throws InterruptedException {
-        ProcessBuilder removeTapsWorker = new RemoveTapsFromPool().build();
-        removeTapsWorker.start();
-        removeTapsWorker.join();
-    }
-
-    private void removeTapsOutsidePool() throws InterruptedException {
-        ProcessBuilder removeTapsOutsidePoolWorker = new RemoveTapsOutsidePool().build();
-        removeTapsOutsidePoolWorker.start();
-        removeTapsOutsidePoolWorker.join();
-    }
 
     private void deleteDevmapperBase() throws InterruptedException {
         ProcessBuilder deleteDevmapperBase = new DeleteDevmapperBase().build();
@@ -65,13 +52,11 @@ public class ShutdownHook implements ApplicationEventListener<ApplicationShutdow
             Thread.sleep(500);
             if (Configuration.isInitialized()) {
                 shutdownLambdas();
-                removeTapsFromPool();
-                removeTapsOutsidePool();
+                Configuration.argumentStorage.getLambdaPool().tearDown();
                 LambdaType lambdaType = Configuration.argumentStorage.getLambdaType();
                 if (lambdaType == LambdaType.VM_FIRECRACKER || lambdaType == LambdaType.VM_FIRECRACKER_SNAPSHOT) {
                     deleteDevmapperBase();
                 }
-                Configuration.argumentStorage.cleanupStorage();
             }
         } catch (InterruptedException interruptedException) {
             Logger.log(Level.WARNING, Messages.ERROR_TAP_REMOVAL, interruptedException);

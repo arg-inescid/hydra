@@ -1,6 +1,5 @@
 package org.graalvm.argo.lambda_manager.processes.lambda.factory;
 
-import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.core.Lambda;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalvisorFirecracker;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotFirecracker;
@@ -11,23 +10,23 @@ import org.graalvm.argo.lambda_manager.processes.lambda.StartOpenWhiskFirecracke
 public class FirecrackerLambdaFactory extends AbstractLambdaFactory {
 
     @Override
-    public StartLambda createHotspotWithAgent(Lambda lambda, Function function) {
-        return new StartHotspotWithAgentFirecracker(lambda, function);
+    public StartLambda createHotspotWithAgent(Lambda lambda) {
+        return new StartHotspotWithAgentFirecracker(lambda);
     }
 
     @Override
-    public StartLambda createHotspot(Lambda lambda, Function function) {
-        return new StartHotspotFirecracker(lambda, function);
+    public StartLambda createHotspot(Lambda lambda) {
+        return new StartHotspotFirecracker(lambda);
     }
 
     @Override
-    public StartLambda createGraalvisor(Lambda lambda, Function function) {
-        return new StartGraalvisorFirecracker(lambda, function);
+    public StartLambda createGraalvisor(Lambda lambda) {
+        return new StartGraalvisorFirecracker(lambda);
     }
 
     @Override
-    public StartLambda createOpenWhisk(Lambda lambda, Function function) {
-        return new StartOpenWhiskFirecracker(lambda, function);
+    public StartLambda createOpenWhisk(Lambda lambda) {
+        return new StartOpenWhiskFirecracker(lambda);
     }
 
 }

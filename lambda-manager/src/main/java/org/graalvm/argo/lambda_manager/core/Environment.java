@@ -42,6 +42,8 @@ public class Environment {
     public static final String HOTSPOT_DOCKER_RUNTIME = "docker.io/sergiyivan/large-scale-experiment:argo-hotspot";
     public static final String HOTSPOT_AGENT_DOCKER_RUNTIME = "docker.io/sergiyivan/large-scale-experiment:argo-hotspot-agent";
 
+    public static final String OPENWHISK_DOCKER_RUNTIME = "docker.io/openwhisk/java8action:latest";
+
     public synchronized static long pid() {
         return NEXT_ID++;
     }

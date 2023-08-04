@@ -3,14 +3,13 @@ package org.graalvm.argo.lambda_manager.processes.lambda;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.core.Lambda;
 import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
 
 public abstract class RestoreFirecracker extends StartLambda {
 
-    public RestoreFirecracker(Lambda lambda, Function function) {
-        super(lambda, function);
+    public RestoreFirecracker(Lambda lambda) {
+        super(lambda);
     }
 
     protected List<String> prepareCommand(String imageName) {

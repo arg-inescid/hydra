@@ -5,9 +5,9 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 source "$DIR"/environment.sh
 source "$DIR"/export_lambda_arguments.sh
 
-export_lambda_arguments "${@:1:9}"
-LAMBDA_NAME=$9
-VM_IMAGE=${10}
+export_lambda_arguments "${@:1:8}"
+LAMBDA_NAME=$8
+VM_IMAGE=$9
 
 LAMBDA_HOME="$CODEBASE_HOME"/"$LAMBDA_NAME"
 
@@ -30,4 +30,4 @@ bash "$DIR"/run_vm.sh \
 	--gateway "$LAMBDA_GATEWAY" \
 	--mask "$LAMBDA_MASK" \
 	"$LAMBDA_CONSOLE" \
-	"${@:11}"
+	"${@:10}"

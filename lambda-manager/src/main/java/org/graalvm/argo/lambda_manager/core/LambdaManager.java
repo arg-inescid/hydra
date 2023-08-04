@@ -4,8 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.graalvm.argo.lambda_manager.exceptions.argument_parser.ErrorDuringParsingJSONFile;
-import org.graalvm.argo.lambda_manager.exceptions.argument_parser.ErrorDuringReflectiveClassCreation;
-import org.graalvm.argo.lambda_manager.exceptions.user.ErrorDuringCreatingConnectionPool;
 import org.graalvm.argo.lambda_manager.exceptions.user.FunctionNotFound;
 import org.graalvm.argo.lambda_manager.optimizers.FunctionStatus;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
@@ -178,7 +176,7 @@ public class LambdaManager {
             } else {
                 responseString = Messages.CONFIGURATION_ALREADY_UPLOADED;
             }
-        } catch (ErrorDuringParsingJSONFile | ErrorDuringReflectiveClassCreation | ErrorDuringCreatingConnectionPool e) {
+        } catch (ErrorDuringParsingJSONFile e) {
             Logger.log(Level.SEVERE, e.getMessage(), e);
             responseString = Messages.ERROR_CONFIGURATION_UPLOAD;
         } catch (Throwable throwable) {

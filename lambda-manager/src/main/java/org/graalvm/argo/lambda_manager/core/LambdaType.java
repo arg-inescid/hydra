@@ -23,6 +23,14 @@ public enum LambdaType {
         this.type = type;
     }
 
+    public boolean isVM() {
+        return this.equals(VM_FIRECRACKER) || this.equals(VM_FIRECRACKER_SNAPSHOT) || this.equals(VM_CONTAINERD);
+    }
+
+    public boolean isContainer() {
+        return !isVM();
+    }
+
     public static LambdaType fromString(String text) throws RuntimeException {
         for (LambdaType b : LambdaType.values()) {
             if (b.type.equalsIgnoreCase(text)) {

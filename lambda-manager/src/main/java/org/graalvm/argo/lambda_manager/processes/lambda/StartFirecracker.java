@@ -7,15 +7,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.graalvm.argo.lambda_manager.core.Configuration;
-import org.graalvm.argo.lambda_manager.core.Function;
 
 public abstract class StartFirecracker extends StartLambda {
 
-    public StartFirecracker(Lambda lambda, Function function) {
-        super(lambda, function);
+    public StartFirecracker(Lambda lambda) {
+        super(lambda);
     }
 
-    protected List<String> prepareCommand(String startScript) {
+    protected List<String> prepareCommand(String imageName) {
         List<String> command = new ArrayList<>();
         LambdaConnection connection = lambda.getConnection();
 
@@ -24,10 +23,9 @@ public abstract class StartFirecracker extends StartLambda {
         command.add(String.format("--output=%s", memoryFilename()));
         command.add("-v");
         command.add("bash");
-        command.add(startScript);
-        command.add(function.getName());
+        command.add("src/scripts/start_firecracker.sh");
         command.add(String.valueOf(pid));
-        command.add(String.valueOf(function.getMemory()));
+        command.add(String.valueOf(Configuration.argumentStorage.getLambdaMemory()));
         command.add(connection.ip);
         command.add(connection.tap);
         command.add(Configuration.argumentStorage.getGateway());
@@ -37,6 +35,8 @@ public abstract class StartFirecracker extends StartLambda {
         } else {
             command.add("--noconsole");
         }
+        command.add(lambda.getLambdaName());
+        command.add(imageName);
         return command;
     }
 }

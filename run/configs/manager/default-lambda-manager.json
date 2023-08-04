@@ -1,6 +1,7 @@
 {
   "gateway": "172.18.0.1/16",
   "maxMemory": 2048,
+  "lambdaMemory": 256,
   "maxTaps": 5,
   "timeout": 25000,
   "healthCheck": 50,
@@ -11,11 +12,5 @@
     "turnOn": true,
     "redirectToFile": true,
     "fineGrain": true
-  },
-  "managerState": {
-    "scheduler": "org.graalvm.argo.lambda_manager.schedulers.RoundedRobinScheduler",
-    "encoder": "org.graalvm.argo.lambda_manager.encoders.DefaultCoder",
-    "storage": "org.graalvm.argo.lambda_manager.function_storage.InMemoryFunctionStorage",
-    "client": "org.graalvm.argo.lambda_manager.client.DefaultLambdaManagerClient"
   }
 }

@@ -49,20 +49,21 @@ public class RoundedRobinScheduler implements Scheduler {
         StartLambda process;
         switch (targetMode) {
             case HOTSPOT_W_AGENT:
-                process = Configuration.argumentStorage.getLambdaFactory().createHotspotWithAgent(lambda, function);
+                process = Configuration.argumentStorage.getLambdaFactory().createHotspotWithAgent(lambda);
+                function.setStatus(FunctionStatus.CONFIGURING_OR_BUILDING);
                 break;
             case HOTSPOT:
                 if (function.getStatus() == FunctionStatus.NOT_BUILT_CONFIGURED) {
                     new BuildSO(function).build().start();
                     Logger.log(Level.INFO, "Starting new .so build for function " + function.getName());
                 }
-                process = Configuration.argumentStorage.getLambdaFactory().createHotspot(lambda, function);
+                process = Configuration.argumentStorage.getLambdaFactory().createHotspot(lambda);
                 break;
             case GRAALVISOR:
-                process = Configuration.argumentStorage.getLambdaFactory().createGraalvisor(lambda, function);
+                process = Configuration.argumentStorage.getLambdaFactory().createGraalvisor(lambda);
                 break;
             case CUSTOM:
-                process = Configuration.argumentStorage.getLambdaFactory().createOpenWhisk(lambda, function);
+                process = Configuration.argumentStorage.getLambdaFactory().createOpenWhisk(lambda);
                 break;
             default:
                 throw new IllegalStateException("Unexpected value: " + function.getStatus());
@@ -71,10 +72,11 @@ public class RoundedRobinScheduler implements Scheduler {
         return process;
     }
 
+    // TODO - move to the lambda pool.
     private void startLambda(Lambda lambda, Function function, LambdaExecutionMode targetMode, String username) {
         try {
             long timeBefore = System.currentTimeMillis();
-            LambdaConnection connection = Configuration.argumentStorage.nextLambdaConnection();
+            LambdaConnection connection = Configuration.argumentStorage.getLambdaPool().nextLambdaConnection();
             lambda.setConnection(connection);
             ProcessBuilder process = whomToSpawn(lambda, function, targetMode).build();
             process.start();
@@ -83,7 +85,6 @@ public class RoundedRobinScheduler implements Scheduler {
                 LambdaManager.lambdas.add(lambda);
                 Logger.log(Level.INFO, "Added new lambda for " + function.getName() + " with mode " + lambda.getExecutionMode() + ". It took " + (System.currentTimeMillis() - timeBefore) + " ms.");
             } else {
-                Configuration.argumentStorage.getMemoryPool().deallocateMemoryLambda(function.getMemory());
                 new DefaultLambdaShutdownHandler(lambda).run();
                 Logger.log(Level.SEVERE, "Failed to add new lambda for " + function.getName() + " with mode " + lambda.getExecutionMode());
             }
@@ -96,56 +97,21 @@ public class RoundedRobinScheduler implements Scheduler {
     }
 
     private Lambda findLambda(Function function, LambdaExecutionMode targetMode, Set<Lambda> lambdas) {
-        Lambda result = null;
         for (Lambda lambda : lambdas) {
 
             boolean hotSpotMatch = targetMode == LambdaExecutionMode.HOTSPOT && lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT;
             boolean modeMatch = targetMode == lambda.getExecutionMode() || hotSpotMatch;
-            // If lambda is decomissioned, not of the correct target, or cannot register this function, skip.
-            if (lambda.isDecommissioned() || !modeMatch || !lambda.canRegisterInLambda(function)) {
+            boolean lambdaOverloaded = !function.canCollocateInvocation() && lambda.getOpenRequestCount() >= Environment.LAMBDA_MAX_OPEN_REQ_COUNT;
+            // If lambda is decomissioned, not of the correct target, overloaded, or cannot register this function, skip.
+            if (lambda.isDecommissioned() || !modeMatch || lambdaOverloaded || !lambda.canRegisterInLambda(function)) {
                 continue;
             }
 
-            // If we have a runtime with multiple isolates.
-            if (function.canCollocateInvocation()) {
-                // Acquire memory for a new isolate inside the lambda.
-                if (lambda.getMemoryPool().allocateMemoryLambda(function.getMemory())) {
-                    // We successfully allocated memory!
-                    result = lambda;
-                } else {
-                    Logger.log(Level.INFO, String.format("[function=%s, mode=%s]: Couldn't allocate memory in lambda %d.", function.getName(), targetMode, lambda.getLambdaID()));
-                }
-            }
-            // If we have a runtime with a single isolate.
-            else {
-                // If lambda if overloaded, skip.
-                if (lambda.getOpenRequestCount() < Environment.LAMBDA_MAX_OPEN_REQ_COUNT) {
-                    // Lambda is not overloaded!
-                    result = lambda;
-                }
-            }
-
-            if (result != null) {
-                synchronized (lambda) {
-                    if (lambda.canRegisterInLambda(function)) {
-                        // We won the race.
-                        if (!lambda.isRegisteredInLambda(function)) {
-                            // Instead of registering function inside synchronized block, we set the flag.
-                            lambda.setRequiresFunctionUpload(function);
-                            lambda.setRegisteredInLambda(function);
-                        }
-                        break;
-                    } else {
-                        // We lost the race, need to revert memory allocation.
-                        result = null;
-                        if (function.canCollocateInvocation()) {
-                            lambda.getMemoryPool().deallocateMemoryLambda(function.getMemory());
-                        }
-                    }
-                }
+            if (lambda.tryRegisterInLambda(function)) {
+                return lambda;
             }
         }
-        return result;
+        return null;
     }
 
     @Override
@@ -160,18 +126,12 @@ public class RoundedRobinScheduler implements Scheduler {
 
             // If we didn't find a lambda, try to allocate a new one.
             if (lambda == null) {
-                Lambda newLambda = new Lambda(function);
+                Lambda newLambda = new Lambda(targetMode); // TODO - to move to the pool.
                 // Check if there are lambdas already starting with the execution mode for that user.
                 Lambda prevLambda = LambdaManager.startingLambdas.get(targetMode).putIfAbsent(username, newLambda);
                 if (prevLambda == null) {
-                    // Acquire memory for a new lambda when needed.
-                    if (function.canCollocateInvocation() || Configuration.argumentStorage.getMemoryPool().allocateMemoryLambda(function.getMemory())) {
-                        // We successfully allocated memory!
-                        startLambda(newLambda, function, targetMode, username);
-                        startedLambda = true;
-                    } else {
-                        Logger.log(Level.FINE, String.format("[function=%s, mode=%s]: No memory available to launch a new lambda, waiting.", function.getName(), targetMode));
-                    }
+                    startLambda(newLambda, function, targetMode, username);
+                    startedLambda = true;
                 } else {
                     Logger.log(Level.FINE, String.format("[function=%s, mode=%s]: Already starting a new lambda, waiting.", function.getName(), targetMode));
                 }

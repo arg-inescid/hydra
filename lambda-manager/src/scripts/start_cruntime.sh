@@ -15,10 +15,10 @@ source "$DIR"/environment.sh
 source "$DIR"/export_lambda_arguments.sh
 source "$DIR"/prepare_lambda_directories.sh
 
-export_lambda_arguments "${@:1:9}"
-RUNTIME=$9
-VMID=${10}
-LAMBDA_NAME=${11}
+export_lambda_arguments "${@:1:8}"
+RUNTIME=$8
+VMID=$9
+LAMBDA_NAME=${10}
 
 LAMBDA_HOME="$CODEBASE_HOME"/"$LAMBDA_NAME"
 
