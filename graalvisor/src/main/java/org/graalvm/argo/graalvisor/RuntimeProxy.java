@@ -116,6 +116,10 @@ public abstract class RuntimeProxy {
         server.start();
     }
 
+    public void stop() {
+        server.stop(0);
+    }
+
     private class InvocationHandler implements ProxyHttpHandler {
 
         @Override

@@ -7,9 +7,13 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 public class NetworkNamespaceManager implements Runnable {
+
+    private static final int MAX_NAMESPACES = 255;
 
     private final NetworkNamespaceProvider networkNamespaceProvider;
 
@@ -21,18 +25,14 @@ public class NetworkNamespaceManager implements Runnable {
     public void run() {
         System.out.println("Running periodical check on whether to create or delete network namespaces");
         final Queue<NetworkNamespace> availableNetworkNamespaces = networkNamespaceProvider.getAvailableNetworkNamespaces();
-        final int initialSize = availableNetworkNamespaces.size();
-        if (availableNetworkNamespaces.size() < 100) {
-            for (int i = 0 ; i < 100 - initialSize; i++) {
+        final AtomicLong allNetworkNamespacesCount = networkNamespaceProvider.getNetworkNamespacesCount();
+        while (availableNetworkNamespaces.size() < 50) {
+            if (allNetworkNamespacesCount.get() == MAX_NAMESPACES) {
+                break;
+            } else {
                 networkNamespaceProvider.createNetworkNamespace();
             }
-        } else {
-            for (int i = 0; i < initialSize - 100; i++) {
-                final NetworkNamespace networkNamespace = availableNetworkNamespaces.poll();
-                if (networkNamespace != null) {
-                    networkNamespaceProvider.deleteNetworkNamespace(networkNamespace);
-                }
-            }
         }
+        // TODO: add condition to remove network namespaces
     }
 }

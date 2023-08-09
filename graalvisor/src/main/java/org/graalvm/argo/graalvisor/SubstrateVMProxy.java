@@ -152,10 +152,17 @@ public class SubstrateVMProxy extends RuntimeProxy {
      */
     private static ConcurrentMap<String, FunctionPipeline> queues = new ConcurrentHashMap<>();
 
-    private static NetworkNamespaceProvider networkNamespaceProvider = new NetworkNamespaceProvider();
+    private static final NetworkNamespaceProvider networkNamespaceProvider = new NetworkNamespaceProvider();
 
     public SubstrateVMProxy(int port) throws IOException {
         super(port);
+        Runtime
+            .getRuntime()
+            .addShutdownHook(new Thread(() -> {
+                System.out.println("Shutting down");
+                SubstrateVMProxy.super.stop();
+                networkNamespaceProvider.deleteAllNetworkNamespaces();
+            }));
     }
 
     private static FunctionPipeline getFunctionPipeline(PolyglotFunction function) {

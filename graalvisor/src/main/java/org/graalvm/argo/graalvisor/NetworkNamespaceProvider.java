@@ -4,54 +4,65 @@ import org.graalvm.argo.graalvisor.sandboxing.NativeSandboxInterface;
 
 import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class NetworkNamespaceProvider {
 
-	private static final int MAX_COUNT = 256;
+	private static final int MAX_COUNT_FOURTH_BYTE = 255;
+	private static final int MAX_COUNT_THIRD_BYTE = 256;
 
-	private int count;
+	private int thirdByte;
+	private int fourthByte;
 	private final Queue<NetworkNamespace> availableNetworkNamespaces;
-	private final Map<Integer, String> busyIpDigits;
+	private final Map<String, NetworkNamespace> busyNetworkNamespaces;
+	private final AtomicLong count;
+	private final ScheduledExecutorService scheduledExecutor;
 
 	public NetworkNamespaceProvider() {
-		this.count = 1;
-		this.availableNetworkNamespaces = new LinkedBlockingDeque<>();
-		this.busyIpDigits = new ConcurrentHashMap<>();
-		Executors
-			.newSingleThreadScheduledExecutor()
+		this.thirdByte = 0;
+		this.fourthByte = 0;
+		this.availableNetworkNamespaces = new ArrayBlockingQueue<>(256);
+		this.busyNetworkNamespaces = new ConcurrentHashMap<>();
+		this.count = new AtomicLong(0);
+		this.scheduledExecutor = Executors
+			.newSingleThreadScheduledExecutor();
+		scheduledExecutor
 			.scheduleAtFixedRate(
 				new NetworkNamespaceManager(this),
 				0,
 				5,
-				TimeUnit.MILLISECONDS);
+				TimeUnit.SECONDS);
 	}
 
-	public NetworkNamespace createNetworkNamespace() {
+	public void createNetworkNamespace() {
 		long start, finish;
 		start = System.nanoTime();
+		final int newThirdByte;
+		final int newFourthByte;
 		synchronized (this) {
-			if ((count % MAX_COUNT) == MAX_COUNT - 1) {
-				if (count == Integer.MAX_VALUE || count == Integer.MAX_VALUE - 1) {
-					count = 1;
+			if ((fourthByte + 1) % MAX_COUNT_FOURTH_BYTE == 0) {
+				if ((thirdByte + 1) % MAX_COUNT_THIRD_BYTE == 0) {
+					thirdByte = 0;
+					fourthByte = 1;
 				} else {
-					count += 2;
+					thirdByte++;
+					fourthByte = 1;
 				}
 			} else {
-				if (count == Integer.MAX_VALUE || count == Integer.MAX_VALUE - 1) {
-					count = 1;
-				} else {
-					count++;
-				}
+				fourthByte++;
 			}
+			newThirdByte = thirdByte;
+			newFourthByte = fourthByte;
 		}
-		final int ipDigit = (count % MAX_COUNT);
-		final String name = String.format("netns%s", ipDigit);
+		final NetworkNamespace networkNamespace = new NetworkNamespace(newThirdByte, newFourthByte);
 		while (true) {
-			final String inserted = busyIpDigits.putIfAbsent(ipDigit, name);
+			final String key = String.format(
+				"%s_%s",
+				networkNamespace.getThirdByte(),
+				networkNamespace.getFourthByte());
+			final NetworkNamespace inserted = busyNetworkNamespaces.putIfAbsent(key, networkNamespace);
 			if (inserted != null) {
 				break;
 			}
@@ -61,8 +72,10 @@ public class NetworkNamespaceProvider {
 				throw new RuntimeException("Internal server error.");
 			}
 		}
-		NativeSandboxInterface.createNetworkNamespace(name, ipDigit);
-		final NetworkNamespace networkNamespace = new NetworkNamespace(name, ipDigit);
+		NativeSandboxInterface.createNetworkNamespace(
+			networkNamespace.getName(),
+			networkNamespace.getThirdByte(),
+			networkNamespace.getFourthByte());
 		availableNetworkNamespaces.add(networkNamespace);
 		finish = System.nanoTime();
 		System.out.println(String.format(
@@ -70,13 +83,13 @@ public class NetworkNamespaceProvider {
 			Thread.currentThread().getId(),
 			networkNamespace.getName(),
 			(finish - start)/1000));
-		return networkNamespace;
 	}
 
 	public void deleteNetworkNamespace(final NetworkNamespace networkNamespace) {
 		long start, finish;
 		start = System.nanoTime();
 		NativeSandboxInterface.deleteNetworkNamespace(networkNamespace.getName());
+		count.decrementAndGet();
 		finish = System.nanoTime();
 		System.out.println(String.format(
 			"[thread %s] Deleted network namespace %s in %s us",
@@ -95,11 +108,38 @@ public class NetworkNamespaceProvider {
 	}
 
 	public void freeNetworkNamespace(final NetworkNamespace networkNamespace) {
-		busyIpDigits.remove(networkNamespace.getIpDigit());
+		long start, finish;
+		start = System.nanoTime();
+		NativeSandboxInterface.disableVeths(networkNamespace.getName());
+		NativeSandboxInterface.enableVeths(networkNamespace.getName());
+		final String key = String.format(
+			"%s_%s",
+			networkNamespace.getThirdByte(),
+			networkNamespace.getFourthByte());
+		busyNetworkNamespaces.remove(key);
 		availableNetworkNamespaces.add(networkNamespace);
+		finish = System.nanoTime();
+		System.out.println(String.format(
+			"[thread %s] Freed network namespace %s in %s us",
+			Thread.currentThread().getId(),
+			networkNamespace.getName(),
+			(finish - start) / 1000));
 	}
 
 	public Queue<NetworkNamespace> getAvailableNetworkNamespaces() {
 		return availableNetworkNamespaces;
+	}
+
+	public AtomicLong getNetworkNamespacesCount() {
+		return count;
+	}
+
+	public void deleteAllNetworkNamespaces() {
+		scheduledExecutor
+			.shutdown();
+		availableNetworkNamespaces
+			.forEach(this::deleteNetworkNamespace);
+		busyNetworkNamespaces
+			.forEach((ipDigit, networkNamespace) -> this.deleteNetworkNamespace(networkNamespace));
 	}
 }
