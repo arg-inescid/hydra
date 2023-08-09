@@ -20,7 +20,6 @@ graalpy -m ginstall list
 graalpy -m ginstall install numpy
 graalpy -m ginstall install Pillow
 graalpy -m ginstall install requests
-graalpy -m ginstall install squiggle
 graalpy -m ginstall install torch
 graalpy -m ginstall install torchvision
 graalpy -m ginstall install texttable
