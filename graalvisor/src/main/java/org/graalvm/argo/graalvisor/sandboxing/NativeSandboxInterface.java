@@ -6,6 +6,14 @@ public class NativeSandboxInterface {
 
     public static native int createNativeProcessSandbox(int[] childPipe, int[] parentPipe);
 
+    public static native void createMainCgroup();
+    public static native void deleteMainCgroup();
+
+    public static native void createFunctionCgroup(String isolateId);
+    public static native void deleteFunctionCgroup(String isolateId);
+
+    public static native void setCgroupWeight(String isolateId, int quota);
+
     public static native void enterNativeProcessSandbox();
 
     public static native void leaveNativeProcessSandbox();

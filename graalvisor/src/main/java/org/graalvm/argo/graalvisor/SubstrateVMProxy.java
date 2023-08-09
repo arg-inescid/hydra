@@ -1,6 +1,7 @@
 package org.graalvm.argo.graalvisor;
 
 import java.io.IOException;
+import java.time.LocalTime;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -191,20 +192,23 @@ public class SubstrateVMProxy extends RuntimeProxy {
         } else {
             IsolateSandboxHandle shandle = (IsolateSandboxHandle) prepareSandbox(function);
 
-            System.out.println("Teste1 " + );
+            System.out.println("getIsolateThread " + LocalTime.now());
             IsolateThread processContext = shandle.getIsolateThread();
             String isolateId = String.valueOf(Isolates.getIsolate(processContext).rawValue());
 
-            System.out.println(isolateId);
-
+            System.out.println("createFunctionCgroup " + LocalTime.now());
             NativeSandboxInterface.createFunctionCgroup(isolateId);
 
-            NativeSandboxInterface.setCgroupWeight(isolateId, 10);
+            System.out.println("setCgroupWeight " + LocalTime.now());
+//            NativeSandboxInterface.setCgroupWeight(isolateId, 10);
 
+            System.out.println("invokeSandbox " + LocalTime.now());
             res = shandle.invokeSandbox(arguments);
 
+            System.out.println("deleteFunctionCgroup " + LocalTime.now());
             NativeSandboxInterface.deleteFunctionCgroup(isolateId);
 
+            System.out.println("destroySandbox " + LocalTime.now());
             destroySandbox(function, shandle);
         }
 
