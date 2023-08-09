@@ -9,7 +9,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.graalvm.argo.graalvisor.function.PolyglotFunction;
+import org.graalvm.argo.graalvisor.sandboxing.IsolateSandboxHandle;
+import org.graalvm.argo.graalvisor.sandboxing.NativeSandboxInterface;
 import org.graalvm.argo.graalvisor.sandboxing.SandboxHandle;
+import org.graalvm.nativeimage.IsolateThread;
+import org.graalvm.nativeimage.Isolates;
 
 /**
  * A runtime proxy that runs requests on Native image-based sandboxes.
@@ -185,8 +189,22 @@ public class SubstrateVMProxy extends RuntimeProxy {
         } else if (cached) {
             res = getFunctionPipeline(function).invokeInCachedSandbox(arguments);
         } else {
-            SandboxHandle shandle = prepareSandbox(function);
+            IsolateSandboxHandle shandle = (IsolateSandboxHandle) prepareSandbox(function);
+
+            System.out.println("Teste1 " + );
+            IsolateThread processContext = shandle.getIsolateThread();
+            String isolateId = String.valueOf(Isolates.getIsolate(processContext).rawValue());
+
+            System.out.println(isolateId);
+
+            NativeSandboxInterface.createFunctionCgroup(isolateId);
+
+            NativeSandboxInterface.setCgroupWeight(isolateId, 10);
+
             res = shandle.invokeSandbox(arguments);
+
+            NativeSandboxInterface.deleteFunctionCgroup(isolateId);
+
             destroySandbox(function, shandle);
         }
 
