@@ -28,15 +28,6 @@ public class LambdaManager {
      */
     public static final Set<Lambda> lambdas = Collections.newSetFromMap(new ConcurrentHashMap<Lambda, Boolean>());
 
-    /*
-     * Map of starting Lambdas per execution mode.
-     */
-    public static final Map<LambdaExecutionMode, Map<String, Lambda>> startingLambdas = Map.ofEntries(
-            Map.entry(LambdaExecutionMode.HOTSPOT_W_AGENT, new ConcurrentHashMap<String, Lambda>()),
-            Map.entry(LambdaExecutionMode.HOTSPOT, new ConcurrentHashMap<String, Lambda>()),
-            Map.entry(LambdaExecutionMode.GRAALVISOR, new ConcurrentHashMap<String, Lambda>()),
-            Map.entry(LambdaExecutionMode.CUSTOM, new ConcurrentHashMap<String, Lambda>()));
-
     private static String formatRequestSpentTimeMessage(Lambda lambda, Function function, long spentTime) {
         String username = Configuration.coder.decodeUsername(function.getName());
         String functionName = Configuration.coder.decodeFunctionName(function.getName());

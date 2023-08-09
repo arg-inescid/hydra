@@ -45,57 +45,6 @@ public class RoundedRobinScheduler implements Scheduler {
     // Wether a lambda is being decommissioned.
     public static volatile boolean hasDecommissionedLambdas;
 
-    private StartLambda whomToSpawn(Lambda lambda, Function function, LambdaExecutionMode targetMode) {
-        StartLambda process;
-        switch (targetMode) {
-            case HOTSPOT_W_AGENT:
-                process = Configuration.argumentStorage.getLambdaFactory().createHotspotWithAgent(lambda);
-                function.setStatus(FunctionStatus.CONFIGURING_OR_BUILDING);
-                break;
-            case HOTSPOT:
-                if (function.getStatus() == FunctionStatus.NOT_BUILT_CONFIGURED) {
-                    new BuildSO(function).build().start();
-                    Logger.log(Level.INFO, "Starting new .so build for function " + function.getName());
-                }
-                process = Configuration.argumentStorage.getLambdaFactory().createHotspot(lambda);
-                break;
-            case GRAALVISOR:
-                process = Configuration.argumentStorage.getLambdaFactory().createGraalvisor(lambda);
-                break;
-            case CUSTOM:
-                process = Configuration.argumentStorage.getLambdaFactory().createOpenWhisk(lambda);
-                break;
-            default:
-                throw new IllegalStateException("Unexpected value: " + function.getStatus());
-        }
-        Logger.log(Level.INFO, "Starting new " + targetMode + " lambda for function " + function.getName());
-        return process;
-    }
-
-    // TODO - move to the lambda pool.
-    private void startLambda(Lambda lambda, Function function, LambdaExecutionMode targetMode, String username) {
-        try {
-            long timeBefore = System.currentTimeMillis();
-            LambdaConnection connection = Configuration.argumentStorage.getLambdaPool().nextLambdaConnection();
-            lambda.setConnection(connection);
-            ProcessBuilder process = whomToSpawn(lambda, function, targetMode).build();
-            process.start();
-            if (NetworkUtils.waitForOpenPort(lambda.getConnection().ip, lambda.getConnection().port, 25)) {
-                lambda.resetTimer();
-                LambdaManager.lambdas.add(lambda);
-                Logger.log(Level.INFO, "Added new lambda for " + function.getName() + " with mode " + lambda.getExecutionMode() + ". It took " + (System.currentTimeMillis() - timeBefore) + " ms.");
-            } else {
-                new DefaultLambdaShutdownHandler(lambda).run();
-                Logger.log(Level.SEVERE, "Failed to add new lambda for " + function.getName() + " with mode " + lambda.getExecutionMode());
-            }
-        } catch (Exception e) {
-            System.out.println("WARNING!");
-            e.printStackTrace();
-        } finally {
-            LambdaManager.startingLambdas.get(targetMode).remove(username);
-        }
-    }
-
     private Lambda findLambda(Function function, LambdaExecutionMode targetMode, Set<Lambda> lambdas) {
         for (Lambda lambda : lambdas) {
 
@@ -118,40 +67,38 @@ public class RoundedRobinScheduler implements Scheduler {
     public Lambda schedule(Function function, LambdaExecutionMode targetMode) {
         Lambda lambda = null;
         String username = Configuration.coder.decodeUsername(function.getName());
-        boolean startedLambda = false;
+        boolean obtainedLambda = false;
 
         while (Environment.notShutdownHookActive()) {
 
             lambda = findLambda(function, targetMode, LambdaManager.lambdas);
 
-            // If we didn't find a lambda, try to allocate a new one.
+            // If we didn't find a lambda, try to get a new one from the pool.
             if (lambda == null) {
-                Lambda newLambda = new Lambda(targetMode); // TODO - to move to the pool.
-                // Check if there are lambdas already starting with the execution mode for that user.
-                Lambda prevLambda = LambdaManager.startingLambdas.get(targetMode).putIfAbsent(username, newLambda);
-                if (prevLambda == null) {
-                    startLambda(newLambda, function, targetMode, username);
-                    startedLambda = true;
+                Lambda newLambda = Configuration.argumentStorage.getLambdaPool().getLambda(targetMode);
+                if (newLambda != null) {
+                    newLambda.resetTimer();
+                    LambdaManager.lambdas.add(newLambda);
+                    function.updateStatus(targetMode);
+                    obtainedLambda = true;
                 } else {
-                    Logger.log(Level.FINE, String.format("[function=%s, mode=%s]: Already starting a new lambda, waiting.", function.getName(), targetMode));
+                    Logger.log(Level.FINE, String.format("[function=%s, mode=%s]: The lambda pool is currently empty, waiting.", function.getName(), targetMode));
                 }
             } else {
-                // Cancel the lambda timeout timer.
-                lambda.getTimer().cancel(); // TODO - can we avoid this? It may have a sync...
-                // Increment the open request count.
-                lambda.incOpenRequestCount();
+                // Cancel the lambda timeout timer and increment the open request count.
+                lambda.incOpenRequests();
                 // Break the while true.
                 break;
             }
 
-            if (!startedLambda) {
+            if (!obtainedLambda) {
                 try {
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
                     // Ignored.
                 }
             }
-            startedLambda = false;
+            obtainedLambda = false;
         }
 
         synchronized (function) {
@@ -177,13 +124,8 @@ public class RoundedRobinScheduler implements Scheduler {
 
     @Override
     public void reschedule(Lambda lambda, Function function) {
-        synchronized (function) {
-            int openRequestCount = lambda.decOpenRequestCount();
-            lambda.incClosedRequestCount();
-            if (openRequestCount == 0) {
-                lambda.resetTimer();
-            }
-        }
+        // Decrement the open request count and reset the lambda timeout timer.
+        lambda.decOpenRequests();
         if (function.canCollocateInvocation()) {
             lambda.getMemoryPool().deallocateMemoryLambda(function.getMemory());
         }

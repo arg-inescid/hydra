@@ -1,19 +1,17 @@
 package org.graalvm.argo.lambda_manager.processes.taps;
 
 import org.graalvm.argo.lambda_manager.processes.AbstractProcess;
-import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
 import org.graalvm.argo.lambda_manager.core.Environment;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
 
-public class RemoveTapsFromPool extends AbstractProcess {
+public class RemoveTap extends AbstractProcess {
 
-    Queue<LambdaConnection> connections;
+    private final String tap;
 
-    public RemoveTapsFromPool(Queue<LambdaConnection> connections) {
-        this.connections = connections;
+    public RemoveTap(String tap) {
+        this.tap = tap;
     }
 
     @Override
@@ -21,9 +19,7 @@ public class RemoveTapsFromPool extends AbstractProcess {
         List<String> command = new ArrayList<>();
         command.add("bash");
         command.add("src/scripts/remove_taps.sh");
-        for (LambdaConnection connection : connections) {
-            command.add(connection.tap);
-        }
+        command.add(tap);
         return command;
     }
 

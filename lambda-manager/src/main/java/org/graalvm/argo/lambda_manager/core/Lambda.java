@@ -61,21 +61,18 @@ public class Lambda {
 		return this.lid;
 	}
 
-	public int incOpenRequestCount() {
-		return ++openRequestCount;
-	}
+    public synchronized void incOpenRequests() {
+        timer.cancel();
+        ++openRequestCount;
+    }
 
-	public int decOpenRequestCount() {
-		return --openRequestCount;
-	}
-
-	public int incClosedRequestCount() {
-		return ++closedRequestCount;
-	}
-
-	public int decClosedRequestCount() {
-		return --closedRequestCount;
-	}
+    public synchronized void decOpenRequests() {
+        --openRequestCount;
+        ++closedRequestCount;
+        if (openRequestCount == 0) {
+            resetTimer();
+        }
+    }
 
 	public void resetClosedRequestCount() {
 		closedRequestCount = 0;
@@ -220,5 +217,12 @@ public class Lambda {
         }
         function.setLastAgentPID(lid);
         function.setStatus(FunctionStatus.NOT_BUILT_CONFIGURED);
+    }
+
+    /**
+     * Check whether this lambda has not been used.
+     */
+    public boolean isIntact() {
+        return !decommissioned && username == null && requiresFunctionUpload.isEmpty();
     }
 }

@@ -16,6 +16,7 @@ public class Environment {
     public static final int LAMBDA_STARTUP_THRESHOLD = 1000;
 
     // Maximum number of open requests that we will accept to send another request.
+    // TODO: Make sure non-graalvisor runtimes do not run invocations concurrently.
     public static final int LAMBDA_MAX_OPEN_REQ_COUNT = 1000;
 
     // Tap name is limited to 15 characters. In our case tap names are created from prefix (4 chars) + random string (10 chars).

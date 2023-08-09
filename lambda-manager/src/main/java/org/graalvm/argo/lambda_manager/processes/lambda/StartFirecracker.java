@@ -25,7 +25,7 @@ public abstract class StartFirecracker extends StartLambda {
         command.add("bash");
         command.add("src/scripts/start_firecracker.sh");
         command.add(String.valueOf(pid));
-        command.add(String.valueOf(Configuration.argumentStorage.getLambdaMemory()));
+        command.add(String.valueOf(Configuration.argumentStorage.getMaxMemory()));
         command.add(connection.ip);
         command.add(connection.tap);
         command.add(Configuration.argumentStorage.getGateway());

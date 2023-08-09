@@ -10,7 +10,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
                 "gateway",
                 "maxMemory",
-                "lambdaMemory",
                 "maxTaps",
                 "timeout",
                 "healthCheck",
@@ -18,12 +17,11 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
                 "lambdaType",
                 "lambdaConsole",
                 "managerConsole",
-                "managerState"
+                "lambdaPool"
 })
 public class LambdaManagerConfiguration implements Serializable {
     @JsonProperty("gateway") private String gateway;
     @JsonProperty("maxMemory") private int maxMemory;
-    @JsonProperty("lambdaMemory") private int lambdaMemory;
     @JsonProperty("maxTaps") private int maxTaps;
     @JsonProperty("timeout") private int timeout;
     @JsonProperty("healthCheck") private int healthCheck;
@@ -31,6 +29,7 @@ public class LambdaManagerConfiguration implements Serializable {
     @JsonProperty("lambdaType") private String lambdaType;
     @JsonProperty("lambdaConsole") private boolean lambdaConsole;
     @JsonProperty("managerConsole") private LambdaManagerConsole lambdaManagerConsole;
+    @JsonProperty("lambdaPool") private LambdaManagerPool lambdaPool;
     private final static long serialVersionUID = -6081673374812554207L;
 
     /**
@@ -54,12 +53,11 @@ public class LambdaManagerConfiguration implements Serializable {
      * @param lambdaManagerConsole - The class with information about manager logging.
      * @param lambdaManagerState - The class that represent state of one manager's instance.
      */
-    public LambdaManagerConfiguration(String gateway, int maxMemory, int lambdaMemory, int maxTaps, int timeout, int healthCheck, int lambdaPort, String lambdaType,
-                    boolean lambdaConsole, LambdaManagerConsole lambdaManagerConsole) {
+    public LambdaManagerConfiguration(String gateway, int maxMemory, int maxTaps, int timeout, int healthCheck, int lambdaPort, String lambdaType,
+                    boolean lambdaConsole, LambdaManagerConsole lambdaManagerConsole, LambdaManagerPool lambdaPool) {
         super();
         this.gateway = gateway;
         this.maxMemory = maxMemory;
-        this.lambdaMemory = lambdaMemory;
         this.maxTaps = maxTaps;
         this.timeout = timeout;
         this.healthCheck = healthCheck;
@@ -67,6 +65,7 @@ public class LambdaManagerConfiguration implements Serializable {
         this.lambdaType = lambdaType;
         this.lambdaConsole = lambdaConsole;
         this.lambdaManagerConsole = lambdaManagerConsole;
+        this.lambdaPool = lambdaPool;
     }
 
     @JsonProperty("gateway")
@@ -87,16 +86,6 @@ public class LambdaManagerConfiguration implements Serializable {
     @JsonProperty("maxMemory")
     public void setMaxMemory(int maxMemory) {
         this.maxMemory = maxMemory;
-    }
-
-    @JsonProperty("lambdaMemory")
-    public int getLambdaMemory() {
-        return lambdaMemory;
-    }
-
-    @JsonProperty("lambdaMemory")
-    public void setLambdaMemory(int lambdaMemory) {
-        this.lambdaMemory = lambdaMemory;
     }
 
     @JsonProperty("maxTaps")
@@ -167,5 +156,15 @@ public class LambdaManagerConfiguration implements Serializable {
     @JsonProperty("managerConsole")
     public void setManagerConsole(LambdaManagerConsole lambdaManagerConsole) {
         this.lambdaManagerConsole = lambdaManagerConsole;
+    }
+
+    @JsonProperty("lambdaPool")
+    public LambdaManagerPool getLambdaPool() {
+        return lambdaPool;
+    }
+
+    @JsonProperty("lambdaPool")
+    public void setLambdaPool(LambdaManagerPool lambdaPool) {
+        this.lambdaPool = lambdaPool;
     }
 }

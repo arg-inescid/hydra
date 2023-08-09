@@ -2,14 +2,11 @@ package org.graalvm.argo.lambda_manager.processes.taps;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
 
-import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
+public class RemoveTapsOutsidePool extends RemoveTap {
 
-public class RemoveTapsOutsidePool extends RemoveTapsFromPool {
-
-    public RemoveTapsOutsidePool(Queue<LambdaConnection> connections) {
-        super(connections);
+    public RemoveTapsOutsidePool(String tap) {
+        super(tap);
     }
 
     @Override

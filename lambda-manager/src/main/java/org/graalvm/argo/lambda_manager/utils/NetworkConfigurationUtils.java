@@ -8,6 +8,9 @@ import java.util.Random;
 import java.util.logging.Level;
 
 import org.graalvm.argo.lambda_manager.core.Environment;
+import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
+import org.graalvm.argo.lambda_manager.processes.taps.CreateTap;
+import org.graalvm.argo.lambda_manager.processes.taps.RemoveTap;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 
 import com.github.maltalex.ineter.base.IPv4Address;
@@ -66,6 +69,19 @@ public class NetworkConfigurationUtils {
                         .limit(Environment.RAND_STRING_LEN)
                         .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
                         .toString();
+    }
+
+    public static void createTap(String tap) throws InterruptedException {
+        // Create os-level network interface (tap).
+        ProcessBuilder createTaps = new CreateTap(tap).build();
+        createTaps.start();
+        createTaps.join();
+    }
+
+    public static void removeTap(String tap) throws InterruptedException {
+        ProcessBuilder removeTap = new RemoveTap(tap).build();
+        removeTap.start();
+        removeTap.join();
     }
 
 }

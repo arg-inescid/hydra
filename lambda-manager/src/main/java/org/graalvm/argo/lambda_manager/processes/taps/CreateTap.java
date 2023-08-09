@@ -1,19 +1,17 @@
 package org.graalvm.argo.lambda_manager.processes.taps;
 
 import org.graalvm.argo.lambda_manager.processes.AbstractProcess;
-import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
 import org.graalvm.argo.lambda_manager.core.Environment;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
 
-public class CreateTaps extends AbstractProcess {
+public class CreateTap extends AbstractProcess {
 
-    Queue<LambdaConnection> connections;
+    private final String tap;
 
-    public CreateTaps(Queue<LambdaConnection> connections) {
-        this.connections = connections;
+    public CreateTap(String tap) {
+        this.tap = tap;
     }
 
     @Override
@@ -21,9 +19,7 @@ public class CreateTaps extends AbstractProcess {
         List<String> command = new ArrayList<>();
         command.add("bash");
         command.add("src/scripts/create_taps.sh");
-        for (LambdaConnection connection : connections) {
-            command.add(connection.tap);
-        }
+        command.add(tap);
         return command;
     }
 

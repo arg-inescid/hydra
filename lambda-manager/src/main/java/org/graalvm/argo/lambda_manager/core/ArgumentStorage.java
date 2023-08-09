@@ -53,7 +53,6 @@ public class ArgumentStorage {
     private int healthCheck;
     private int lambdaPort;
     private int maxMemory;
-    private int lambdaMemory;
     private boolean isLambdaConsoleActive; // TODO - do we ever disable this?
 
     /* Private constructor. */
@@ -64,7 +63,6 @@ public class ArgumentStorage {
         this.mask = IPv4Subnet.of(lambdaManagerConfiguration.getGateway()).getNetworkMask().toString();
         this.lambdaType = LambdaType.fromString(lambdaManagerConfiguration.getLambdaType());
         this.maxMemory = lambdaManagerConfiguration.getMaxMemory();
-        this.lambdaMemory = lambdaManagerConfiguration.getLambdaMemory();
         this.lambdaPool = new LambdaPool(lambdaType, lambdaManagerConfiguration.getMaxTaps());
         this.timeout = lambdaManagerConfiguration.getTimeout();
         this.healthCheck = lambdaManagerConfiguration.getHealthCheck();
@@ -176,13 +174,13 @@ public class ArgumentStorage {
             new DefaultLambdaManagerClient(),
             this);
 
-        this.lambdaPool.setUp(beanContext, lambdaPort, lambdaManagerConfiguration.getGateway());
-
         if (lambdaType == LambdaType.VM_FIRECRACKER || lambdaType == LambdaType.VM_FIRECRACKER_SNAPSHOT) {
             prepareDevmapper();
         }
 
         ElapseTimer.init(); // Start internal timer.
+
+        this.lambdaPool.setUp(beanContext, lambdaPort, lambdaManagerConfiguration.getGateway(), lambdaManagerConfiguration.getLambdaPool());
     }
 
     private void prepareDevmapper() {
@@ -217,10 +215,6 @@ public class ArgumentStorage {
 
     public int getMaxMemory() {
         return maxMemory;
-    }
-
-    public int getLambdaMemory() {
-        return lambdaMemory;
     }
 
     public int getHealthCheck() {

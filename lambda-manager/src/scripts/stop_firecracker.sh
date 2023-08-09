@@ -33,13 +33,7 @@ if [ -z "$LAMBDA_PORT" ]; then
   exit 1
 fi
 
-VMM_TAP_NAME=$6
-if [ -z "$VMM_TAP_NAME" ]; then
-  echo "Lambda tap is not present."
-  exit 1
-fi
-
-LAMBDA_ID=$7
+LAMBDA_ID=$6
 
 function stop_firecracker {
   LAMBDA_PID=$(cat "$LAMBDA_HOME"/lambda.pid)

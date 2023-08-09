@@ -19,7 +19,6 @@ public class BuildSO extends AbstractProcess {
 
     @Override
     protected List<String> makeCommand() {
-        function.setStatus(FunctionStatus.CONFIGURING_OR_BUILDING);
         List<String> command = new ArrayList<>();
         command.add("bash");
         command.add("src/scripts/build_so.sh");

@@ -2,9 +2,12 @@ package org.graalvm.argo.lambda_manager.core;
 
 import org.graalvm.argo.lambda_manager.optimizers.FunctionStatus;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
+import org.graalvm.argo.lambda_manager.processes.lambda.BuildSO;
+import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.logging.Level;
 
 public class Function {
 
@@ -161,5 +164,25 @@ public class Function {
             }
         }
         return true;
+    }
+
+    /**
+     * Update status when creating a new lambda for this function.
+     */
+    public synchronized void updateStatus(LambdaExecutionMode targetMode) {
+        switch (targetMode) {
+            case HOTSPOT_W_AGENT:
+                status = FunctionStatus.CONFIGURING_OR_BUILDING;
+                break;
+            case HOTSPOT:
+                if (status == FunctionStatus.NOT_BUILT_CONFIGURED) {
+                    status = FunctionStatus.CONFIGURING_OR_BUILDING;
+                    new BuildSO(this).build().start();
+                    Logger.log(Level.INFO, "Starting new .so build for function " + name);
+                }
+                break;
+            default:
+                break;
+        }
     }
 }
