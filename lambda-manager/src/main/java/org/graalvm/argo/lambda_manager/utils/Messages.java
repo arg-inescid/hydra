@@ -13,6 +13,7 @@ public class Messages {
     public static final String CONFIGURATION_ALREADY_UPLOADED = "Configuration has been already uploaded!";
     public static final String SUCCESS_CONFIGURATION_UPLOAD = "Successfully uploaded lambda manager configuration!";
     public static final String ERROR_CONFIGURATION_UPLOAD = "Error during uploading new configuration!";
+    public static final String ERROR_LAMBDA_TYPE = "Lambda type not found - %s!";
 
     // Upload function messages.
     public static final String SUCCESS_FUNCTION_UPLOAD = "Successfully uploaded function - %s!";

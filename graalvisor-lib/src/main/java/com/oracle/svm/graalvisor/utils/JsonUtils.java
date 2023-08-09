@@ -7,7 +7,7 @@ import java.util.Map;
 import com.fasterxml.jackson.jr.ob.JSON;
 
 public class JsonUtils {
-    public static final JSON json = JSON.std.with(JSON.Feature.PRETTY_PRINT_OUTPUT);
+    public static final JSON json = JSON.std;
 
     /**
      * Extract arguments json encoded string into Map.

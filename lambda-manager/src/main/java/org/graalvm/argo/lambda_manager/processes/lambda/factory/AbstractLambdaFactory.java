@@ -1,0 +1,16 @@
+package org.graalvm.argo.lambda_manager.processes.lambda.factory;
+
+import org.graalvm.argo.lambda_manager.core.Lambda;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartLambda;
+
+public abstract class AbstractLambdaFactory {
+
+    public abstract StartLambda createHotspotWithAgent(Lambda lambda);
+
+    public abstract StartLambda createHotspot(Lambda lambda);
+
+    public abstract StartLambda createGraalvisor(Lambda lambda);
+
+    public abstract StartLambda createOpenWhisk(Lambda lambda);
+
+}

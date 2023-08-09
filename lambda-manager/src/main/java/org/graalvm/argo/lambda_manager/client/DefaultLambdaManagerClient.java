@@ -23,17 +23,20 @@ import io.reactivex.Flowable;
 public class DefaultLambdaManagerClient implements LambdaManagerClient {
 
     private String sendRequest(HttpRequest<?> request, Lambda lambda) {
-        try (RxHttpClient client = lambda.getConnectionTriplet().client) {
+        try (RxHttpClient client = lambda.getConnection().client) {
             Flowable<String> flowable = client.retrieve(request);
             for (int failures = 0; failures < Configuration.FAULT_TOLERANCE; failures++) {
                 try {
                     return flowable.blockingFirst();
                 } catch (ReadTimeoutException readTimeoutException) {
+                    Logger.log(Level.WARNING, "Received readTimeoutException");
                     break;
                 } catch (HttpClientException httpClientException) {
                     try {
+                        Logger.log(Level.WARNING, "Received httpClientException");
                         Thread.sleep(Configuration.argumentStorage.getHealthCheck());
                     } catch (InterruptedException interruptedException) {
+                        Logger.log(Level.WARNING, "Received interruptedException");
                         // Skipping raised exception.
                     }
                 }
@@ -48,10 +51,17 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         // TODO: optimization: read chunks of file and send it in parts.
         try (InputStream sourceFile = Files.newInputStream(function.buildFunctionSourceCodePath())) {
             String path = null;
-            if (function.getRuntime().equals(Function.GV_DOCKER_RUNTIME) || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
-                path = String.format("/register?name=%s&language=%s&entryPoint=%s", function.getName(), function.getLanguage().toString(), function.getEntryPoint());
+            if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
+                String sandbox = function.getGraalvisorSandbox();
+                if (sandbox != null) {
+                    path = String.format("/register?name=%s&language=%s&entryPoint=%s&sandbox=%s", function.getName(), function.getLanguage().toString(), function.getEntryPoint(), sandbox);
+                } else {
+                    path = String.format("/register?name=%s&language=%s&entryPoint=%s", function.getName(), function.getLanguage().toString(), function.getEntryPoint());
+                }
             } else if (lambda.getExecutionMode() == LambdaExecutionMode.CUSTOM) {
                 path = "/init";
+            } else if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT || lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT) {
+                path = String.format("/register?name=%s&language=%s&entryPoint=%s", function.getName(), function.getLanguage().toString(), function.getEntryPoint());
             } else {
                 Logger.log(Level.WARNING, String.format("Unexpected lambda mode (%s) when registering function %s!", lambda.getExecutionMode(), function.getName()));
             }
@@ -67,7 +77,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         String path = null;
         String payload = null;
 
-        if (function.getRuntime().equals(Function.GV_DOCKER_RUNTIME) || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
+        if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
             path ="/deregister";
             payload = JsonUtils.convertParametersIntoJsonObject(null, null, function.getName());
         } else if (lambda.getExecutionMode() == LambdaExecutionMode.CUSTOM) {
@@ -84,12 +94,11 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         String path ="/";
         String payload = "";
 
-        if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT
-                || lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT) {
-            payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getEntryPoint());
-        } else if (function.getRuntime().equals(Function.GV_DOCKER_RUNTIME) || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
-            // Both canRebuild and readily-provided GV functions go here
+        if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT || lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT) {
             payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getName());
+        } else if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
+            // Both canRebuild and readily-provided GV functions go here
+            payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getName(), Configuration.argumentStorage.isDebugMode());
         } else if (lambda.getExecutionMode() == LambdaExecutionMode.CUSTOM) {
             path = "/run";
             if (function.getLanguage() == FunctionLanguage.JAVA) {

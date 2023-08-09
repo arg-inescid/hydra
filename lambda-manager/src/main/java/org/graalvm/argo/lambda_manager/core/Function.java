@@ -2,14 +2,14 @@ package org.graalvm.argo.lambda_manager.core;
 
 import org.graalvm.argo.lambda_manager.optimizers.FunctionStatus;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
+import org.graalvm.argo.lambda_manager.processes.lambda.BuildSO;
+import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.logging.Level;
 
 public class Function {
-
-    // TODO: refactor GV containerd usage. Move container image URL to lambda-manager config file.
-    public static final String GV_DOCKER_RUNTIME = "docker.io/sergiyivan/large-scale-experiment:graalvisor";
 
     /** First four bytes of JAR files. */
     private static final byte[] JAR_FILE_SIGNATURE = { 0x50, 0x4b, 0x03, 0x04 };
@@ -41,6 +41,9 @@ public class Function {
     /** Flag stating if instances of this function can be co-located in the same lambda. */
     private final boolean invocationCollocation;
 
+    /** Desired sandbox for Graalvisor runtime. Can only be used with Graalvisor. */
+    private final String gvSandbox;
+
     /** Flag stating if this function can be re-built into native image in case of fallback (only for Graalvisor). */
     private final boolean canRebuild;
 
@@ -52,7 +55,7 @@ public class Function {
      */
     private long lastAgentPID;
 
-    public Function(String name, String language, String entryPoint, String memory, String runtime, byte[] functionCode, boolean functionIsolation, boolean invocationCollocation) throws Exception {
+    public Function(String name, String language, String entryPoint, String memory, String runtime, byte[] functionCode, boolean functionIsolation, boolean invocationCollocation, String gvSandbox) throws Exception {
         this.name = name;
         this.language = FunctionLanguage.fromString(language);
         this.entryPoint = entryPoint;
@@ -65,7 +68,8 @@ public class Function {
             this.status = FunctionStatus.READY;
         }
         this.functionIsolation = functionIsolation;
-        this.invocationCollocation = invocationCollocation || runtime.equals(Function.GV_DOCKER_RUNTIME) || this.getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR;
+        this.invocationCollocation = invocationCollocation || this.getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR;
+        this.gvSandbox = gvSandbox;
     }
 
     public String getName() {
@@ -100,16 +104,6 @@ public class Function {
         return memory;
     }
 
-    public boolean requiresRegistration() {
-        switch (getLambdaExecutionMode()) {
-        case HOTSPOT_W_AGENT:
-        case HOTSPOT:
-            return false;
-        default:
-            return true;
-        }
-    }
-
     public Path buildFunctionSourceCodePath() {
         if (canRebuild && getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
             // The function was uploaded for GV target and its .so is built
@@ -142,14 +136,18 @@ public class Function {
     }
 
     public boolean isFunctionIsolated() {
-        return this.functionIsolation;
+        return this.functionIsolation || Configuration.argumentStorage.isSnapshotEnabled();
     }
 
     public boolean canCollocateInvocation() {
         // Lambda execution mode can change from "non-collocatable" to "collocatable"
         // runtime and back throughout the function lifetime as the function might go
         // through the build pipeline and fallback
-        return this.invocationCollocation || this.getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR;
+        return !Configuration.argumentStorage.isSnapshotEnabled() && (this.invocationCollocation || this.getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR);
+    }
+
+    public String getGraalvisorSandbox() {
+        return this.gvSandbox;
     }
 
     public boolean canRebuild() {
@@ -166,5 +164,25 @@ public class Function {
             }
         }
         return true;
+    }
+
+    /**
+     * Update status when creating a new lambda for this function.
+     */
+    public synchronized void updateStatus(LambdaExecutionMode targetMode) {
+        switch (targetMode) {
+            case HOTSPOT_W_AGENT:
+                status = FunctionStatus.CONFIGURING_OR_BUILDING;
+                break;
+            case HOTSPOT:
+                if (status == FunctionStatus.NOT_BUILT_CONFIGURED) {
+                    status = FunctionStatus.CONFIGURING_OR_BUILDING;
+                    new BuildSO(this).build().start();
+                    Logger.log(Level.INFO, "Starting new .so build for function " + name);
+                }
+                break;
+            default:
+                break;
+        }
     }
 }

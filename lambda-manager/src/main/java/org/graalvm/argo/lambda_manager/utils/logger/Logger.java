@@ -6,6 +6,7 @@ import java.util.logging.Level;
 
 public final class Logger {
 
+    // TODO - do we really need this logger?
     private static java.util.logging.Logger LOGGER;
 
     public static void log(Level level, String msg) {

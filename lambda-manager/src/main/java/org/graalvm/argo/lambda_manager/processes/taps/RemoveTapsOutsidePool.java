@@ -3,7 +3,11 @@ package org.graalvm.argo.lambda_manager.processes.taps;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RemoveTapsOutsidePool extends RemoveTapsFromPool {
+public class RemoveTapsOutsidePool extends RemoveTap {
+
+    public RemoveTapsOutsidePool(String tap) {
+        super(tap);
+    }
 
     @Override
     protected List<String> makeCommand() {

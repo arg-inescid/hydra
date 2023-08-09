@@ -48,10 +48,11 @@ public class LambdaManagerController {
                                          @Nullable @QueryValue("function_runtime") String functionRuntime,
                                          @Nullable @QueryValue("function_isolation") Boolean functionIsolation,
                                          @Nullable @QueryValue("invocation_collocation") Boolean invocationCollocation,
+                                         @Nullable @QueryValue("gv_sandbox") String gvSandbox,
                                          @Body byte[] functionCode) {
         return LambdaManager.uploadFunction(username, functionName, functionLanguage, functionEntryPoint,
                 functionMemory, functionRuntime, functionCode, Boolean.TRUE.equals(functionIsolation),
-                Boolean.TRUE.equals(invocationCollocation));
+                Boolean.TRUE.equals(invocationCollocation), gvSandbox);
     }
 
     @Post("/remove_function")
@@ -60,6 +61,7 @@ public class LambdaManagerController {
         return LambdaManager.removeFunction(username, functionName);
     }
 
+    // TODO - remove this endpoint, we don't need it.
     @Post(value = "/configure_manager", consumes = MediaType.APPLICATION_JSON)
     public Single<String> configureManager(@Body String lambdaManagerConfiguration) {
         return LambdaManager.configureManager(lambdaManagerConfiguration, beanContext);

@@ -15,13 +15,22 @@ source "$DIR"/environment.sh
 source "$DIR"/export_lambda_arguments.sh
 source "$DIR"/prepare_lambda_directories.sh
 
-export_lambda_arguments "${@:1:9}"
-LAMBDA_HOME=$CODEBASE_HOME/lambda_"$LAMBDA_ID"_CUSTOM
-VMID=$(cat /dev/random | head -c 32 | md5sum | head -c 32)
-RUNTIME=$9
+export_lambda_arguments "${@:1:8}"
+RUNTIME=$8
+VMID=$9
+LAMBDA_NAME=${10}
+
+LAMBDA_HOME="$CODEBASE_HOME"/"$LAMBDA_NAME"
+
 prepare_cruntime_lambda_directory "$LAMBDA_HOME"
+
+LAMBDA_MAC=`printf 'DE:AD:BE:EF:%02X:%02X\n' $((RANDOM%256)) $((RANDOM%256))`
 
 # TODO - select memory for the VM.
 sudo echo "$VMID"    > "$LAMBDA_HOME"/lambda.id
 sudo echo "$RUNTIME" > "$LAMBDA_HOME"/lambda.runtime
-sudo $CRUNTIME_HOME/start-vm -ip $LAMBDA_IP/$(IPprefix_by_netmask $LAMBDA_MASK) -gw $LAMBDA_GATEWAY -tap $LAMBDA_TAP -id $VMID -img $RUNTIME
+sudo $CRUNTIME_HOME/start-vm -ip $LAMBDA_IP/$(IPprefix_by_netmask $LAMBDA_MASK) -gw $LAMBDA_GATEWAY -tap $LAMBDA_TAP -mac $LAMBDA_MAC -id $VMID -img $RUNTIME
+
+# Wait for lambda to be terminated.
+LAMBDA_PID=$(ps aux | grep firecracker | grep $VMID | awk '{print $2}')
+while ps -p $LAMBDA_PID > /dev/null; do sleep 1; done

@@ -2,47 +2,41 @@
 
 function export_lambda_arguments() {
 
-  export FUNCTION_NAME="$1"
-  if [ -z "$FUNCTION_NAME" ]; then
-    echo "Function name is not present."
-    exit 1
-  fi
-
-  export LAMBDA_ID="$2"
+  export LAMBDA_ID=$1
   if [ -z "$LAMBDA_ID" ]; then
     echo "Lambda id is not present."
     exit 1
   fi
 
-  export LAMBDA_MEMORY=$3
+  export LAMBDA_MEMORY=$2
   if [ -z "$LAMBDA_MEMORY" ]; then
     echo "Lambda memory is not present."
     exit 1
   fi
 
-  export LAMBDA_IP=$4
+  export LAMBDA_IP=$3
   if [ -z "$LAMBDA_IP" ]; then
     echo "Lambda ip is not present."
     exit 1
   fi
 
-  export LAMBDA_TAP=$5
+  export LAMBDA_TAP=$4
   if [ -z "$LAMBDA_TAP" ]; then
     echo "Lambda tap is not present."
     exit 1
   fi
 
-  export LAMBDA_GATEWAY=$6
+  export LAMBDA_GATEWAY=$5
   if [ -z "$LAMBDA_GATEWAY" ]; then
     echo "Lambda gateway is not present."
     exit 1
   fi
 
-  export LAMBDA_MASK=$7
+  export LAMBDA_MASK=$6
   if [ -z "$LAMBDA_MASK" ]; then
     echo "Lambda mask is not present."
     exit 1
   fi
 
-  export LAMBDA_CONSOLE=$8
+  export LAMBDA_CONSOLE=$7
 }

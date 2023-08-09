@@ -1,84 +1,94 @@
 package org.graalvm.argo.lambda_manager.core;
 
-import com.github.maltalex.ineter.base.IPv4Address;
 import com.github.maltalex.ineter.range.IPv4Subnet;
-import org.graalvm.argo.lambda_manager.client.LambdaManagerClient;
-import org.graalvm.argo.lambda_manager.encoders.Coder;
-import org.graalvm.argo.lambda_manager.exceptions.argument_parser.ErrorDuringReflectiveClassCreation;
-import org.graalvm.argo.lambda_manager.exceptions.user.ErrorDuringCreatingConnectionPool;
-import org.graalvm.argo.lambda_manager.function_storage.FunctionStorage;
-import org.graalvm.argo.lambda_manager.memory.FixedMemoryPool;
-import org.graalvm.argo.lambda_manager.memory.MemoryPool;
+import org.graalvm.argo.lambda_manager.client.DefaultLambdaManagerClient;
+import org.graalvm.argo.lambda_manager.encoders.DefaultCoder;
+import org.graalvm.argo.lambda_manager.function_storage.InMemoryFunctionStorage;
 import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
-import org.graalvm.argo.lambda_manager.processes.taps.CreateTaps;
-import org.graalvm.argo.lambda_manager.schedulers.Scheduler;
-import org.graalvm.argo.lambda_manager.utils.ConnectionTriplet;
+import org.graalvm.argo.lambda_manager.processes.devmapper.PrepareDevmapperBase;
+import org.graalvm.argo.lambda_manager.processes.lambda.factory.AbstractLambdaFactory;
+import org.graalvm.argo.lambda_manager.processes.lambda.factory.ContainerLambdaFactory;
+import org.graalvm.argo.lambda_manager.processes.lambda.factory.FirecrackerCtrLambdaFactory;
+import org.graalvm.argo.lambda_manager.processes.lambda.factory.FirecrackerLambdaFactory;
+import org.graalvm.argo.lambda_manager.processes.lambda.factory.FirecrackerSnapshotLambdaFactory;
+import org.graalvm.argo.lambda_manager.schedulers.RoundedRobinScheduler;
 import org.graalvm.argo.lambda_manager.utils.Messages;
 import org.graalvm.argo.lambda_manager.utils.logger.ElapseTimer;
 import org.graalvm.argo.lambda_manager.utils.logger.LambdaManagerFormatter;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 import org.graalvm.argo.lambda_manager.utils.parser.LambdaManagerConfiguration;
 import org.graalvm.argo.lambda_manager.utils.parser.LambdaManagerConsole;
-import org.graalvm.argo.lambda_manager.utils.parser.LambdaManagerState;
 import io.micronaut.context.BeanContext;
-import io.micronaut.http.client.RxHttpClient;
 import io.reactivex.exceptions.UndeliverableException;
 import io.reactivex.plugins.RxJavaPlugins;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Random;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 
 public class ArgumentStorage {
 
-    // TODO - could we just keep the LambdaManagerConfiguration and avoid most of these fields?
+    /**
+     * Type of workers: vm_firecracker, vm_containerd, or container.
+     */
+    private LambdaType lambdaType;
+
+    /**
+     * Factory to instantiate heterogeneous lambda processes.
+     */
+    private AbstractLambdaFactory lambdaFactory;
+
+    /**
+     * Pool of ready to use lambdas.
+     */
+    private LambdaPool lambdaPool;
+
+    // TODO - add comments to the rest of these fields.
     private String gateway;
     private String mask;
-    private Iterator<IPv4Address> iPv4AddressIterator;
-
-    /**
-     * Memory pool that controls memory allocation.
-     */
-    private MemoryPool memoryPool;
-
-    /**
-     * Maximum number of network taps that will be setup by the Lambda Manager.
-     */
-    private int maxTaps;
-
-    // TODO - we should synchronize access to the connection pool.
-    private final ArrayList<ConnectionTriplet<String, String, RxHttpClient>> connectionPool;
     private int timeout;
     private int healthCheck;
     private int lambdaPort;
-    private boolean isLambdaConsoleActive;
-    private ArgumentStorage() {
-        this.connectionPool = new ArrayList<>();
-    }
+    private int maxMemory;
+    private boolean isLambdaConsoleActive; // TODO - do we ever disable this?
+
+    /* Private constructor. */
+    private ArgumentStorage() { }
 
     private void initClassFields(LambdaManagerConfiguration lambdaManagerConfiguration) {
         this.gateway = lambdaManagerConfiguration.getGateway().split("/")[0];
-        IPv4Subnet gatewayWithMask = IPv4Subnet.of(lambdaManagerConfiguration.getGateway());
-        this.mask = gatewayWithMask.getNetworkMask().toString();
-        this.iPv4AddressIterator = gatewayWithMask.iterator();
-        this.iPv4AddressIterator.next(); // Note: skip *.*.*.0
-        this.iPv4AddressIterator.next(); // Note: skip *.*.*.1
-        this.memoryPool = new FixedMemoryPool(lambdaManagerConfiguration.getMaxMemory(), lambdaManagerConfiguration.getMaxMemory());
-        this.maxTaps = lambdaManagerConfiguration.getMaxTaps();
+        this.mask = IPv4Subnet.of(lambdaManagerConfiguration.getGateway()).getNetworkMask().toString();
+        this.lambdaType = LambdaType.fromString(lambdaManagerConfiguration.getLambdaType());
+        this.maxMemory = lambdaManagerConfiguration.getMaxMemory();
+        this.lambdaPool = new LambdaPool(lambdaType, lambdaManagerConfiguration.getMaxTaps());
         this.timeout = lambdaManagerConfiguration.getTimeout();
         this.healthCheck = lambdaManagerConfiguration.getHealthCheck();
         this.lambdaPort = lambdaManagerConfiguration.getLambdaPort();
+        initLambdaFactory(this.lambdaType);
         this.isLambdaConsoleActive = lambdaManagerConfiguration.isLambdaConsole();
+    }
+
+    private void initLambdaFactory(LambdaType lambdaType) {
+        switch (lambdaType) {
+            case VM_FIRECRACKER:
+                this.lambdaFactory = new FirecrackerLambdaFactory();
+                break;
+            case VM_FIRECRACKER_SNAPSHOT:
+                this.lambdaFactory = new FirecrackerSnapshotLambdaFactory();
+                break;
+            case VM_CONTAINERD:
+                this.lambdaFactory = new FirecrackerCtrLambdaFactory();
+                break;
+            case CONTAINER:
+            case CONTAINER_DEBUG:
+                this.lambdaFactory = new ContainerLambdaFactory();
+                break;
+            default:
+                throw new IllegalStateException("Could not instantiate lambda factory due to unknown lambda type: " + lambdaType);
+        }
     }
 
     private void initErrorHandler() {
@@ -109,24 +119,6 @@ public class ArgumentStorage {
             // TODO: We should discuss what to do in case of severe exceptions.
             Logger.log(Level.SEVERE, Messages.UNDELIVERABLE_EXCEPTION, e);
         });
-    }
-
-    private void prepareConnectionPool(BeanContext beanContext) throws ErrorDuringCreatingConnectionPool {
-        try {
-            for (int i = 0; i < maxTaps; i++) {
-                String ip = getNextIPAddress();
-                String tap = String.format("%s-%s", Environment.TAP_PREFIX, generateRandomString());
-                RxHttpClient client = beanContext.createBean(RxHttpClient.class,
-                                new URL("http", ip, lambdaPort, "/"));
-                connectionPool.add(new ConnectionTriplet<>(ip, tap, client));
-            }
-
-            ProcessBuilder createTaps = new CreateTaps().build();
-            createTaps.start();
-            createTaps.join();
-        } catch (InterruptedException | MalformedURLException e) {
-            throw new ErrorDuringCreatingConnectionPool(Messages.ERROR_POOL_CREATION, e);
-        }
     }
 
     private void prepareLogger(LambdaManagerConsole lambdaManagerConsole) {
@@ -167,86 +159,50 @@ public class ArgumentStorage {
         Logger.setLogger(logger);
     }
 
-    private void cacheConsoleInfo(LambdaManagerConsole lambdaManagerConsole) {
-    }
+    public void doInitialize(LambdaManagerConfiguration lambdaManagerConfiguration, BeanContext beanContext) throws InterruptedException {
 
-    private void prepareLogging(LambdaManagerConsole lambdaManagerConsole) {
-        prepareLogger(lambdaManagerConsole);
-        cacheConsoleInfo(lambdaManagerConsole);
-    }
-
-    private Object createObject(String className) throws ErrorDuringReflectiveClassCreation {
-        try {
-            Class<?> clazz = Class.forName(className);
-            Constructor<?> constructor = clazz.getConstructor();
-            return constructor.newInstance();
-        } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException
-                        | InstantiationException | InvocationTargetException e) {
-            throw new ErrorDuringReflectiveClassCreation("Error during reflective class creation!", e);
-        }
-    }
-
-    private void prepareConfiguration(LambdaManagerState lambdaManagerState)
-                    throws ErrorDuringReflectiveClassCreation {
-        Scheduler scheduler = (Scheduler) createObject(lambdaManagerState.getScheduler());
-        Coder encoder = (Coder) createObject(lambdaManagerState.getEncoder());
-        FunctionStorage storage = (FunctionStorage) createObject(lambdaManagerState.getStorage());
-        LambdaManagerClient client = (LambdaManagerClient) createObject(lambdaManagerState.getClient());
-        Configuration.initFields(scheduler, encoder, storage, client, this);
-    }
-
-    public void doInitialize(LambdaManagerConfiguration lambdaManagerConfiguration, BeanContext beanContext)
-                    throws ErrorDuringReflectiveClassCreation, ErrorDuringCreatingConnectionPool {
         initClassFields(lambdaManagerConfiguration);
+
         initErrorHandler();
-        prepareLogging(lambdaManagerConfiguration.getManagerConsole());
-        prepareConfiguration(lambdaManagerConfiguration.getManagerState());
-        prepareConnectionPool(beanContext);
+
+        prepareLogger(lambdaManagerConfiguration.getManagerConsole());
+
+        Configuration.initFields(
+            new RoundedRobinScheduler(),
+            new DefaultCoder(),
+            new InMemoryFunctionStorage(),
+            new DefaultLambdaManagerClient(),
+            this);
+
+        if (lambdaType == LambdaType.VM_FIRECRACKER || lambdaType == LambdaType.VM_FIRECRACKER_SNAPSHOT) {
+            prepareDevmapper();
+        }
+
         ElapseTimer.init(); // Start internal timer.
+
+        this.lambdaPool.setUp(beanContext, lambdaPort, lambdaManagerConfiguration.getGateway(), lambdaManagerConfiguration.getLambdaPool());
     }
 
-    public static void initializeLambdaManager(LambdaManagerConfiguration lambdaManagerConfiguration, BeanContext beanContext)
-                    throws ErrorDuringReflectiveClassCreation, ErrorDuringCreatingConnectionPool {
-        ArgumentStorage argumentStorage = new ArgumentStorage();
-        argumentStorage.doInitialize(lambdaManagerConfiguration, beanContext);
-    }
-
-    public void cleanupStorage() {
-        for (ConnectionTriplet<String, String, RxHttpClient> connectionTriplet : connectionPool) {
-            connectionTriplet.client.close();   // Close http client if it's not closed yet.
+    private void prepareDevmapper() {
+        try {
+            ProcessBuilder prepareDevmapperBase = new PrepareDevmapperBase().build();
+            prepareDevmapperBase.start();
+            prepareDevmapperBase.join();
+        } catch (InterruptedException e) {
+            throw new IllegalStateException("Could not prepare devmapper base: " + e);
         }
     }
 
-    public String getNextIPAddress() {
-        String nextIPAddress = iPv4AddressIterator.next().toString();
-        if (nextIPAddress.equals(getGateway())) {
-            return iPv4AddressIterator.next().toString();
-        } else {
-            return nextIPAddress;
-        }
+    public static void initializeLambdaManager(LambdaManagerConfiguration lambdaManagerConfiguration, BeanContext beanContext) throws InterruptedException {
+        new ArgumentStorage().doInitialize(lambdaManagerConfiguration, beanContext);
     }
 
     public String getGateway() {
         return gateway;
     }
 
-    public MemoryPool getMemoryPool() {
-        return this.memoryPool;
-    }
-
-    public ArrayList<ConnectionTriplet<String, String, RxHttpClient>> getConnectionPool() {
-        return connectionPool;
-    }
-
-    public ConnectionTriplet<String, String, RxHttpClient> nextConnectionTriplet() {
-        // TODO - may throw exception if no more connections are available.
-        return connectionPool.remove(0);
-    }
-
-    public void returnConnectionTriplet(ConnectionTriplet<String, String, RxHttpClient> connectionTriplet) {
-        if (!connectionPool.contains(connectionTriplet)) {
-            connectionPool.add(connectionTriplet);
-        }
+    public LambdaPool getLambdaPool() {
+        return lambdaPool;
     }
 
     public String getMask() {
@@ -257,6 +213,10 @@ public class ArgumentStorage {
         return timeout;
     }
 
+    public int getMaxMemory() {
+        return maxMemory;
+    }
+
     public int getHealthCheck() {
         return healthCheck;
     }
@@ -265,14 +225,23 @@ public class ArgumentStorage {
         return lambdaPort;
     }
 
-    public boolean isLambdaConsoleActive() {
-        return isLambdaConsoleActive;
+    public LambdaType getLambdaType() {
+        return lambdaType;
     }
 
-    public String generateRandomString() {
-        return new Random().ints('a', 'z' + 1)
-                        .limit(Environment.RAND_STRING_LEN)
-                        .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
-                        .toString();
+    public boolean isSnapshotEnabled() {
+        return lambdaType == LambdaType.VM_FIRECRACKER_SNAPSHOT;
+    }
+
+    public boolean isDebugMode() {
+        return lambdaType == LambdaType.CONTAINER_DEBUG;
+    }
+
+    public AbstractLambdaFactory getLambdaFactory() {
+        return lambdaFactory;
+    }
+
+    public boolean isLambdaConsoleActive() {
+        return isLambdaConsoleActive;
     }
 }

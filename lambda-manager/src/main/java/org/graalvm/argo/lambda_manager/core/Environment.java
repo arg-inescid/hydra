@@ -16,6 +16,7 @@ public class Environment {
     public static final int LAMBDA_STARTUP_THRESHOLD = 1000;
 
     // Maximum number of open requests that we will accept to send another request.
+    // TODO: Make sure non-graalvisor runtimes do not run invocations concurrently.
     public static final int LAMBDA_MAX_OPEN_REQ_COUNT = 1000;
 
     // Tap name is limited to 15 characters. In our case tap names are created from prefix (4 chars) + random string (10 chars).
@@ -30,13 +31,19 @@ public class Environment {
     public static final String DEFAULT_FILENAME = "default_filename.log";
     public static final String OUTPUT = "output.log";
     public static final String MEMORY = "memory.log";
-    public static final String RUN_LOG = Paths.get("shared", "run.log").toString();
     public static final String MANAGER_LOG_FILENAME = Paths.get(MANAGER_LOGS, "lambda_manager.log").toString();
     public static final String CREATE_TAPS_FILENAME = Paths.get(MANAGER_LOGS, "create_taps.log").toString();
     public static final String REMOVE_TAPS_FILENAME = Paths.get(MANAGER_LOGS, "remove_taps.log").toString();
+    public static final String PREPARE_DEVMAPPER_BASE_FILENAME = Paths.get(MANAGER_LOGS, "prepare_devmapper_base.log").toString();
+    public static final String DELETE_DEVMAPPER_BASE_FILENAME = Paths.get(MANAGER_LOGS, "delete_devmapper_base.log").toString();
 
-    // Graalvisor runtime identifier.
+    // Graalvisor runtime identifiers.
     public static final String GRAALVISOR_RUNTIME = "graalvisor";
+    public static final String GRAALVISOR_DOCKER_RUNTIME = "docker.io/sergiyivan/large-scale-experiment:graalvisor";
+    public static final String HOTSPOT_DOCKER_RUNTIME = "docker.io/sergiyivan/large-scale-experiment:argo-hotspot";
+    public static final String HOTSPOT_AGENT_DOCKER_RUNTIME = "docker.io/sergiyivan/large-scale-experiment:argo-hotspot-agent";
+
+    public static final String OPENWHISK_DOCKER_RUNTIME = "docker.io/openwhisk/java8action:latest";
 
     public synchronized static long pid() {
         return NEXT_ID++;

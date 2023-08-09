@@ -34,20 +34,30 @@ if [ ! -f "$PROXY_JAR" ]; then
   exit 1
 fi
 
-FUNCTION_CODE=$FUNCTION_HOME/$FUNCTION_NAME
-LAMBDA_HOME=$CODEBASE_HOME/lambda_"$LAMBDA_ID"_HOTSPOT_W_AGENT
 
-"$JAVA_HOME"/bin/native-image \
-  --no-fallback \
-  -H:IncludeResources="logback.xml|application.yml" \
-  -cp "$FUNCTION_CODE" \
-  -DGraalVisorGuest=true \
-  -Dcom.oracle.svm.graalvisor.libraryPath=$PROXY_HOME/build/resources/main/com.oracle.svm.graalvisor.headers \
-  --initialize-at-run-time=com.oracle.svm.graalvisor.utils.JsonUtils \
-  -H:ConfigurationFileDirectories="$LAMBDA_HOME"/shared/config \
-  -H:+ReportExceptionStackTraces \
-  --shared \
-  -H:Name=lib"$FUNCTION_NAME" \
-  -H:ExcludeResources=".*/io.micronaut.*$|io.netty.*$"
+ARGO_HOME="$MANAGER_HOME"/../
+BUILD_OUTPUT_HOME_CONTAINER=/argo/lambda-manager/codebase/"$FUNCTION_NAME"/build_so
+FUNCTION_CODE_CONTAINER=/argo/lambda-manager/codebase/"$FUNCTION_NAME"/"$FUNCTION_NAME"
+GRAALVISOR_GUEST_JAR_CONTAINER=/argo/graalvisor-lib/build/libs/graalvisor-lib-1.0-guest.jar
+HEADERS_PATH_CONTAINER=/argo/graalvisor/build/resources/main/com.oracle.svm.graalvisor.headers
+LAMBDA_HOME_CONTAINER=/argo/lambda-manager/codebase/lambda_"$LAMBDA_ID"_HOTSPOT_W_AGENT
+
+docker run --rm \
+  -v "$JAVA_HOME":/jvm \
+  -v "$ARGO_HOME":/argo \
+  -w "$BUILD_OUTPUT_HOME_CONTAINER" \
+  argo-builder \
+    /jvm/bin/native-image \
+      --no-fallback \
+      -H:IncludeResources="logback.xml|application.yml" \
+      -cp "$FUNCTION_CODE_CONTAINER":"$GRAALVISOR_GUEST_JAR_CONTAINER" \
+      -DGraalVisorGuest=true \
+      -Dcom.oracle.svm.graalvisor.libraryPath="$HEADERS_PATH_CONTAINER" \
+      --initialize-at-run-time=com.oracle.svm.graalvisor.utils.JsonUtils \
+      -H:ConfigurationFileDirectories="$LAMBDA_HOME_CONTAINER"/config \
+      -H:+ReportExceptionStackTraces \
+      --shared \
+      -H:Name=lib"$FUNCTION_NAME" \
+      -H:ExcludeResources=".*/io.micronaut.*$|io.netty.*$"
 
 # TODO - we need to reintroduce the fallback feature (-H:+InterceptReflectiveOperationException)

@@ -1,20 +1,21 @@
 {
-  "gateway": "194.210.228.242/23",
-  "maxMemory": 2048,
+  "gateway": "172.18.0.1/16",
+  "maxMemory": 256,
   "maxTaps": 5,
   "timeout": 25000,
   "healthCheck": 50,
   "lambdaPort": 8080,
+  "lambdaType": "container",
   "lambdaConsole": true,
   "managerConsole": {
     "turnOn": true,
     "redirectToFile": true,
     "fineGrain": true
   },
-  "managerState": {
-    "scheduler": "org.graalvm.argo.lambda_manager.schedulers.RoundedRobinScheduler",
-    "encoder": "org.graalvm.argo.lambda_manager.encoders.DefaultCoder",
-    "storage": "org.graalvm.argo.lambda_manager.function_storage.InMemoryFunctionStorage",
-    "client": "org.graalvm.argo.lambda_manager.client.DefaultLambdaManagerClient"
+  "lambdaPool": {
+    "hotspotWithAgent": 0,
+    "hotspot": 0,
+    "graalvisor": 5,
+    "custom": 0
   }
 }

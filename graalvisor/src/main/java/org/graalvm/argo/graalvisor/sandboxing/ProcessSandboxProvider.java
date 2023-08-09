@@ -40,7 +40,7 @@ public class ProcessSandboxProvider extends SandboxProvider {
     }
 
     @Override
-    public SandboxHandle createSandbox()  throws IOException {
+    public SandboxHandle createSandbox()  throws Exception {
         return new ProcessSandboxHandle(this);
     }
 

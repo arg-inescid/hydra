@@ -1,6 +1,7 @@
 package org.graalvm.argo.graalvisor.sandboxing;
 
 import org.graalvm.argo.graalvisor.function.PolyglotFunction;
+import org.graalvm.argo.graalvisor.function.NativeFunction;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.Isolates;
 
@@ -13,6 +14,7 @@ public class IsolateSandboxHandle extends SandboxHandle {
     public IsolateSandboxHandle(IsolateSandboxProvider isProvider, IsolateThread isolateThread) {
         this.isProvider = isProvider;
         this.isolateThread = isolateThread;
+        NativeSandboxInterface.createNativeIsolateSandbox(((NativeFunction) isProvider.getFunction()).hasLazyIsolation());
     }
 
     public IsolateThread getIsolateThread() {
