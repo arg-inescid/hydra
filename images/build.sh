@@ -28,6 +28,7 @@ read -p "Graalvisor VM (y or Y, everything else as no)? " -n 1 -r
 echo    # move to a new line
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
+    build_container_image graalvisor
     build_vm_image graalvisor
 fi
 
