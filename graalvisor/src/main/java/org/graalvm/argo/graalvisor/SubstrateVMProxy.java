@@ -53,7 +53,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
             this.pipeline = pipeline;
         }
 
-        private void processRequest(SandboxHandle shandle, Request req, NetworkNamespace networkNamespace) {
+        private void processRequest(SandboxHandle shandle, Request req) {
             synchronized (req) {
                 // Get input from request, invoke function in isolate, fill output.
                 try {
@@ -74,7 +74,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
 
             try {
                 while ((req = pipeline.queue.poll(60, TimeUnit.SECONDS)) != null) {
-                    processRequest(shandle, req, networkNamespace);
+                    processRequest(shandle, req);
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -156,13 +156,6 @@ public class SubstrateVMProxy extends RuntimeProxy {
 
     public SubstrateVMProxy(int port) throws IOException {
         super(port);
-        Runtime
-            .getRuntime()
-            .addShutdownHook(new Thread(() -> {
-                System.out.println("Shutting down");
-                SubstrateVMProxy.super.stop();
-                networkNamespaceProvider.deleteAllNetworkNamespaces();
-            }));
     }
 
     private static FunctionPipeline getFunctionPipeline(PolyglotFunction function) {
@@ -178,16 +171,10 @@ public class SubstrateVMProxy extends RuntimeProxy {
     }
 
     private static SandboxHandle prepareSandbox(PolyglotFunction function) throws Exception {
-        long start, finish;
-        start = System.nanoTime();
+        long start = System.nanoTime();
         SandboxHandle worker = function.getSandboxProvider().createSandbox();
-        finish = System.nanoTime();
-        System.out.println(String.format(
-            "[thread %s] New %s sandbox %s in %s us",
-            Thread.currentThread().getId(),
-            function.getSandboxProvider().getName(),
-            worker,
-            (finish - start)/1000));
+        long finish = System.nanoTime();
+        System.out.println(String.format("[thread %s] New %s sandbox %s in %s us", Thread.currentThread().getId(), function.getSandboxProvider().getName(), worker,  (finish - start)/1000));
         return worker;
     }
 
@@ -198,11 +185,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
     }
 
     private static void destroySandbox(PolyglotFunction function, SandboxHandle shandle) throws Exception {
-        System.out.println(String.format(
-            "[thread %s] Destroying %s sandbox %s",
-            Thread.currentThread().getId(),
-            function.getSandboxProvider().getName(),
-            shandle));
+        System.out.println(String.format("[thread %s] Destroying %s sandbox %s", Thread.currentThread().getId(), function.getSandboxProvider().getName(), shandle));
         function.getSandboxProvider().destroySandbox(shandle);
     }
 

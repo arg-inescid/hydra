@@ -6,16 +6,17 @@ public class NativeSandboxInterface {
 
     public static native void ginit();
 
-    public static native void createNetworkNamespace(String jName, int jThirdByte, int jFourthByte);
+    public static native int createNetworkNamespace(String jName, int jThirdByte, int jFourthByte);
 
-    public static native void deleteNetworkNamespace(String jName);
+    public static native int deleteNetworkNamespace(String jName);
 
-    public static native void switchNetworkNamespace(String jName);
+    public static native int switchNetworkNamespace(String jName);
 
-    public static native void switchToDefaultNetworkNamespace();
+    public static native int switchToDefaultNetworkNamespace();
 
-    public static native void enableVeths(String jName);
-    public static native void disableVeths(String jName);
+    public static native int enableVeths(String jName);
+
+    public static native int disableVeths(String jName);
 
     public static native int createNativeProcessSandbox(int[] childPipe, int[] parentPipe, boolean lazyIsolation);
 
