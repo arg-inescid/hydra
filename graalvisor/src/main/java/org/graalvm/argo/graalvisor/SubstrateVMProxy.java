@@ -192,23 +192,16 @@ public class SubstrateVMProxy extends RuntimeProxy {
         } else {
             IsolateSandboxHandle shandle = (IsolateSandboxHandle) prepareSandbox(function);
 
-            System.out.println("getIsolateThread " + LocalTime.now());
             IsolateThread processContext = shandle.getIsolateThread();
             String isolateId = String.valueOf(Isolates.getIsolate(processContext).rawValue());
-
-            System.out.println("createFunctionCgroup " + LocalTime.now());
             NativeSandboxInterface.createFunctionCgroup(isolateId);
 
-            System.out.println("setCgroupWeight " + LocalTime.now());
             NativeSandboxInterface.setCgroupWeight(isolateId, 10000);
 
-            System.out.println("invokeSandbox " + LocalTime.now());
             res = shandle.invokeSandbox(arguments);
 
-            System.out.println("deleteFunctionCgroup " + LocalTime.now());
             NativeSandboxInterface.deleteFunctionCgroup(isolateId);
 
-            System.out.println("destroySandbox " + LocalTime.now());
             destroySandbox(function, shandle);
         }
 
