@@ -100,7 +100,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     close(maxF);
 
     int procsF = open(cGroupMax, O_WRONLY);
-    write(procsF, pid, sizeof(pid));
+    write(procsF, &pid, sizeof(pid));
     close(procsF);
 }
 
