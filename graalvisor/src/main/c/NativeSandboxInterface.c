@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface.h"
 
@@ -117,6 +118,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     const int period = 100000;
     char str[32];
     sprintf(str, "%d %d", quota, period);
+    puts(str);
     const char *isol = (*env)->GetStringUTFChars(env, isolateId, NULL);
     char path[256];
     strcpy(path, "/sys/fs/cgroup/user.slice/user-1000.slice/isolate/");
