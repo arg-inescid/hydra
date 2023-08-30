@@ -200,7 +200,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
             NativeSandboxInterface.createFunctionCgroup(isolateId);
 
             System.out.println("setCgroupWeight " + LocalTime.now());
-//            NativeSandboxInterface.setCgroupWeight(isolateId, 10);
+            NativeSandboxInterface.setCgroupWeight(isolateId, 10000);
 
             System.out.println("invokeSandbox " + LocalTime.now());
             res = shandle.invokeSandbox(arguments);
