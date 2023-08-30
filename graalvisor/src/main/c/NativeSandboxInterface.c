@@ -78,7 +78,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     rmdir(path);
 }
 
-JNIEXPORT string JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_setCgroupWeight
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_setCgroupWeight
   (JNIEnv *env, jclass thisObject, jstring isolateId, jint quota) {
     const int period = 100000;
     const int pid = getpid();
@@ -102,8 +102,6 @@ JNIEXPORT string JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandb
     int procsF = open(cGroupMax, O_WRONLY);
     write(procsF, pid, sizeof(pid));
     close(procsF);
-
-    return path;
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_enterNativeProcessSandbox(JNIEnv *env, jobject thisObj) {
