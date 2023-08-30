@@ -118,7 +118,6 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     const int period = 100000;
     char str[32];
     sprintf(str, "%d %d", quota, period);
-    puts(str);
     const char *isol = (*env)->GetStringUTFChars(env, isolateId, NULL);
     char path[256];
     strcpy(path, "/sys/fs/cgroup/user.slice/user-1000.slice/isolate/");
@@ -127,6 +126,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     int fd = open(path, O_WRONLY);
     write(fd, str, strlen(str) + 1);
     close(fd);
+    printf("Setting cgroup weight to %s on cgroup path %s\n", str, path);
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_enterNativeProcessSandbox(JNIEnv *env, jobject thisObj) {
