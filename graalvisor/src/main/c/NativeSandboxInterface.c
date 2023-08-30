@@ -60,73 +60,50 @@ JNIEXPORT int JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxI
     return pid;
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createMainCgroup
-  (JNIEnv *env, jclass thisObject) {
-    mkdir("/sys/fs/cgroup/user.slice/user-1000.slice/isolate", 0777);
-    int fd = open("/sys/fs/cgroup/cgroup.subtree_control", O_WRONLY);
-    write(fd, "+cpu +cpuset", 13);
-    close(fd);
-    fd = open("/sys/fs/cgroup/user.slice/cgroup.subtree_control", O_WRONLY);
-    write(fd, "+cpu +cpuset", 13);
-    close(fd);
-    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/cgroup.subtree_control", O_WRONLY);
-    write(fd, "+cpu +cpuset", 13);
-    close(fd);
-    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/isolate/cgroup.subtree_control", O_WRONLY);
-    write(fd, "+cpu +cpuset", 13);
-    close(fd);
-    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/isolate/cpuset.cpus", O_WRONLY);
-    write(fd, "0", 2);
-    close(fd);
-    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/isolate/cgroup.procs", O_WRONLY);
-    int pid = getpid();
-    char str[10];
-    sprintf(str, "%d", pid);
-    write(fd, str, strlen(str) + 1);
-    close(fd);
-}
-
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_deleteMainCgroup
-  (JNIEnv *env, jclass thisObject) {
-    rmdir("/sys/fs/cgroup/user.slice/user-1000.slice/isolate");
-}
-
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createFunctionCgroup
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createCgroup
   (JNIEnv *env, jclass thisObject, jstring isolateId) {
     const char *isol = (*env)->GetStringUTFChars(env, isolateId, NULL);
     char path[300];
-    strcpy(path, "/sys/fs/cgroup/user.slice/user-1000.slice/isolate/");
+    strcpy(path, "/sys/fs/cgroup/isolate/");
     strcat(path, isol);
     mkdir(path, 0777);
-    strcat(path, "/cgroup.type");
-    int fd = open(path, O_WRONLY);
-    write(fd, "threaded", 9);
-    close(fd);
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_deleteFunctionCgroup
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_deleteCgroup
   (JNIEnv *env, jclass thisObject, jstring isolateId) {
     const char *isol = (*env)->GetStringUTFChars(env, isolateId, NULL);
     char path[300];
-    strcpy(path, "/sys/fs/cgroup/user.slice/user-1000.slice/isolate/");
+    strcpy(path, "/sys/fs/cgroup/isolate/");
     strcat(path, isol);
     rmdir(path);
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_setCgroupWeight
+JNIEXPORT string JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_setCgroupWeight
   (JNIEnv *env, jclass thisObject, jstring isolateId, jint quota) {
     const int period = 100000;
-    char str[32];
-    sprintf(str, "%d %d", quota, period);
+    const int pid = getpid();
+    char maxQuota[32];
     const char *isol = (*env)->GetStringUTFChars(env, isolateId, NULL);
-    char path[256];
-    strcpy(path, "/sys/fs/cgroup/user.slice/user-1000.slice/isolate/");
-    strcat(path, isol);
-    strcat(path, "/cpu.max");
-    int fd = open(path, O_WRONLY);
-    write(fd, str, strlen(str) + 1);
-    close(fd);
-    printf("Setting cgroup weight to %s on cgroup path %s\n", str, path);
+    char cGroupPath[256];
+    char cGroupMax[256];
+    char cGroupProcs[256];
+
+    strcpy(cGroupPath, "/sys/fs/cgroup/isolate/");
+    strcat(cGroupPath, isol);
+    strcat(cGroupMax, "/cpu.max");
+    strcat(cGroupProcs, "/cpu.max");
+
+    sprintf(maxQuota, "%d %d", quota, period);
+
+    int maxF = open(cGroupMax, O_WRONLY);
+    write(maxF, maxQuota, strlen(maxQuota) + 1);
+    close(maxF);
+
+    int procsF = open(cGroupMax, O_WRONLY);
+    write(procsF, pid, sizeof(pid));
+    close(procsF);
+
+    return path;
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_enterNativeProcessSandbox(JNIEnv *env, jobject thisObj) {
