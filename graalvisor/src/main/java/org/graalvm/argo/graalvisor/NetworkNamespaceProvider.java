@@ -18,22 +18,28 @@ public class NetworkNamespaceProvider {
 	private final Queue<NetworkNamespace> availableNetworkNamespaces;
 	private final Map<String, NetworkNamespace> busyNetworkNamespaces;
 	private final AtomicLong count;
-	private final ScheduledExecutorService scheduledExecutor;
+	private ScheduledExecutorService scheduledExecutor;
 
 	public NetworkNamespaceProvider() {
 		this.thirdByte = 0;
 		this.fourthByte = 0;
-		this.availableNetworkNamespaces = new ArrayBlockingQueue<>(256);
+		this.availableNetworkNamespaces = new ArrayBlockingQueue<>(Integer.MAX_VALUE);
 		this.busyNetworkNamespaces = new ConcurrentHashMap<>();
 		this.count = new AtomicLong(0);
-		this.scheduledExecutor = Executors
-			.newSingleThreadScheduledExecutor();
-		scheduledExecutor
-			.scheduleAtFixedRate(
-				new NetworkNamespaceManager(this),
-				0,
-				5,
-				TimeUnit.SECONDS);
+		this.scheduledExecutor = null;
+	}
+
+	public void startScheduler() {
+		if (scheduledExecutor == null) {
+			this.scheduledExecutor = Executors
+					.newSingleThreadScheduledExecutor();
+			scheduledExecutor
+					.scheduleAtFixedRate(
+							new NetworkNamespaceManager(this),
+							0,
+							5,
+							TimeUnit.SECONDS);
+		}
 	}
 
 	public void createNetworkNamespace() {

@@ -87,6 +87,8 @@ public abstract class RuntimeProxy {
      *  FunctionTable is used to store registered functions inside default and worker isolates.
      */
     public static final ConcurrentHashMap<String, PolyglotFunction> FTABLE = new ConcurrentHashMap<>();
+    static final NetworkNamespaceProvider networkNamespaceProvider = new NetworkNamespaceProvider();
+    static boolean invokedCachedFunctionRegister = false;
 
     /**
      * Simple Http server. It uses a cached thread pool for managing threads.
@@ -234,6 +236,12 @@ public abstract class RuntimeProxy {
             String functionLanguage = metaData.get("language");
             String sandboxName = metaData.get("sandbox");
             boolean lazyIsolation = metaData.containsKey("lazyisolation") && metaData.get("lazyisolation").equals("true");
+
+            boolean networkIsolation = metaData.containsKey("networkIsolation") && metaData.get("networkIsolation").equals("true");
+            if (!invokedCachedFunctionRegister && networkIsolation) {
+                invokedCachedFunctionRegister = true;
+                networkNamespaceProvider.startScheduler();
+            }
 
             if (System.getProperty("java.vm.name").equals("Substrate VM") || !functionLanguage.equalsIgnoreCase("java")) {
                 handlePolyglotRegistration(t, functionName, codeFileName, functionEntryPoint, functionLanguage, sandboxName, lazyIsolation);

@@ -152,8 +152,6 @@ public class SubstrateVMProxy extends RuntimeProxy {
      */
     private static ConcurrentMap<String, FunctionPipeline> queues = new ConcurrentHashMap<>();
 
-    private static final NetworkNamespaceProvider networkNamespaceProvider = new NetworkNamespaceProvider();
-
     public SubstrateVMProxy(int port) throws IOException {
         super(port);
     }
