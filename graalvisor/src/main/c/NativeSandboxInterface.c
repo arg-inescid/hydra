@@ -91,7 +91,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     strcpy(cGroupPath, "/sys/fs/cgroup/isolate/");
     strcat(cGroupPath, isol);
     strcat(cGroupMax, "/cpu.max");
-    strcat(cGroupProcs, "/cpu.max");
+    strcat(cGroupProcs, "/cpu.procs");
 
     sprintf(maxQuota, "%d %d", quota, period);
 
@@ -99,9 +99,11 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     write(maxF, maxQuota, strlen(maxQuota) + 1);
     close(maxF);
 
-    int procsF = open(cGroupMax, O_WRONLY);
+    int procsF = open(cGroupProcs, O_WRONLY);
     write(procsF, &pid, sizeof(pid));
     close(procsF);
+
+    printf("Added process %d to cgroup %s with a quota of %d out of %d.", pid, cGroupPath, quota, period);
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_enterNativeProcessSandbox(JNIEnv *env, jobject thisObj) {
