@@ -95,16 +95,11 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     strcat(cGroupMax, "/cpu.max");
     strcat(cGroupProcs, "/cpu.procs");
 
-    printf("cGroupMax %s.\n", cGroupMax);
-    printf("cGroupProcs %s.\n", cGroupProcs);
-
     sprintf(maxQuota, "%d %d", quota, period);
 
     int maxF = open(cGroupMax, O_WRONLY);
     write(maxF, maxQuota, strlen(maxQuota) + 1);
     close(maxF);
-
-    printf("PID %d", pid);
 
     int procsF = open(cGroupProcs, O_WRONLY);
     write(procsF, &pid, sizeof(pid));
