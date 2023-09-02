@@ -82,8 +82,8 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
   (JNIEnv *env, jclass thisObject, jstring isolateId, jint quota) {
     const int period = 100000;
     const int pid = getpid();
-    char maxQuota[32];
     const char *isol = (*env)->GetStringUTFChars(env, isolateId, NULL);
+    char maxQuota[32];
     char cGroupPath[256];
     char cGroupMax[256];
     char cGroupProcs[256];
@@ -93,14 +93,22 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     strcat(cGroupMax, "/cpu.max");
     strcat(cGroupProcs, "/cpu.procs");
 
+    printf("cGroupPath %s.\n", cGroupPath);
+    printf("cGroupMax %s.\n", cGroupMax);
+    printf("cGroupProcs %s.\n", cGroupProcs);
+
     sprintf(maxQuota, "%d %d", quota, period);
+
+    printf("Maxquota %s.\n", maxQuota);
 
     int maxF = open(cGroupMax, O_WRONLY);
     write(maxF, maxQuota, strlen(maxQuota) + 1);
     close(maxF);
 
+    printf("PID %d", pid);
+
     int procsF = open(cGroupProcs, O_WRONLY);
-    write(procsF, &pid, sizeof(pid) + 1);
+    write(procsF, &pid, sizeof(pid));
     close(procsF);
 
     printf("Added process %d to cgroup %s with a quota of %d out of %d.", pid, cGroupPath, quota, period);
