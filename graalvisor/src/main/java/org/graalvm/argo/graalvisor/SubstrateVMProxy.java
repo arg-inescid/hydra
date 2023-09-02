@@ -194,7 +194,9 @@ public class SubstrateVMProxy extends RuntimeProxy {
             IsolateThread processContext = shandle.getIsolateThread();
             String isolateId = String.valueOf(Isolates.getIsolate(processContext).rawValue());
             NativeSandboxInterface.createCgroup(isolateId);
-
+            
+            System.out.println("test print");
+        
             NativeSandboxInterface.setCgroupWeight(isolateId, 100000);
 
             res = shandle.invokeSandbox(arguments);

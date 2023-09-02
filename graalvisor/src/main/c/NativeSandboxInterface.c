@@ -100,10 +100,10 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     close(maxF);
 
     int procsF = open(cGroupProcs, O_WRONLY);
-    write(procsF, &pid, sizeof(pid));
+    write(procsF, &pid, sizeof(pid) + 1);
     close(procsF);
 
-    // printf("Added process %d to cgroup %s with a quota of %d out of %d.", pid, cGroupPath, quota, period);
+    printf("Added process %d to cgroup %s with a quota of %d out of %d.", pid, cGroupPath, quota, period);
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_enterNativeProcessSandbox(JNIEnv *env, jobject thisObj) {
