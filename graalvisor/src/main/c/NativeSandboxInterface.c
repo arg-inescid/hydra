@@ -90,16 +90,15 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 
     strcpy(cGroupPath, "/sys/fs/cgroup/isolate/");
     strcat(cGroupPath, isol);
+    strcpy(cGroupMax, cGroupPath);
+    strcpy(cGroupProcs, cGroupPath);
     strcat(cGroupMax, "/cpu.max");
     strcat(cGroupProcs, "/cpu.procs");
 
-    printf("cGroupPath %s.\n", cGroupPath);
     printf("cGroupMax %s.\n", cGroupMax);
     printf("cGroupProcs %s.\n", cGroupProcs);
 
     sprintf(maxQuota, "%d %d", quota, period);
-
-    printf("Maxquota %s.\n", maxQuota);
 
     int maxF = open(cGroupMax, O_WRONLY);
     write(maxF, maxQuota, strlen(maxQuota) + 1);
