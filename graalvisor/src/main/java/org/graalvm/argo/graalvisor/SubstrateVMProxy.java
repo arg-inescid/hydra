@@ -200,13 +200,19 @@ public class SubstrateVMProxy extends RuntimeProxy {
             String isolateId = shandle.toString();
             System.out.println("IsolateId " + isolateId);
 
-            NativeSandboxInterface.createCgroup(isolateId);
-
-            NativeSandboxInterface.setCgroupWeight(isolateId, 100000);
+            if(!isolateThreads.containsKey(isolateId)) {
+                System.out.println("Creating cgroup for " + isolateId);
+                NativeSandboxInterface.createCgroup(isolateId);
+                NativeSandboxInterface.setCgroupWeight(isolateId, 100000);
+                isolateThreads.put(isolateId, shandle.getIsolateThread());
+            }
+            else {
+                System.out.println("Using existing cgroup for " + isolateId);
+            }
 
             res = shandle.invokeSandbox(arguments);
 
-            NativeSandboxInterface.deleteCgroup(isolateId);
+            // NativeSandboxInterface.deleteCgroup(isolateId); // not getting deleted - change later
 
             destroySandbox(function, shandle);
         }
