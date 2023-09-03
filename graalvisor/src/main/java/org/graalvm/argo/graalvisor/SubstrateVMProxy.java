@@ -2,6 +2,8 @@ package org.graalvm.argo.graalvisor;
 
 import java.io.IOException;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -20,7 +22,7 @@ import org.graalvm.nativeimage.Isolates;
  * A runtime proxy that runs requests on Native image-based sandboxes.
  */
 public class SubstrateVMProxy extends RuntimeProxy {
-    ConcurrentList<String> isolateThreads = new ConcurrentList<>();
+    List<String> isolateThreads = new ArrayList<String>();
 
     /**
      * A Request object is used as a communication packet between a foreground thread and a background thread.
