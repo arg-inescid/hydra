@@ -20,6 +20,8 @@ import org.graalvm.nativeimage.Isolates;
  * A runtime proxy that runs requests on Native image-based sandboxes.
  */
 public class SubstrateVMProxy extends RuntimeProxy {
+    ConcurrentHashMap<String, IsolateThread> isolateThreads = new ConcurrentHashMap<>();
+
     /**
      * A Request object is used as a communication packet between a foreground thread and a background thread.
      */
@@ -200,7 +202,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
 
             NativeSandboxInterface.createCgroup(isolateId);
 
-            NativeSandboxInterface.setCgroupWeight(isolateId, 10000);
+            NativeSandboxInterface.setCgroupWeight(isolateId, 100000);
 
             res = shandle.invokeSandbox(arguments);
 
