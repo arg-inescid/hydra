@@ -189,15 +189,15 @@ public class SubstrateVMProxy extends RuntimeProxy {
         } else if (cached) {
             res = getFunctionPipeline(function).invokeInCachedSandbox(arguments);
         } else {
-            IsolateSandboxHandle shandle = (IsolateSandboxHandle) prepareSandbox(function);
+            SandboxHandle shandle = prepareSandbox(function);
 
-            IsolateThread processContext = shandle.getIsolateThread();
-            String isolateId = String.valueOf(Isolates.getIsolate(processContext).rawValue());
+            // IsolateThread processContext = shandle.getIsolateThread();
+            // String isolateId = String.valueOf(Isolates.getIsolate(processContext).rawValue());
+            // System.out.println("IsolateId " + isolateId);
 
-            System.out.println("IsolateId " + isolateId);
-            System.out.println("IsolateId 2 " + shandle.toString());
+            System.out.println("IsolateId " + shandle.toString());
 
-            NativeSandboxInterface.createCgroup(isolateId);
+            NativeSandboxInterface.createCgroup(shandle.toString());
 
             NativeSandboxInterface.setCgroupWeight(isolateId, 10000);
 
