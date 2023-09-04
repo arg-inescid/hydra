@@ -16,7 +16,6 @@ public class NetworkNamespaceProvider {
 	private int thirdByte;
 	private int fourthByte;
 	private final Queue<NetworkNamespace> availableNetworkNamespaces;
-	private final Map<String, NetworkNamespace> busyNetworkNamespaces;
 	private final AtomicLong count;
 	private ScheduledExecutorService scheduledExecutor;
 
@@ -24,7 +23,6 @@ public class NetworkNamespaceProvider {
 		this.thirdByte = 0;
 		this.fourthByte = 0;
 		this.availableNetworkNamespaces = new ArrayBlockingQueue<>(Integer.MAX_VALUE);
-		this.busyNetworkNamespaces = new ConcurrentHashMap<>();
 		this.count = new AtomicLong(0);
 		this.scheduledExecutor = null;
 	}
@@ -63,21 +61,6 @@ public class NetworkNamespaceProvider {
 			newFourthByte = fourthByte;
 		}
 		final NetworkNamespace networkNamespace = new NetworkNamespace(newThirdByte, newFourthByte);
-		while (true) {
-			final String key = String.format(
-				"%s_%s",
-				networkNamespace.getThirdByte(),
-				networkNamespace.getFourthByte());
-			final NetworkNamespace inserted = busyNetworkNamespaces.putIfAbsent(key, networkNamespace);
-			if (inserted != null) {
-				break;
-			}
-			try {
-				Thread.sleep(5);
-			} catch (InterruptedException e) {
-				throw new RuntimeException("Internal server error.");
-			}
-		}
 		NativeSandboxInterface.createNetworkNamespace(
 			networkNamespace.getName(),
 			networkNamespace.getThirdByte(),
@@ -118,11 +101,6 @@ public class NetworkNamespaceProvider {
 		start = System.nanoTime();
 		NativeSandboxInterface.disableVeths(networkNamespace.getName());
 		NativeSandboxInterface.enableVeths(networkNamespace.getName());
-		final String key = String.format(
-			"%s_%s",
-			networkNamespace.getThirdByte(),
-			networkNamespace.getFourthByte());
-		busyNetworkNamespaces.remove(key);
 		availableNetworkNamespaces.add(networkNamespace);
 		finish = System.nanoTime();
 		System.out.println(String.format(
@@ -145,7 +123,5 @@ public class NetworkNamespaceProvider {
 			.shutdown();
 		availableNetworkNamespaces
 			.forEach(this::deleteNetworkNamespace);
-		busyNetworkNamespaces
-			.forEach((ipDigit, networkNamespace) -> this.deleteNetworkNamespace(networkNamespace));
 	}
 }

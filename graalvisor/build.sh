@@ -25,13 +25,26 @@ function build_lazyisolation {
     	fi
 }
 
+function build_network_isolation {
+	gcc -c -I"NETWORK_ISOLATION_DIR" -o $LIB_DIR/network-isolation.o $NETWORK_ISOLATION_DIR/network-isolation.c
+	if [ -n ${LINKER_OPTIONS+x} ]; then
+    LINKER_OPTIONS+="
+        -H:NativeLinkerOption="$LIB_DIR/network-isolation.o""
+  else
+    LINKER_OPTIONS="
+        -H:NativeLinkerOption="$LIB_DIR/network-isolation.o""
+	fi
+}
+
 function build_nsi {
 	HEADER_DIR=$DIR/build/generated/sources/headers/java/main
 	C_DIR=$DIR/src/main/c
 	LAZY_DIR=$DIR/src/main/c/lazyisolation/src
+	NETWORK_ISOLATION_DIR=$DIR/src/main/c/network-isolation/src
 	LIB_DIR=$DIR/build/libs
 	build_lazyisolation
-	gcc -c -I"$JAVA_HOME/include" -I"$JAVA_HOME/include/linux" -I"$HEADER_DIR" -I"$LAZY_DIR" -o $LIB_DIR/NativeSandboxInterface.o $C_DIR/NativeSandboxInterface.c $LAZY_FLAGS
+	build_network_isolation
+	gcc -c -I"$JAVA_HOME/include" -I"$JAVA_HOME/include/linux" -I"$HEADER_DIR" -I"$LAZY_DIR" -I"$NETWORK_ISOLATION_DIR" -o $LIB_DIR/NativeSandboxInterface.o $C_DIR/NativeSandboxInterface.c $LAZY_FLAGS
 	ar rcs $LIB_DIR/libNativeSandboxInterface.a $LIB_DIR/NativeSandboxInterface.o
 }
 

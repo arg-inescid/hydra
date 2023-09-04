@@ -1,26 +1,14 @@
-#define _GNU_SOURCE
-#include <sched.h>
-
 #include <jni.h>
 #include <unistd.h>
 #include <signal.h>
-#include <sys/types.h>
 #ifdef LAZY_ISOLATION
 #include "lazyisolation.h"
 #endif
 #include "org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/mount.h>
-#include <limits.h>
-#include <sys/time.h>
 
-#include "NetworkNamespace.h"
+#include "network-isolation.h"
 
 #define PIPE_READ_END  0
 #define PIPE_WRITE_END 1

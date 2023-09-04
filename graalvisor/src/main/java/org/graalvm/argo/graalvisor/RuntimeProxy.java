@@ -244,7 +244,7 @@ public abstract class RuntimeProxy {
             }
 
             if (System.getProperty("java.vm.name").equals("Substrate VM") || !functionLanguage.equalsIgnoreCase("java")) {
-                handlePolyglotRegistration(t, functionName, codeFileName, functionEntryPoint, functionLanguage, sandboxName, lazyIsolation);
+                handlePolyglotRegistration(t, functionName, codeFileName, functionEntryPoint, functionLanguage, sandboxName, lazyIsolation, networkIsolation);
             } else {
                 handleHotSpotRegistration(t, functionName, codeFileName, functionEntryPoint);
             }
@@ -280,7 +280,7 @@ public abstract class RuntimeProxy {
             writeResponse(t, 200, String.format("Function %s registered!", functionName));
         }
 
-        private void handlePolyglotRegistration(HttpExchange t, String functionName, String soFileName, String functionEntryPoint, String functionLanguage, String sandboxName, boolean lazyIsolation) throws IOException {
+        private void handlePolyglotRegistration(HttpExchange t, String functionName, String soFileName, String functionEntryPoint, String functionLanguage, String sandboxName, boolean lazyIsolation, boolean networkIsolation) throws IOException {
             long start = System.currentTimeMillis();
             PolyglotFunction function = null;
             SandboxProvider sprovider = null;
@@ -305,7 +305,7 @@ public abstract class RuntimeProxy {
                     try (OutputStream fos = new FileOutputStream(soFileName); InputStream bis = new BufferedInputStream(t.getRequestBody(), 4096)) {
                         bis.transferTo(fos);
                     }
-                    function = new NativeFunction(functionName, functionEntryPoint, functionLanguage, soFileName, lazyIsolation);
+                    function = new NativeFunction(functionName, functionEntryPoint, functionLanguage, soFileName, lazyIsolation, networkIsolation);
                 } else {
                     try (InputStream bis = new BufferedInputStream(t.getRequestBody(), 4096)) {
                         String sourceCode = new String(bis.readAllBytes(), StandardCharsets.UTF_8);

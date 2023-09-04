@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.graalvm.argo.graalvisor.function.NativeFunction;
 import org.graalvm.argo.graalvisor.function.PolyglotFunction;
 import org.graalvm.argo.graalvisor.sandboxing.SandboxHandle;
 
@@ -69,8 +70,11 @@ public class SubstrateVMProxy extends RuntimeProxy {
         public void runInternal() throws Exception {
             SandboxHandle shandle = prepareSandbox(pipeline.getFunction());
             Request req = null;
-            NetworkNamespace networkNamespace = prepareNetworkNamespace();
-            networkNamespace.switchToNetworkNamespace();
+            NetworkNamespace networkNamespace = null;
+            if (pipeline.getFunction() instanceof NativeFunction && ((NativeFunction) pipeline.getFunction()).hasNetworkIsolation()) {
+                networkNamespace = prepareNetworkNamespace();
+                networkNamespace.switchToNetworkNamespace();
+            }
 
             try {
                 while ((req = pipeline.queue.poll(60, TimeUnit.SECONDS)) != null) {
@@ -80,8 +84,10 @@ public class SubstrateVMProxy extends RuntimeProxy {
                 e.printStackTrace();
             }
 
-            networkNamespace.switchToDefaultNetworkNamespace();
-            freeNetworkNamespace(networkNamespace);
+            if (pipeline.getFunction() instanceof NativeFunction && ((NativeFunction) pipeline.getFunction()).hasNetworkIsolation()) {
+                networkNamespace.switchToDefaultNetworkNamespace();
+                freeNetworkNamespace(networkNamespace);
+            }
             pipeline.workers.decrementAndGet();
             destroySandbox(pipeline.getFunction(), shandle);
         }
@@ -201,11 +207,16 @@ public class SubstrateVMProxy extends RuntimeProxy {
             res = getFunctionPipeline(function).invokeInCachedSandbox(arguments);
         } else {
             SandboxHandle shandle = prepareSandbox(function);
-            NetworkNamespace networkNamespace = prepareNetworkNamespace();
-            networkNamespace.switchToNetworkNamespace();
+            NetworkNamespace networkNamespace = null;
+            if (function instanceof NativeFunction && ((NativeFunction) function).hasNetworkIsolation()) {
+                networkNamespace = prepareNetworkNamespace();
+                networkNamespace.switchToNetworkNamespace();
+            }
             res = shandle.invokeSandbox(arguments);
-            networkNamespace.switchToDefaultNetworkNamespace();
-            freeNetworkNamespace(networkNamespace);
+            if (function instanceof NativeFunction && ((NativeFunction) function).hasNetworkIsolation()) {
+                networkNamespace.switchToDefaultNetworkNamespace();
+                freeNetworkNamespace(networkNamespace);
+            }
             destroySandbox(function, shandle);
         }
 
