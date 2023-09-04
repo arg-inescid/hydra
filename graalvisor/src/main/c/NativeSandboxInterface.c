@@ -1,8 +1,9 @@
+#define _GNU_SOURCE
+
 #include <jni.h>
 #include <unistd.h>
 #include <signal.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <fcntl.h>
 #include <string.h>
 #include <stdio.h>
