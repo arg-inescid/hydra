@@ -70,7 +70,7 @@ JNIEXPORT int JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxI
     return pid;
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_getThreadId(JNIEnv *env, jclass thisObject)
+JNIEXPORT jint JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_getThreadId(JNIEnv *env, jclass thisObject)
 {
     return gettid();
 }
