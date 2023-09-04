@@ -117,7 +117,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     printf("Created cgroup %s with quota %d\n", isol, quota);
 }
 
-JNIEXPORT void JNICALL Java_pt_ulisboa_tecnico_msc_JNIMethods_insertThreadInCgroup(JNIEnv *env, jclass thisObject, jstring isolateId, jstring threadId)
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_insertThreadInCgroup(JNIEnv *env, jclass thisObject, jstring isolateId, jstring threadId)
 {
     const char *isol = (*env)->GetStringUTFChars(env, isolateId, NULL);
     const char *t = (*env)->GetStringUTFChars(env, threadId, NULL);
@@ -132,7 +132,7 @@ JNIEXPORT void JNICALL Java_pt_ulisboa_tecnico_msc_JNIMethods_insertThreadInCgro
     printf("Inserted thread %s in cgroup %s\n", t, isol);
 }
 
-JNIEXPORT void JNICALL Java_pt_ulisboa_tecnico_msc_JNIMethods_removeThreadFromCgroup(JNIEnv *env, jclass thisObject, jstring threadId)
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_removeThreadFromCgroup(JNIEnv *env, jclass thisObject, jstring threadId)
 {
     const char *t = (*env)->GetStringUTFChars(env, threadId, NULL);
     char path[300];
