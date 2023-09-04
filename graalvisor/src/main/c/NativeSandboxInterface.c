@@ -8,28 +8,34 @@
 
 #include "org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface.h"
 
-#define PIPE_READ_END  0
+#define PIPE_READ_END 0
 #define PIPE_WRITE_END 1
 
-void close_parent_fds(int childWrite, int parentRead) {
+void close_parent_fds(int childWrite, int parentRead)
+{
     // TODO - we should try to get a sense for the used file descriptors.
-    for (int fd = 3; fd < 1024; fd++) {
-        if (fd != childWrite && fd != parentRead) {
+    for (int fd = 3; fd < 1024; fd++)
+    {
+        if (fd != childWrite && fd != parentRead)
+        {
             close(fd);
         }
     }
 }
 
-void reset_parent_signal_handlers() {
+void reset_parent_signal_handlers()
+{
     signal(SIGTERM, SIG_DFL);
     signal(SIGINT, SIG_DFL);
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_ginit(JNIEnv *env, jobject thisObj) {
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_ginit(JNIEnv *env, jobject thisObj)
+{
     setbuf(stdout, NULL);
 }
 
-JNIEXPORT int JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createNativeProcessSandbox(JNIEnv *env, jobject thisObj, jintArray childPipeFD, jintArray parentPipeFD) {
+JNIEXPORT int JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createNativeProcessSandbox(JNIEnv *env, jobject thisObj, jintArray childPipeFD, jintArray parentPipeFD)
+{
     int parentRead, parentWrite, childRead, childWrite;
 
     // Preparing child pipe (where the child writes and the parent reads).
@@ -48,11 +54,14 @@ JNIEXPORT int JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxI
 
     // Forking.
     int pid = fork();
-    if (pid == 0) {
+    if (pid == 0)
+    {
         // Sanitizing the child process.
         close_parent_fds(childWrite, parentRead);
         reset_parent_signal_handlers();
-    } else {
+    }
+    else
+    {
         // Close the unnecessary pipe ends.
         close(childPipeFDptr[PIPE_WRITE_END]);
         close(parentPipeFDptr[PIPE_READ_END]);
@@ -60,17 +69,26 @@ JNIEXPORT int JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxI
     return pid;
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createCgroup
-  (JNIEnv *env, jclass thisObject, jstring isolateId) {
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_getThreadId(JNIEnv *env, jclass thisObject)
+{
+    return gettid();
+}
+
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createCgroup(JNIEnv *env, jclass thisObject, jstring isolateId)
+{
     const char *isol = (*env)->GetStringUTFChars(env, isolateId, NULL);
     char path[300];
     strcpy(path, "/sys/fs/cgroup/isolate/");
     strcat(path, isol);
     mkdir(path, 0777);
+    strcat(path, "/cgroup.type");
+    int fd = open(path, O_WRONLY);
+    write(fd, "threaded", 9);
+    close(fd);
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_deleteCgroup
-  (JNIEnv *env, jclass thisObject, jstring isolateId) {
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_deleteCgroup(JNIEnv *env, jclass thisObject, jstring isolateId)
+{
     const char *isol = (*env)->GetStringUTFChars(env, isolateId, NULL);
     char path[300];
     strcpy(path, "/sys/fs/cgroup/isolate/");
@@ -78,76 +96,91 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     rmdir(path);
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_setCgroupWeight
-  (JNIEnv *env, jclass thisObject, jstring isolateId, jint quota) {
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_setCgroupQuota(JNIEnv *env, jclass thisObject, jstring isolateId, jint quota)
+{
     const int period = 100000;
-    const int pid = getpid();
     const char *isol = (*env)->GetStringUTFChars(env, isolateId, NULL);
     char maxQuota[32];
-    char cGroupPath[256];
     char cGroupMax[256];
-    char cGroupProcs[256];
-
-    strcpy(cGroupPath, "/sys/fs/cgroup/isolate/");
-    strcat(cGroupPath, isol);
-    strcpy(cGroupMax, cGroupPath);
-    strcpy(cGroupProcs, cGroupPath);
-    strcat(cGroupMax, "/cpu.max");
-    strcat(cGroupProcs, "/cpu.procs");
+    char cGroupThreads[256];
 
     sprintf(maxQuota, "%d %d", quota, period);
+    sprintf(cGroupMax, "/sys/fs/cgroup/isolate/%s/cpu.max", isol);
+    sprintf(cGroupThreads, "/sys/fs/cgroup/isolate/%s/cpu.thread", isol);
 
     int maxF = open(cGroupMax, O_WRONLY);
     write(maxF, maxQuota, strlen(maxQuota) + 1);
     close(maxF);
 
-    int procsF = open(cGroupProcs, O_WRONLY);
-    write(procsF, &pid, sizeof(pid));
-    close(procsF);
-
-    printf("Added process %d to cgroup %s with a quota of %d out of %d.\n", pid, cGroupPath, quota, period);
+    printf("Created cgroup %s with quota %d\n", isol, quota);
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_enterNativeProcessSandbox(JNIEnv *env, jobject thisObj) {
+JNIEXPORT void JNICALL Java_pt_ulisboa_tecnico_msc_JNIMethods_insertThreadInCgroup(JNIEnv *env, jclass thisObject, jstring isolateId, jstring threadId)
+{
+    const char *isol = (*env)->GetStringUTFChars(env, isolateId, NULL);
+    const char *t = (*env)->GetStringUTFChars(env, threadId, NULL);
+    char path[300];
+    strcpy(path, "/sys/fs/cgroup/isolate/");
+    strcat(path, isol);
+    strcat(path, "/cgroup.threads");
+    int fd = open(path, O_WRONLY);
+    write(fd, t, strlen(t));
+    close(fd);
 
+    printf("Inserted thread %s in cgroup %s\n", t, isol);
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_leaveNativeProcessSandbox(JNIEnv *env, jobject thisObj) {
-
+JNIEXPORT void JNICALL Java_pt_ulisboa_tecnico_msc_JNIMethods_removeThreadFromCgroup(JNIEnv *env, jclass thisObject, jstring threadId)
+{
+    const char *t = (*env)->GetStringUTFChars(env, threadId, NULL);
+    char path[300];
+    strcpy(path, "/sys/fs/cgroup/isolate/");
+    strcat(path, "cgroup.threads");
+    int fd = open(path, O_WRONLY);
+    int r = write(fd, t, strlen(t));
+    close(fd);
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_destroyNativeProcessSandbox(JNIEnv *env, jobject thisObj) {
-
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_enterNativeProcessSandbox(JNIEnv *env, jobject thisObj)
+{
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createNativeIsolateSandbox(JNIEnv *env, jobject thisObj) {
-
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_leaveNativeProcessSandbox(JNIEnv *env, jobject thisObj)
+{
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_enterNativeIsolateSandbox(JNIEnv *env, jobject thisObj) {
-
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_destroyNativeProcessSandbox(JNIEnv *env, jobject thisObj)
+{
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_leaveNativeIsolateSandbox(JNIEnv *env, jobject thisObj) {
-
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createNativeIsolateSandbox(JNIEnv *env, jobject thisObj)
+{
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_destroyNativeIsolateSandbox(JNIEnv *env, jobject thisObj) {
-
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_enterNativeIsolateSandbox(JNIEnv *env, jobject thisObj)
+{
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createNativeRuntimeSandbox(JNIEnv *env, jobject thisObj) {
-
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_leaveNativeIsolateSandbox(JNIEnv *env, jobject thisObj)
+{
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_enterNativeRuntimeSandbox(JNIEnv *env, jobject thisObj) {
-
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_destroyNativeIsolateSandbox(JNIEnv *env, jobject thisObj)
+{
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_leaveNativeRuntimeSandbox(JNIEnv *env, jobject thisObj) {
-
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createNativeRuntimeSandbox(JNIEnv *env, jobject thisObj)
+{
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_destroyNativeRuntimeSandbox(JNIEnv *env, jobject thisObj) {
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_enterNativeRuntimeSandbox(JNIEnv *env, jobject thisObj)
+{
+}
 
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_leaveNativeRuntimeSandbox(JNIEnv *env, jobject thisObj)
+{
+}
+
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_destroyNativeRuntimeSandbox(JNIEnv *env, jobject thisObj)
+{
 }

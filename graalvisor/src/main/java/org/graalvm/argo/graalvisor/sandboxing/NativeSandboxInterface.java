@@ -6,10 +6,17 @@ public class NativeSandboxInterface {
 
     public static native int createNativeProcessSandbox(int[] childPipe, int[] parentPipe);
 
+    public static native int getThreadId();
+
     public static native void createCgroup(String isolateId);
     public static native void deleteCgroup(String isolateId);
 
-    public static native void setCgroupWeight(String isolateId, int quota);
+    public static native void setCgroupQuota(String isolateId, String quota);
+
+    public static native void insertThreadInCgroup(String isolateId, String threadId);
+    public static native void removeThreadFromCgroup(String isolateId);
+
+    public static native void setCgroupQuota(String isolateId, int quota);
 
     public static native void enterNativeProcessSandbox();
 

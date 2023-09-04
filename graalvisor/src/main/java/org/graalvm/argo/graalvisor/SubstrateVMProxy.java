@@ -22,10 +22,11 @@ import org.graalvm.nativeimage.Isolates;
  * A runtime proxy that runs requests on Native image-based sandboxes.
  */
 public class SubstrateVMProxy extends RuntimeProxy {
-    List<String> isolateThreads = new ArrayList<String>();
+    static List<String> isolateThreads = new ArrayList<String>();
 
     /**
-     * A Request object is used as a communication packet between a foreground thread and a background thread.
+     * A Request object is used as a communication packet between a foreground
+     * thread and a background thread.
      */
     static class Request {
 
@@ -51,7 +52,8 @@ public class SubstrateVMProxy extends RuntimeProxy {
     }
 
     /**
-     * An isolate worker is a thread that retrieves requests from a queue and runs them in its own isolate.
+     * An isolate worker is a thread that retrieves requests from a queue and runs
+     * them in its own isolate.
      */
     static class Worker extends Thread {
 
@@ -95,14 +97,16 @@ public class SubstrateVMProxy extends RuntimeProxy {
             try {
                 runInternal();
             } catch (Exception e) {
-                System.err.println(String.format("[thread %s] Error: thread quit unexpectedly", Thread.currentThread().getId()));
+                System.err.println(
+                        String.format("[thread %s] Error: thread quit unexpectedly", Thread.currentThread().getId()));
                 e.printStackTrace();
             }
         }
     }
 
     /**
-     * A function pipeline contains a queue used to submit requests for a function along with the number of free workers for this function.
+     * A function pipeline contains a queue used to submit requests for a function
+     * along with the number of free workers for this function.
      */
     static class FunctionPipeline {
 
@@ -133,7 +137,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
             synchronized (req) {
                 queue.add(req);
 
-                while(req.getOutput() == null) {
+                while (req.getOutput() == null) {
                     try {
                         req.wait();
                     } catch (InterruptedException e) {
@@ -175,17 +179,34 @@ public class SubstrateVMProxy extends RuntimeProxy {
         long start = System.nanoTime();
         SandboxHandle worker = function.getSandboxProvider().createSandbox();
         long finish = System.nanoTime();
-        System.out.println(String.format("[thread %s] New %s sandbox %s in %s us", Thread.currentThread().getId(), function.getSandboxProvider().getName(), worker, (finish - start)/1000));
+        System.out.println(String.format("[thread %s] New %s sandbox %s in %s us", Thread.currentThread().getId(),
+                function.getSandboxProvider().getName(), worker, (finish - start) / 1000));
+        prepareCgroup(worker.toString());
         return worker;
     }
 
     private static void destroySandbox(PolyglotFunction function, SandboxHandle shandle) throws Exception {
-        System.out.println(String.format("[thread %s] Destroying %s sandbox %s", Thread.currentThread().getId(), function.getSandboxProvider().getName(), shandle));
+        System.out.println(String.format("[thread %s] Destroying %s sandbox %s", Thread.currentThread().getId(),
+                function.getSandboxProvider().getName(), shandle));
         function.getSandboxProvider().destroySandbox(shandle);
     }
 
+    private static void prepareCgroup(String isolateId) {
+        if (!isolateThreads.contains(isolateId)) {
+            System.out.println("Creating new cgroup for " + isolateId);
+            NativeSandboxInterface.createCgroup(isolateId);
+            NativeSandboxInterface.setCgroupQuota(isolateId, 100000);
+            isolateThreads.add(isolateId);
+        } else {
+            System.out.println("Using existing cgroup for " + isolateId);
+        }
+
+        NativeSandboxInterface.insertThreadInCgroup(isolateId, String.valueOf(NativeSandboxInterface.getThreadId()));
+    }
+
     @Override
-    protected String invoke(PolyglotFunction function, boolean cached, boolean warmup, String arguments) throws Exception {
+    protected String invoke(PolyglotFunction function, boolean cached, boolean warmup, String arguments)
+            throws Exception {
         String res;
 
         if (warmup) {
@@ -194,28 +215,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
             res = getFunctionPipeline(function).invokeInCachedSandbox(arguments);
         } else {
             SandboxHandle shandle = prepareSandbox(function);
-
-            // IsolateThread processContext = shandle.getIsolateThread();
-            // String isolateId = String.valueOf(Isolates.getIsolate(processContext).rawValue());
-            // System.out.println("IsolateId " + isolateId);
-
-            String isolateId = shandle.toString();
-            System.out.println("IsolateId " + isolateId);
-
-            if(!isolateThreads.contains(isolateId)) {
-                System.out.println("Creating cgroup for " + isolateId);
-                NativeSandboxInterface.createCgroup(isolateId);
-                NativeSandboxInterface.setCgroupWeight(isolateId, 100000);
-                isolateThreads.add(isolateId);
-            }
-            else {
-                System.out.println("Using existing cgroup for " + isolateId);
-            }
-
             res = shandle.invokeSandbox(arguments);
-
-            // NativeSandboxInterface.deleteCgroup(isolateId); // not getting deleted - change later
-
             destroySandbox(function, shandle);
         }
 
