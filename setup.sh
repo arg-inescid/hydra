@@ -31,6 +31,7 @@ fi
 if ! command -v docker &> /dev/null
 then
     echo "WARNING: docker could not be found!"
+    GRAALVISOR_BUILD_MODE="local"
 fi
 
 if [ ! -f $ARGO_HOME/resources/hello-vmlinux.bin ];
@@ -58,7 +59,7 @@ read -p "Build graalvisor? (y or Y, everything else as no)? " -n 1 -r
 echo    # move to a new line
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    bash $ARGO_HOME/graalvisor/build.sh
+    bash $ARGO_HOME/graalvisor/build.sh $GRAALVISOR_BUILD_MODE
 fi
 
 bash $ARGO_HOME/images/build.sh
