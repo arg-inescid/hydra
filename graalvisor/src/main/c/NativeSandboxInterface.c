@@ -127,16 +127,47 @@ JNIEXPORT jint JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     return ret;
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_enterNativeProcessSandbox(JNIEnv *env, jobject thisObj) {
+JNIEXPORT int JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createNativeProcessSandbox(JNIEnv *env, jobject thisObj, jintArray childPipeFD, jintArray parentPipeFD, jboolean lazyIsolation) {
+    int parentRead, parentWrite, childRead, childWrite;
 
-}
+    // Preparing child pipe (where the child writes and the parent reads).
+    jint *childPipeFDptr = (*env)->GetIntArrayElements(env, childPipeFD, 0);
+    pipe(childPipeFDptr);
+    childRead = childPipeFDptr[PIPE_READ_END];
+    childWrite = childPipeFDptr[PIPE_WRITE_END];
+    (*env)->ReleaseIntArrayElements(env, childPipeFD, childPipeFDptr, 0);
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_leaveNativeProcessSandbox(JNIEnv *env, jobject thisObj) {
+    // Preparing the parent pipe (where the parent writes and the child reads).
+    jint *parentPipeFDptr = (*env)->GetIntArrayElements(env, parentPipeFD, 0);
+    pipe(parentPipeFDptr);
+    parentRead = parentPipeFDptr[PIPE_READ_END];
+    parentWrite = parentPipeFDptr[PIPE_WRITE_END];
+    (*env)->ReleaseIntArrayElements(env, parentPipeFD, parentPipeFDptr, 0);
 
-}
-
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_destroyNativeProcessSandbox(JNIEnv *env, jobject thisObj) {
-
+    // Forking.
+    int pid = fork();
+    if (pid == 0) {
+        // Sanitizing the child process.
+        close_parent_fds(childWrite, parentRead);
+        reset_parent_signal_handlers();
+#ifdef LAZY_ISOLATION
+        if (lazyIsolation) {
+            install_proc_filter(childPipeFDptr);
+        }
+#endif
+    } else {
+        // Close the unnecessary pipe ends.
+        close(childPipeFDptr[PIPE_WRITE_END]);
+        if (!lazyIsolation) {
+            close(parentPipeFDptr[PIPE_READ_END]);
+        }
+#ifdef LAZY_ISOLATION
+        if (lazyIsolation) {
+            attach(pid, childPipeFDptr, parentPipeFDptr);
+        }
+#endif
+    }
+    return pid;
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createNativeIsolateSandbox(JNIEnv *env, jobject thisObj, jboolean lazyIsolation) {
