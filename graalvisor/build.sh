@@ -51,7 +51,7 @@ function build_nsi {
 function build_ni {
     mkdir -p $GRAALVISOR_HOME &> /dev/null
     cd $GRAALVISOR_HOME
-    if [[ $JAVA_HOME == *"graalvm-jdk-17"* ]]; then
+    if [[ $JAVA_VERSION == *"17"* ]]; then
         JAVA_17_OPTS="$JAVA_17_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.posix=ALL-UNNAMED"
 	JAVA_17_OPTS="$JAVA_17_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.posix.headers=ALL-UNNAMED"
         JAVA_17_OPTS="$JAVA_17_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.c=ALL-UNNAMED"
@@ -83,6 +83,9 @@ if [ -z "$JAVA_HOME" ]
 then
     echo "Please set JAVA_HOME first. It should be a GraalVM with native-image available."
     exit 1
+else
+    eval $(echo "export $(cat $JAVA_HOME/release | grep JAVA_VERSION=)")
+    eval $(echo "export $(cat $JAVA_HOME/release | grep GRAALVM_VERSION=)")
 fi
 
 if [ -z "$ARGO_HOME" ]
@@ -100,7 +103,8 @@ EXECUTION_ENVIRONMENT=$1
 if [[ "$EXECUTION_ENVIRONMENT" != "local" ]]
 then  # Build native image inside Docker container.
     docker run -it -v $JAVA_HOME:/jvm -v $ARGO_HOME:/argo --rm argo-builder /argo/graalvisor/build.sh "local"
-    sudo chown -R $(id -u -n):$(id -g -n) build
+    sudo chown -R $(id -u -n):$(id -g -n) $ARGO_HOME/graalvisor/build
+    sudo chown -R $(id -u -n):$(id -g -n) $ARGO_HOME/graalvisor-lib/build
 else  # Build native image locally (inside container or directly on host).
     LANGS=""
     read -p "Javascript support (y or Y, everything else as no)? " -n 1 -r
@@ -118,6 +122,10 @@ else  # Build native image locally (inside container or directly on host).
         LANGS="$LANGS --language:python"
         echo "Python support added!"
     fi
+
+    echo -e "${GREEN}Building graalvisor-lib jar...${NC}"
+    $ARGO_HOME/graalvisor-lib/build.sh
+    echo -e "${GREEN}Building graalvisor-lib jar... done!${NC}"
 
     echo -e "${GREEN}Building graalvisor jar...${NC}"
     ./gradlew clean shadowJar javaProxy

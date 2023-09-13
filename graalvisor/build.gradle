@@ -45,7 +45,7 @@ task javaProxy(type: ShadowJar) {
 }
 
 dependencies {
-    if (System.getenv('JAVA_HOME').contains('graalvm-jdk-17')) {
+    if (System.getenv('GRAALVM_VERSION').contains('23.0.0')) {
         compileOnly 'org.graalvm.sdk:graal-sdk:23.0.0'
         compileOnly 'org.graalvm.nativeimage:svm:23.0.0'
     } else {
