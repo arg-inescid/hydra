@@ -205,7 +205,6 @@ public abstract class RuntimeProxy {
         @Override
         public void handleInternal(HttpExchange t) throws IOException {
             String[] params = t.getRequestURI().getQuery().split("&");
-            System.out.println(params);
             Map<String, String> metaData = new HashMap<>();
             for (String param : params) {
                 String[] keyValue = param.split("=");
