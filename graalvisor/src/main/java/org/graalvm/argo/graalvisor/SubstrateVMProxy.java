@@ -195,7 +195,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
         if (!isolateThreads.contains(isolateId)) {
             System.out.println("Creating new cgroup for " + isolateId);
             NativeSandboxInterface.createCgroup(isolateId);
-            NativeSandboxInterface.setCgroupQuota(isolateId, 100000);
+            NativeSandboxInterface.setCgroupQuota(isolateId, 10000);
             isolateThreads.add(isolateId);
         } else {
             System.out.println("Using existing cgroup for " + isolateId);
