@@ -9,6 +9,7 @@ import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Map;
+import java.util.concurrent.Executors;
 
 import org.graalvm.argo.graalvisor.function.HotSpotFunction;
 import org.graalvm.argo.graalvisor.function.PolyglotFunction;
@@ -23,12 +24,16 @@ import com.oracle.svm.graalvisor.polyglot.PolyglotLanguage;
  * Runtime proxy that runs on HotSpot JVM. Right now we only support truffle
  * code in HotSpot but it can be extended by running Graalvisor runtimes
  * through JNI.
+ * 
+ * The HotSpot proxy serves requests in a sequential manner, i.e., no requests will be
+ * executed in parallel.
  */
 public class HotSpotProxy extends RuntimeProxy {
 
     public HotSpotProxy(int port) throws Exception {
         super(port);
         server.createContext("/agentconfig", new RetrieveAgentConfigHandler());
+        server.setExecutor(Executors.newSingleThreadExecutor());
     }
 
     @Override

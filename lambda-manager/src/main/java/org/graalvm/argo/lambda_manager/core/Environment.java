@@ -17,7 +17,7 @@ public class Environment {
 
     // Maximum number of open requests that we will accept to send another request.
     // TODO: Make sure non-graalvisor runtimes do not run invocations concurrently.
-    public static final int LAMBDA_MAX_OPEN_REQ_COUNT = 1000;
+    public static final int LAMBDA_MAX_OPEN_REQ_COUNT = 100;
 
     // Tap name is limited to 15 characters. In our case tap names are created from prefix (4 chars) + random string (10 chars).
     public static final String TAP_PREFIX = "lmt";
@@ -44,6 +44,17 @@ public class Environment {
     public static final String HOTSPOT_AGENT_DOCKER_RUNTIME = "docker.io/sergiyivan/large-scale-experiment:argo-hotspot-agent";
 
     public static final String OPENWHISK_DOCKER_RUNTIME = "docker.io/openwhisk/java8action:latest";
+
+    // Cold start sliding window parameters.
+    /**
+     * Minimum number of cold starts within a period.
+     */
+    public static final int AOT_OPTIMIZATION_THRESHOLD = 3;
+
+    /**
+     * Period during which we count number of cold starts (in ms).
+     */
+    public static final int SLIDING_WINDOW_PERIOD = 480000;
 
     public synchronized static long pid() {
         return NEXT_ID++;

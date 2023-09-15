@@ -10,6 +10,9 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import org.graalvm.argo.lambda_manager.core.Configuration;
@@ -27,18 +30,31 @@ public class LambdaPoolUtils {
 
     private static final Set<Lambda> startingLambdas = Collections.newSetFromMap(new ConcurrentHashMap<Lambda, Boolean>());
 
+    private static final int EXECUTOR_THREAD_COUNT = 10;
+
     public static void prepareLambdaPool(Map<LambdaExecutionMode, ConcurrentLinkedQueue<Lambda>> lambdaPool, LambdaManagerPool poolConfiguration) {
-        startLambdasPerMode(lambdaPool, LambdaExecutionMode.HOTSPOT_W_AGENT, poolConfiguration.getHotspotWithAgent());
-        startLambdasPerMode(lambdaPool, LambdaExecutionMode.HOTSPOT, poolConfiguration.getHotspot());
-        startLambdasPerMode(lambdaPool, LambdaExecutionMode.GRAALVISOR, poolConfiguration.getGraalvisor());
-        startLambdasPerMode(lambdaPool, LambdaExecutionMode.CUSTOM, poolConfiguration.getCustom());
+        ExecutorService executor = Executors.newFixedThreadPool(EXECUTOR_THREAD_COUNT);
+        startLambdasPerMode(lambdaPool, LambdaExecutionMode.HOTSPOT_W_AGENT, poolConfiguration.getHotspotWithAgent(), executor);
+        startLambdasPerMode(lambdaPool, LambdaExecutionMode.HOTSPOT, poolConfiguration.getHotspot(), executor);
+        startLambdasPerMode(lambdaPool, LambdaExecutionMode.GRAALVISOR, poolConfiguration.getGraalvisor(), executor);
+        startLambdasPerMode(lambdaPool, LambdaExecutionMode.CUSTOM, poolConfiguration.getCustom(), executor);
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(600, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+        }
     }
 
-    private static void startLambdasPerMode(Map<LambdaExecutionMode, ConcurrentLinkedQueue<Lambda>> lambdaPool, LambdaExecutionMode mode, int amount) {
+    private static void startLambdasPerMode(Map<LambdaExecutionMode, ConcurrentLinkedQueue<Lambda>> lambdaPool, LambdaExecutionMode mode, int amount, ExecutorService executor) {
         for (int i = 0; i < amount; ++i) {
-            Lambda lambda = new Lambda(mode);
-            // This is a blocking call that waits until the lambda is created.
-            startLambda(lambdaPool, lambda, mode);
+            executor.execute(() -> {
+                Lambda lambda = new Lambda(mode);
+                // This is a blocking call that waits until the lambda is created.
+                startLambda(lambdaPool, lambda, mode);
+            });
         }
     }
 

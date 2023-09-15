@@ -1,5 +1,6 @@
 package org.graalvm.argo.lambda_manager.core;
 
+import org.graalvm.argo.lambda_manager.optimizers.ColdStartSlidingWindow;
 import org.graalvm.argo.lambda_manager.optimizers.FunctionStatus;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.processes.lambda.BuildSO;
@@ -47,6 +48,9 @@ public class Function {
     /** Flag stating if this function can be re-built into native image in case of fallback (only for Graalvisor). */
     private final boolean canRebuild;
 
+    /** Sliding window for determining if this function is worth optimizing. Counts number of cold starts per period. */
+    private final ColdStartSlidingWindow window;
+
     /**
      * There will be only one started Native Image Agent per function, so we need to
      * keep information about PID for that single lambda. We are sending this
@@ -70,6 +74,7 @@ public class Function {
         this.functionIsolation = functionIsolation;
         this.invocationCollocation = invocationCollocation || this.getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR;
         this.gvSandbox = gvSandbox;
+        this.window = new ColdStartSlidingWindow(Environment.AOT_OPTIMIZATION_THRESHOLD, Environment.SLIDING_WINDOW_PERIOD);
     }
 
     public String getName() {
@@ -142,8 +147,12 @@ public class Function {
     public boolean canCollocateInvocation() {
         // Lambda execution mode can change from "non-collocatable" to "collocatable"
         // runtime and back throughout the function lifetime as the function might go
-        // through the build pipeline and fallback
-        return !Configuration.argumentStorage.isSnapshotEnabled() && (this.invocationCollocation || this.getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR);
+        // through the build pipeline and fallback.
+        LambdaExecutionMode mode = getLambdaExecutionMode();
+        if (mode == LambdaExecutionMode.HOTSPOT_W_AGENT || mode == LambdaExecutionMode.HOTSPOT) {
+            return false;
+        }
+        return !Configuration.argumentStorage.isSnapshotEnabled() && (this.invocationCollocation || mode == LambdaExecutionMode.GRAALVISOR);
     }
 
     public String getGraalvisorSandbox() {
@@ -170,12 +179,14 @@ public class Function {
      * Update status when creating a new lambda for this function.
      */
     public synchronized void updateStatus(LambdaExecutionMode targetMode) {
+        long currentTimestamp = System.currentTimeMillis();
+        window.addColdStart(currentTimestamp);
         switch (targetMode) {
             case HOTSPOT_W_AGENT:
                 status = FunctionStatus.CONFIGURING_OR_BUILDING;
                 break;
             case HOTSPOT:
-                if (status == FunctionStatus.NOT_BUILT_CONFIGURED) {
+                if (status == FunctionStatus.NOT_BUILT_CONFIGURED && window.worthOptimizing(currentTimestamp)) {
                     status = FunctionStatus.CONFIGURING_OR_BUILDING;
                     new BuildSO(this).build().start();
                     Logger.log(Level.INFO, "Starting new .so build for function " + name);

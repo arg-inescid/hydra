@@ -33,7 +33,11 @@ public class BuildSO extends AbstractProcess {
 
             @Override
             public void finish(int exitCode) {
-                function.setStatus(FunctionStatus.READY);
+                if (exitCode == 0) {
+                    function.setStatus(FunctionStatus.READY);
+                } else {
+                    function.setStatus(FunctionStatus.NOT_BUILT_CONFIGURED);
+                }
             }
         };
     }
