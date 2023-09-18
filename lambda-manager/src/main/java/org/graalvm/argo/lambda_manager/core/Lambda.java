@@ -32,6 +32,7 @@ public class Lambda {
 	private String username;
 
 	private Timer timer;
+	private long timerTimestamp;
 	private LambdaConnection connection;
 	private final LambdaExecutionMode executionMode;
 
@@ -96,6 +97,7 @@ public class Lambda {
 		newTimer.schedule(new DefaultLambdaShutdownHandler(this), Configuration.argumentStorage.getTimeout()
 				+ (int) (Configuration.argumentStorage.getTimeout() * Math.random()));
 		timer = newTimer;
+		timerTimestamp = System.currentTimeMillis();
 		if (oldTimer != null) {
 			oldTimer.cancel();
 		}
@@ -187,6 +189,10 @@ public class Lambda {
 	public String getUsername() {
 	    return username;
 	}
+
+    public long getTimerTimestamp() {
+        return timerTimestamp;
+    }
 
     private void setRequiresFunctionUpload(Function function) {
         requiresFunctionUpload.add(function);

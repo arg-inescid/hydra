@@ -52,6 +52,7 @@ public class LambdaPool {
             NetworkConfigurationUtils.prepareContainerConnectionPool(connectionPool, targetSize, beanContext);
         }
         LambdaPoolUtils.prepareLambdaPool(lambdaPool, poolConfiguration);
+        LambdaPoolUtils.startLambdaReclaimingDaemon(lambdaPool, poolConfiguration);
     }
 
     public LambdaConnection nextLambdaConnection() {

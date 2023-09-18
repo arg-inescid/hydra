@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -18,6 +19,7 @@ import java.util.logging.Level;
 import org.graalvm.argo.lambda_manager.core.Configuration;
 import org.graalvm.argo.lambda_manager.core.Environment;
 import org.graalvm.argo.lambda_manager.core.Lambda;
+import org.graalvm.argo.lambda_manager.core.LambdaManager;
 import org.graalvm.argo.lambda_manager.core.LambdaType;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
@@ -30,10 +32,15 @@ public class LambdaPoolUtils {
 
     private static final Set<Lambda> startingLambdas = Collections.newSetFromMap(new ConcurrentHashMap<Lambda, Boolean>());
 
-    private static final int EXECUTOR_THREAD_COUNT = 10;
+    private static final int EXECUTOR_THREAD_COUNT = Runtime.getRuntime().availableProcessors() / 2;
+
+    private static final int DAEMON_SLEEP_PERIOD_MS = 5000;
+    private static final float LAMBDA_RECLAIM_THRESHOLD = 0.3f;
+    private static final float LAMBDA_PERCENTAGE_TO_RECLAIM = LAMBDA_RECLAIM_THRESHOLD * 0.5f;
 
     public static void prepareLambdaPool(Map<LambdaExecutionMode, ConcurrentLinkedQueue<Lambda>> lambdaPool, LambdaManagerPool poolConfiguration) {
         ExecutorService executor = Executors.newFixedThreadPool(EXECUTOR_THREAD_COUNT);
+
         startLambdasPerMode(lambdaPool, LambdaExecutionMode.HOTSPOT_W_AGENT, poolConfiguration.getHotspotWithAgent(), executor);
         startLambdasPerMode(lambdaPool, LambdaExecutionMode.HOTSPOT, poolConfiguration.getHotspot(), executor);
         startLambdasPerMode(lambdaPool, LambdaExecutionMode.GRAALVISOR, poolConfiguration.getGraalvisor(), executor);
@@ -180,6 +187,57 @@ public class LambdaPoolUtils {
         if (p.exitValue() != 0) {
             Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", lambda.getLambdaID()));
             printStream(Level.WARNING, p.getErrorStream());
+        }
+    }
+
+    public static void startLambdaReclaimingDaemon(Map<LambdaExecutionMode, ConcurrentLinkedQueue<Lambda>> lambdaPool, LambdaManagerPool poolConfiguration) {
+        Runnable task = new LambdaReclaimingDaemon(poolConfiguration, lambdaPool);
+        Thread daemon = new Thread(task);
+        daemon.start();
+    }
+
+    private static class LambdaReclaimingDaemon implements Runnable {
+
+        private final Map<LambdaExecutionMode, Integer> maxLambdas;
+        private final Map<LambdaExecutionMode, ConcurrentLinkedQueue<Lambda>> lambdaPool;
+
+        private LambdaReclaimingDaemon(LambdaManagerPool poolConfiguration, Map<LambdaExecutionMode, ConcurrentLinkedQueue<Lambda>> lambdaPool) {
+            this.maxLambdas = new HashMap<>();
+            this.maxLambdas.put(LambdaExecutionMode.HOTSPOT_W_AGENT, poolConfiguration.getHotspotWithAgent());
+            this.maxLambdas.put(LambdaExecutionMode.HOTSPOT, poolConfiguration.getHotspot());
+            this.maxLambdas.put(LambdaExecutionMode.GRAALVISOR, poolConfiguration.getGraalvisor());
+            this.maxLambdas.put(LambdaExecutionMode.CUSTOM, poolConfiguration.getCustom());
+            this.lambdaPool = lambdaPool;
+        }
+
+        @Override
+        public void run() {
+            while (Environment.notShutdownHookActive()) {
+                try {
+                    lambdaPool.forEach(this::reclaim);
+                    Thread.sleep(DAEMON_SLEEP_PERIOD_MS);
+                } catch (InterruptedException ie) {
+                    // Ignore.
+                } catch (Throwable th) {
+                    Logger.log(Level.WARNING, String.format("A problem occurred during the lambda reclaiming process: %s", th.getMessage()));
+                }
+            }
+        }
+
+        private void reclaim(LambdaExecutionMode mode, ConcurrentLinkedQueue<Lambda> lambdas) {
+            int total = maxLambdas.get(mode);
+            int minimalThreshold = (int) (total * LAMBDA_RECLAIM_THRESHOLD);
+            int lambdasInPool = lambdas.size();
+            if (lambdasInPool < minimalThreshold) {
+                // Use Math.ceil to always reclaim at least one lambda.
+                int lambdasToReclaim = (int) Math.ceil(total * LAMBDA_PERCENTAGE_TO_RECLAIM);
+                LambdaManager.lambdas.stream().filter(l -> l.getExecutionMode() == mode).sorted(this::compare)
+                        .limit(lambdasToReclaim).parallel().forEach(l -> new DefaultLambdaShutdownHandler(l).run());
+            }
+        }
+
+        private int compare(Lambda l1, Lambda l2) {
+            return (int) (l1.getTimerTimestamp() - l2.getTimerTimestamp());
         }
     }
 }
