@@ -154,7 +154,7 @@ public class GuestAPI {
         }
     }
 
-    public static ObjectHandle obtainDBConnection(IsolateThread hostThread, String connectionUrl, String user, String password) {
+    public static int obtainDBConnection(IsolateThread hostThread, String connectionUrl, String user, String password) {
         try (CTypeConversion.CCharPointerHolder connectionUrlHolder = CTypeConversion.toCString(connectionUrl);
                 CTypeConversion.CCharPointerHolder userHolder = CTypeConversion.toCString(user);
                 CTypeConversion.CCharPointerHolder passwordHolder = CTypeConversion.toCString(password)) {
@@ -162,8 +162,14 @@ public class GuestAPI {
         }
     }
 
-    public static int returnDBConnection(IsolateThread hostThread) {
-        // TODO: add parameters
-        return graalVisorStructHost.getHostReturnDBConnectionFunction().invoke(hostThread);
+    public static int executeDBQuery(IsolateThread hostThread, int connectionId, String query, byte[] buffer, int bufferLen) {
+        try (CTypeConversion.CCharPointerHolder queryHolder = CTypeConversion.toCString(query);
+                PinnedObject buf = PinnedObject.create(buffer)) {
+            return graalVisorStructHost.getHostExecuteDBQueryFunction().invoke(hostThread, connectionId, queryHolder.get(), buf.addressOfArrayElement(0), bufferLen);
+        }
+    }
+
+    public static int returnDBConnection(IsolateThread hostThread, int connectionId) {
+        return graalVisorStructHost.getHostReturnDBConnectionFunction().invoke(hostThread, connectionId);
     }
 }

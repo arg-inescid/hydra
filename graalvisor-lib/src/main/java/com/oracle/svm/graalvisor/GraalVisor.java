@@ -24,12 +24,17 @@ public class GraalVisor {
 
     public interface HostObtainDBConnectionFunctionPointer extends CFunctionPointer {
         @InvokeCFunctionPointer
-        ObjectHandle invoke(IsolateThread thread, CCharPointer connectionUrl, CCharPointer user, CCharPointer password);
+        int invoke(IsolateThread thread, CCharPointer connectionUrl, CCharPointer user, CCharPointer password);
+    }
+
+    public interface HostExecuteDBQueryFunctionPointer extends CFunctionPointer {
+        @InvokeCFunctionPointer
+        int invoke(IsolateThread thread, int connectionId, CCharPointer query, CCharPointer buffer, int bufferLen);
     }
 
     public interface HostReturnDBConnectionFunctionPointer extends CFunctionPointer {
         @InvokeCFunctionPointer
-        int invoke(IsolateThread thread);
+        int invoke(IsolateThread thread, int connectionId);
     }
 
     @CStruct("graal_visor_t")
@@ -46,6 +51,12 @@ public class GraalVisor {
 
         @CField("f_host_obtain_db_connection")
         void setHostObtainDBConnectionFunction(HostObtainDBConnectionFunctionPointer obtainConnectionFunction);
+
+        @CField("f_host_execute_db_query")
+        HostExecuteDBQueryFunctionPointer getHostExecuteDBQueryFunction();
+
+        @CField("f_host_execute_db_query")
+        void setHostExecuteDBQueryFunction(HostExecuteDBQueryFunctionPointer executeQueryFunction);
 
         @CField("f_host_return_db_connection")
         HostReturnDBConnectionFunctionPointer getHostReturnDBConnectionFunction();
