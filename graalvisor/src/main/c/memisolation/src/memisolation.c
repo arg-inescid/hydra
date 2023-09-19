@@ -7,7 +7,6 @@
 #include <linux/audit.h>
 #include <linux/filter.h>
 #include <linux/seccomp.h>
-#include <pthread.h>
 #include <sched.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -93,7 +92,7 @@ void
 set_permissions(const char* id, int protectionFlag, int pkey)
 {
     size_t count;
-    MemoryRegion* regions = getRegions(appMap, (char*)id, &count);
+    MemoryRegion* regions = get_regions(appMap, (char*)id, &count);
 
     for (size_t i = 0; i < count; ++i) {
         if (pkey_mprotect(regions[i].address, regions[i].size, protectionFlag, pkey) == -1) {
@@ -428,13 +427,13 @@ supervisor(void *arg)
     return NULL;
 }
 
-static void
+void
 initialize_memory_isolation()
 {   
     init_app_map(&appMap);
     init_thread_map(&threadMap);
 
-    init_app_array(&appIds);
+    init_app_array(appIDs);
     pthread_mutex_init(&mutex, NULL);
 
     if(erim_init(8192, ERIM_FLAG_ISOLATE_UNTRUSTED | ERIM_FLAG_SWAP_STACK, NUM_DOMAINS)) {

@@ -1,6 +1,8 @@
 #ifndef __MEMISOLATION_H__
 #define __MEMISOLATION_H__
 
+#include <pthread.h>
+
 /*
  * Debug prints
  */
@@ -20,6 +22,7 @@ int find_app_domain(const char* id);
 char* get_app_id(int domain);
 void set_permissions(const char* id, int protectionFlag, int pkey);
 void install_notify_filter(int domain);
+void initialize_memory_isolation();
 
 extern pthread_mutex_t mutex;
 

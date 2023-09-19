@@ -11,10 +11,9 @@ function build_memisolation {
 	major_version=${release%%.*}
 	release=${release#*.}
 	minor_version=${release%%.*}
-	ERIM_HOME=/home/rbruno/git/erim
 	CFLAGS="-Wall -g -fno-inline \
             -I"$ERIM_HOME/src/erim" \
-            -I"$ERIM_HOME/src/common" -DERIM_DBG -DERIM_SWAP_STACKS"
+            -I"$ERIM_HOME/src/common" -DERIM_DBG -DERIM_SWAP_STACKS -DSEC_DBG"
         LIBRARIES="$ERIM_HOME/bin/common/libswscommon.a $ERIM_HOME/bin/erim/liberim.a"
 
 	if [ $major_version -ge 5 ] && [ $minor_version -ge 10 ]; then

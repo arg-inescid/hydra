@@ -5,9 +5,9 @@
 #include "helpers.h"
 
 /* Auxiliary functions */
-void init_app_array(char** appIds) {
+void init_app_array(char* array[]) {
     for (size_t i = 0; i < 16; i++) {
-        appIds[i] = NULL;
+        array[i] = NULL;
     }
 }
 
