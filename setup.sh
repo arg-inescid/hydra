@@ -59,7 +59,7 @@ read -p "Build graalvisor? (y or Y, everything else as no)? " -n 1 -r
 echo    # move to a new line
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    bash $ARGO_HOME/graalvisor/build.sh $GRAALVISOR_BUILD_MODE
+    bash $ARGO_HOME/graalvisor/build.sh local
 fi
 
 bash $ARGO_HOME/images/build.sh
