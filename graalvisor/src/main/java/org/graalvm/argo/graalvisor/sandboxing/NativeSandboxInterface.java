@@ -4,6 +4,8 @@ public class NativeSandboxInterface {
 
     public static native boolean isLazyIsolationSupported();
 
+    public static native boolean isMemIsolationSupported();
+
     public static native void ginit();
 
     public static native int createNativeProcessSandbox(int[] childPipe, int[] parentPipe, boolean lazyIsolation);

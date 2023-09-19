@@ -35,6 +35,14 @@ JNIEXPORT jboolean JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSan
 #endif
 }
 
+JNIEXPORT jboolean JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_isMemIsolationSupported(JNIEnv *env, jobject thisObj) {
+#ifdef MEM_ISOLATION
+    return 1;
+#else
+    return 0;
+#endif
+}
+
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_ginit(JNIEnv *env, jobject thisObj) {
     setbuf(stdout, NULL);
 #ifdef LAZY_ISOLATION

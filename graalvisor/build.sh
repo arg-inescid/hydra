@@ -11,14 +11,20 @@ function build_memisolation {
 	major_version=${release%%.*}
 	release=${release#*.}
 	minor_version=${release%%.*}
+	ERIM_HOME=/home/rbruno/git/erim
+	CFLAGS="-Wall -g -fno-inline \
+            -I"$ERIM_HOME/src/erim" \
+            -I"$ERIM_HOME/src/common" -DERIM_DBG -DERIM_SWAP_STACKS"
+        LIBRARIES="$ERIM_HOME/bin/common/libswscommon.a $ERIM_HOME/bin/erim/liberim.a"
 
 	if [ $major_version -ge 5 ] && [ $minor_version -ge 10 ]; then
-	    	gcc -c -I"$MEM_DIR" -o $LIB_DIR/appmap.o $MEM_DIR/utils/appmap.c
-	    	gcc -c -I"$MEM_DIR" -o $LIB_DIR/threadmap.o $MEM_DIR/utils/threadmap.c
-	    	gcc -c -I"$MEM_DIR" -o $LIB_DIR/helpers.o $MEM_DIR/helpers/helpers.c
-        	gcc -c -I"$MEM_DIR" -o $LIB_DIR/memisolation.o $MEM_DIR/memisolation.c
+	    	gcc -c -I"$MEM_DIR" $CFLAGS -o $LIB_DIR/appmap.o $MEM_DIR/utils/appmap.c
+	    	gcc -c -I"$MEM_DIR" $CFLAGS -o $LIB_DIR/threadmap.o $MEM_DIR/utils/threadmap.c
+	    	gcc -c -I"$MEM_DIR" $CFLAGS -o $LIB_DIR/helpers.o $MEM_DIR/helpers/helpers.c
+        	gcc -c -I"$MEM_DIR" $CFLAGS -o $LIB_DIR/memisolation.o $MEM_DIR/memisolation.c
         	LINKER_OPTIONS="
             		-H:NativeLinkerOption=-lpthread
+            		-H:NativeLinkerOption="-lm $LIBRARIES -ldl"
             		-H:NativeLinkerOption="$LIB_DIR/memisolation.o"
             		-H:NativeLinkerOption="$LIB_DIR/appmap.o"
             		-H:NativeLinkerOption="$LIB_DIR/threadmap.o"
@@ -50,10 +56,10 @@ function build_nsi {
 	HEADER_DIR=$DIR/build/generated/sources/headers/java/main
 	C_DIR=$DIR/src/main/c
 	LAZY_DIR=$DIR/src/main/c/lazyisolation/src
-    MEM_DIR=$DIR/src/main/c/memisolation/src
+        MEM_DIR=$DIR/src/main/c/memisolation/src
 	LIB_DIR=$DIR/build/libs
 	build_lazyisolation
-    build_memisolation
+        build_memisolation
 	gcc -c -I"$JAVA_HOME/include" -I"$JAVA_HOME/include/linux" -I"$HEADER_DIR" -I"$LAZY_DIR" -I"$MEM_DIR" -o $LIB_DIR/NativeSandboxInterface.o $C_DIR/NativeSandboxInterface.c $LAZY_FLAGS $MEM_FLAGS
 	ar rcs $LIB_DIR/libNativeSandboxInterface.a $LIB_DIR/NativeSandboxInterface.o
 }

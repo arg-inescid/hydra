@@ -219,9 +219,10 @@ public abstract class RuntimeProxy {
             String functionLanguage = metaData.get("language");
             String sandboxName = metaData.get("sandbox");
             boolean lazyIsolation = metaData.containsKey("lazyisolation") && metaData.get("lazyisolation").equals("true");
+            boolean memIsolation = metaData.containsKey("memisolation") && metaData.get("memisolation").equals("true");
 
             if (System.getProperty("java.vm.name").equals("Substrate VM") || !functionLanguage.equalsIgnoreCase("java")) {
-                handlePolyglotRegistration(t, functionName, codeFileName, functionEntryPoint, functionLanguage, sandboxName, lazyIsolation);
+                handlePolyglotRegistration(t, functionName, codeFileName, functionEntryPoint, functionLanguage, sandboxName, lazyIsolation, memIsolation);
             } else {
                 handleHotSpotRegistration(t, functionName, codeFileName, functionEntryPoint);
             }
@@ -257,7 +258,7 @@ public abstract class RuntimeProxy {
             writeResponse(t, 200, String.format("Function %s registered!", functionName));
         }
 
-        private void handlePolyglotRegistration(HttpExchange t, String functionName, String soFileName, String functionEntryPoint, String functionLanguage, String sandboxName, boolean lazyIsolation) throws IOException {
+        private void handlePolyglotRegistration(HttpExchange t, String functionName, String soFileName, String functionEntryPoint, String functionLanguage, String sandboxName, boolean lazyIsolation, boolean memIsolation) throws IOException {
             long start = System.currentTimeMillis();
             PolyglotFunction function = null;
             SandboxProvider sprovider = null;
@@ -278,11 +279,23 @@ public abstract class RuntimeProxy {
                     }
                 }
 
+                if (memIsolation) {
+                    if (!Main.MEM_ISOLATION_ENABLED) {
+                        System.out.println("Warning: Function " + functionName + ": mem isolation is disabled.");
+                        memIsolation = false;
+                    }
+                    else if (!Main.MEM_ISOLATION_SUPPORTED) {
+                        System.out.println("Warning: Function " + functionName + ": graalvisor was compiled without mem isolation support.");
+                        memIsolation = false;
+                    }
+                }
+
+
                 if (functionLanguage.equalsIgnoreCase("java")) {
                     try (OutputStream fos = new FileOutputStream(soFileName); InputStream bis = new BufferedInputStream(t.getRequestBody(), 4096)) {
                         bis.transferTo(fos);
                     }
-                    function = new NativeFunction(functionName, functionEntryPoint, functionLanguage, soFileName, lazyIsolation);
+                    function = new NativeFunction(functionName, functionEntryPoint, functionLanguage, soFileName, lazyIsolation, memIsolation);
                 } else {
                     try (InputStream bis = new BufferedInputStream(t.getRequestBody(), 4096)) {
                         String sourceCode = new String(bis.readAllBytes(), StandardCharsets.UTF_8);
