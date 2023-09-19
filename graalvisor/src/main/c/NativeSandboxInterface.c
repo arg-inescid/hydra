@@ -5,6 +5,9 @@
 #ifdef LAZY_ISOLATION
 #include "lazyisolation.h"
 #endif
+#ifdef MEM_ISOLATION
+#include "memisolation.h"
+#endif
 #include "org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface.h"
 
 #define PIPE_READ_END  0
@@ -36,6 +39,9 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     setbuf(stdout, NULL);
 #ifdef LAZY_ISOLATION
         initialize_seccomp();
+#endif
+#ifdef MEM_ISOLATION
+        initialize_memory_isolation();
 #endif
 }
 
