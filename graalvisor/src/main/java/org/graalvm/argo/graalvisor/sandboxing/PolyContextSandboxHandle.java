@@ -43,7 +43,7 @@ public class PolyContextSandboxHandle extends SandboxHandle {
     }
 
     @Override
-    public String invokeSandbox(String jsonArguments, int cpuCgroupQuota) throws Exception {
+    public String invokeSandbox(String jsonArguments) throws Exception {
         PolyglotFunction function = csProvider.getFunction();
         ObjectHandle nameHandle = copyString(isolateThread, function.getName());
         ObjectHandle argsHandle = copyString(isolateThread, jsonArguments);

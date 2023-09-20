@@ -2,7 +2,7 @@ package org.graalvm.argo.graalvisor.sandboxing;
 
 public abstract class SandboxHandle {
 
-    public abstract String invokeSandbox(String jsonArguments, int cpuCgroupQuota) throws Exception;
+    public abstract String invokeSandbox(String jsonArguments) throws Exception;
 
     public void destroyHandle() throws Exception {
         // default implementation;

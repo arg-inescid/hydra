@@ -70,7 +70,8 @@ public class SubstrateVMProxy extends RuntimeProxy {
             synchronized (req) {
                 // Get input from request, invoke function in isolate, fill output.
                 try {
-                    req.setOutput(shandle.invokeSandbox(req.getInput(), req.getCpuCgroupQuota()));
+                    prepareCgroup(shandle.toString(), req.getCpuCgroupQuota());
+                    req.setOutput(shandle.invokeSandbox(req.getInput()));
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -217,7 +218,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
             res = getFunctionPipeline(function).invokeInCachedSandbox(arguments, cpuCgroupQuota);
         } else {
             SandboxHandle shandle = prepareSandbox(function);
-            res = shandle.invokeSandbox(arguments, cpuCgroupQuota);
+            res = shandle.invokeSandbox(arguments);
             destroySandbox(function, shandle);
         }
 

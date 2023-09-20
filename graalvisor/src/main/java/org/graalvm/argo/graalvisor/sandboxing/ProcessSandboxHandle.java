@@ -95,7 +95,7 @@ public class ProcessSandboxHandle extends SandboxHandle {
     }
 
     @Override
-    public String invokeSandbox(String jsonArguments, int cpuCgroupQuota) throws Exception {
+    public String invokeSandbox(String jsonArguments) throws Exception {
         sender.write(String.format("%s\n", jsonArguments).getBytes());
         return receiver.readLine();
     }
