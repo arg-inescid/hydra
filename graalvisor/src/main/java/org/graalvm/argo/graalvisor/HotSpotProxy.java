@@ -32,7 +32,7 @@ public class HotSpotProxy extends RuntimeProxy {
     }
 
     @Override
-    public String invoke(PolyglotFunction function, boolean cached, boolean warmup, String arguments) throws Exception {
+    public String invoke(PolyglotFunction function, boolean cached, boolean warmup, String arguments, int cpuCgroupQuota) throws Exception {
         if (function.getLanguage() == PolyglotLanguage.JAVA) {
             HotSpotFunction hf = (HotSpotFunction) function;
             Method method = hf.getMethod();

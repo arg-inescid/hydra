@@ -1,7 +1,6 @@
 package org.graalvm.argo.graalvisor;
 
 import java.io.IOException;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -12,17 +11,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.graalvm.argo.graalvisor.function.PolyglotFunction;
-import org.graalvm.argo.graalvisor.sandboxing.IsolateSandboxHandle;
 import org.graalvm.argo.graalvisor.sandboxing.NativeSandboxInterface;
 import org.graalvm.argo.graalvisor.sandboxing.SandboxHandle;
-import org.graalvm.nativeimage.IsolateThread;
-import org.graalvm.nativeimage.Isolates;
 
 /**
  * A runtime proxy that runs requests on Native image-based sandboxes.
  */
 public class SubstrateVMProxy extends RuntimeProxy {
-    static List<String> isolateThreads = new ArrayList<String>();
+    static List<String> isolateCgroups = new ArrayList<String>();
 
     /**
      * A Request object is used as a communication packet between a foreground
@@ -34,12 +30,19 @@ public class SubstrateVMProxy extends RuntimeProxy {
 
         String output;
 
-        public Request(String input) {
+        int cpuCgroupQuota;
+
+        public Request(String input, int cpuCgroupQuota) {
             this.input = input;
+            this.cpuCgroupQuota = cpuCgroupQuota;
         }
 
         public String getInput() {
             return input;
+        }
+
+        public int getCpuCgroupQuota() {
+            return cpuCgroupQuota;
         }
 
         public String setOutput(String output) {
@@ -67,7 +70,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
             synchronized (req) {
                 // Get input from request, invoke function in isolate, fill output.
                 try {
-                    req.setOutput(shandle.invokeSandbox(req.getInput()));
+                    req.setOutput(shandle.invokeSandbox(req.getInput(), req.getCpuCgroupQuota()));
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -123,8 +126,8 @@ public class SubstrateVMProxy extends RuntimeProxy {
             this.queue = new ArrayBlockingQueue<>(64);
         }
 
-        public String invokeInCachedSandbox(String input) {
-            Request req = new Request(input);
+        public String invokeInCachedSandbox(String input, int cpuCgroupQuota) {
+            Request req = new Request(input, cpuCgroupQuota);
             active.getAndIncrement();
 
             synchronized (this) {
@@ -175,13 +178,13 @@ public class SubstrateVMProxy extends RuntimeProxy {
         return pipeline;
     }
 
-    private static SandboxHandle prepareSandbox(PolyglotFunction function) throws Exception {
+    private static SandboxHandle prepareSandbox(PolyglotFunction function, int cpuCgroupQuota) throws Exception {
         long start = System.nanoTime();
         SandboxHandle worker = function.getSandboxProvider().createSandbox();
         long finish = System.nanoTime();
         System.out.println(String.format("[thread %s] New %s sandbox %s in %s us", Thread.currentThread().getId(),
                 function.getSandboxProvider().getName(), worker, (finish - start) / 1000));
-        prepareCgroup(worker.toString());
+        prepareCgroup(worker.toString(), cpuCgroupQuota);
         return worker;
     }
 
@@ -191,12 +194,12 @@ public class SubstrateVMProxy extends RuntimeProxy {
         function.getSandboxProvider().destroySandbox(shandle);
     }
 
-    private static void prepareCgroup(String isolateId) {
-        if (!isolateThreads.contains(isolateId)) {
-            System.out.println("Creating new cgroup for " + isolateId);
+    private static void prepareCgroup(String isolateId, int quota) {
+        if (!isolateCgroups.contains(isolateId)) {
+            System.out.println("Creating new cgroup for " + isolateId + " with quota " + quota);
             NativeSandboxInterface.createCgroup(isolateId);
-            NativeSandboxInterface.setCgroupQuota(isolateId, 10000);
-            isolateThreads.add(isolateId);
+            NativeSandboxInterface.setCgroupQuota(isolateId, quota);
+            isolateCgroups.add(isolateId);
         } else {
             System.out.println("Using existing cgroup for " + isolateId);
         }
@@ -205,17 +208,17 @@ public class SubstrateVMProxy extends RuntimeProxy {
     }
 
     @Override
-    protected String invoke(PolyglotFunction function, boolean cached, boolean warmup, String arguments)
+    protected String invoke(PolyglotFunction function, boolean cached, boolean warmup, String arguments, int cpuCgroupQuota)
             throws Exception {
         String res;
 
         if (warmup) {
             res = function.getSandboxProvider().warmupProvider(arguments);
         } else if (cached) {
-            res = getFunctionPipeline(function).invokeInCachedSandbox(arguments);
+            res = getFunctionPipeline(function).invokeInCachedSandbox(arguments, cpuCgroupQuota);
         } else {
-            SandboxHandle shandle = prepareSandbox(function);
-            res = shandle.invokeSandbox(arguments);
+            SandboxHandle shandle = prepareSandbox(function, cpuCgroupQuota);
+            res = shandle.invokeSandbox(arguments, cpuCgroupQuota);
             destroySandbox(function, shandle);
         }
 

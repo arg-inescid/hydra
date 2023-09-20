@@ -98,9 +98,9 @@ public abstract class RuntimeProxy {
         }
     }
 
-    protected abstract String invoke(PolyglotFunction functionName, boolean cached, boolean warmup, String arguments) throws Exception;
+    protected abstract String invoke(PolyglotFunction functionName, boolean cached, boolean warmup, String arguments, int cpuCgroupQuota) throws Exception;
 
-   private String invokeWrapper(String functionName, boolean cached, boolean warmup, String arguments) throws Exception {
+   private String invokeWrapper(String functionName, boolean cached, boolean warmup, String arguments, int cpuCgroupQuota) throws Exception {
       PolyglotFunction function = FTABLE.get(functionName);
       String res;
 
@@ -108,7 +108,7 @@ public abstract class RuntimeProxy {
       if (function == null) {
             res = String.format("{'Error': 'Function %s not registered!'}", functionName);
         } else {
-            res = invoke(function, cached, warmup, arguments);
+            res = invoke(function, cached, warmup, arguments, cpuCgroupQuota);
         }
       long finish = System.nanoTime();
 
@@ -131,15 +131,16 @@ public abstract class RuntimeProxy {
                 Map<String, Object> input = jsonToMap(jsonBody);
                 String functionName = (String) input.get("name");
                 String arguments = (String) input.get("arguments");
+                int cpuCgroupQuota = (int) input.get("cpuCgroupQuota");
                 String async = (String)input.get("async");
                 boolean cached = input.get("cached") == null ? true : Boolean.parseBoolean((String)input.get("cached"));
 
                 if (async != null && async.equals("true")) {
                     ProxyUtils.writeResponse(t, 200, "Asynchronous request submitted!");
-                    String output = invokeWrapper(functionName, cached, false, arguments);
+                    String output = invokeWrapper(functionName, cached, false, arguments, cpuCgroupQuota);
                     System.out.println(output);
                 } else {
-                    String output = invokeWrapper(functionName, cached, false, arguments);
+                    String output = invokeWrapper(functionName, cached, false, arguments, cpuCgroupQuota);
                     ProxyUtils.writeResponse(t, 200, output);
                 }
             } catch (Exception e) {

@@ -20,7 +20,7 @@ public class IsolateSandboxHandle extends SandboxHandle {
     }
 
     @Override
-    public String invokeSandbox(String jsonArguments) throws Exception {
+    public String invokeSandbox(String jsonArguments, int cpuCgroupQuota) throws Exception {
         PolyglotFunction function = isProvider.getFunction();
         return isProvider.getGraalvisorAPI().invokeFunction((IsolateThread) isolateThread, function.getEntryPoint(), jsonArguments);
     }

@@ -113,8 +113,6 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     int maxF = open(cGroupMax, O_WRONLY);
     write(maxF, maxQuota, strlen(maxQuota) + 1);
     close(maxF);
-
-    printf("Created cgroup %s with quota %d\n", isol, quota);
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_insertThreadInCgroup(JNIEnv *env, jclass thisObject, jstring isolateId, jstring threadId)
@@ -128,8 +126,6 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     int fd = open(path, O_WRONLY);
     write(fd, t, strlen(t));
     close(fd);
-
-    printf("Inserted thread %s in cgroup %s\n", t, isol);
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_removeThreadFromCgroup(JNIEnv *env, jclass thisObject, jstring threadId)
