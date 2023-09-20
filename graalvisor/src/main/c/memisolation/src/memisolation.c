@@ -34,7 +34,6 @@
 #include <common.h>
 #include <erim.h>
 
-
 #define ARRAY_SIZE(arr)  (sizeof(arr) / sizeof((arr)[0]))
 #define NUM_DOMAINS 16
 
@@ -50,7 +49,7 @@
                 (offsetof(struct seccomp_data, nr)))
 
 /* File descriptors */
-int notifyFds[NUM_DOMAINS] = {0};
+struct NotifyFileDescriptor notifyFDs[NUM_DOMAINS];
 
 /* Maps */
 AppMap appMap;
@@ -78,6 +77,18 @@ is_domain_empty(int domain)
 }
 
 /* extern functions */
+void
+lock()
+{
+    pthread_mutex_lock(&mutex);
+}
+
+void
+unlock()
+{
+    pthread_mutex_unlock(&mutex);
+}
+
 int
 find_empty_domain()
 {
@@ -178,7 +189,8 @@ install_notify_filter(int domain)
     if (nfd == -1)
         err(EXIT_FAILURE, "seccomp-install-notify-filter");
 
-    notifyFds[domain] = nfd;
+    notifyFDs[domain].fd = nfd;
+    signal_semaphore(&notifyFDs[domain]);
 }
 
 /* Library loading */
@@ -209,7 +221,7 @@ dlopen(const char * input, int flag)
 
     void *handle = real_dlopen(pathname, RTLD_NOW | RTLD_DEEPBIND | RTLD_GLOBAL);
 
-    SEC_DBM("Saving library addresses and sizes...");
+    SEC_DBM("Storing %s addresses and sizes in map...", libname);
     get_memory_regions(&appMap, id, pathname);
 
     remove(input);
@@ -240,7 +252,8 @@ cookie_is_valid(int notifyFd, uint64_t id)
 static void
 alloc_seccomp_notif_buffers(struct seccomp_notif **req,
                         struct seccomp_notif_resp **resp,
-                        struct seccomp_notif_sizes *sizes)
+                        struct seccomp_notif_sizes *sizes,
+                        int domain)
 {
     size_t  resp_size;
 
@@ -249,11 +262,11 @@ alloc_seccomp_notif_buffers(struct seccomp_notif **req,
         buffers of those sizes. */
 
     if (seccomp(SECCOMP_GET_NOTIF_SIZES, 0, sizes) == -1)
-        err(EXIT_FAILURE, "[S]: seccomp-SECCOMP_GET_NOTIF_SIZES");
+        err(EXIT_FAILURE, "[S%d]: seccomp-SECCOMP_GET_NOTIF_SIZES", domain);
 
     *req = malloc(sizes->seccomp_notif);
     if (*req == NULL)
-        err(EXIT_FAILURE, "[S]: malloc-seccomp_notif");
+        err(EXIT_FAILURE, "[S%d]: malloc-seccomp_notif", domain);
 
     /* When allocating the response buffer, we must allow for the fact
         that the user-space binary may have been built with user-space
@@ -270,12 +283,12 @@ alloc_seccomp_notif_buffers(struct seccomp_notif **req,
 
     *resp = malloc(resp_size);
     if (*resp == NULL)
-        err(EXIT_FAILURE, "[S]: malloc-seccomp_notif_resp");
+        err(EXIT_FAILURE, "[S%d]: malloc-seccomp_notif_resp", domain);
 
 }
 
 static void
-handle_mmap(struct seccomp_notif *req, struct seccomp_notif_resp *resp) 
+handle_mmap(struct seccomp_notif *req, struct seccomp_notif_resp *resp, int domain) 
 {
     SEC_DBM("\t----mmap syscall----");
 
@@ -288,7 +301,7 @@ handle_mmap(struct seccomp_notif *req, struct seccomp_notif_resp *resp)
             back to the target */
 
         resp->error = -errno;
-        SEC_DBM("\t[S]: failure! (errno = %d; %s)\n", errno,
+        SEC_DBM("\t[S%d]: failure! (errno = %d; %s)\n", domain, errno,
                 strerror(errno));
     }
     else {
@@ -301,8 +314,8 @@ handle_mmap(struct seccomp_notif *req, struct seccomp_notif_resp *resp)
         resp->error = 0;                /* "Success" */
         resp->val = (__s64)mapped_mem;  /* return value of mmap() in target */
 
-        SEC_DBM("\t[S]: success! spoofed return = %p; spoofed val = %lld\n",
-                mapped_mem, resp->val);
+        SEC_DBM("\t[S%d]: success! spoofed return = %p; spoofed val = %lld\n",
+                domain, mapped_mem, resp->val);
     }
 }
 
@@ -335,7 +348,7 @@ handle_notifications(int notifyFd, int domain)
     struct seccomp_notif_resp   *resp;
     struct seccomp_notif_sizes  sizes;
 
-    alloc_seccomp_notif_buffers(&req, &resp, &sizes);
+    alloc_seccomp_notif_buffers(&req, &resp, &sizes, domain);
 
     insert_thread(&threadMap, domain);
 
@@ -349,11 +362,11 @@ handle_notifications(int notifyFd, int domain)
         if (ioctl(notifyFd, SECCOMP_IOCTL_NOTIF_RECV, req) == -1) {
             if (errno == EINTR)
                 continue;
-            err(EXIT_FAILURE, "\t[S]: ioctl-SECCOMP_IOCTL_NOTIF_RECV");
+            err(EXIT_FAILURE, "\t[S%d]: ioctl-SECCOMP_IOCTL_NOTIF_RECV", domain);
         }
 
-        SEC_DBM("\t[S]: received notifaction id [%lld], from tid: %d, syscall nr: %d\n", 
-                req->id, req->pid, req->data.nr);
+        SEC_DBM("\t[S%d]: received notifaction id [%lld], from tid: %d, syscall nr: %d\n", 
+                domain, req->id, req->pid, req->data.nr);
 
         if (!cookie_is_valid(notifyFd, req->id)) {
             perror("ioctl(SECCOMP_IOCTL_NOTIF_ID_VALID)");
@@ -369,7 +382,7 @@ handle_notifications(int notifyFd, int domain)
         // Handle specific syscalls
         switch(req->data.nr) {
             case __NR_mmap:
-                handle_mmap(req, resp);
+                handle_mmap(req, resp, domain);
                 break;
             case __NR_clone3:
                 handle_clone3(resp, domain);
@@ -383,15 +396,15 @@ handle_notifications(int notifyFd, int domain)
 
         /* Send a response to the notification */
 
-        SEC_DBM("\t[S]: sending response "
+        SEC_DBM("\t[S%d]: sending response "
                 "(flags = %#x; val = %lld; error = %d)",
-                resp->flags, resp->val, resp->error);
+                domain, resp->flags, resp->val, resp->error);
 
         if (ioctl(notifyFd, SECCOMP_IOCTL_NOTIF_SEND, resp) == -1) {
             if (errno == ENOENT)
-                SEC_DBM("\t[S]: response failed with ENOENT; "
+                SEC_DBM("\t[S%d]: response failed with ENOENT; "
                         "perhaps target process's syscall was "
-                        "interrupted by a signal?\n");
+                        "interrupted by a signal?\n", domain);
             else
                 perror("ioctl-SECCOMP_IOCTL_NOTIF_SEND");
         }
@@ -403,7 +416,7 @@ handle_notifications(int notifyFd, int domain)
 
     free(req);
     free(resp);
-    SEC_DBM("\t[S]: terminating **********\n");
+    SEC_DBM("\t[S%d]: terminating **********\n", domain);
 }
 
 /* Implementation of the supervisor thread:
@@ -417,10 +430,9 @@ supervisor(void *arg)
     int* domain = (int*)arg;
 
     loop:
-        while (notifyFds[*domain] == 0);
-
-        handle_notifications(notifyFds[*domain], *domain);
-        notifyFds[*domain] = 0;
+        SEC_DBM("\t[S%d]: waiting for semaphore...", *domain);
+        wait_semaphore(&notifyFDs[*domain]);
+        handle_notifications(notifyFDs[*domain].fd, *domain);
 
     goto loop;
 
@@ -434,6 +446,8 @@ initialize_memory_isolation()
     init_thread_map(&threadMap);
 
     init_app_array(appIDs);
+    init_notify_array(notifyFDs);
+
     pthread_mutex_init(&mutex, NULL);
 
     if(erim_init(8192, ERIM_FLAG_ISOLATE_UNTRUSTED | ERIM_FLAG_SWAP_STACK, NUM_DOMAINS)) {
@@ -442,6 +456,9 @@ initialize_memory_isolation()
 
     pthread_t workers[NUM_DOMAINS];
 
-    for (int domain = 0; domain < NUM_DOMAINS; domain++)
-        pthread_create(&workers[domain], NULL, supervisor, &domain);
+    for (int i = 0; i < NUM_DOMAINS; i++) {
+        int *domain = (int *)malloc(sizeof(int));
+        *domain = i;
+        pthread_create(&workers[i], NULL, supervisor, domain);
+    }
 }

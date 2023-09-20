@@ -16,14 +16,24 @@
   #define SEC_DBG(...)
 #endif
 
-int find_empty_domain();
+/* Lazy loading */
 void insert_app_id(int domain, const char* id);
-int find_app_domain(const char* id);
 char* get_app_id(int domain);
-void set_permissions(const char* id, int protectionFlag, int pkey);
-void install_notify_filter(int domain);
-void initialize_memory_isolation();
+int find_app_domain(const char* id);
 
-extern pthread_mutex_t mutex;
+/* Thread synchronization */
+void lock();
+void unlock();
+
+/* MPK */
+void set_permissions(const char* id, int protectionFlag, int pkey);
+
+/* Seccomp */
+void install_notify_filter(int domain);
+
+/* Domain management */
+int find_empty_domain();
+
+void initialize_memory_isolation();
 
 #endif

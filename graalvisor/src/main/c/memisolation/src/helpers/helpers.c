@@ -5,13 +5,38 @@
 #include "helpers.h"
 
 /* Auxiliary functions */
-void init_app_array(char* array[]) {
+void
+signal_semaphore(struct NotifyFileDescriptor* nfd)
+{
+    sem_post(&nfd->semaphore);
+}
+
+void
+wait_semaphore(struct NotifyFileDescriptor* nfd)
+{
+    sem_wait(&nfd->semaphore);
+}
+
+void
+init_notify_array(struct NotifyFileDescriptor array[])
+{
+    for (int i = 0; i < 16; i++) {
+        sem_init(&array[i].semaphore, 0, 0);
+        array[i].fd = 0;
+    }
+}
+
+void
+init_app_array(char* array[])
+{
     for (size_t i = 0; i < 16; i++) {
         array[i] = NULL;
     }
 }
 
-char* extract_basename(const char* filePath) {
+char*
+extract_basename(const char* filePath)
+{
     char* baseName = strrchr(filePath, '/');
     if (baseName != NULL) {
         return baseName + 1;
@@ -19,7 +44,9 @@ char* extract_basename(const char* filePath) {
     return (char*)filePath;
 }
 
-void get_memory_regions(AppMap* map, char* id, const char* path) {
+void
+get_memory_regions(AppMap* map, char* id, const char* path)
+{
     const char* libraryName = extract_basename(path);
 
     FILE* mapsFile = fopen("/proc/self/maps", "r");
