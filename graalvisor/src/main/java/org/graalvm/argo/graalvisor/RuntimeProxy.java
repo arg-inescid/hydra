@@ -131,7 +131,7 @@ public abstract class RuntimeProxy {
                 Map<String, Object> input = jsonToMap(jsonBody);
                 String functionName = (String) input.get("name");
                 String arguments = (String) input.get("arguments");
-                int cpuCgroupQuota = (int) input.get("cpuCgroupQuota");
+                int cpuCgroupQuota = Integer.parseInt((String) input.get("cpuCgroupQuota"));
                 String async = (String)input.get("async");
                 boolean cached = input.get("cached") == null ? true : Boolean.parseBoolean((String)input.get("cached"));
 
