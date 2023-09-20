@@ -14,8 +14,8 @@ typedef struct ThreadMap {
     ThreadNode* buckets[TABLE_SIZE];
 } ThreadMap;
 
-void init_thread_map(ThreadMap* map);
 ThreadNode* create_thread_node();
+void init_thread_map(ThreadMap* map);
 void insert_thread(ThreadMap* map, int domain);
 void remove_thread(ThreadMap* map, int domain);
 

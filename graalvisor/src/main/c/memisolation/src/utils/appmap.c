@@ -3,14 +3,18 @@
 #include <string.h>
 #include "appmap.h"
 
-void init_app_map(AppMap* map) {
+void
+init_app_map(AppMap* map)
+{
     for (int i = 0; i < TABLE_SIZE; i++) {
         map->buckets[i] = NULL;
     }
     pthread_mutex_init(&(map->mutex), NULL);
 }
 
-unsigned long hash_string(const char* key) {
+unsigned long
+hash_string(const char* key)
+{
     unsigned long hashValue = 14695981039346656037UL;
     const unsigned char* str = (const unsigned char*)key;
 
@@ -22,7 +26,9 @@ unsigned long hash_string(const char* key) {
     return hashValue % TABLE_SIZE;
 }
 
-AppNode* create_app_node(char* id, MemoryRegion memReg) {
+AppNode*
+create_app_node(char* id, MemoryRegion memReg)
+{
     AppNode* newNode = (AppNode*)malloc(sizeof(AppNode));
     if (newNode == NULL) {
         fprintf(stderr, "Memory allocation failed!\n");
@@ -35,7 +41,9 @@ AppNode* create_app_node(char* id, MemoryRegion memReg) {
     return newNode;
 }
 
-void insert_app(AppMap* map, char* id, MemoryRegion memReg) {
+void
+insert_app(AppMap* map, char* id, MemoryRegion memReg)
+{
     unsigned long index = hash_string((const char*)id);
     AppNode* newNode = create_app_node(id, memReg);
     
@@ -54,7 +62,9 @@ void insert_app(AppMap* map, char* id, MemoryRegion memReg) {
     pthread_mutex_unlock(&(map->mutex));
 }
 
-MemoryRegion* get_regions(AppMap map, char* id, size_t* count) {
+MemoryRegion*
+get_regions(AppMap map, char* id, size_t* count)
+{
     unsigned long index = hash_string((const char*)id);
     AppNode* currentNode = map.buckets[index];
     MemoryRegion* values = NULL;

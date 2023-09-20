@@ -23,9 +23,9 @@ typedef struct AppMap {
 } AppMap;
 
 void init_app_map(AppMap* map);
+void insert_app(AppMap* map, char* id, MemoryRegion memReg);
 unsigned long hash_str(const char *str);
 AppNode* create_app_node(char* id, MemoryRegion memReg);
-void insert_app(AppMap* map, char* id, MemoryRegion memReg);
 MemoryRegion* get_regions(AppMap map, char* id, size_t* count);
 
 #endif
