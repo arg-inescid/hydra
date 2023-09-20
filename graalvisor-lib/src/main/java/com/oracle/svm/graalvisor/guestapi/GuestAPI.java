@@ -28,6 +28,8 @@ public class GuestAPI {
     private volatile static GraalVisor.GraalVisorStruct graalVisorStructHost;
     private volatile static boolean functionRegistered = false;
 
+    private volatile static IsolateThread hostIsolateThread;
+
     /**
      * Register the guest application class name in order to use reflection to invoke application
      * function. Each guest application should implement the function: {@code public static String
@@ -111,6 +113,7 @@ public class GuestAPI {
     @CEntryPoint(name = "invoke_main_function", include = AsGraalVisorGuest.class)
     private static ObjectHandle invoke(@CEntryPoint.IsolateThreadContext IsolateThread guestThread, IsolateThread hostThread, ObjectHandle classHandle, ObjectHandle argumentHandle)
                     throws InvocationTargetException, IllegalAccessException {
+        hostIsolateThread = hostThread;
         String functionName = retrieveString(classHandle);
         String arguments = retrieveString(argumentHandle);
         if (!functionRegistered) {
@@ -154,22 +157,22 @@ public class GuestAPI {
         }
     }
 
-    public static int obtainDBConnection(IsolateThread hostThread, String connectionUrl, String user, String password) {
+    public static int obtainDBConnection(String connectionUrl, String user, String password) {
         try (CTypeConversion.CCharPointerHolder connectionUrlHolder = CTypeConversion.toCString(connectionUrl);
                 CTypeConversion.CCharPointerHolder userHolder = CTypeConversion.toCString(user);
                 CTypeConversion.CCharPointerHolder passwordHolder = CTypeConversion.toCString(password)) {
-            return graalVisorStructHost.getHostObtainDBConnectionFunction().invoke(hostThread, connectionUrlHolder.get(), userHolder.get(), passwordHolder.get());
+            return graalVisorStructHost.getHostObtainDBConnectionFunction().invoke(hostIsolateThread, connectionUrlHolder.get(), userHolder.get(), passwordHolder.get());
         }
     }
 
-    public static int executeDBQuery(IsolateThread hostThread, int connectionId, String query, byte[] buffer, int bufferLen) {
+    public static int executeDBQuery(int connectionId, String query, byte[] buffer, int bufferLen) {
         try (CTypeConversion.CCharPointerHolder queryHolder = CTypeConversion.toCString(query);
                 PinnedObject buf = PinnedObject.create(buffer)) {
-            return graalVisorStructHost.getHostExecuteDBQueryFunction().invoke(hostThread, connectionId, queryHolder.get(), buf.addressOfArrayElement(0), bufferLen);
+            return graalVisorStructHost.getHostExecuteDBQueryFunction().invoke(hostIsolateThread, connectionId, queryHolder.get(), buf.addressOfArrayElement(0), bufferLen);
         }
     }
 
-    public static int returnDBConnection(IsolateThread hostThread, int connectionId) {
-        return graalVisorStructHost.getHostReturnDBConnectionFunction().invoke(hostThread, connectionId);
+    public static int returnDBConnection(int connectionId) {
+        return graalVisorStructHost.getHostReturnDBConnectionFunction().invoke(hostIsolateThread, connectionId);
     }
 }
