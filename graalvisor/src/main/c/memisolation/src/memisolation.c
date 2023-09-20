@@ -207,7 +207,7 @@ dlopen(const char * input, int flag)
     strncpy(pathname, input, size);
     strcat(pathname, libname);
 
-    void *handle = real_dlopen(pathname, flag | RTLD_GLOBAL);
+    void *handle = real_dlopen(pathname, RTLD_NOW | RTLD_DEEPBIND | RTLD_GLOBAL);
 
     SEC_DBM("Saving library addresses and sizes...");
     get_memory_regions(&appMap, id, pathname);
