@@ -178,13 +178,12 @@ public class SubstrateVMProxy extends RuntimeProxy {
         return pipeline;
     }
 
-    private static SandboxHandle prepareSandbox(PolyglotFunction function, int cpuCgroupQuota) throws Exception {
+    private static SandboxHandle prepareSandbox(PolyglotFunction function) throws Exception {
         long start = System.nanoTime();
         SandboxHandle worker = function.getSandboxProvider().createSandbox();
         long finish = System.nanoTime();
         System.out.println(String.format("[thread %s] New %s sandbox %s in %s us", Thread.currentThread().getId(),
                 function.getSandboxProvider().getName(), worker, (finish - start) / 1000));
-        prepareCgroup(worker.toString(), cpuCgroupQuota);
         return worker;
     }
 
@@ -217,7 +216,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
         } else if (cached) {
             res = getFunctionPipeline(function).invokeInCachedSandbox(arguments, cpuCgroupQuota);
         } else {
-            SandboxHandle shandle = prepareSandbox(function, cpuCgroupQuota);
+            SandboxHandle shandle = prepareSandbox(function);
             res = shandle.invokeSandbox(arguments, cpuCgroupQuota);
             destroySandbox(function, shandle);
         }
