@@ -98,9 +98,9 @@ public abstract class RuntimeProxy {
         }
     }
 
-    protected abstract String invoke(PolyglotFunction functionName, boolean cached, boolean warmup, String arguments, int cpuCgroupQuota) throws Exception;
+    protected abstract String invoke(PolyglotFunction functionName, boolean cached, boolean warmup, String arguments) throws Exception;
 
-   private String invokeWrapper(String functionName, boolean cached, boolean warmup, String arguments, int cpuCgroupQuota) throws Exception {
+   private String invokeWrapper(String functionName, boolean cached, boolean warmup, String arguments) throws Exception {
       PolyglotFunction function = FTABLE.get(functionName);
       String res;
 
@@ -108,7 +108,7 @@ public abstract class RuntimeProxy {
       if (function == null) {
             res = String.format("{'Error': 'Function %s not registered!'}", functionName);
         } else {
-            res = invoke(function, cached, warmup, arguments, cpuCgroupQuota);
+            res = invoke(function, cached, warmup, arguments);
         }
       long finish = System.nanoTime();
 
@@ -131,16 +131,15 @@ public abstract class RuntimeProxy {
                 Map<String, Object> input = jsonToMap(jsonBody);
                 String functionName = (String) input.get("name");
                 String arguments = (String) input.get("arguments");
-                int cpuCgroupQuota = Integer.parseInt((String) input.get("cpuCgroupQuota"));
                 String async = (String)input.get("async");
                 boolean cached = input.get("cached") == null ? true : Boolean.parseBoolean((String)input.get("cached"));
 
                 if (async != null && async.equals("true")) {
                     ProxyUtils.writeResponse(t, 200, "Asynchronous request submitted!");
-                    String output = invokeWrapper(functionName, cached, false, arguments, cpuCgroupQuota);
+                    String output = invokeWrapper(functionName, cached, false, arguments);
                     System.out.println(output);
                 } else {
-                    String output = invokeWrapper(functionName, cached, false, arguments, cpuCgroupQuota);
+                    String output = invokeWrapper(functionName, cached, false, arguments);
                     ProxyUtils.writeResponse(t, 200, output);
                 }
             } catch (Exception e) {
@@ -159,7 +158,7 @@ public abstract class RuntimeProxy {
                 Map<String, Object> input = jsonToMap(jsonBody);
                 String functionName = (String) input.get("name");
                 String arguments = (String) input.get("arguments");
-                String output = invokeWrapper(functionName, false, true, arguments, 10000);
+                String output = invokeWrapper(functionName, false, true, arguments);
                 ProxyUtils.writeResponse(t, 200, output);
             } catch (Exception e) {
                 e.printStackTrace(System.err);

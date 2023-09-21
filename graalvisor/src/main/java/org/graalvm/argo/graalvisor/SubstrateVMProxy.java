@@ -201,7 +201,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
     }
 
     @Override
-    protected String invoke(PolyglotFunction function, boolean cached, boolean warmup, String arguments, int cpuCgroupQuota)
+    protected String invoke(PolyglotFunction function, boolean cached, boolean warmup, String arguments)
             throws Exception {
         String res;
 
