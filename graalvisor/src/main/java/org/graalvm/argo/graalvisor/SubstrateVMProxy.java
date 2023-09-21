@@ -30,19 +30,12 @@ public class SubstrateVMProxy extends RuntimeProxy {
 
         String output;
 
-        int cpuCgroupQuota;
-
-        public Request(String input, int cpuCgroupQuota) {
+        public Request(String input) {
             this.input = input;
-            this.cpuCgroupQuota = cpuCgroupQuota;
         }
 
         public String getInput() {
             return input;
-        }
-
-        public int getCpuCgroupQuota() {
-            return cpuCgroupQuota;
         }
 
         public String setOutput(String output) {
@@ -70,7 +63,6 @@ public class SubstrateVMProxy extends RuntimeProxy {
             synchronized (req) {
                 // Get input from request, invoke function in isolate, fill output.
                 try {
-                    prepareCgroup(shandle.toString(), req.getCpuCgroupQuota());
                     req.setOutput(shandle.invokeSandbox(req.getInput()));
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -127,8 +119,8 @@ public class SubstrateVMProxy extends RuntimeProxy {
             this.queue = new ArrayBlockingQueue<>(64);
         }
 
-        public String invokeInCachedSandbox(String input, int cpuCgroupQuota) {
-            Request req = new Request(input, cpuCgroupQuota);
+        public String invokeInCachedSandbox(String input) {
+            Request req = new Request(input);
             active.getAndIncrement();
 
             synchronized (this) {
@@ -183,6 +175,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
         long start = System.nanoTime();
         SandboxHandle worker = function.getSandboxProvider().createSandbox();
         long finish = System.nanoTime();
+        prepareCgroup(worker.toString(), function.getCpuCgroupQuota());
         System.out.println(String.format("[thread %s] New %s sandbox %s in %s us", Thread.currentThread().getId(),
                 function.getSandboxProvider().getName(), worker, (finish - start) / 1000));
         return worker;
@@ -215,7 +208,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
         if (warmup) {
             res = function.getSandboxProvider().warmupProvider(arguments);
         } else if (cached) {
-            res = getFunctionPipeline(function).invokeInCachedSandbox(arguments, cpuCgroupQuota);
+            res = getFunctionPipeline(function).invokeInCachedSandbox(arguments);
         } else {
             SandboxHandle shandle = prepareSandbox(function);
             res = shandle.invokeSandbox(arguments);

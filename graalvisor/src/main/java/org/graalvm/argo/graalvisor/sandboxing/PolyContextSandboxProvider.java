@@ -27,12 +27,13 @@ public class PolyContextSandboxProvider extends SandboxProvider {
                     ObjectHandle functionNameHandle,
                     ObjectHandle entryPointHandle,
                     ObjectHandle languageHandle,
-                    ObjectHandle sourceCodeHandle) {
+                    ObjectHandle sourceCodeHandle,
+                    int cpuCgroupQuota) {
         String functionName = retrieveString(functionNameHandle);
         String entryPoint = retrieveString(entryPointHandle);
         String language = retrieveString(languageHandle);
         String sourceCode = retrieveString(sourceCodeHandle);
-        RuntimeProxy.FTABLE.put(functionName, new TruffleFunction(functionName, entryPoint, language, sourceCode));
+        RuntimeProxy.FTABLE.put(functionName, new TruffleFunction(functionName, entryPoint, language, sourceCode, cpuCgroupQuota));
     }
 
     @Override
@@ -44,7 +45,8 @@ public class PolyContextSandboxProvider extends SandboxProvider {
                         copyString(isolateThread, tfunction.getName()),
                         copyString(isolateThread, tfunction.getEntryPoint()),
                         copyString(isolateThread, tfunction.getLanguage().name()),
-                        copyString(isolateThread, tfunction.getSource()));
+                        copyString(isolateThread, tfunction.getSource()),
+                        tfunction.getCpuCgroupQuota());
         Isolates.detachThread(isolateThread);
     }
 

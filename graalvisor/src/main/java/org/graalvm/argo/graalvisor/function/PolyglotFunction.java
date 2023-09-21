@@ -11,11 +11,13 @@ public class PolyglotFunction {
     private final String entryPoint;
     private final PolyglotLanguage language;
     private SandboxProvider sprovider;
+    private final int cpuCgroupQuota;
 
-    public PolyglotFunction(String name, String entryPoint, String language) {
+    public PolyglotFunction(String name, String entryPoint, String language, int cpuCgroupQuota) {
         this.name = name;
         this.entryPoint = entryPoint;
         this.language = PolyglotLanguage.valueOf(language.toUpperCase(Locale.ROOT));
+        this.cpuCgroupQuota = cpuCgroupQuota;
     }
 
     public String getName() {
@@ -36,5 +38,9 @@ public class PolyglotFunction {
 
     public SandboxProvider getSandboxProvider() {
         return this.sprovider;
+    }
+
+    public int getCpuCgroupQuota() {
+        return this.cpuCgroupQuota;
     }
 }

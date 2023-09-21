@@ -216,15 +216,17 @@ public abstract class RuntimeProxy {
             String functionEntryPoint = metaData.get("entryPoint");
             String functionLanguage = metaData.get("language");
             String sandboxName = metaData.get("sandbox");
+            int cpuCgroupQuota = Integer.parseInt(metaData.get("cpuCgroupQuota"));
+
 
             if (System.getProperty("java.vm.name").equals("Substrate VM") || !functionLanguage.equalsIgnoreCase("java")) {
-                handlePolyglotRegistration(t, functionName, codeFileName, functionEntryPoint, functionLanguage, sandboxName);
+                handlePolyglotRegistration(t, functionName, codeFileName, functionEntryPoint, functionLanguage, sandboxName, cpuCgroupQuota);
             } else {
-                handleHotSpotRegistration(t, functionName, codeFileName, functionEntryPoint);
+                handleHotSpotRegistration(t, functionName, codeFileName, functionEntryPoint, cpuCgroupQuota);
             }
         }
 
-        private void handleHotSpotRegistration(HttpExchange t, String functionName, String jarFileName, String functionEntryPoint) throws IOException {
+        private void handleHotSpotRegistration(HttpExchange t, String functionName, String jarFileName, String functionEntryPoint, int cpuCgroupQuota) throws IOException {
             long start = System.currentTimeMillis();
             // This lock will be acquired at most once since only 1 function can be registered in HotSpot mode.
             synchronized (FTABLE) {
@@ -242,7 +244,7 @@ public abstract class RuntimeProxy {
                             this.getClass().getClassLoader());
                     Class<?> cls = Class.forName(functionEntryPoint, true, loader);
                     Method method = cls.getMethod("main", Map.class);
-                    HotSpotFunction function = new HotSpotFunction(functionName, functionEntryPoint, PolyglotLanguage.JAVA.toString(), method);
+                    HotSpotFunction function = new HotSpotFunction(functionName, functionEntryPoint, PolyglotLanguage.JAVA.toString(), method, cpuCgroupQuota);
                     FTABLE.put(functionName, function);
                 } catch (ReflectiveOperationException e) {
                     e.printStackTrace(System.err);
@@ -254,7 +256,7 @@ public abstract class RuntimeProxy {
             writeResponse(t, 200, String.format("Function %s registered!", functionName));
         }
 
-        private void handlePolyglotRegistration(HttpExchange t, String functionName, String soFileName, String functionEntryPoint, String functionLanguage, String sandboxName) throws IOException {
+        private void handlePolyglotRegistration(HttpExchange t, String functionName, String soFileName, String functionEntryPoint, String functionLanguage, String sandboxName, int cpuCgroupQuota) throws IOException {
             long start = System.currentTimeMillis();
             PolyglotFunction function = null;
             SandboxProvider sprovider = null;
@@ -268,11 +270,11 @@ public abstract class RuntimeProxy {
                     try (OutputStream fos = new FileOutputStream(soFileName); InputStream bis = new BufferedInputStream(t.getRequestBody(), 4096)) {
                         bis.transferTo(fos);
                     }
-                    function = new NativeFunction(functionName, functionEntryPoint, functionLanguage, soFileName);
+                    function = new NativeFunction(functionName, functionEntryPoint, functionLanguage, soFileName, cpuCgroupQuota);
                 } else {
                     try (InputStream bis = new BufferedInputStream(t.getRequestBody(), 4096)) {
                         String sourceCode = new String(bis.readAllBytes(), StandardCharsets.UTF_8);
-                        function = new TruffleFunction(functionName, functionEntryPoint, functionLanguage, sourceCode);
+                        function = new TruffleFunction(functionName, functionEntryPoint, functionLanguage, sourceCode, cpuCgroupQuota);
                     }
                 }
 
