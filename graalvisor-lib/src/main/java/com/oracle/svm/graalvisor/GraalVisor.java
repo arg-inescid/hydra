@@ -29,7 +29,7 @@ public class GraalVisor {
 
     public interface HostExecuteDBQueryFunctionPointer extends CFunctionPointer {
         @InvokeCFunctionPointer
-        int invoke(IsolateThread thread, int connectionId, CCharPointer query, CCharPointer buffer, int bufferLen);
+        CCharPointer invoke(IsolateThread thread, int connectionId, CCharPointer query);
     }
 
     public interface HostReturnDBConnectionFunctionPointer extends CFunctionPointer {

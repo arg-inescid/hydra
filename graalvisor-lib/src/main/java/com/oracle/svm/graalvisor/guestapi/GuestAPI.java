@@ -165,10 +165,10 @@ public class GuestAPI {
         }
     }
 
-    public static int executeDBQuery(int connectionId, String query, byte[] buffer, int bufferLen) {
-        try (CTypeConversion.CCharPointerHolder queryHolder = CTypeConversion.toCString(query);
-                PinnedObject buf = PinnedObject.create(buffer)) {
-            return graalVisorStructHost.getHostExecuteDBQueryFunction().invoke(hostIsolateThread, connectionId, queryHolder.get(), buf.addressOfArrayElement(0), bufferLen);
+    public static String executeDBQuery(int connectionId, String query) {
+        try (CTypeConversion.CCharPointerHolder queryHolder = CTypeConversion.toCString(query)) {
+            CCharPointer result = graalVisorStructHost.getHostExecuteDBQueryFunction().invoke(hostIsolateThread, connectionId, queryHolder.get());
+            return CTypeConversion.toJavaString(result);
         }
     }
 

@@ -18,7 +18,6 @@ import org.graalvm.nativeimage.c.function.CEntryPointLiteral;
 import org.graalvm.nativeimage.c.struct.SizeOf;
 import org.graalvm.nativeimage.c.type.CCharPointer;
 import org.graalvm.nativeimage.c.type.CTypeConversion;
-import org.graalvm.word.WordFactory;
 
 import com.oracle.svm.graalvisor.api.AsGraalVisorHost;
 import com.oracle.svm.graalvisor.utils.JdbcUtils;
@@ -38,7 +37,7 @@ public class GraalVisorImpl {
     private static final CEntryPointLiteral<GraalVisor.HostExecuteDBQueryFunctionPointer> hostExecuteDBQueryFunctionPointer = CEntryPointLiteral.create(
                     GraalVisorImpl.class,
                     "hostExecuteDBQuery",
-                    IsolateThread.class, int.class, CCharPointer.class, CCharPointer.class, int.class);
+                    IsolateThread.class, int.class, CCharPointer.class);
 
     private static final CEntryPointLiteral<GraalVisor.HostReturnDBConnectionFunctionPointer> hostReturnDBConnectionFunctionPointer = CEntryPointLiteral.create(
                     GraalVisorImpl.class,
@@ -90,22 +89,21 @@ public class GraalVisorImpl {
 
     @SuppressWarnings("unused")
     @CEntryPoint(include = AsGraalVisorHost.class)
-    private static int hostExecuteDBQuery(@CEntryPoint.IsolateThreadContext IsolateThread hostThread, int connectionId, CCharPointer query, CCharPointer buffer, int bufferLen) {
+    private static CCharPointer hostExecuteDBQuery(@CEntryPoint.IsolateThreadContext IsolateThread hostThread, int connectionId, CCharPointer query) {
         Connection conn = connections.get(connectionId);
+        String result = "";
         if (conn == null) {
             System.err.println("Failed to obtain a DB connection with id: " + connectionId);
-            return 0;
+        } else {
+            try {
+                Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery(CTypeConversion.toJavaString(query));
+                result = JdbcUtils.resultSetToString(rs);
+            } catch (SQLException e) {
+                System.err.println("Failed to execute the query.");
+            }
         }
-        try {
-            Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery(CTypeConversion.toJavaString(query));
-            String result = JdbcUtils.resultSetToString(rs);
-            CTypeConversion.toCString(result, buffer, WordFactory.unsigned(bufferLen));
-        } catch (SQLException e) {
-            System.out.println("Failed to execute the query.");
-            return 0;
-        }
-        return 1;
+        return CTypeConversion.toCString(result).get();
     }
 
     @SuppressWarnings("unused")
@@ -113,14 +111,14 @@ public class GraalVisorImpl {
     private static int hostReturnDBConnection(@CEntryPoint.IsolateThreadContext IsolateThread hostThread, int connectionId) {
         Connection conn = connections.get(connectionId);
         if (conn == null) {
-            System.out.println("No DB connection found with id: " + connectionId);
+            System.err.println("No DB connection found with id: " + connectionId);
             return 0;
         }
         try {
             conn.close();
             connections.remove(connectionId);
         } catch (SQLException e) {
-            System.out.println("Failed to close DB connection with id: " + connectionId);
+            System.err.println("Failed to close DB connection with id: " + connectionId);
             return 0;
         }
         return 1;
