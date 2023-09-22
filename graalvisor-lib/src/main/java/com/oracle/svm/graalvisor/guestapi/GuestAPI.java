@@ -165,14 +165,48 @@ public class GuestAPI {
         }
     }
 
-    public static String executeDBQuery(int connectionId, String query) {
+    public static int executeDBQuery(int connectionId, String query) {
         try (CTypeConversion.CCharPointerHolder queryHolder = CTypeConversion.toCString(query)) {
-            CCharPointer result = graalVisorStructHost.getHostExecuteDBQueryFunction().invoke(hostIsolateThread, connectionId, queryHolder.get());
-            return CTypeConversion.toJavaString(result);
+            return graalVisorStructHost.getHostExecuteDBQueryFunction().invoke(hostIsolateThread, connectionId, queryHolder.get());
         }
     }
 
     public static int returnDBConnection(int connectionId) {
         return graalVisorStructHost.getHostReturnDBConnectionFunction().invoke(hostIsolateThread, connectionId);
+    }
+
+    public static boolean resultSetNext(int resultSetId) {
+        return graalVisorStructHost.getHostResultSetNextFunction().invoke(hostIsolateThread, resultSetId) == 1;
+    }
+
+    public static int resultSetGetInt(int resultSetId, int columnIndex) {
+        return graalVisorStructHost.getHostResultSetGetIntIndexFunction().invoke(hostIsolateThread, resultSetId, columnIndex);
+    }
+
+    public static int resultSetGetInt(int resultSetId, String columnLabel) {
+        try (CTypeConversion.CCharPointerHolder columnLabelHolder = CTypeConversion.toCString(columnLabel)) {
+            return graalVisorStructHost.getHostResultSetGetIntLabelFunction().invoke(hostIsolateThread, resultSetId, columnLabelHolder.get());
+        }
+    }
+
+    public static String resultSetGetString(int resultSetId, int columnIndex) {
+        CCharPointer result = graalVisorStructHost.getHostResultSetGetStringIndexFunction().invoke(hostIsolateThread, resultSetId, columnIndex);
+        return CTypeConversion.toJavaString(result);
+    }
+
+    public static String resultSetGetString(int resultSetId, String columnLabel) {
+        try (CTypeConversion.CCharPointerHolder columnLabelHolder = CTypeConversion.toCString(columnLabel)) {
+            CCharPointer result = graalVisorStructHost.getHostResultSetGetStringLabelFunction().invoke(hostIsolateThread, resultSetId, columnLabelHolder.get());
+            return CTypeConversion.toJavaString(result);
+        }
+    }
+
+    public static int resultSetMetaDataGetColumnCount(int resultSetId) {
+        return graalVisorStructHost.getHostResultSetMetaDataGetColumnCountFunction().invoke(hostIsolateThread, resultSetId);
+    }
+
+    public static String resultSetMetaDataGetColumnName(int resultSetId, int column) {
+        CCharPointer result = graalVisorStructHost.getHostResultSetMetaDataGetColumnNameFunction().invoke(hostIsolateThread, resultSetId, column);
+        return CTypeConversion.toJavaString(result);
     }
 }
