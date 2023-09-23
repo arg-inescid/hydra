@@ -2,7 +2,9 @@ package org.graalvm.argo.graalvisor;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,7 +20,7 @@ import org.graalvm.argo.graalvisor.sandboxing.SandboxHandle;
  * A runtime proxy that runs requests on Native image-based sandboxes.
  */
 public class SubstrateVMProxy extends RuntimeProxy {
-    static List<String> isolateCgroups = new ArrayList<String>();
+    static Map<Integer, List<String>> cgroupCache = new HashMap<>();
 
     /**
      * A Request object is used as a communication packet between a foreground
@@ -189,16 +191,39 @@ public class SubstrateVMProxy extends RuntimeProxy {
     }
 
     private static void prepareCgroup(String isolateId, int quota) {
-        if (!isolateCgroups.contains(isolateId)) {
-            System.out.println("Creating new cgroup for " + isolateId + " with quota " + quota);
+        String cgroupId = null;
+
+        if (cgroupCache.isEmpty()) { // sei que não ficará assim, terá que ser usado antes
+            prepopulateCgroupCache();
+        }
+
+        if (!cgroupCache.containsKey(quota)) {
+            cgroupCache.put(quota, new ArrayList<>());
+        }
+
+        if (cgroupCache.get(quota).isEmpty()) {
+            System.out.println("Creating new cgroup with" + quota + " CPU quota with ID = " + isolateId);
             NativeSandboxInterface.createCgroup(isolateId);
             NativeSandboxInterface.setCgroupQuota(isolateId, quota);
-            isolateCgroups.add(isolateId);
+            var updatedCgroupList = new ArrayList<String>();
+            updatedCgroupList.add(isolateId);
+            cgroupCache.put(quota, updatedCgroupList);
+            cgroupId = isolateId;
         } else {
+            cgroupId = cgroupCache.get(quota).get(0);
             System.out.println("Using existing cgroup for " + isolateId);
         }
 
-        NativeSandboxInterface.insertThreadInCgroup(isolateId, String.valueOf(NativeSandboxInterface.getThreadId()));
+        NativeSandboxInterface.insertThreadInCgroup(cgroupId, String.valueOf(NativeSandboxInterface.getThreadId()));
+    }
+
+    // Example of cgroupCache prepopulation for testing purposes
+    // TODO: populate with real cgroups created
+    private static void prepopulateCgroupCache() {
+        cgroupCache.put(10000, new ArrayList<>());
+        cgroupCache.put(100000, new ArrayList<>());
+//        cgroupCache.put(50, new ArrayList<>());
+//        cgroupCache.put(25, new ArrayList<>());
     }
 
     @Override

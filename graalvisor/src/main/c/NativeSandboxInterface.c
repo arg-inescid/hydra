@@ -13,8 +13,6 @@
 #define PIPE_READ_END 0
 #define PIPE_WRITE_END 1
 
-static const char cgroupPath[] = "/sys/fs/cgroup/user.slice/user-1000.slice/isolate";
-
 void close_parent_fds(int childWrite, int parentRead)
 {
     // TODO - we should try to get a sense for the used file descriptors.
