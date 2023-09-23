@@ -6,7 +6,7 @@ public class NativeSandboxInterface {
 
     public static native int createNativeProcessSandbox(int[] childPipe, int[] parentPipe);
 
-    public static native String getThreadId();
+    public static native int getThreadId();
 
     public static native void createCgroup(String isolateId);
     public static native void deleteCgroup(String isolateId);
