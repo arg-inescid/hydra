@@ -104,7 +104,6 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     const char *isol = (*env)->GetStringUTFChars(env, isolateId, NULL);
     char maxQuota[32];
     char cGroupMax[256];
-    char cGroupThreads[256];
 
     sprintf(maxQuota, "%d %d", quota, period);
     sprintf(cGroupMax, "/sys/fs/cgroup/isolate/%s/cpu.max", isol);
@@ -120,6 +119,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     const char *t = (*env)->GetStringUTFChars(env, threadId, NULL);
     char cGroupThreads[300];
 
+    printf("Inserting thread %s in cgroup %s\n", t, isol);
     sprintf(cGroupThreads, "/sys/fs/cgroup/isolate/%s/cgroup.threads", isol);
 
     int fd = open(cGroupThreads, O_WRONLY);
