@@ -104,20 +104,19 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     close(fd);
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_deleteMainCgroup
-  (JNIEnv *env, jclass thisObject) {
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_deleteMainCgroup(JNIEnv *env, jclass thisObject) {
+    printf("Deleting main cgroup\n");
     rmdir("/sys/fs/cgroup/user.slice/user-1000.slice/isolate");
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createCgroup(JNIEnv *env, jclass thisObject, jstring isolateId)
 {
     const char *isol = (*env)->GetStringUTFChars(env, isolateId, NULL);
-    char path[300];
-    strcpy(path, "/sys/fs/cgroup/user.slice/user-1000.slice/isolate/");
-    strcat(path, isol);
-    mkdir(path, 0777);
-    strcat(path, "/cgroup.type");
-    int fd = open(path, O_WRONLY);
+    char cgroupPath[300];
+    sprintf(cgroupPath, "/sys/fs/cgroup/user.slice/user-1000.slice/isolate/%s", isol);
+    mkdir(cgroupPath, 0777);
+    strcat(cgroupPath, "/cgroup.type");
+    int fd = open(cgroupPath, O_WRONLY);
     write(fd, "threaded", 9);
     close(fd);
 }
@@ -125,10 +124,9 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_deleteCgroup(JNIEnv *env, jclass thisObject, jstring isolateId)
 {
     const char *isol = (*env)->GetStringUTFChars(env, isolateId, NULL);
-    char path[300];
-    strcpy(path, "/sys/fs/cgroup/user.slice/user-1000.slice/isolate/");
-    strcat(path, isol);
-    rmdir(path);
+    char cgroupPath[300];
+    sprintf(cgroupPath, "/sys/fs/cgroup/user.slice/user-1000.slice/isolate/%s", isol);
+    rmdir(cgroupPath);
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_setCgroupQuota(JNIEnv *env, jclass thisObject, jstring isolateId, jint quota)
@@ -162,10 +160,9 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_removeThreadFromCgroup(JNIEnv *env, jclass thisObject, jstring threadId)
 {
     const char *t = (*env)->GetStringUTFChars(env, threadId, NULL);
-    char path[300];
-    strcpy(path, "/sys/fs/cgroup/user.slice/user-1000.slice/isolate/");
-    strcat(path, "cgroup.threads");
-    int fd = open(path, O_WRONLY);
+    char cGroupThreads[300];
+     sprintf(cGroupThreads, "/sys/fs/cgroup/user.slice/user-1000.slice/isolate/cgroup.threads");
+    int fd = open(cGroupThreads, O_WRONLY);
     int r = write(fd, t, strlen(t));
     close(fd);
 }

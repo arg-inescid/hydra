@@ -184,6 +184,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
     private static void destroySandbox(PolyglotFunction function, SandboxHandle shandle) throws Exception {
         System.out.println(String.format("[thread %s] Destroying %s sandbox %s", Thread.currentThread().getId(),
                 function.getSandboxProvider().getName(), shandle));
+        NativeSandboxInterface.deleteCgroup(shandle.toString());
         function.getSandboxProvider().destroySandbox(shandle);
     }
 
@@ -197,10 +198,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
             System.out.println("Using existing cgroup for " + isolateId);
         }
 
-        var nativeThread = String.valueOf(NativeSandboxInterface.getThreadId());
-        System.out.println("NativeSB thread " + nativeThread);
-        System.out.println("Java thread " + Thread.currentThread().getId());
-        NativeSandboxInterface.insertThreadInCgroup(isolateId, nativeThread);
+        NativeSandboxInterface.insertThreadInCgroup(isolateId, String.valueOf(NativeSandboxInterface.getThreadId()));
     }
 
     @Override
