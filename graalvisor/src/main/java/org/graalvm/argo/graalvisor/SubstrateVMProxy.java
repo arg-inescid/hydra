@@ -197,7 +197,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
             System.out.println("Using existing cgroup for " + isolateId);
         }
 
-        NativeSandboxInterface.insertThreadInCgroup(isolateId, String.valueOf(Thread.currentThread()));
+        NativeSandboxInterface.insertThreadInCgroup(isolateId, NativeSandboxInterface.getThreadId());
     }
 
     @Override
