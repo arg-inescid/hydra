@@ -198,6 +198,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
         }
 
         if (!cgroupCache.containsKey(quota)) {
+            System.out.println("Creating cached cgroup for " + quota + " CPU quota");
             cgroupCache.put(quota, new ArrayList<>());
         }
 
@@ -220,6 +221,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
     // Example of cgroupCache prepopulation for testing purposes
     // TODO: populate with real cgroups created
     private static void prepopulateCgroupCache() {
+        System.out.println("Prepopulating cgroup cache");
         cgroupCache.put(10000, new ArrayList<>());
         cgroupCache.put(100000, new ArrayList<>());
 //        cgroupCache.put(50, new ArrayList<>());
