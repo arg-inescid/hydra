@@ -203,7 +203,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
         }
 
         if (cgroupCache.get(quota).isEmpty()) {
-            System.out.println("Creating new cgroup with" + quota + " CPU quota with ID = " + isolateId);
+            System.out.println("Creating new cgroup with " + quota + " CPU quota with ID = " + isolateId);
             NativeSandboxInterface.createCgroup(isolateId);
             NativeSandboxInterface.setCgroupQuota(isolateId, quota);
             var updatedCgroupList = new ArrayList<String>();
