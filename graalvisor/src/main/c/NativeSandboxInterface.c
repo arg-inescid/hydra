@@ -108,7 +108,6 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 
     sprintf(maxQuota, "%d %d", quota, period);
     sprintf(cGroupMax, "/sys/fs/cgroup/isolate/%s/cpu.max", isol);
-    sprintf(cGroupThreads, "/sys/fs/cgroup/isolate/%s/cpu.thread", isol);
 
     int maxF = open(cGroupMax, O_WRONLY);
     write(maxF, maxQuota, strlen(maxQuota) + 1);
@@ -119,11 +118,11 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 {
     const char *isol = (*env)->GetStringUTFChars(env, isolateId, NULL);
     const char *t = (*env)->GetStringUTFChars(env, threadId, NULL);
-    char path[300];
-    strcpy(path, "/sys/fs/cgroup/isolate/");
-    strcat(path, isol);
-    strcat(path, "/cgroup.threads");
-    int fd = open(path, O_WRONLY);
+    char cGroupThreads[300];
+
+    sprintf(cGroupThreads, "/sys/fs/cgroup/isolate/%s/cgroup.threads", isol);
+
+    int fd = open(cGroupThreads, O_WRONLY);
     write(fd, t, strlen(t));
     close(fd);
 }
