@@ -2,6 +2,7 @@ package org.graalvm.argo.graalvisor;
 
 import java.io.IOException;
 import java.security.SecureRandom;
+import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -208,7 +209,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
     }
 
     private static String createCgroup(int quota) {
-        String cgroupId = "cgroup-" + quota + "-" + new SecureRandom().nextInt(1000);
+        String cgroupId = "cgroup-" + quota + "-" + UUID.randomUUID();
         System.out.println("Creating new cgroup with " + quota + " CPU quota with ID = " + cgroupId);
         NativeSandboxInterface.createCgroup(cgroupId);
         NativeSandboxInterface.setCgroupQuota(cgroupId, quota);
@@ -224,7 +225,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
     }
 
     private static void removeThreadFromCgroup(String cgroupId, int quota) {
-        System.out.println("Removing thread" + NativeSandboxInterface.getThreadId() + " from cgroup " + cgroupId);
+        System.out.println("Removing thread " + NativeSandboxInterface.getThreadId() + " from cgroup " + cgroupId);
         NativeSandboxInterface.removeThreadFromCgroup(cgroupId);
         cgroupCache.get(quota).add(cgroupId);
     }
