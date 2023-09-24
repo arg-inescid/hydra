@@ -217,11 +217,14 @@ public class SubstrateVMProxy extends RuntimeProxy {
     }
 
     private static void insertThreadInCgroup(String cgroupId, int quota) {
-        NativeSandboxInterface.insertThreadInCgroup(cgroupId, String.valueOf(NativeSandboxInterface.getThreadId()));
+        int threadId = NativeSandboxInterface.getThreadId();
+        System.out.println("Inserting thread " + threadId + " in cgroup " + cgroupId);
+        NativeSandboxInterface.insertThreadInCgroup(cgroupId, String.valueOf(threadId));
         cgroupCache.get(quota).remove(cgroupId);
     }
 
     private static void removeThreadFromCgroup(String cgroupId, int quota) {
+        System.out.println("Removing thread" + NativeSandboxInterface.getThreadId() + " from cgroup " + cgroupId);
         NativeSandboxInterface.removeThreadFromCgroup(cgroupId);
         cgroupCache.get(quota).add(cgroupId);
     }
