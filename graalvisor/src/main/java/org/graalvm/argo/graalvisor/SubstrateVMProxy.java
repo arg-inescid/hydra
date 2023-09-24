@@ -1,15 +1,8 @@
 package org.graalvm.argo.graalvisor;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
+import java.security.SecureRandom;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.graalvm.argo.graalvisor.function.PolyglotFunction;
@@ -20,7 +13,6 @@ import org.graalvm.argo.graalvisor.sandboxing.SandboxHandle;
  * A runtime proxy that runs requests on Native image-based sandboxes.
  */
 public class SubstrateVMProxy extends RuntimeProxy {
-    static Map<Integer, List<String>> cgroupCache = new HashMap<>();
 
     /**
      * A Request object is used as a communication packet between a foreground
@@ -156,9 +148,11 @@ public class SubstrateVMProxy extends RuntimeProxy {
      * A map of queues is used to send requests into worker threads.
      */
     private static ConcurrentMap<String, FunctionPipeline> queues = new ConcurrentHashMap<>();
+    private static ConcurrentMap<Integer, CopyOnWriteArrayList<String>> cgroupCache = new ConcurrentHashMap<>();
 
     public SubstrateVMProxy(int port) throws IOException {
         super(port);
+        prepopulateCgroupCache();
     }
 
     private static FunctionPipeline getFunctionPipeline(PolyglotFunction function) {
@@ -177,55 +171,67 @@ public class SubstrateVMProxy extends RuntimeProxy {
         long start = System.nanoTime();
         SandboxHandle worker = function.getSandboxProvider().createSandbox();
         long finish = System.nanoTime();
-        prepareCgroup(worker.toString(), function.getCpuCgroupQuota());
         System.out.println(String.format("[thread %s] New %s sandbox %s in %s us", Thread.currentThread().getId(),
                 function.getSandboxProvider().getName(), worker, (finish - start) / 1000));
+
+        int quota = function.getCpuCgroupQuota();
+        insertThreadInCgroup(getCgroupIdByQuota(quota), quota);
+
         return worker;
     }
 
     private static void destroySandbox(PolyglotFunction function, SandboxHandle shandle) throws Exception {
         System.out.println(String.format("[thread %s] Destroying %s sandbox %s", Thread.currentThread().getId(),
                 function.getSandboxProvider().getName(), shandle));
-        NativeSandboxInterface.deleteCgroup(shandle.toString());
+
+        int quota = function.getCpuCgroupQuota();
+        removeThreadFromCgroup(getCgroupIdByQuota(quota), quota);
+
         function.getSandboxProvider().destroySandbox(shandle);
     }
 
-    private static void prepareCgroup(String isolateId, int quota) {
-        String cgroupId = null;
-
-        if (cgroupCache.isEmpty()) { // sei que não ficará assim, terá que ser usado antes
-            prepopulateCgroupCache();
-        }
-
+    private static String getCgroupIdByQuota(int quota) {
+        String cgroupId;
         if (!cgroupCache.containsKey(quota)) {
             System.out.println("Creating cached cgroup for " + quota + " CPU quota");
-            cgroupCache.put(quota, new ArrayList<>());
+            cgroupCache.put(quota, new CopyOnWriteArrayList<>());
         }
 
         if (cgroupCache.get(quota).isEmpty()) {
-            System.out.println("Creating new cgroup with " + quota + " CPU quota with ID = " + isolateId);
-            NativeSandboxInterface.createCgroup(isolateId);
-            NativeSandboxInterface.setCgroupQuota(isolateId, quota);
-            var updatedCgroupList = new ArrayList<String>();
-            updatedCgroupList.add(isolateId);
-            cgroupCache.put(quota, updatedCgroupList);
-            cgroupId = isolateId;
+            cgroupId = createCgroup(quota);
         } else {
             cgroupId = cgroupCache.get(quota).get(0);
-            System.out.println("Using existing cgroup for " + isolateId);
+            System.out.println("Using existing cgroup with " + quota + " CPU quota with ID = " + cgroupId);
         }
 
-        NativeSandboxInterface.insertThreadInCgroup(cgroupId, String.valueOf(NativeSandboxInterface.getThreadId()));
+        return cgroupId;
     }
 
-    // Example of cgroupCache prepopulation for testing purposes
-    // TODO: populate with real cgroups created
+    private static String createCgroup(int quota) {
+        String cgroupId = "cgroup-" + quota + "-" + new SecureRandom().nextInt(1000);
+        System.out.println("Creating new cgroup with " + quota + " CPU quota with ID = " + cgroupId);
+        NativeSandboxInterface.createCgroup(cgroupId);
+        NativeSandboxInterface.setCgroupQuota(cgroupId, quota);
+        cgroupCache.get(quota).add(cgroupId);
+        return cgroupId;
+    }
+
+    private static void insertThreadInCgroup(String cgroupId, int quota) {
+        NativeSandboxInterface.insertThreadInCgroup(cgroupId, String.valueOf(NativeSandboxInterface.getThreadId()));
+        cgroupCache.get(quota).remove(cgroupId);
+    }
+
+    private static void removeThreadFromCgroup(String cgroupId, int quota) {
+        NativeSandboxInterface.removeThreadFromCgroup(cgroupId);
+        cgroupCache.get(quota).add(cgroupId);
+    }
+
     private static void prepopulateCgroupCache() {
         System.out.println("Prepopulating cgroup cache");
-        cgroupCache.put(10000, new ArrayList<>());
-        cgroupCache.put(100000, new ArrayList<>());
-//        cgroupCache.put(50, new ArrayList<>());
-//        cgroupCache.put(25, new ArrayList<>());
+        cgroupCache.put(10000, new CopyOnWriteArrayList<>());
+        createCgroup(10000);
+        cgroupCache.put(100000, new CopyOnWriteArrayList<>());
+        createCgroup(100000);
     }
 
     @Override

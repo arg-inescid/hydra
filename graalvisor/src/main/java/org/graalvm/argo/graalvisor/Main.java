@@ -42,5 +42,6 @@ public abstract class Main {
         } else {
            new HotSpotProxy(port).start();
         }
+        System.out.println("Graalvisor started? Log");
     }
 }
