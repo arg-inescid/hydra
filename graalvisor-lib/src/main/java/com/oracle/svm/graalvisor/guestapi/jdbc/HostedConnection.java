@@ -1,43 +1,65 @@
 package com.oracle.svm.graalvisor.guestapi.jdbc;
 
-import com.oracle.svm.graalvisor.guestapi.GuestAPI;
-
 public class HostedConnection implements AutoCloseable {
 
     private final int id;
 
-    private HostedConnection(String connectionUrl, String username, String password) {
-        this.id = GuestAPI.obtainDBConnection(connectionUrl, username, password);
+    private HostedConnection(String url, String user, String password) {
+        this.id = JdbcGraalvisorAdapter.connection_getConnection(url, user, password);
     }
 
-    public static HostedConnection getConnection(String dbUrl, String username, String password) {
-        return new HostedConnection(dbUrl, username, password);
+    public static HostedConnection getConnection(String url, String user, String password) {
+        return new HostedConnection(url, user, password);
     }
 
     public HostedStatement createStatement() {
-        return new HostedStatement(this.id);
+        int statementId = JdbcGraalvisorAdapter.connection_createStatement(this.id);
+        return new HostedStatement(statementId);
     }
 
     @Override
     public void close() {
-        GuestAPI.returnDBConnection(this.id);
+        JdbcGraalvisorAdapter.connection_close(this.id);
     }
 
-    public static class HostedStatement {
+    /**
+     * Release the connection, but do not close it. The connection can be reused later.
+     * This method is custom, i.e., it does not appear in the original java.sql.Connection class.
+     */
+    public void release() {
+        JdbcGraalvisorAdapter.custom_connection_release(this.id);
+    }
 
-        private final int connectionId;
+    @Override
+    protected void finalize() {
+        JdbcGraalvisorAdapter.custom_connection_release(this.id);
+    }
+
+    public static class HostedStatement implements AutoCloseable {
+
+        private final int id;
 
         private HostedStatement(int connectionId) {
-            this.connectionId = connectionId;
+            this.id = connectionId;
         }
 
         public HostedResultSet executeQuery(String sql) {
-            int resultSetId = GuestAPI.executeDBQuery(connectionId, sql);
+            int resultSetId = JdbcGraalvisorAdapter.statement_executeQuery(this.id, sql);
             return new HostedResultSet(resultSetId);
+        }
+
+        @Override
+        public void close() {
+            JdbcGraalvisorAdapter.statement_close(this.id);
+        }
+
+        @Override
+        protected void finalize() {
+            JdbcGraalvisorAdapter.statement_close(this.id);
         }
     }
 
-    public static class HostedResultSet {
+    public static class HostedResultSet implements AutoCloseable {
 
         private final int id;
 
@@ -50,23 +72,33 @@ public class HostedConnection implements AutoCloseable {
         }
 
         public boolean next() {
-            return GuestAPI.resultSetNext(id);
+            return JdbcGraalvisorAdapter.resultSet_next(this.id);
         }
 
         public int getInt(int columnIndex) {
-            return GuestAPI.resultSetGetInt(id, columnIndex);
+            return JdbcGraalvisorAdapter.resultSet_getInt(this.id, columnIndex);
         }
 
         public int getInt(String columnLabel) {
-            return GuestAPI.resultSetGetInt(id, columnLabel);
+            return JdbcGraalvisorAdapter.resultSet_getInt(this.id, columnLabel);
         }
 
         public String getString(int columnIndex) {
-            return GuestAPI.resultSetGetString(id, columnIndex);
+            return JdbcGraalvisorAdapter.resultSet_getString(this.id, columnIndex);
         }
 
         public String getString(String columnLabel) {
-            return GuestAPI.resultSetGetString(id, columnLabel);
+            return JdbcGraalvisorAdapter.resultSet_getString(this.id, columnLabel);
+        }
+
+        @Override
+        public void close() {
+            JdbcGraalvisorAdapter.resultSet_close(this.id);
+        }
+
+        @Override
+        protected void finalize() {
+            JdbcGraalvisorAdapter.resultSet_close(this.id);
         }
     }
 
@@ -79,11 +111,11 @@ public class HostedConnection implements AutoCloseable {
         }
 
         public int getColumnCount() {
-            return GuestAPI.resultSetMetaDataGetColumnCount(resultSetId);
+            return JdbcGraalvisorAdapter.resultSetMetaData_getColumnCount(this.resultSetId);
         }
 
         public String getColumnName(int column) {
-            return "";
+            return JdbcGraalvisorAdapter.resultSetMetaData_getColumnName(this.resultSetId, column);
         }
 
     }

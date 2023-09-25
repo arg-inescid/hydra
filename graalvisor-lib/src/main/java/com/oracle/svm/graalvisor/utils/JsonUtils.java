@@ -25,4 +25,21 @@ public class JsonUtils {
         }
         return new HashMap<>();
     }
+
+    /**
+     * Convert Map to JSON string.
+     *
+     * @param map Object to convert.
+     * @return JSON string representing the map object.
+     */
+    public static String mapToJson(Map<String, Object> map) {
+        try {
+            if (map != null) {
+                return json.asString(map);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return "{}";
+    }
 }

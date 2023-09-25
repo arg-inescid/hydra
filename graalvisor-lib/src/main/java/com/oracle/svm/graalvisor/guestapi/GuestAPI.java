@@ -157,56 +157,18 @@ public class GuestAPI {
         }
     }
 
-    public static int obtainDBConnection(String connectionUrl, String user, String password) {
-        try (CTypeConversion.CCharPointerHolder connectionUrlHolder = CTypeConversion.toCString(connectionUrl);
-                CTypeConversion.CCharPointerHolder userHolder = CTypeConversion.toCString(user);
-                CTypeConversion.CCharPointerHolder passwordHolder = CTypeConversion.toCString(password)) {
-            return graalVisorStructHost.getHostObtainDBConnectionFunction().invoke(hostIsolateThread, connectionUrlHolder.get(), userHolder.get(), passwordHolder.get());
-        }
-    }
-
-    public static int executeDBQuery(int connectionId, String query) {
-        try (CTypeConversion.CCharPointerHolder queryHolder = CTypeConversion.toCString(query)) {
-            return graalVisorStructHost.getHostExecuteDBQueryFunction().invoke(hostIsolateThread, connectionId, queryHolder.get());
-        }
-    }
-
-    public static int returnDBConnection(int connectionId) {
-        return graalVisorStructHost.getHostReturnDBConnectionFunction().invoke(hostIsolateThread, connectionId);
-    }
-
-    public static boolean resultSetNext(int resultSetId) {
-        return graalVisorStructHost.getHostResultSetNextFunction().invoke(hostIsolateThread, resultSetId) == 1;
-    }
-
-    public static int resultSetGetInt(int resultSetId, int columnIndex) {
-        return graalVisorStructHost.getHostResultSetGetIntIndexFunction().invoke(hostIsolateThread, resultSetId, columnIndex);
-    }
-
-    public static int resultSetGetInt(int resultSetId, String columnLabel) {
-        try (CTypeConversion.CCharPointerHolder columnLabelHolder = CTypeConversion.toCString(columnLabel)) {
-            return graalVisorStructHost.getHostResultSetGetIntLabelFunction().invoke(hostIsolateThread, resultSetId, columnLabelHolder.get());
-        }
-    }
-
-    public static String resultSetGetString(int resultSetId, int columnIndex) {
-        CCharPointer result = graalVisorStructHost.getHostResultSetGetStringIndexFunction().invoke(hostIsolateThread, resultSetId, columnIndex);
-        return CTypeConversion.toJavaString(result);
-    }
-
-    public static String resultSetGetString(int resultSetId, String columnLabel) {
-        try (CTypeConversion.CCharPointerHolder columnLabelHolder = CTypeConversion.toCString(columnLabel)) {
-            CCharPointer result = graalVisorStructHost.getHostResultSetGetStringLabelFunction().invoke(hostIsolateThread, resultSetId, columnLabelHolder.get());
+    /**
+     * Guest API: Call host isolate to invoke a method from JDBC API.
+     *
+     * @param methodCode Code of the method to invoke. Consult
+     *                   {@link com.oracle.svm.graalvisor.jdbc.MethodIdentifier} for method codes.
+     * @param arguments  JSON string containing arguments for the call.
+     * @return JSON string containing the "data" property and optionally the "error" property.
+     */
+    public static String executeDBMethod(int methodCode, String arguments) {
+        try (CTypeConversion.CCharPointerHolder argumentsHolder = CTypeConversion.toCString(arguments)) {
+            CCharPointer result = graalVisorStructHost.getHostExecuteDBMethodFunction().invoke(hostIsolateThread, methodCode, argumentsHolder.get());
             return CTypeConversion.toJavaString(result);
         }
-    }
-
-    public static int resultSetMetaDataGetColumnCount(int resultSetId) {
-        return graalVisorStructHost.getHostResultSetMetaDataGetColumnCountFunction().invoke(hostIsolateThread, resultSetId);
-    }
-
-    public static String resultSetMetaDataGetColumnName(int resultSetId, int column) {
-        CCharPointer result = graalVisorStructHost.getHostResultSetMetaDataGetColumnNameFunction().invoke(hostIsolateThread, resultSetId, column);
-        return CTypeConversion.toJavaString(result);
     }
 }
