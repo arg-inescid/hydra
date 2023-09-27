@@ -1,8 +1,8 @@
 package org.graalvm.argo.graalvisor;
 
-import java.io.File;
-
 import org.graalvm.argo.graalvisor.sandboxing.NativeSandboxInterface;
+
+import java.io.File;
 
 public abstract class Main {
 
@@ -34,10 +34,12 @@ public abstract class Main {
 
         int port = Integer.parseInt(lambda_port);
 
+        Thread printingHook = new Thread(NativeSandboxInterface::deleteMainCgroup);
+        Runtime.getRuntime().addShutdownHook(printingHook);
+
         if (System.getProperty("java.vm.name").equals("Substrate VM")) {
             // Initialize our native sandbox interface.
             NativeSandboxInterface.ginit();
-            NativeSandboxInterface.createMainCgroup();
            new SubstrateVMProxy(port).start();
         } else {
            new HotSpotProxy(port).start();
