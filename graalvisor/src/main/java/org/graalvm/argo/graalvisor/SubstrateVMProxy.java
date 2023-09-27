@@ -2,6 +2,7 @@ package org.graalvm.argo.graalvisor;
 
 import org.graalvm.argo.graalvisor.function.PolyglotFunction;
 import org.graalvm.argo.graalvisor.sandboxing.CgroupCache;
+import org.graalvm.argo.graalvisor.sandboxing.NativeSandboxInterface;
 import org.graalvm.argo.graalvisor.sandboxing.SandboxHandle;
 
 import java.io.IOException;
@@ -152,6 +153,14 @@ public class SubstrateVMProxy extends RuntimeProxy {
 
     public SubstrateVMProxy(int port) throws IOException {
         super(port);
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("Shutting down Graalvisor...");
+            try {
+                NativeSandboxInterface.deleteMainCgroup();
+            } catch (Exception e) {
+                System.out.println("Error deleting main cgroup: " + e.getMessage());
+            }
+        }));
     }
 
     private static FunctionPipeline getFunctionPipeline(PolyglotFunction function) {

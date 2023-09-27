@@ -10,13 +10,13 @@ public class CgroupCache {
     private ConcurrentMap<Integer, CopyOnWriteArrayList<String>> cgroupCache = new ConcurrentHashMap<>();
 
     public CgroupCache() {
-        prepopulateCgroupCache();
+        warmupCgroupCache();
     }
 
     public String getCgroupIdByQuota(int quota) {
         String cgroupId;
         if (!cgroupCache.containsKey(quota)) {
-            System.out.println("Creating cached cgroup for " + quota + " CPU quota");
+            System.out.printf("New cache entry for %d CPU quota%n", quota);
             cgroupCache.put(quota, new CopyOnWriteArrayList<>());
         }
 
@@ -24,39 +24,49 @@ public class CgroupCache {
             cgroupId = createCgroup(quota);
         } else {
             cgroupId = cgroupCache.get(quota).get(0);
-            System.out.println("Using existing cgroup with " + quota + " CPU quota with ID = " + cgroupId);
+            System.out.printf("Using existing cgroup %s%n", cgroupId);
         }
 
         return cgroupId;
     }
 
     public void insertThreadInCgroup(String cgroupId, int quota) {
+        long start = System.nanoTime();
         int threadId = NativeSandboxInterface.getThreadId();
-        System.out.println("Inserting thread " + threadId + " in cgroup " + cgroupId);
         NativeSandboxInterface.insertThreadInCgroup(cgroupId, String.valueOf(threadId));
         cgroupCache.get(quota).remove(cgroupId);
+        long finish = System.nanoTime();
+        System.out.printf("Inserted %s in %s in %s us%n", threadId, cgroupId, (finish - start) / 1000);
     }
 
     public void removeThreadFromCgroup(String cgroupId, int quota) {
-        System.out.println("Removing thread " + NativeSandboxInterface.getThreadId() + " from cgroup " + cgroupId);
+        long start = System.nanoTime();
         NativeSandboxInterface.removeThreadFromCgroup(cgroupId);
         cgroupCache.get(quota).add(cgroupId);
+        long finish = System.nanoTime();
+        System.out.printf("Removed %s from %s in %s us%n", Thread.currentThread().getId(), cgroupId, (finish - start) / 1000);
     }
 
-    public void prepopulateCgroupCache() {
-        System.out.println("Prepopulating cgroup cache");
+    public void warmupCgroupCache() {
+        long start = System.nanoTime();
+        System.out.println("Cgroup cache warmup...");
         cgroupCache.put(10000, new CopyOnWriteArrayList<>());
         createCgroup(10000);
         cgroupCache.put(100000, new CopyOnWriteArrayList<>());
         createCgroup(100000);
+        long finish = System.nanoTime();
+        System.out.printf("Cgroup cache warmup ended in %s us%n", (finish - start) / 1000);
     }
 
     private String createCgroup(int quota) {
+        long start = System.nanoTime();
         String cgroupId = "cgroup-" + quota + "-" + UUID.randomUUID();
-        System.out.println("Creating new cgroup with " + quota + " CPU quota with ID = " + cgroupId);
         NativeSandboxInterface.createCgroup(cgroupId);
         NativeSandboxInterface.setCgroupQuota(cgroupId, quota);
         cgroupCache.get(quota).add(cgroupId);
+        long finish = System.nanoTime();
+        System.out.printf("New cgroup %s in %s us %n", cgroupId, (finish - start) / 1000);
+
         return cgroupId;
     }
 }
