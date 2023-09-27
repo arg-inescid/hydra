@@ -39,6 +39,7 @@ public abstract class Main {
         if (System.getProperty("java.vm.name").equals("Substrate VM")) {
             // Initialize our native sandbox interface.
             NativeSandboxInterface.ginit();
+            NativeSandboxInterface.createMainCgroup();
             new SubstrateVMProxy(port).start();
         } else {
             new HotSpotProxy(port).start();
