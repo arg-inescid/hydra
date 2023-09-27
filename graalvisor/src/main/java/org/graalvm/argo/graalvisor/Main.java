@@ -34,7 +34,14 @@ public abstract class Main {
 
         int port = Integer.parseInt(lambda_port);
 
-        Runtime.getRuntime().addShutdownHook(new Thread(NativeSandboxInterface::deleteMainCgroup));
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("Shutting down Graalvisor...");
+            try {
+                NativeSandboxInterface.deleteMainCgroup();
+            } catch (Exception e) {
+                System.out.println("Error deleting main cgroup: " + e.getMessage());
+            }
+        }));
 
         if (System.getProperty("java.vm.name").equals("Substrate VM")) {
             // Initialize our native sandbox interface.
