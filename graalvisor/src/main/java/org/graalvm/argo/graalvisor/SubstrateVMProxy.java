@@ -153,14 +153,6 @@ public class SubstrateVMProxy extends RuntimeProxy {
 
     public SubstrateVMProxy(int port) throws IOException {
         super(port);
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            System.out.println("Shutting down Graalvisor...");
-            try {
-                NativeSandboxInterface.deleteMainCgroup();
-            } catch (Exception e) {
-                System.out.println("Error deleting main cgroup: " + e.getMessage());
-            }
-        }));
     }
 
     private static FunctionPipeline getFunctionPipeline(PolyglotFunction function) {

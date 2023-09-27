@@ -33,6 +33,7 @@ public abstract class Main {
         new File(APP_DIR).mkdirs();
 
         int port = Integer.parseInt(lambda_port);
+        Runtime.getRuntime().addShutdownHook(new ShutDownHook());
 
         if (System.getProperty("java.vm.name").equals("Substrate VM")) {
             // Initialize our native sandbox interface.
@@ -41,6 +42,17 @@ public abstract class Main {
             new SubstrateVMProxy(port).start();
         } else {
             new HotSpotProxy(port).start();
+        }
+    }
+
+    static class ShutDownHook extends Thread {
+        public void run() {
+            System.out.println("Shutting down Graalvisor...");
+            try {
+                NativeSandboxInterface.deleteMainCgroup();
+            } catch (Exception e) {
+                System.out.println("Error deleting main cgroup: " + e.getMessage());
+            }
         }
     }
 }

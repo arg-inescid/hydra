@@ -41,10 +41,11 @@ public class CgroupCache {
 
     public void removeThreadFromCgroup(String cgroupId, int quota) {
         long start = System.nanoTime();
+        int threadId = NativeSandboxInterface.getThreadId();
         NativeSandboxInterface.removeThreadFromCgroup(cgroupId);
         cgroupCache.get(quota).add(cgroupId);
         long finish = System.nanoTime();
-        System.out.printf("Removed %s from %s in %s us%n", Thread.currentThread().getId(), cgroupId, (finish - start) / 1000);
+        System.out.printf("Removed %s from %s in %s us%n", threadId, cgroupId, (finish - start) / 1000);
     }
 
     public void warmupCgroupCache() {
@@ -65,7 +66,7 @@ public class CgroupCache {
         NativeSandboxInterface.setCgroupQuota(cgroupId, quota);
         cgroupCache.get(quota).add(cgroupId);
         long finish = System.nanoTime();
-        System.out.printf("New cgroup %s in %s us %n", cgroupId, (finish - start) / 1000);
+        System.out.printf("New %s in %s us %n", cgroupId, (finish - start) / 1000);
 
         return cgroupId;
     }
