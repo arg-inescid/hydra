@@ -77,7 +77,7 @@ JNIEXPORT jint JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     return gettid();
 }
 
-void createMainCgroup(JNIEnv *env, jclass thisObject) {
+void createMainCgroup() {
     printf("Creating main cgroup\n");
     mkdir("/sys/fs/cgroup/user.slice/user-1000.slice/isolate", 0777);
     int fd = open("/sys/fs/cgroup/cgroup.subtree_control", O_WRONLY);
