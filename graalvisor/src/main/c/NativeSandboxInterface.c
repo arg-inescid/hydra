@@ -34,7 +34,7 @@ void reset_parent_signal_handlers()
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_ginit(JNIEnv *env, jobject thisObj)
 {
     setbuf(stdout, NULL);
-    createMainCgroup(env, thisObj);
+    createMainCgroup();
 }
 
 JNIEXPORT int JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createNativeProcessSandbox(JNIEnv *env, jobject thisObj, jintArray childPipeFD, jintArray parentPipeFD)
@@ -82,7 +82,7 @@ void createMainCgroup() {
     mkdir("/sys/fs/cgroup/user.slice/user-1000.slice/isolate", 0777);
     int fd = open("/sys/fs/cgroup/cgroup.subtree_control", O_WRONLY);
     write(fd, "+cpu +cpuset", 13);
-    close(fd);
+    close(fd);\
     fd = open("/sys/fs/cgroup/user.slice/cgroup.subtree_control", O_WRONLY);
     write(fd, "+cpu +cpuset", 13);
     close(fd);
