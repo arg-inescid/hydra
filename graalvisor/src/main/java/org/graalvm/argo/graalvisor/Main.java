@@ -34,15 +34,14 @@ public abstract class Main {
 
         int port = Integer.parseInt(lambda_port);
 
-        Thread printingHook = new Thread(NativeSandboxInterface::deleteMainCgroup);
-        Runtime.getRuntime().addShutdownHook(printingHook);
+        Runtime.getRuntime().addShutdownHook(new Thread(NativeSandboxInterface::deleteMainCgroup););
 
         if (System.getProperty("java.vm.name").equals("Substrate VM")) {
             // Initialize our native sandbox interface.
             NativeSandboxInterface.ginit();
-           new SubstrateVMProxy(port).start();
+            new SubstrateVMProxy(port).start();
         } else {
-           new HotSpotProxy(port).start();
+            new HotSpotProxy(port).start();
         }
     }
 }
