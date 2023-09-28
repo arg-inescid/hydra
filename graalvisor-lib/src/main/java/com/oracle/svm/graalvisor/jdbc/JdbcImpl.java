@@ -137,7 +137,7 @@ public class JdbcImpl {
         return 1;
     }
 
-    private static int hostConnection_release(long guestIsolateId, int connectionId) throws SQLException, ObjectNotFoundException {
+    private static int hostConnection_release(long guestIsolateId, int connectionId) throws ObjectNotFoundException {
         ConnectionWrapper cw = ensureNotNull(bookedConnections, guestIsolateId, connectionId, Connection.class);
         bookedConnections.get(guestIsolateId).remove(connectionId);
         String mapKey = cw.getMapKey();
@@ -218,5 +218,33 @@ public class JdbcImpl {
     private static <T> void addBooked(Map<Long, Map<Integer, T>> bookedCollection, long isolateId, int objectId, T object) {
         bookedCollection.computeIfAbsent(isolateId, k -> new HashMap<>());
         bookedCollection.get(isolateId).put(objectId, object);
+    }
+
+    public static void cleanupIsolateResources(long guestIsolateId) {
+        closeAndRemove(bookedResultSets, guestIsolateId);
+        closeAndRemove(bookedStatements, guestIsolateId);
+        Map<Integer, ConnectionWrapper> connectionsMap = bookedConnections.remove(guestIsolateId);
+        if (connectionsMap != null) {
+            for (ConnectionWrapper cw : connectionsMap.values()) {
+                String mapKey = cw.getMapKey();
+                connectionsCache.computeIfAbsent(mapKey, k -> new ConcurrentLinkedQueue<>());
+                connectionsCache.get(mapKey).add(cw.getConnection());
+            }
+            connectionsMap.clear();
+        }
+    }
+
+    private static <T extends AutoCloseable> void closeAndRemove(Map<Long, Map<Integer, T>> bookedCollection, long guestIsolateId) {
+        Map<Integer, T> map = bookedCollection.remove(guestIsolateId);
+        if (map != null) {
+            for (T object : map.values()) {
+                try {
+                    object.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            map.clear();
+        }
     }
 }

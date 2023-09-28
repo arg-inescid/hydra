@@ -25,6 +25,7 @@ import com.oracle.svm.core.c.function.CEntryPointCreateIsolateParameters;
 import com.oracle.svm.core.c.function.CEntryPointNativeFunctions;
 import com.oracle.svm.core.posix.PosixUtils;
 import com.oracle.svm.graalvisor.GraalVisor;
+import com.oracle.svm.graalvisor.GraalVisorImpl;
 
 @SuppressWarnings("unused")
 public class GraalVisorAPI implements Closeable {
@@ -101,6 +102,7 @@ public class GraalVisorAPI implements Closeable {
     }
 
     public void tearDownIsolate(IsolateThread isolateThread) {
+        GraalVisorImpl.cleanupResources(isolateThread);
         tearDownIsolateFunctionPointer.invoke(isolateThread);
     }
 

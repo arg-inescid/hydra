@@ -3,6 +3,7 @@ package com.oracle.svm.graalvisor;
 import static org.graalvm.nativeimage.UnmanagedMemory.malloc;
 
 import org.graalvm.nativeimage.IsolateThread;
+import org.graalvm.nativeimage.Isolates;
 import org.graalvm.nativeimage.ObjectHandle;
 import org.graalvm.nativeimage.ObjectHandles;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
@@ -51,5 +52,9 @@ public class GraalVisorImpl {
         String arguments = CTypeConversion.toJavaString(cArguments);
         String result = JdbcImpl.invoke(isolateId, methodCode, arguments);
         return CTypeConversion.toCString(result).get();
+    }
+
+    public static void cleanupResources(IsolateThread guestIsolateThread) {
+        JdbcImpl.cleanupIsolateResources(Isolates.getIsolate(guestIsolateThread).rawValue());
     }
 }
