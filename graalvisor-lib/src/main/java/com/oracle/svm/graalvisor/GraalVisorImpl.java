@@ -24,7 +24,7 @@ public class GraalVisorImpl {
     private static final CEntryPointLiteral<GraalVisor.HostExecuteDBMethodFunctionPointer> hostExecuteDBMethodFunctionPointer = CEntryPointLiteral.create(
                     GraalVisorImpl.class,
                     "hostExecuteDBMethod",
-                    IsolateThread.class, int.class, CCharPointer.class);
+                    IsolateThread.class, long.class, int.class, CCharPointer.class);
 
     private static GraalVisor.GraalVisorStruct graalVisorStructHost;
 
@@ -47,9 +47,9 @@ public class GraalVisorImpl {
 
     @SuppressWarnings("unused")
     @CEntryPoint(include = AsGraalVisorHost.class)
-    private static CCharPointer hostExecuteDBMethod(@CEntryPoint.IsolateThreadContext IsolateThread hostThread, int methodCode, CCharPointer cArguments) {
+    private static CCharPointer hostExecuteDBMethod(@CEntryPoint.IsolateThreadContext IsolateThread hostThread, long isolateId, int methodCode, CCharPointer cArguments) {
         String arguments = CTypeConversion.toJavaString(cArguments);
-        String result = JdbcImpl.invoke(methodCode, arguments);
+        String result = JdbcImpl.invoke(isolateId, methodCode, arguments);
         return CTypeConversion.toCString(result).get();
     }
 }

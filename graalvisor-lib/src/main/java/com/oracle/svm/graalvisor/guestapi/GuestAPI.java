@@ -9,6 +9,7 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.graalvm.nativeimage.CurrentIsolate;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.ObjectHandle;
 import org.graalvm.nativeimage.ObjectHandles;
@@ -166,8 +167,9 @@ public class GuestAPI {
      * @return JSON string containing the "data" property and optionally the "error" property.
      */
     public static String executeDBMethod(int methodCode, String arguments) {
+        long isolateId = CurrentIsolate.getIsolate().rawValue();
         try (CTypeConversion.CCharPointerHolder argumentsHolder = CTypeConversion.toCString(arguments)) {
-            CCharPointer result = graalVisorStructHost.getHostExecuteDBMethodFunction().invoke(hostIsolateThread, methodCode, argumentsHolder.get());
+            CCharPointer result = graalVisorStructHost.getHostExecuteDBMethodFunction().invoke(hostIsolateThread, isolateId, methodCode, argumentsHolder.get());
             return CTypeConversion.toJavaString(result);
         }
     }

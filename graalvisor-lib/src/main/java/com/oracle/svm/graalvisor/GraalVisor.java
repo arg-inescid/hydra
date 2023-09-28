@@ -24,7 +24,7 @@ public class GraalVisor {
 
     public interface HostExecuteDBMethodFunctionPointer extends CFunctionPointer {
         @InvokeCFunctionPointer
-        CCharPointer invoke(IsolateThread thread, int methodCode, CCharPointer arguments);
+        CCharPointer invoke(IsolateThread thread, long isolateId, int methodCode, CCharPointer arguments);
     }
 
     @CStruct("graal_visor_t")
