@@ -141,9 +141,7 @@ public class JdbcImpl {
         ConnectionWrapper cw = ensureNotNull(bookedConnections, guestIsolateId, connectionId, Connection.class);
         bookedConnections.get(guestIsolateId).remove(connectionId);
         String mapKey = cw.getMapKey();
-        if (!connectionsCache.containsKey(mapKey)) {
-            connectionsCache.put(mapKey, new ConcurrentLinkedQueue<>());
-        }
+        connectionsCache.computeIfAbsent(mapKey, k -> new ConcurrentLinkedQueue<>());
         connectionsCache.get(mapKey).add(cw.getConnection());
         return 1;
     }
@@ -218,9 +216,7 @@ public class JdbcImpl {
     }
 
     private static <T> void addBooked(Map<Long, Map<Integer, T>> bookedCollection, long isolateId, int objectId, T object) {
-        if (!bookedCollection.containsKey(isolateId)) {
-            bookedCollection.put(isolateId, new HashMap<>());
-        }
+        bookedCollection.computeIfAbsent(isolateId, k -> new HashMap<>());
         bookedCollection.get(isolateId).put(objectId, object);
     }
 }
