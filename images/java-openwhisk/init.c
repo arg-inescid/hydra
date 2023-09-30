@@ -3,8 +3,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include<sys/mount.h>
+#include <sys/mount.h>
 
+void init_entropy_pool();
 
 int main(int argc, char** argv, char** envp) {
 
@@ -14,6 +15,8 @@ int main(int argc, char** argv, char** envp) {
         perror("mount");
         exit(EXIT_FAILURE);
     }
+
+    init_entropy_pool();
 
     char *newargv[] = { "/opt/java/openjdk/bin/java",
                             "-Dfile.encoding=UTF-8",

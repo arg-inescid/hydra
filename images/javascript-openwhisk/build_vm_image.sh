@@ -31,7 +31,7 @@ then
     sudo mount $DIR/base.ext4 $DISK
     sudo chown -R $(id -u -n):$(id -g -n) $DISK
     # Use an openwhisk docker to copy the entire image to the mounted dir.
-    docker export $(docker create openwhisk/java8action:latest) | tar -xC $DISK
+    docker export $(docker create openwhisk/action-nodejs-v12:latest) | tar -xC $DISK
     # Revert permissions and unmount.
     sudo chown -R root:root $DISK
     sudo umount $DISK
