@@ -58,6 +58,9 @@ public class CgroupCache {
             cgroupCache.get(quota).add(cgroupId);
             System.out.println("Added " + cgroupId + " to cache");
         }
+        else {
+            NativeSandboxInterface.deleteCgroup(cgroupId);
+        }
         long finish = System.nanoTime();
         System.out.printf("Removed %s from %s in %s us%n", threadId, cgroupId, (finish - start) / 1000);
     }
