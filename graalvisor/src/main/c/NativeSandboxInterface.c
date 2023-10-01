@@ -94,12 +94,6 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/isolate/cpuset.cpus", O_WRONLY);
     write(fd, "0", 2);
     close(fd);
-    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/isolate/cgroup.procs", O_WRONLY);
-    int pid = getpid();
-    char str[10];
-    sprintf(str, "%d", pid);
-    write(fd, str, strlen(str) + 1);
-    close(fd);
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_deleteMainCgroup(JNIEnv *env, jclass thisObject) {
