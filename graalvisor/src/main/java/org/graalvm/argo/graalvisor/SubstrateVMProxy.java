@@ -2,7 +2,6 @@ package org.graalvm.argo.graalvisor;
 
 import org.graalvm.argo.graalvisor.function.PolyglotFunction;
 import org.graalvm.argo.graalvisor.sandboxing.CgroupCache;
-import org.graalvm.argo.graalvisor.sandboxing.NativeSandboxInterface;
 import org.graalvm.argo.graalvisor.sandboxing.SandboxHandle;
 
 import java.io.IOException;
@@ -149,10 +148,16 @@ public class SubstrateVMProxy extends RuntimeProxy {
      */
     private static ConcurrentMap<String, FunctionPipeline> queues = new ConcurrentHashMap<>();
 
-    private static CgroupCache cgroupCache = new CgroupCache();
+    private static CgroupCache cgroupCache;
 
     public SubstrateVMProxy(int port) throws IOException {
         super(port);
+        cgroupCache = new CgroupCache(true);
+    }
+
+    public SubstrateVMProxy(int port, boolean cgroupCacheEnabled) throws IOException {
+        super(port);
+        cgroupCache = new CgroupCache(cgroupCacheEnabled);
     }
 
     private static FunctionPipeline getFunctionPipeline(PolyglotFunction function) {

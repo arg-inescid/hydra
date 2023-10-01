@@ -14,6 +14,7 @@ public abstract class Main {
     public static void main(String[] args) throws Exception {
         String lambda_port = System.getenv("lambda_port");
         String lambda_timestamp = System.getenv("lambda_timestamp");
+        boolean useCgroupCache = Boolean.parseBoolean(System.getenv("use_cgroup_cache"));
 
         if (lambda_timestamp != null) {
             System.out.println(String.format("Graalvisor boot time: %s ms.", (System.currentTimeMillis() - Long.parseLong(lambda_timestamp))));
@@ -39,7 +40,7 @@ public abstract class Main {
             // Initialize our native sandbox interface.
             NativeSandboxInterface.ginit();
             NativeSandboxInterface.createMainCgroup();
-            new SubstrateVMProxy(port).start();
+            new SubstrateVMProxy(port, useCgroupCache).start();
         } else {
             new HotSpotProxy(port).start();
         }
@@ -47,7 +48,7 @@ public abstract class Main {
 
     static class ShutDownHook extends Thread {
         public void run() {
-            System.out.println("Shutting down Graalvisor...");
+            System.out.println("Shutting down Graalvisor (hook)...");
             try {
                 NativeSandboxInterface.deleteMainCgroup();
             } catch (Exception e) {
