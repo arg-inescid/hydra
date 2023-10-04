@@ -104,6 +104,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_deleteMainCgroup(JNIEnv *env, jclass thisObject) {
     printf("Deleting main cgroup\n");
+//    rmdir("/sys/fs/cgroup/user.slice/user-1000.slice/isolate/cgroup-*"); TODO - should I add this if shutdown hook is working?
     rmdir("/sys/fs/cgroup/user.slice/user-1000.slice/isolate");
 }
 
@@ -159,7 +160,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 {
     const char *t = (*env)->GetStringUTFChars(env, threadId, NULL);
     char cGroupThreads[300];
-     sprintf(cGroupThreads, "/sys/fs/cgroup/user.slice/user-1000.slice/isolate/cgroup.threads");
+    sprintf(cGroupThreads, "/sys/fs/cgroup/user.slice/user-1000.slice/isolate/cgroup.threads");
     int fd = open(cGroupThreads, O_WRONLY);
     int r = write(fd, t, strlen(t));
     close(fd);
