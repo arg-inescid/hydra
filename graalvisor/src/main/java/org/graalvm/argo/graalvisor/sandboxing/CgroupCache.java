@@ -8,7 +8,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class CgroupCache {
     static class ShutDownHook extends Thread {
         public void run() {
-            System.out.println("Shutting down Graalvisor (hook)...");
+            System.out.println("Shutting down CgroupCache (hook)...");
             try {
                 deleteMainCgroup();
             } catch (Exception e) {
