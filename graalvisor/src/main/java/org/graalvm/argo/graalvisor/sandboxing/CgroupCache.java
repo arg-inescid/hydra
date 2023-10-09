@@ -44,7 +44,7 @@ public class CgroupCache {
         NativeSandboxInterface.insertThreadInCgroup(cgroupId, String.valueOf(threadId));
         if (cgroupCacheEnabled) {
             cgroupCache.get(quota).remove(cgroupId);
-            System.out.println("Removed " + cgroupId + " from cache");
+            System.out.println("Cleared " + cgroupId + " from cache");
         }
         long finish = System.nanoTime();
         System.out.printf("Inserted %s in %s in %s us%n", threadId, cgroupId, (finish - start) / 1000);
