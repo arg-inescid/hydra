@@ -6,10 +6,24 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class CgroupCache {
+    static class ShutDownHook extends Thread {
+        public void run() {
+            System.out.println("Shutting down Graalvisor (hook)...");
+            try {
+                deleteMainCgroup();
+            } catch (Exception e) {
+                System.out.println("Error deleting main cgroup: " + e.getMessage());
+            }
+        }
+    }
+
     private ConcurrentMap<Integer, CopyOnWriteArrayList<String>> cgroupCache = new ConcurrentHashMap<>();
     private boolean cgroupCacheEnabled = true;
 
     public CgroupCache(boolean cgroupCacheEnabled) {
+        createMainCgroup();
+        Runtime.getRuntime().addShutdownHook(new ShutDownHook());
+
         this.cgroupCacheEnabled = cgroupCacheEnabled;
         if (cgroupCacheEnabled) {
             warmupCgroupCache();
@@ -47,7 +61,7 @@ public class CgroupCache {
             System.out.println("Cleared " + cgroupId + " from cache");
         }
         long finish = System.nanoTime();
-        System.out.printf("Inserted %s in %s in %s us%n", threadId, cgroupId, (finish - start) / 1000);
+        System.out.printf("Updated %s (added thread %s) in %s us%n", threadId, cgroupId, (finish - start) / 1000);
     }
 
     public void removeThreadFromCgroup(String cgroupId, int quota) {
@@ -57,15 +71,21 @@ public class CgroupCache {
         if (cgroupCacheEnabled) {
             cgroupCache.get(quota).add(cgroupId);
             System.out.println("Added " + cgroupId + " to cache");
-        }
-        else {
-            NativeSandboxInterface.deleteCgroup(cgroupId);
+        } else {
+            deleteCgroup(cgroupId);
         }
         long finish = System.nanoTime();
-        System.out.printf("Removed %s from %s in %s us%n", threadId, cgroupId, (finish - start) / 1000);
+        System.out.printf("Updated %s (deleted thread %s) in %s us%n", threadId, cgroupId, (finish - start) / 1000);
     }
 
-    public void warmupCgroupCache() {
+    private void deleteCgroup(String cgroupId) {
+        long start = System.nanoTime();
+        NativeSandboxInterface.deleteCgroup(cgroupId);
+        long finish = System.nanoTime();
+        System.out.printf("Deleted %s in %s us%n", cgroupId, (finish - start) / 1000);
+    }
+
+    private void warmupCgroupCache() {
         long start = System.nanoTime();
         System.out.println("Cgroup cache warmup...");
         cgroupCache.put(10000, new CopyOnWriteArrayList<>());
@@ -86,8 +106,22 @@ public class CgroupCache {
             System.out.println("Added " + cgroupId + " to cache");
         }
         long finish = System.nanoTime();
-        System.out.printf("New %s in %s us %n", cgroupId, (finish - start) / 1000);
+        System.out.printf("Created %s in %s us %n", cgroupId, (finish - start) / 1000);
 
         return cgroupId;
+    }
+
+    private void createMainCgroup() {
+        long start = System.nanoTime();
+        NativeSandboxInterface.createMainCgroup();
+        long finish = System.nanoTime();
+        System.out.printf("Created main cgroup in %s us %n", (finish - start) / 1000);
+    }
+
+    private static void deleteMainCgroup() {
+        long start = System.nanoTime();
+        NativeSandboxInterface.deleteMainCgroup();
+        long finish = System.nanoTime();
+        System.out.printf("Deleted main cgroup in %s us%n", (finish - start) / 1000);
     }
 }
