@@ -4,13 +4,11 @@ public class NativeFunction extends PolyglotFunction {
 
     private final String path;
     private final boolean lazyIsolation;
-    private final boolean networkIsolation;
 
-    public NativeFunction(String name, String entryPoint, String language, String path, boolean lazyIsolation, boolean networkIsolation) {
+    public NativeFunction(String name, String entryPoint, String language, String path, boolean lazyIsolation) {
         super(name, entryPoint, language);
         this.path = path;
         this.lazyIsolation = lazyIsolation;
-        this.networkIsolation = networkIsolation;
     }
 
     public String getPath() {
@@ -19,9 +17,5 @@ public class NativeFunction extends PolyglotFunction {
 
     public boolean hasLazyIsolation() {
         return lazyIsolation;
-    }
-
-    public boolean hasNetworkIsolation() {
-        return networkIsolation;
     }
 }

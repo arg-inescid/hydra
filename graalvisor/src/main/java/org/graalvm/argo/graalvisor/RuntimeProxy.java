@@ -87,8 +87,6 @@ public abstract class RuntimeProxy {
      *  FunctionTable is used to store registered functions inside default and worker isolates.
      */
     public static final ConcurrentHashMap<String, PolyglotFunction> FTABLE = new ConcurrentHashMap<>();
-    static final NetworkNamespaceProvider networkNamespaceProvider = new NetworkNamespaceProvider();
-    static boolean invokedCachedFunctionRegister = false;
 
     /**
      * Simple Http server. It uses a cached thread pool for managing threads.
@@ -237,14 +235,8 @@ public abstract class RuntimeProxy {
             String sandboxName = metaData.get("sandbox");
             boolean lazyIsolation = metaData.containsKey("lazyisolation") && metaData.get("lazyisolation").equals("true");
 
-            boolean networkIsolation = metaData.containsKey("networkIsolation") && metaData.get("networkIsolation").equals("true");
-            if (!invokedCachedFunctionRegister && networkIsolation) {
-                invokedCachedFunctionRegister = true;
-                networkNamespaceProvider.startScheduler();
-            }
-
             if (System.getProperty("java.vm.name").equals("Substrate VM") || !functionLanguage.equalsIgnoreCase("java")) {
-                handlePolyglotRegistration(t, functionName, codeFileName, functionEntryPoint, functionLanguage, sandboxName, lazyIsolation, networkIsolation);
+                handlePolyglotRegistration(t, functionName, codeFileName, functionEntryPoint, functionLanguage, sandboxName, lazyIsolation);
             } else {
                 handleHotSpotRegistration(t, functionName, codeFileName, functionEntryPoint);
             }
@@ -280,7 +272,7 @@ public abstract class RuntimeProxy {
             writeResponse(t, 200, String.format("Function %s registered!", functionName));
         }
 
-        private void handlePolyglotRegistration(HttpExchange t, String functionName, String soFileName, String functionEntryPoint, String functionLanguage, String sandboxName, boolean lazyIsolation, boolean networkIsolation) throws IOException {
+        private void handlePolyglotRegistration(HttpExchange t, String functionName, String soFileName, String functionEntryPoint, String functionLanguage, String sandboxName, boolean lazyIsolation) throws IOException {
             long start = System.currentTimeMillis();
             PolyglotFunction function = null;
             SandboxProvider sprovider = null;
@@ -305,7 +297,7 @@ public abstract class RuntimeProxy {
                     try (OutputStream fos = new FileOutputStream(soFileName); InputStream bis = new BufferedInputStream(t.getRequestBody(), 4096)) {
                         bis.transferTo(fos);
                     }
-                    function = new NativeFunction(functionName, functionEntryPoint, functionLanguage, soFileName, lazyIsolation, networkIsolation);
+                    function = new NativeFunction(functionName, functionEntryPoint, functionLanguage, soFileName, lazyIsolation);
                 } else {
                     try (InputStream bis = new BufferedInputStream(t.getRequestBody(), 4096)) {
                         String sourceCode = new String(bis.readAllBytes(), StandardCharsets.UTF_8);

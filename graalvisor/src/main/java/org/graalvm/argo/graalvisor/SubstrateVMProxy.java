@@ -1,6 +1,7 @@
 package org.graalvm.argo.graalvisor;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -16,6 +17,7 @@ import org.graalvm.argo.graalvisor.sandboxing.SandboxHandle;
  * A runtime proxy that runs requests on Native image-based sandboxes.
  */
 public class SubstrateVMProxy extends RuntimeProxy {
+
 
     /**
      * A Request object is used as a communication packet between a foreground thread and a background thread.
@@ -70,12 +72,8 @@ public class SubstrateVMProxy extends RuntimeProxy {
         public void runInternal() throws Exception {
             SandboxHandle shandle = prepareSandbox(pipeline.getFunction());
             Request req = null;
-            NetworkNamespace networkNamespace = null;
-            if (pipeline.getFunction() instanceof NativeFunction && ((NativeFunction) pipeline.getFunction()).hasNetworkIsolation()) {
-                networkNamespace = prepareNetworkNamespace();
-                networkNamespace.switchToNetworkNamespace();
-            }
-
+            Optional<NetworkNamespace> networkNamespace = prepareNetworkNamespace();
+            networkNamespace.ifPresent(NetworkNamespace::switchToNetworkNamespace);
             try {
                 while ((req = pipeline.queue.poll(60, TimeUnit.SECONDS)) != null) {
                     processRequest(shandle, req);
@@ -84,10 +82,8 @@ public class SubstrateVMProxy extends RuntimeProxy {
                 e.printStackTrace();
             }
 
-            if (pipeline.getFunction() instanceof NativeFunction && ((NativeFunction) pipeline.getFunction()).hasNetworkIsolation()) {
-                networkNamespace.switchToDefaultNetworkNamespace();
-                freeNetworkNamespace(networkNamespace);
-            }
+            networkNamespace.ifPresent(NetworkNamespace::switchToDefaultNetworkNamespace);
+            networkNamespace.ifPresent(SubstrateVMProxy::freeNetworkNamespace);
             pipeline.workers.decrementAndGet();
             destroySandbox(pipeline.getFunction(), shandle);
         }
@@ -158,6 +154,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
      */
     private static ConcurrentMap<String, FunctionPipeline> queues = new ConcurrentHashMap<>();
 
+    static Optional<NetworkNamespaceProvider> networkNamespaceProvider = Optional.empty();
     public SubstrateVMProxy(int port) throws IOException {
         super(port);
     }
@@ -178,14 +175,18 @@ public class SubstrateVMProxy extends RuntimeProxy {
         long start = System.nanoTime();
         SandboxHandle worker = function.getSandboxProvider().createSandbox();
         long finish = System.nanoTime();
-        System.out.println(String.format("[thread %s] New %s sandbox %s in %s us", Thread.currentThread().getId(), function.getSandboxProvider().getName(), worker,  (finish - start)/1000));
+        System.out.println(String.format("[thread %s] New %s sandbox %s in %s us", Thread.currentThread().getId(), function.getSandboxProvider().getName(), worker, (finish - start)/1000));
         return worker;
     }
 
-    private static NetworkNamespace prepareNetworkNamespace() {
-        final NetworkNamespace networkNamespace = networkNamespaceProvider.getAvailableNetworkNamespace();
-        System.out.println("Using network namespace: " + networkNamespace.getName());
-        return networkNamespace;
+    private static Optional<NetworkNamespace> prepareNetworkNamespace() {
+        if (networkNamespaceProvider.isPresent()) {
+            final NetworkNamespace networkNamespace = networkNamespaceProvider.get().getAvailableNetworkNamespace();
+            System.out.println("Using network namespace: " + networkNamespace.getName());
+            return Optional.of(networkNamespace);
+        } else {
+            return Optional.empty();
+        }
     }
 
     private static void destroySandbox(PolyglotFunction function, SandboxHandle shandle) throws Exception {
@@ -194,8 +195,10 @@ public class SubstrateVMProxy extends RuntimeProxy {
     }
 
     private static void freeNetworkNamespace(final NetworkNamespace networkNamespace) {
-        System.out.println("Freeing network namespace: " + networkNamespace.getName());
-        networkNamespaceProvider.freeNetworkNamespace(networkNamespace);
+        if (networkNamespaceProvider.isPresent()) {
+            System.out.println("Freeing network namespace: " + networkNamespace.getName());
+            networkNamespaceProvider.get().freeNetworkNamespace(networkNamespace);
+        }
     }
 
     @Override
@@ -207,16 +210,11 @@ public class SubstrateVMProxy extends RuntimeProxy {
             res = getFunctionPipeline(function).invokeInCachedSandbox(arguments);
         } else {
             SandboxHandle shandle = prepareSandbox(function);
-            NetworkNamespace networkNamespace = null;
-            if (function instanceof NativeFunction && ((NativeFunction) function).hasNetworkIsolation()) {
-                networkNamespace = prepareNetworkNamespace();
-                networkNamespace.switchToNetworkNamespace();
-            }
+            Optional<NetworkNamespace> networkNamespace = prepareNetworkNamespace();
+            networkNamespace.ifPresent(NetworkNamespace::switchToNetworkNamespace);
             res = shandle.invokeSandbox(arguments);
-            if (function instanceof NativeFunction && ((NativeFunction) function).hasNetworkIsolation()) {
-                networkNamespace.switchToDefaultNetworkNamespace();
-                freeNetworkNamespace(networkNamespace);
-            }
+            networkNamespace.ifPresent(NetworkNamespace::switchToDefaultNetworkNamespace);
+            networkNamespace.ifPresent(SubstrateVMProxy::freeNetworkNamespace);
             destroySandbox(function, shandle);
         }
 

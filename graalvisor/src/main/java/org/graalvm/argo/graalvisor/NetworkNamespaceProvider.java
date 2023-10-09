@@ -17,27 +17,12 @@ public class NetworkNamespaceProvider {
 	private int fourthByte;
 	private final Queue<NetworkNamespace> availableNetworkNamespaces;
 	private final AtomicLong count;
-	private ScheduledExecutorService scheduledExecutor;
 
 	public NetworkNamespaceProvider() {
 		this.thirdByte = 0;
 		this.fourthByte = 0;
 		this.availableNetworkNamespaces = new ArrayBlockingQueue<>(Integer.MAX_VALUE);
 		this.count = new AtomicLong(0);
-		this.scheduledExecutor = null;
-	}
-
-	public void startScheduler() {
-		if (scheduledExecutor == null) {
-			this.scheduledExecutor = Executors
-					.newSingleThreadScheduledExecutor();
-			scheduledExecutor
-					.scheduleAtFixedRate(
-							new NetworkNamespaceManager(this),
-							0,
-							5,
-							TimeUnit.SECONDS);
-		}
 	}
 
 	public void createNetworkNamespace() {
@@ -91,8 +76,7 @@ public class NetworkNamespaceProvider {
 		NetworkNamespace networkNamespace;
 		do {
 			networkNamespace = availableNetworkNamespaces.poll();
-		}
-		while (networkNamespace == null);
+		} while (networkNamespace == null);
 		return networkNamespace;
 	}
 
@@ -119,8 +103,7 @@ public class NetworkNamespaceProvider {
 	}
 
 	public void deleteAllNetworkNamespaces() {
-		scheduledExecutor
-			.shutdown();
+		// TODO: shutdown hook is not working in native image
 		availableNetworkNamespaces
 			.forEach(this::deleteNetworkNamespace);
 	}
