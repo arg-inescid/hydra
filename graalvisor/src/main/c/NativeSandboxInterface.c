@@ -135,7 +135,8 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
         printf("(C) Failed to write to cgroup.type\n");
         return;
     }
-    int success = close(fd);
+
+    success = close(fd);
     if (success != 0)
     {
         printf("(C) Failed to close cgroup.type\n");
