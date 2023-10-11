@@ -135,13 +135,13 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
         printf("(C) Failed to write to cgroup.type\n");
         return;
     }
-    int close(fd);
-    success = clock() - t;
+    int success = close(fd);
     if (success != 0)
     {
         printf("(C) Failed to close cgroup.type\n");
         return;
     }
+    t = clock() - t;
     double time_taken = ((double)t) / CLOCKS_PER_SEC;
     printf("(C) Created cgroup in %f miliseconds\n", time_taken*1000);
 }
