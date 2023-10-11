@@ -129,9 +129,19 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
         printf("(C) Failed to open cgroup.type\n");
         return;
     }
-    write(fd, "threaded", 9);
-    close(fd);
-    t = clock() - t;
+    ssize_t success2 = write(fd, "threaded", 9);
+    if (success2 == -1)
+    {
+        printf("(C) Failed to write to cgroup.type\n");
+        return;
+    }
+    int close(fd);
+    success = clock() - t;
+    if (success != 0)
+    {
+        printf("(C) Failed to close cgroup.type\n");
+        return;
+    }
     double time_taken = ((double)t) / CLOCKS_PER_SEC;
     printf("(C) Created cgroup in %f miliseconds\n", time_taken*1000);
 }
@@ -146,8 +156,6 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_setCgroupQuota(JNIEnv *env, jclass thisObject, jstring cgroupId, jint quota)
 {
-    printf("(C) Setting cgroup quota\n");
-    clock_t t = clock();
     const int period = 100000;
     const char *isol = (*env)->GetStringUTFChars(env, cgroupId, NULL);
     char maxQuota[32];
@@ -159,16 +167,10 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     int maxF = open(cGroupMax, O_WRONLY);
     write(maxF, maxQuota, strlen(maxQuota) + 1);
     close(maxF);
-    t = clock() - t;
-    double time_taken = ((double)t) / CLOCKS_PER_SEC;
-    printf("(C) Set cgroup quota in %f miliseconds\n", time_taken*1000);
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_insertThreadInCgroup(JNIEnv *env, jclass thisObject, jstring cgroupId, jstring threadId)
 {
-    printf("(C) Inserting thread in cgroup\n");
-    clock_t time = clock();
-
     const char *isol = (*env)->GetStringUTFChars(env, cgroupId, NULL);
     const char *t = (*env)->GetStringUTFChars(env, threadId, NULL);
     char cGroupThreads[300];
@@ -178,10 +180,6 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     int fd = open(cGroupThreads, O_WRONLY);
     write(fd, t, strlen(t));
     close(fd);
-
-    time = clock() - time;
-    double time_taken = ((double)time) / CLOCKS_PER_SEC;
-    printf("(C) Inserted thread in cgroup in %f miliseconds\n", time_taken*1000);
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_removeThreadFromCgroup(JNIEnv *env, jclass thisObject, jstring threadId)
