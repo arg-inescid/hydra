@@ -167,7 +167,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_insertThreadInCgroup(JNIEnv *env, jclass thisObject, jstring cgroupId, jstring threadId)
 {
     printf("(C) Inserting thread in cgroup\n");
-    clock_t t = clock();
+    clock_t time = clock();
 
     const char *isol = (*env)->GetStringUTFChars(env, cgroupId, NULL);
     const char *t = (*env)->GetStringUTFChars(env, threadId, NULL);
@@ -179,7 +179,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     write(fd, t, strlen(t));
     close(fd);
 
-    t = clock() - t;
+    time = clock() - time;
     double time_taken = ((double)t) / CLOCKS_PER_SEC;
     printf("(C) Inserted thread in cgroup in %f miliseconds\n", time_taken*1000);
 }
