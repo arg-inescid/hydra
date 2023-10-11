@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <stdio.h>
+#include <time.h>
 
 #include "org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface.h"
 
