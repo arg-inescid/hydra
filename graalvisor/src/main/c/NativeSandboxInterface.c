@@ -180,7 +180,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     close(fd);
 
     time = clock() - time;
-    double time_taken = ((double)t) / CLOCKS_PER_SEC;
+    double time_taken = ((double)time) / CLOCKS_PER_SEC;
     printf("(C) Inserted thread in cgroup in %f miliseconds\n", time_taken*1000);
 }
 
