@@ -106,7 +106,7 @@ public class CgroupCache {
             System.out.println("Added " + cgroupId + " to cache");
         }
         long finish = System.nanoTime();
-        System.out.printf("Created %s in %s us %n", cgroupId, (finish - start) / 1000);
+        System.out.printf("Created %s in %s us%n", cgroupId, (finish - start) / 1000);
 
         return cgroupId;
     }
@@ -115,7 +115,7 @@ public class CgroupCache {
         long start = System.nanoTime();
         NativeSandboxInterface.createMainCgroup();
         long finish = System.nanoTime();
-        System.out.printf("Created main cgroup in %s us %n", (finish - start) / 1000);
+        System.out.printf("Created main cgroup in %s us%n", (finish - start) / 1000);
     }
 
     private static void deleteMainCgroup() {

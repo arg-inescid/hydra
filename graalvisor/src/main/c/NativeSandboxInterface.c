@@ -111,6 +111,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createCgroup(JNIEnv *env, jclass thisObject, jstring cgroupId)
 {
     printf("(C) Creating cgroup\n");
+    t = clock();
     const char *isol = (*env)->GetStringUTFChars(env, cgroupId, NULL);
     char cgroupPath[300];
     sprintf(cgroupPath, "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/%s", isol);
@@ -129,6 +130,9 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     }
     write(fd, "threaded", 9);
     close(fd);
+    t = clock() - t;
+    double time_taken = ((double)t) / CLOCKS_PER_SEC;
+    printf("(C) Created cgroup in %f seconds\n", time_taken);
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_deleteCgroup(JNIEnv *env, jclass thisObject, jstring cgroupId)
