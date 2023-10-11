@@ -111,11 +111,11 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createCgroup(JNIEnv *env, jclass thisObject, jstring cgroupId)
 {
-    printf("(C) Creating cgroup\n");
     clock_t t = clock();
-    const char *isol = (*env)->GetStringUTFChars(env, cgroupId, NULL);
+    const char *cgroup = (*env)->GetStringUTFChars(env, cgroupId, NULL);
     char cgroupPath[300];
-    sprintf(cgroupPath, "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/%s", isol);
+    sprintf(cgroupPath, "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/%s", cgroup);
+    printf("(C) Creating cgroup at %s\n", cgroupPath);
     int success = mkdir(cgroupPath, 0777);
     if (success != 0)
     {
