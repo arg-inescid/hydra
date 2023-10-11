@@ -78,7 +78,7 @@ JNIEXPORT jint JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createMainCgroup(JNIEnv *env, jclass thisObject) {
     printf("Creating main cgroup\n");
-    mkdir("/sys/fs/cgroup/user.slice/user-1000.slice/isolate", 0777);
+    mkdir("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups", 0777);
     int fd = open("/sys/fs/cgroup/cgroup.subtree_control", O_WRONLY);
     write(fd, "+cpu +cpuset", 13);
     close(fd);
@@ -88,13 +88,13 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/cgroup.subtree_control", O_WRONLY);
     write(fd, "+cpu +cpuset", 13);
     close(fd);
-    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/isolate/cgroup.subtree_control", O_WRONLY);
+    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control", O_WRONLY);
     write(fd, "+cpu +cpuset", 13);
     close(fd);
-    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/isolate/cpuset.cpus", O_WRONLY);
+    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cpuset.cpus", O_WRONLY);
     write(fd, "0", 2);
     close(fd);
-    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/isolate/cgroup.procs", O_WRONLY);
+    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cgroup.procs", O_WRONLY);
     int pid = getpid();
     char str[10];
     sprintf(str, "%d", pid);
@@ -104,15 +104,15 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_deleteMainCgroup(JNIEnv *env, jclass thisObject) {
     printf("Deleting main cgroup\n");
-//    rmdir("/sys/fs/cgroup/user.slice/user-1000.slice/isolate/cgroup-*"); TODO - should I add this if shutdown hook is working?
-    rmdir("/sys/fs/cgroup/user.slice/user-1000.slice/isolate");
+//    rmdir("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cgroup-*"); TODO - should I add this if shutdown hook is working?
+    rmdir("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups");
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createCgroup(JNIEnv *env, jclass thisObject, jstring isolateId)
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createCgroup(JNIEnv *env, jclass thisObject, jstring cgroupId)
 {
-    const char *isol = (*env)->GetStringUTFChars(env, isolateId, NULL);
+    const char *isol = (*env)->GetStringUTFChars(env, cgroupId, NULL);
     char cgroupPath[300];
-    sprintf(cgroupPath, "/sys/fs/cgroup/user.slice/user-1000.slice/isolate/%s", isol);
+    sprintf(cgroupPath, "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/%s", isol);
     mkdir(cgroupPath, 0777);
     strcat(cgroupPath, "/cgroup.type");
     int fd = open(cgroupPath, O_WRONLY);
@@ -120,36 +120,36 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     close(fd);
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_deleteCgroup(JNIEnv *env, jclass thisObject, jstring isolateId)
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_deleteCgroup(JNIEnv *env, jclass thisObject, jstring cgroupId)
 {
-    const char *isol = (*env)->GetStringUTFChars(env, isolateId, NULL);
+    const char *isol = (*env)->GetStringUTFChars(env, cgroupId, NULL);
     char cgroupPath[300];
-    sprintf(cgroupPath, "/sys/fs/cgroup/user.slice/user-1000.slice/isolate/%s", isol);
+    sprintf(cgroupPath, "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/%s", isol);
     rmdir(cgroupPath);
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_setCgroupQuota(JNIEnv *env, jclass thisObject, jstring isolateId, jint quota)
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_setCgroupQuota(JNIEnv *env, jclass thisObject, jstring cgroupId, jint quota)
 {
     const int period = 100000;
-    const char *isol = (*env)->GetStringUTFChars(env, isolateId, NULL);
+    const char *isol = (*env)->GetStringUTFChars(env, cgroupId, NULL);
     char maxQuota[32];
     char cGroupMax[256];
 
     sprintf(maxQuota, "%d %d", quota, period);
-    sprintf(cGroupMax, "/sys/fs/cgroup/user.slice/user-1000.slice/isolate/%s/cpu.max", isol);
+    sprintf(cGroupMax, "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/%s/cpu.max", isol);
 
     int maxF = open(cGroupMax, O_WRONLY);
     write(maxF, maxQuota, strlen(maxQuota) + 1);
     close(maxF);
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_insertThreadInCgroup(JNIEnv *env, jclass thisObject, jstring isolateId, jstring threadId)
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_insertThreadInCgroup(JNIEnv *env, jclass thisObject, jstring cgroupId, jstring threadId)
 {
-    const char *isol = (*env)->GetStringUTFChars(env, isolateId, NULL);
+    const char *isol = (*env)->GetStringUTFChars(env, cgroupId, NULL);
     const char *t = (*env)->GetStringUTFChars(env, threadId, NULL);
     char cGroupThreads[300];
 
-    sprintf(cGroupThreads, "/sys/fs/cgroup/user.slice/user-1000.slice/isolate/%s/cgroup.threads", isol);
+    sprintf(cGroupThreads, "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/%s/cgroup.threads", isol);
 
     int fd = open(cGroupThreads, O_WRONLY);
     write(fd, t, strlen(t));
@@ -160,7 +160,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 {
     const char *t = (*env)->GetStringUTFChars(env, threadId, NULL);
     char cGroupThreads[300];
-    sprintf(cGroupThreads, "/sys/fs/cgroup/user.slice/user-1000.slice/isolate/cgroup.threads");
+    sprintf(cGroupThreads, "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cgroup.threads");
     int fd = open(cGroupThreads, O_WRONLY);
     int r = write(fd, t, strlen(t));
     close(fd);
