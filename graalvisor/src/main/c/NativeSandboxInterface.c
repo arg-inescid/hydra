@@ -92,9 +92,9 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control", O_WRONLY);
     write(fd, "+cpu +cpuset", 13);
     close(fd);
-//    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cpuset.cpus", O_WRONLY);
-//    write(fd, "0", 2);
-//    close(fd);
+    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cpuset.cpus", O_WRONLY);
+    write(fd, "0", 2);
+    close(fd);
     fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cgroup.procs", O_WRONLY);
     int pid = getpid();
     char str[10];
