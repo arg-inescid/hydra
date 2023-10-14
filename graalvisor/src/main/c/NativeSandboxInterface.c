@@ -83,77 +83,79 @@ JNIEXPORT jint JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createMainCgroup(JNIEnv *env, jclass thisObject) {
     printf("Creating main cgroup\n");
 
-    char cgroupPath[300] = GV_CGROUP_FULL_PATH;
-    if (mkdir("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups", 0777)) {
-        printf("Failed to create gv-cgroups\n");
+    char cgroupPath[300];
+    sprintf(cgroupPath, GV_CGROUP_FULL_PATH);
+    if (mkdir(cgroupPath, 0777)) {
+        printf("Failed to create gv-cgroups - path: %s\n", cgroupPath);
     };
-    int fd = open("/sys/fs/cgroup/cgroup.subtree_control", O_WRONLY);
-    if (fd == -1) {
-        printf("Failed to open cgroup.subtree_control\n");
-    }
-    if (write(fd, "+cpu +cpuset", 13) != 0) {
-        printf("Failed to write to cgroup.subtree_control\n");
-    }
-    if (close(fd) != 0) {
-        printf("Failed to close cgroup.subtree_control\n");
-    }
+//    int fd = open("/sys/fs/cgroup/cgroup.subtree_control", O_WRONLY);
+//    if (fd == -1) {
+//        printf("Failed to open cgroup.subtree_control\n");
+//    }
+//    if (write(fd, "+cpu +cpuset", 13) != 0) {
+//        printf("Failed to write to cgroup.subtree_control\n");
+//    }
+//    if (close(fd) != 0) {
+//        printf("Failed to close cgroup.subtree_control\n");
+//    }
+//
+//    fd = open("/sys/fs/cgroup/user.slice/cgroup.subtree_control", O_WRONLY);
+//    if (fd == -1) {
+//        printf("Failed to open user.slice/cgroup.subtree_control\n");
+//    }
+//    if (write(fd, "+cpu +cpuset", 13) != 0) {
+//        printf("Failed to write to user.slice/cgroup.subtree_control\n");
+//    }
+//    if (close(fd) != 0) {
+//        printf("Failed to close user.slice/cgroup.subtree_control\n");
+//    }
+//
+//    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/cgroup.subtree_control", O_WRONLY);
+//    if (fd == -1) {
+//        printf("Failed to open user.slice/user-1000.slice/cgroup.subtree_control\n");
+//    }
+//    if (write(fd, "+cpu +cpuset", 13) != 0) {
+//        printf("Failed to write to user.slice/user-1000.slice/cgroup.subtree_control\n");
+//    }
+//    if (close(fd) != 0) {
+//        printf("Failed to close user.slice/user-1000.slice/cgroup.subtree_control\n");
+//    }
+//
+//    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control", O_WRONLY);
+//    if (fd == -1) {
+//        printf("Failed to open user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control\n");
+//    }
+//    if (write(fd, "+cpu +cpuset", 13) != 0) {
+//        printf("Failed to write to user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control\n");
+//    }
+//    if (close(fd) != 0) {
+//        printf("Failed to close user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control\n");
+//    }
+//
+//    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cpuset.cpus", O_WRONLY);
+//    if (fd == -1) {
+//        printf("Failed to open user.slice/user-1000.slice/gv-cgroups/cpuset.cpus\n");
+//    }
+//    if (write(fd, "0", 2) != 0) {
+//        printf("Failed to write to user.slice/user-1000.slice/gv-cgroups/cpuset.cpus\n");
+//    }
+//    if (close(fd) != 0) {
+//        printf("Failed to close user.slice/user-1000.slice/gv-cgroups/cpuset.cpus\n");
+//    }
 
-    fd = open("/sys/fs/cgroup/user.slice/cgroup.subtree_control", O_WRONLY);
+    strcat(cgroupPath, "/cgroup.procs");
+    int fd = open(cgroupPath, O_WRONLY);
     if (fd == -1) {
-        printf("Failed to open user.slice/cgroup.subtree_control\n");
-    }
-    if (write(fd, "+cpu +cpuset", 13) != 0) {
-        printf("Failed to write to user.slice/cgroup.subtree_control\n");
-    }
-    if (close(fd) != 0) {
-        printf("Failed to close user.slice/cgroup.subtree_control\n");
-    }
-
-    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/cgroup.subtree_control", O_WRONLY);
-    if (fd == -1) {
-        printf("Failed to open user.slice/user-1000.slice/cgroup.subtree_control\n");
-    }
-    if (write(fd, "+cpu +cpuset", 13) != 0) {
-        printf("Failed to write to user.slice/user-1000.slice/cgroup.subtree_control\n");
-    }
-    if (close(fd) != 0) {
-        printf("Failed to close user.slice/user-1000.slice/cgroup.subtree_control\n");
-    }
-
-    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control", O_WRONLY);
-    if (fd == -1) {
-        printf("Failed to open user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control\n");
-    }
-    if (write(fd, "+cpu +cpuset", 13) != 0) {
-        printf("Failed to write to user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control\n");
-    }
-    if (close(fd) != 0) {
-        printf("Failed to close user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control\n");
-    }
-
-    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cpuset.cpus", O_WRONLY);
-    if (fd == -1) {
-        printf("Failed to open user.slice/user-1000.slice/gv-cgroups/cpuset.cpus\n");
-    }
-    if (write(fd, "0", 2) != 0) {
-        printf("Failed to write to user.slice/user-1000.slice/gv-cgroups/cpuset.cpus\n");
-    }
-    if (close(fd) != 0) {
-        printf("Failed to close user.slice/user-1000.slice/gv-cgroups/cpuset.cpus\n");
-    }
-
-    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cgroup.procs", O_WRONLY);
-    if (fd == -1) {
-        printf("Failed to open user.slice/user-1000.slice/gv-cgroups/cgroup.procs\n");
+        printf("Failed to open %s\n", cgroupPath);
     }
     int pid = getpid();
     char str[10];
     sprintf(str, "%d", pid);
     if (write(fd, str, strlen(str) + 1) != 0) {
-        printf("Failed to write to user.slice/user-1000.slice/gv-cgroups/cgroup.procs\n");
+        printf("Failed to write to %s\n", cgroupPath);
     }
     if (close(fd) != 0) {
-        printf("Failed to close user.slice/user-1000.slice/gv-cgroups/cgroup.procs\n");
+        printf("Failed to close %s\n", cgroupPath);
     }
 }
 
