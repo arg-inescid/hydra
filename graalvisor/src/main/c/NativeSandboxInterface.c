@@ -13,9 +13,9 @@
 
 #define PIPE_READ_END 0
 #define PIPE_WRITE_END 1
-#define CGROUP_BASE_PATH "/sys/fs/cgroup/"
-#define USER_CGROUP_PATH "/sys/fs/cgroup/user.slice/"
-#define GV_CGROUP_FULL_PATH "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups"
+//#define CGROUP_BASE_PATH "/sys/fs/cgroup/"
+//#define USER_CGROUP_PATH "/sys/fs/cgroup/user.slice/"
+//#define GV_CGROUP_FULL_PATH "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups"
 
 void close_parent_fds(int childWrite, int parentRead)
 {
@@ -84,7 +84,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     printf("Creating main cgroup\n");
 
     char cgroupPath[300];
-    sprintf(cgroupPath, GV_CGROUP_FULL_PATH);
+    sprintf(cgroupPath, "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups");
     if (mkdir(cgroupPath, 0777) != 0) {
         printf("Failed to create gv-cgroups - path: %s\n", cgroupPath);
     };
