@@ -33,11 +33,13 @@ public class CgroupCache {
 
     public String getCgroupIdByQuota(int quota) {
         if (!cgroupCacheEnabled) {
+            System.out.println("Cgroup cache disabled - creating new cgroup");
             return createCgroup(quota);
         }
 
         String cgroupId;
 
+        long start = System.nanoTime();
         if (!cgroupCache.containsKey(quota)) {
             System.out.printf("New cache entry for %d CPU quota%n", quota);
             cgroupCache.put(quota, new CopyOnWriteArrayList<>());
@@ -50,6 +52,9 @@ public class CgroupCache {
             System.out.printf("Using existing cgroup %s%n", cgroupId);
         }
 
+        long finish = System.nanoTime();
+
+        System.out.printf("Retrieved %s for %s us%n", cgroupId, (finish - start) / 1000);
         return cgroupId;
     }
 
@@ -73,15 +78,19 @@ public class CgroupCache {
             cgroupCache.get(quota).add(cgroupId);
             System.out.println("Added " + cgroupId + " to cache");
         } else {
-            deleteCgroup(cgroupId);
+            deleteCgroup(cgroupId, quota);
         }
         long finish = System.nanoTime();
         System.out.printf("Updated %s (deleted thread %s) in %s us%n", threadId, cgroupId, (finish - start) / 1000);
     }
 
-    private void deleteCgroup(String cgroupId) {
+    private void deleteCgroup(String cgroupId, int quota) {
         long start = System.nanoTime();
         NativeSandboxInterface.deleteCgroup(cgroupId);
+        if (cgroupCacheEnabled) {
+            cgroupCache.get(quota).remove(cgroupId);
+            System.out.println("Removed " + cgroupId + " from cache");
+        }
         long finish = System.nanoTime();
         System.out.printf("Deleted %s in %s us%n", cgroupId, (finish - start) / 1000);
     }
@@ -105,11 +114,6 @@ public class CgroupCache {
         if (cgroupCacheEnabled) {
             cgroupCache.get(quota).add(cgroupId);
             System.out.println("Added " + cgroupId + " to cache");
-        }
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
         }
         long finish = System.nanoTime();
         System.out.printf("Created %s in %s us%n", cgroupId, (finish - start) / 1000);
