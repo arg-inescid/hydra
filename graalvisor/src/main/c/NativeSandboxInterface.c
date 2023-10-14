@@ -171,6 +171,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     char cgroupPath[300];
     sprintf(cgroupPath, "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/%s", cgroup);
     strcat(cgroupPath, "/cgroup.type");
+    mkdir(cgroupPath, 0777);
     int fd = open(cgroupPath, O_WRONLY);
     if (fd == -1)
     {
