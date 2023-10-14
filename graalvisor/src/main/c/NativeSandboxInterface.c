@@ -85,7 +85,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 
     char cgroupPath[300];
     sprintf(cgroupPath, GV_CGROUP_FULL_PATH);
-    if (mkdir(cgroupPath, 0777)) {
+    if (mkdir(cgroupPath, 0777) != 0) {
         printf("Failed to create gv-cgroups - path: %s\n", cgroupPath);
     };
 //    int fd = open("/sys/fs/cgroup/cgroup.subtree_control", O_WRONLY);
