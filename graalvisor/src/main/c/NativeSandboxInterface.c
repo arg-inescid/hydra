@@ -170,8 +170,11 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     const char *cgroup = (*env)->GetStringUTFChars(env, cgroupId, NULL);
     char cgroupPath[300];
     sprintf(cgroupPath, "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/%s", cgroup);
+    if (mkdir(cgroupPath, 0777) != 0) {
+        printf("Failed to create %s\n", cgroupPath);
+    }
+
     strcat(cgroupPath, "/cgroup.type");
-    mkdir(cgroupPath, 0777);
     int fd = open(cgroupPath, O_WRONLY);
     if (fd == -1)
     {
