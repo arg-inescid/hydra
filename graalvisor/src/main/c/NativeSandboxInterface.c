@@ -80,18 +80,18 @@ JNIEXPORT jint JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createMainCgroup(JNIEnv *env, jclass thisObject) {
     printf("Creating main cgroup\n");
     mkdir("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups", 0777);
-//    int fd = open("/sys/fs/cgroup/cgroup.subtree_control", O_WRONLY);
-//    write(fd, "+cpu +cpuset", 13);
-//    close(fd);
-//    fd = open("/sys/fs/cgroup/user.slice/cgroup.subtree_control", O_WRONLY);
-//    write(fd, "+cpu +cpuset", 13);
-//    close(fd);
-//    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/cgroup.subtree_control", O_WRONLY);
-//    write(fd, "+cpu +cpuset", 13);
-//    close(fd);
-//    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control", O_WRONLY);
-//    write(fd, "+cpu +cpuset", 13);
-//    close(fd);
+    int fd = open("/sys/fs/cgroup/cgroup.subtree_control", O_WRONLY);
+    write(fd, "+cpu +cpuset", 13);
+    close(fd);
+    fd = open("/sys/fs/cgroup/user.slice/cgroup.subtree_control", O_WRONLY);
+    write(fd, "+cpu +cpuset", 13);
+    close(fd);
+    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/cgroup.subtree_control", O_WRONLY);
+    write(fd, "+cpu +cpuset", 13);
+    close(fd);
+    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control", O_WRONLY);
+    write(fd, "+cpu +cpuset", 13);
+    close(fd);
 //    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cpuset.cpus", O_WRONLY);
 //    write(fd, "0", 2);
 //    close(fd);
@@ -105,46 +105,19 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_deleteMainCgroup(JNIEnv *env, jclass thisObject) {
     printf("Deleting main cgroup\n");
-//    rmdir("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cgroup-*"); TODO - should I add this if shutdown hook is working?
+    rmdir("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cgroup-*");
     rmdir("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups");
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createCgroup(JNIEnv *env, jclass thisObject, jstring cgroupId)
 {
-    clock_t t = clock();
     const char *cgroup = (*env)->GetStringUTFChars(env, cgroupId, NULL);
     char cgroupPath[300];
     sprintf(cgroupPath, "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/%s", cgroup);
-    printf("(C) Creating cgroup at %s\n", cgroupPath);
-    int success = mkdir(cgroupPath, 0777);
-    if (success != 0)
-    {
-        printf("(C) Failed to create cgroup\n");
-        return;
-    }
     strcat(cgroupPath, "/cgroup.type");
     int fd = open(cgroupPath, O_WRONLY);
-    if (fd == -1)
-    {
-        printf("(C) Failed to open cgroup.type\n");
-        return;
-    }
-    ssize_t success2 = write(fd, "threaded", 9);
-    if (success2 == -1)
-    {
-        printf("(C) Failed to write to cgroup.type\n");
-        return;
-    }
-
-    success = close(fd);
-    if (success != 0)
-    {
-        printf("(C) Failed to close cgroup.type\n");
-        return;
-    }
-    t = clock() - t;
-    double time_taken = ((double)t) / CLOCKS_PER_SEC;
-    printf("(C) Created cgroup in %f miliseconds\n", time_taken*1000);
+    write(fd, "threaded", 9);
+    close(fd);
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_deleteCgroup(JNIEnv *env, jclass thisObject, jstring cgroupId)
