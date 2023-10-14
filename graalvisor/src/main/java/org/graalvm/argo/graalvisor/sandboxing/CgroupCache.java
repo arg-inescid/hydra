@@ -17,7 +17,7 @@ public class CgroupCache {
         }
     }
 
-    private ConcurrentMap<Integer, CopyOnWriteArrayList<String>> cgroupCache = new ConcurrentHashMap<>();
+    private ConcurrentMap<Integer, CopyOnWriteArrayList<String>> cgroupCache;
     private boolean cgroupCacheEnabled = true;
 
     public CgroupCache(boolean cgroupCacheEnabled) {
@@ -26,6 +26,7 @@ public class CgroupCache {
 
         this.cgroupCacheEnabled = cgroupCacheEnabled;
         if (cgroupCacheEnabled) {
+            cgroupCache = new ConcurrentHashMap<>();
             warmupCgroupCache();
         }
     }
@@ -104,6 +105,11 @@ public class CgroupCache {
         if (cgroupCacheEnabled) {
             cgroupCache.get(quota).add(cgroupId);
             System.out.println("Added " + cgroupId + " to cache");
+        }
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
         long finish = System.nanoTime();
         System.out.printf("Created %s in %s us%n", cgroupId, (finish - start) / 1000);
