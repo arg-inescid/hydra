@@ -88,6 +88,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     if (mkdir(cgroupPath, 0777) != 0) {
         printf("Failed to create gv-cgroups - path: %s\n", cgroupPath);
     };
+    printf("Created gv-cgroups at %s\n", cgroupPath);
 //    int fd = open("/sys/fs/cgroup/cgroup.subtree_control", O_WRONLY);
 //    if (fd != 0) {
 //        printf("Failed to open cgroup.subtree_control\n");
@@ -144,9 +145,6 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 //    }
 
     strcat(cgroupPath, "/cgroup.procs");
-    if (mkdir(cgroupPath, 0777) != 0) {
-        printf("Failed to create %s\n", cgroupPath);
-    }
     int fd = open(cgroupPath, O_WRONLY);
     if (fd != 0) {
         printf("Failed to open %s\n", cgroupPath);
