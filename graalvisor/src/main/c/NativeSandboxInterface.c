@@ -88,49 +88,49 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     if (mkdir(cgroupPath, 0777) != 0) {
         printf("Failed to create gv-cgroups - path: %s\n", cgroupPath);
     };
-    int fd = open("/sys/fs/cgroup/cgroup.subtree_control", O_WRONLY);
-    if (fd != 0) {
-        printf("Failed to open cgroup.subtree_control\n");
-    }
-    if (write(fd, "+cpu +cpuset", 13) != 0) {
-        printf("Failed to write to cgroup.subtree_control\n");
-    }
-    if (close(fd) != 0) {
-        printf("Failed to close cgroup.subtree_control\n");
-    }
-
-    fd = open("/sys/fs/cgroup/user.slice/cgroup.subtree_control", O_WRONLY);
-    if (fd != 0) {
-        printf("Failed to open user.slice/cgroup.subtree_control\n");
-    }
-    if (write(fd, "+cpu +cpuset", 13) != 0) {
-        printf("Failed to write to user.slice/cgroup.subtree_control\n");
-    }
-    if (close(fd) != 0) {
-        printf("Failed to close user.slice/cgroup.subtree_control\n");
-    }
-
-    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/cgroup.subtree_control", O_WRONLY);
-    if (fd != 0) {
-        printf("Failed to open user.slice/user-1000.slice/cgroup.subtree_control\n");
-    }
-    if (write(fd, "+cpu +cpuset", 13) != 0) {
-        printf("Failed to write to user.slice/user-1000.slice/cgroup.subtree_control\n");
-    }
-    if (close(fd) != 0) {
-        printf("Failed to close user.slice/user-1000.slice/cgroup.subtree_control\n");
-    }
-
-    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control", O_WRONLY);
-    if (fd != 0) {
-        printf("Failed to open user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control\n");
-    }
-    if (write(fd, "+cpu +cpuset", 13) != 0) {
-        printf("Failed to write to user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control\n");
-    }
-    if (close(fd) != 0) {
-        printf("Failed to close user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control\n");
-    }
+//    int fd = open("/sys/fs/cgroup/cgroup.subtree_control", O_WRONLY);
+//    if (fd != 0) {
+//        printf("Failed to open cgroup.subtree_control\n");
+//    }
+//    if (write(fd, "+cpu +cpuset", 13) != 0) {
+//        printf("Failed to write to cgroup.subtree_control\n");
+//    }
+//    if (close(fd) != 0) {
+//        printf("Failed to close cgroup.subtree_control\n");
+//    }
+//
+//    fd = open("/sys/fs/cgroup/user.slice/cgroup.subtree_control", O_WRONLY);
+//    if (fd != 0) {
+//        printf("Failed to open user.slice/cgroup.subtree_control\n");
+//    }
+//    if (write(fd, "+cpu +cpuset", 13) != 0) {
+//        printf("Failed to write to user.slice/cgroup.subtree_control\n");
+//    }
+//    if (close(fd) != 0) {
+//        printf("Failed to close user.slice/cgroup.subtree_control\n");
+//    }
+//
+//    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/cgroup.subtree_control", O_WRONLY);
+//    if (fd != 0) {
+//        printf("Failed to open user.slice/user-1000.slice/cgroup.subtree_control\n");
+//    }
+//    if (write(fd, "+cpu +cpuset", 13) != 0) {
+//        printf("Failed to write to user.slice/user-1000.slice/cgroup.subtree_control\n");
+//    }
+//    if (close(fd) != 0) {
+//        printf("Failed to close user.slice/user-1000.slice/cgroup.subtree_control\n");
+//    }
+//
+//    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control", O_WRONLY);
+//    if (fd != 0) {
+//        printf("Failed to open user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control\n");
+//    }
+//    if (write(fd, "+cpu +cpuset", 13) != 0) {
+//        printf("Failed to write to user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control\n");
+//    }
+//    if (close(fd) != 0) {
+//        printf("Failed to close user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control\n");
+//    }
 //
 //    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cpuset.cpus", O_WRONLY);
 //    if (fd != 0) {
@@ -144,10 +144,14 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 //    }
 
     strcat(cgroupPath, "/cgroup.procs");
-    fd = open(cgroupPath, O_WRONLY);
+    if (mkdir(cgroupPath, 0777) != 0) {
+        printf("Failed to create %s\n", cgroupPath);
+    }
+    int fd = open(cgroupPath, O_WRONLY);
     if (fd != 0) {
         printf("Failed to open %s\n", cgroupPath);
     }
+
     int pid = getpid();
     char str[10];
     sprintf(str, "%d", pid);
