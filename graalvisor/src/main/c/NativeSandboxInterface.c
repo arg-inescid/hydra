@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
+#include <errno.h>
 
 #include "org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface.h"
 
@@ -147,17 +148,20 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     strcat(cgroupPath, "/cgroup.procs");
     int fd = open(cgroupPath, O_WRONLY);
     if (fd != 0) {
-        printf("Failed to open %s\n", cgroupPath);
+        int errsv = errno;
+        printf("Failed to open %s ERROR: %s\n", cgroupPath, errsv);
     }
 
     int pid = getpid();
     char str[10];
     sprintf(str, "%d", pid);
     if (write(fd, str, strlen(str) + 1) != 0) {
-        printf("Failed to write to %s\n", cgroupPath);
+        int errsv = errno;
+        printf("Failed to write to %s ERROR: %s\n", cgroupPath, errsv);
     }
     if (close(fd) != 0) {
-        printf("Failed to close %s\n", cgroupPath);
+        int errsv = errno;
+        printf("Failed to close %s ERROR: %s\n", cgroupPath, errsv);
     }
 }
 
