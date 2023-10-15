@@ -177,20 +177,24 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     char cgroupPath[300];
     sprintf(cgroupPath, "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/%s", cgroup);
     if (mkdir(cgroupPath, 0777) != 0) {
-        printf("Failed to create %s\n", cgroupPath);
+        int errsv = errno;
+        printf("Failed to create %s ERROR: %s\n", cgroupPath, errsv);
     }
 
     strcat(cgroupPath, "/cgroup.type");
     int fd = open(cgroupPath, O_WRONLY);
     if (fd != 0)
     {
-        printf("Failed to open %s\n", cgroupPath);
+        int errsv = errno;
+        printf("Failed to open %s ERROR: %s\n", cgroupPath, errsv);
     }
     if (write(fd, "threaded", 9) != 0) {
-        printf("Failed to write to %s\n", cgroupPath);
+        int errsv = errno;
+        printf("Failed to write to %s ERROR: %s\n", cgroupPath, errsv);
     }
     if (close(fd) != 0) {
-        printf("Failed to close %s\n", cgroupPath);
+        int errsv = errno;
+        printf("Failed to close %s ERROR: %s\n", cgroupPath, errsv);
     }
 }
 
