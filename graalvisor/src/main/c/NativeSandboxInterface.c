@@ -91,49 +91,49 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     };
     printf("Created gv-cgroups at %s\n", cgroupPath);
 
-    int fd = open("/sys/fs/cgroup/cgroup.subtree_control", O_WRONLY);
-    if (fd == -1) {
-        printf("Failed to open cgroup.subtree_control ERROR: %d\n", errno);
-    }
-    if (write(fd, "+cpu +cpuset", 13) != 0) {
-        printf("Failed to write to cgroup.subtree_control ERROR: %d\n", errno);
-    }
-    if (close(fd) != 0) {
-        printf("Failed to close cgroup.subtree_control ERROR: %d\n", errno);
-    }
-
-    fd = open("/sys/fs/cgroup/user.slice/cgroup.subtree_control", O_WRONLY);
-    if (fd == -1) {
-        printf("Failed to open user.slice/cgroup.subtree_control ERROR: %d\n", errno);
-    }
-    if (write(fd, "+cpu +cpuset", 13) != 0) {
-        printf("Failed to write to user.slice/cgroup.subtree_control ERROR: %d\n", errno);
-    }
-    if (close(fd) != 0) {
-        printf("Failed to close user.slice/cgroup.subtree_control ERROR: %d\n", errno);
-    }
-
-    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/cgroup.subtree_control", O_WRONLY);
-    if (fd == -1) {
-        printf("Failed to open user.slice/user-1000.slice/cgroup.subtree_control ERROR: %d\n", errno);
-    }
-    if (write(fd, "+cpu +cpuset", 13) != 0) {
-        printf("Failed to write to user.slice/user-1000.slice/cgroup.subtree_control ERROR: %d\n", errno);
-    }
-    if (close(fd) != 0) {
-        printf("Failed to close user.slice/user-1000.slice/cgroup.subtree_control ERROR: %d\n", errno);
-    }
-
-    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control", O_WRONLY);
-    if (fd == -1) {
-        printf("Failed to open user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control ERROR: %d\n", errno);
-    }
-    if (write(fd, "+cpu +cpuset", 13) != 0) {
-        printf("Failed to write to user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control ERROR: %d\n", errno);
-    }
-    if (close(fd) != 0) {
-        printf("Failed to close user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control ERROR: %d\n", errno);
-    }
+//    int fd = open("/sys/fs/cgroup/cgroup.subtree_control", O_WRONLY);
+//    if (fd == -1) {
+//        printf("Failed to open cgroup.subtree_control ERROR: %d\n", errno);
+//    }
+//    if (write(fd, "+cpu +cpuset", 13) != 0) {
+//        printf("Failed to write to cgroup.subtree_control ERROR: %d\n", errno);
+//    }
+//    if (close(fd) != 0) {
+//        printf("Failed to close cgroup.subtree_control ERROR: %d\n", errno);
+//    }
+//
+//    fd = open("/sys/fs/cgroup/user.slice/cgroup.subtree_control", O_WRONLY);
+//    if (fd == -1) {
+//        printf("Failed to open user.slice/cgroup.subtree_control ERROR: %d\n", errno);
+//    }
+//    if (write(fd, "+cpu +cpuset", 13) != 0) {
+//        printf("Failed to write to user.slice/cgroup.subtree_control ERROR: %d\n", errno);
+//    }
+//    if (close(fd) != 0) {
+//        printf("Failed to close user.slice/cgroup.subtree_control ERROR: %d\n", errno);
+//    }
+//
+//    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/cgroup.subtree_control", O_WRONLY);
+//    if (fd == -1) {
+//        printf("Failed to open user.slice/user-1000.slice/cgroup.subtree_control ERROR: %d\n", errno);
+//    }
+//    if (write(fd, "+cpu +cpuset", 13) != 0) {
+//        printf("Failed to write to user.slice/user-1000.slice/cgroup.subtree_control ERROR: %d\n", errno);
+//    }
+//    if (close(fd) != 0) {
+//        printf("Failed to close user.slice/user-1000.slice/cgroup.subtree_control ERROR: %d\n", errno);
+//    }
+//
+//    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control", O_WRONLY);
+//    if (fd == -1) {
+//        printf("Failed to open user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control ERROR: %d\n", errno);
+//    }
+//    if (write(fd, "+cpu +cpuset", 13) != 0) {
+//        printf("Failed to write to user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control ERROR: %d\n", errno);
+//    }
+//    if (close(fd) != 0) {
+//        printf("Failed to close user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control ERROR: %d\n", errno);
+//    }
 //
 //    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cpuset.cpus", O_WRONLY);
 //    if (fd == -1) {
@@ -147,7 +147,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 //    }
 
     strcat(cgroupPath, "/cgroup.procs");
-    fd = open(cgroupPath, O_WRONLY);
+    int fd = open(cgroupPath, O_WRONLY);
     if (fd == -1) {
         printf("Failed to open %s ERROR: %d\n", cgroupPath, errno);
     }
@@ -155,7 +155,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     int pid = getpid();
     char str[10];
     sprintf(str, "%d", pid);
-    if (write(fd, str, strlen(str) + 1) != 0) {
+    if (write(fd, str, strlen(str) + 1) == -1) {
         printf("Failed to write to %s ERROR: %d\n", cgroupPath, errno);
     }
     if (close(fd) != 0) {
@@ -184,7 +184,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     {
         printf("Failed to open %s ERROR: %d\n", cgroupPath, errno);
     }
-    if (write(fd, "threaded", 9) != 0) {
+    if (write(fd, "threaded", 9) == -1) {
         printf("Failed to write to %s ERROR: %d\n", cgroupPath, errno);
     }
     if (close(fd) != 0) {
@@ -215,7 +215,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     {
         printf("Failed to open %s ERRNO: %d \n", cGroupMax, errno);
     }
-    if (write(maxF, maxQuota, strlen(maxQuota) + 1) != 0) {
+    if (write(maxF, maxQuota, strlen(maxQuota) + 1) == -1) {
         printf("Failed to write to %s ERRNO: %d \n", cGroupMax, errno);
     }
     if (close(maxF) != 0) {
@@ -236,7 +236,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     {
         printf("Failed to open %s ERROR: %d\n", cGroupThreads, errno);
     }
-    if (write(fd, t, strlen(t)) != 0) {
+    if (write(fd, t, strlen(t)) == -1) {
         printf("Failed to write to %s ERROR: %d\n", cGroupThreads, errno);
     }
     if (close(fd) != 0) {
@@ -255,7 +255,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     {
         printf("Failed to open %s ERROR: %d\n", cGroupThreads, errno);
     }
-    if (write(fd, t, strlen(t)) != 0) {
+    if (write(fd, t, strlen(t)) == -1) {
         printf("Failed to write to %s ERROR: %d\n", cGroupThreads, errno);
     }
     if (close(fd) != 0) {
