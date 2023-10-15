@@ -146,20 +146,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 //        printf("Failed to close user.slice/user-1000.slice/gv-cgroups/cpuset.cpus\n");
 //    }
 
-    strcat(cgroupPath, "/cgroup.type");
-    int fd = open(cgroupPath, O_WRONLY);
-    if (fd == -1)
-    {
-        printf("Failed to open %s ERROR: %d\n", cgroupPath, errno);
-    }
-    if (write(fd, "threaded", 9) == -1) {
-        printf("Failed to write to %s ERROR: %d\n", cgroupPath, errno);
-    }
-    if (close(fd) != 0) {
-        printf("Failed to close %s ERROR: %d\n", cgroupPath, errno);
-    }
-
-    sprintf(cgroupPath, "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cgroup.procs");
+    strcat(cgroupPath, "/cgroup.procs");
     fd = open(cgroupPath, O_WRONLY);
     if (fd == -1) {
         printf("Failed to open %s ERROR: %d\n", cgroupPath, errno);
@@ -192,7 +179,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     }
 
     strcat(cgroupPath, "/cgroup.type");
-    int fd = open(cgroupPath, O_WRONLY);
+    fd = open(cgroupPath, O_WRONLY);
     if (fd == -1)
     {
         printf("Failed to open %s ERROR: %d\n", cgroupPath, errno);
@@ -249,7 +236,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     {
         printf("Failed to open %s ERROR: %d\n", cGroupThreads, errno);
     }
-    if (write(fd, t, strlen(t) + 1) == -1) {
+    if (write(fd, t, strlen(t)) == -1) {
         printf("Failed to write to %s ERROR: %d\n", cGroupThreads, errno);
     }
     if (close(fd) != 0) {
@@ -268,7 +255,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     {
         printf("Failed to open %s ERROR: %d\n", cGroupThreads, errno);
     }
-    if (write(fd, t, strlen(t) + 1) == -1) {
+    if (write(fd, t, strlen(t)) == -1) {
         printf("Failed to write to %s ERROR: %d\n", cGroupThreads, errno);
     }
     if (close(fd) != 0) {
