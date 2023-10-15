@@ -10,7 +10,7 @@ public class NativeSandboxInterface {
     public static native void createCgroup(String cgroupId);
     public static native void deleteCgroup(String cgroupId);
     public static native void insertThreadInCgroup(String cgroupId, String threadId);
-    public static native void removeThreadFromCgroup(String cgroupId);
+    public static native void removeThreadFromCgroup(String threadId);
     public static native void setCgroupQuota(String cgroupId, int quota);
     public static native void enterNativeProcessSandbox();
     public static native void leaveNativeProcessSandbox();

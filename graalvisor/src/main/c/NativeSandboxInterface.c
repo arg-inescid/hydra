@@ -179,7 +179,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     }
 
     strcat(cgroupPath, "/cgroup.type");
-    fd = open(cgroupPath, O_WRONLY);
+    int fd = open(cgroupPath, O_WRONLY);
     if (fd == -1)
     {
         printf("Failed to open %s ERROR: %d\n", cgroupPath, errno);
