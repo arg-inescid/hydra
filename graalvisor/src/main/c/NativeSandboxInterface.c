@@ -124,7 +124,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
         printf("Failed to close user.slice/user-1000.slice/cgroup.subtree_control ERROR: %d\n", errno);
     }
 
-    int fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control", O_WRONLY);
+    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control", O_WRONLY);
     if (fd == -1) {
         printf("Failed to open user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control ERROR: %d\n", errno);
     }
