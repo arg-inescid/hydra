@@ -12,7 +12,7 @@ public class NativeSandboxInterface {
 
     public static native void createNativeRuntimeSandbox(boolean lazyIsolation);
 
-    public static native int createNetworkNamespace(String jName, int jThirdByte, int jFourthByte);
+    public static native int createNetworkNamespace(String jName, int jThirdByte, int jSecondByte);
 
     public static native int deleteNetworkNamespace(String jName);
 
@@ -20,7 +20,7 @@ public class NativeSandboxInterface {
 
     public static native int switchToDefaultNetworkNamespace();
 
-    public static native int enableVeths(String jName);
+    public static native int enableVeths(String jName, int jThirdByte, int jSecondByte);
 
     public static native int disableVeths(String jName);
 }

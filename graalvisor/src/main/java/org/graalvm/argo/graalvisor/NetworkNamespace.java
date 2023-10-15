@@ -4,18 +4,22 @@ import org.graalvm.argo.graalvisor.sandboxing.NativeSandboxInterface;
 
 public class NetworkNamespace {
 
-    private final String name;
+    private final int id;
     private final int thirdByte;
     private final int fourthByte;
 
-    public NetworkNamespace(final int thirdByte, final int fourthByte) {
-        this.name = String.format("netns_%s_%s", thirdByte, fourthByte);
-        this.thirdByte = thirdByte;
-        this.fourthByte = fourthByte;
+    public NetworkNamespace(final int id) {
+        this.id = id;
+        this.thirdByte = id % 256;
+        this.fourthByte = id / 256;
     }
 
     public String getName() {
-        return name;
+        return String.format("netns_%s", id);
+    }
+
+    public int getId() {
+        return id;
     }
 
     public int getThirdByte() {
@@ -28,7 +32,7 @@ public class NetworkNamespace {
 
     public void switchToNetworkNamespace() {
         long start = System.nanoTime();
-        NativeSandboxInterface.switchNetworkNamespace(name);
+        NativeSandboxInterface.switchNetworkNamespace(getName());
         long end = System.nanoTime();
         System.out.println("SWITCH NAMESPACE: " + Long.valueOf(end - start).toString());
     }

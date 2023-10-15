@@ -8,21 +8,25 @@
 #define SANDBOX_VETH_FORMAT "%s_sb"
 #define ENTRYPOINT_VETH_FORMAT "%s_ep"
 
-#define SANDBOX_IP_FORMAT "10.0.%d.%d/16"
-#define ENTRYPOINT_IP_FORMAT "10.0.0.0"
+#define ENTRYPOINT_IP_FORMAT "10.%d.%d.1"
+#define SANDBOX_IP_FORMAT "10.%d.%d.2/24"
 
 static const char CREATE_NETWORK_NAMESPACE[] = "ip netns add %s";
 static const char DELETE_NETWORK_NAMESPACE[] = "ip netns delete %s";
 static const char DELETE_VETH[] = "ip link delete %s";
 static const char CREATE_VETH[] = "ip link add %s type veth peer name %s";
 static const char LINK_VETH[] = "ip link set %s netns %s";
-static const char ENTRYPOINT_ADD_ADDRESS[] = "ip addr add %s dev %s";
+static const char ENTRYPOINT_ADD_ADDRESS[] = "ip addr add %s/24 dev %s";
 static const char SANDBOX_ADD_ADDRESS[] = "ip netns exec %s ip addr add %s dev %s";
 static const char SANDBOX_ENABLE_VETH[] = "ip netns exec %s ip link set %s up";
 static const char ENTRYPOINT_ENABLE_VETH[] = "ip link set %s up";
 static const char SANDBOX_DISABLE_VETH[] = "ip netns exec %s ip link set %s down";
 static const char ENTRYPOINT_DISABLE_VETH[] = "ip link set %s down";
 static const char SET_NETWORK_GATEWAY[] = "ip netns exec %s route add default gw %s %s";
+static const char MASQUERADE[] = "iptables -t nat -A POSTROUTING -s %s/24 -o %s -j MASQUERADE";
+static const char FORWARD_RULES_1[] = "iptables -A FORWARD -i %s -o %s -j ACCEPT";
+static const char FORWARD_RULES_2[] = "iptables -A FORWARD -o %s -i %s -j ACCEPT";
+static const char GET_INTERNET_INTERFACE[] = "ip -o route | grep default | awk '{print $5}'";
 
 int switchToDefaultNetworkNamespace() {
     struct timeval tbegin, tend;
@@ -143,7 +147,7 @@ int addAddressToContainerNamespace(const char *ns_name, char *ipAddress, char *s
     return 0;
 }
 
-int sandboxEnableVeth(const char *ns_name, char *sandboxVethName) {
+int sandboxEnableVeth(const char *ns_name, char *sandboxVethName, char *defaultGateway) {
     struct timeval tbegin, tend;
     gettimeofday(&tbegin, NULL);
     char command[256];
@@ -153,6 +157,9 @@ int sandboxEnableVeth(const char *ns_name, char *sandboxVethName) {
     }
     if (system(command) == -1) {
         fprintf(stderr, "Error while running sandbox_enable_veth command\n");
+        return -1;
+    }
+    if (setContainerDefaultNetworkGateway(ns_name, defaultGateway, sandboxVethName) == -1) {
         return -1;
     }
     gettimeofday(&tend, NULL);
@@ -228,15 +235,86 @@ int setContainerDefaultNetworkGateway(const char *namespaceName, char *ip, char 
     return 0;
 }
 
-int createNetworkNamespace(const char *name, int thirdByte, int fourthByte) {
+int masquerade(char *entrypointIp, char *forwardInterfaceName) {
+    struct timeval tbegin, tend;
+    gettimeofday(&tbegin, NULL);
+    char command[256];
+    if (sprintf(command, MASQUERADE, entrypointIp, forwardInterfaceName) < 0) {
+        fprintf(stderr, "Error formatting masquerade command\n");
+        return -1;
+    }
+    if (system(command) == -1) {
+        fprintf(stderr, "Error while running masquerade command\n");
+        return -1;
+    }
+    gettimeofday(&tend, NULL);
+    //printf("masquerade %ld\n", (tend.tv_sec * 1000000 + tend.tv_usec) - (tbegin.tv_sec * 1000000 + tbegin.tv_usec));
+    return 0;
+}
+
+int forwardRules1(char *forwardInterfaceName, char *entrypointVethName) {
+    struct timeval tbegin, tend;
+    gettimeofday(&tbegin, NULL);
+    char command[256];
+    if (sprintf(command, FORWARD_RULES_1, forwardInterfaceName, entrypointVethName) < 0) {
+        fprintf(stderr, "Error formatting forward_rules_1 command\n");
+        return -1;
+    }
+    if (system(command) == -1) {
+        fprintf(stderr, "Error while running forward_rules_1 command\n");
+        return -1;
+    }
+    gettimeofday(&tend, NULL);
+    //printf("forward_rules_1 %ld\n", (tend.tv_sec * 1000000 + tend.tv_usec) - (tbegin.tv_sec * 1000000 + tbegin.tv_usec));
+    return 0;
+}
+
+int forwardRules2(char *forwardInterfaceName, char *entrypointVethName) {
+    struct timeval tbegin, tend;
+    gettimeofday(&tbegin, NULL);
+    char command[256];
+    if (sprintf(command, FORWARD_RULES_2, forwardInterfaceName, entrypointVethName) < 0) {
+        fprintf(stderr, "Error formatting forward_rules_2 command\n");
+        return -1;
+    }
+    if (system(command) == -1) {
+        fprintf(stderr, "Error while running forward_rules_2 command\n");
+        return -1;
+    }
+    gettimeofday(&tend, NULL);
+    //printf("forward_rules_2 %ld\n", (tend.tv_sec * 1000000 + tend.tv_usec) - (tbegin.tv_sec * 1000000 + tbegin.tv_usec));
+    return 0;
+}
+
+int getForwardNetworkInterfaceName(char *buffer) {
+    FILE *fp;
+
+    fp = popen(GET_INTERNET_INTERFACE, "r");
+
+    if (fp == NULL) {
+        fprintf(stderr, "Error getting internet interface\n");
+        return -1;
+    }
+
+    if (fgets(buffer, 100, fp) == NULL) {
+        fprintf(stderr, "Error getting internet interface\n");
+        return -1;
+    }
+    buffer[strcspn(buffer, "\n")] = 0;
+
+    pclose(fp);
+    return 0;
+}
+
+int createNetworkNamespace(const char *name, int thirdByte, int secondByte) {
     struct timeval tbegin, tend;
     gettimeofday(&tbegin, NULL);
     char entrypointVethName[1024], sandboxVethName[1024], sandboxIp[19], entrypointIp[19], defaultGateway[16];
     snprintf(entrypointVethName, sizeof(entrypointVethName), ENTRYPOINT_VETH_FORMAT, name);
     snprintf(sandboxVethName, sizeof(sandboxVethName), SANDBOX_VETH_FORMAT, name);
-    snprintf(sandboxIp, sizeof(sandboxIp), SANDBOX_IP_FORMAT, thirdByte, fourthByte);
-    snprintf(entrypointIp, sizeof(entrypointIp), ENTRYPOINT_IP_FORMAT);
-    snprintf(defaultGateway, sizeof(defaultGateway), ENTRYPOINT_IP_FORMAT);
+    snprintf(sandboxIp, sizeof(sandboxIp), SANDBOX_IP_FORMAT, secondByte, thirdByte);
+    snprintf(entrypointIp, sizeof(entrypointIp), ENTRYPOINT_IP_FORMAT, secondByte, thirdByte);
+    snprintf(defaultGateway, sizeof(defaultGateway), ENTRYPOINT_IP_FORMAT, secondByte, thirdByte);
 
     char command[256];
     if (sprintf(command, CREATE_NETWORK_NAMESPACE, name) < 0) {
@@ -265,10 +343,21 @@ int createNetworkNamespace(const char *name, int thirdByte, int fourthByte) {
     if (entrypointEnableVeth(entrypointVethName) == -1) {
         return -1;
     }
-    if (sandboxEnableVeth(name, sandboxVethName) == -1) {
+    if (sandboxEnableVeth(name, sandboxVethName, defaultGateway) == -1) {
         return -1;
     }
-    if (setContainerDefaultNetworkGateway(name, defaultGateway, sandboxVethName) == -1) {
+    char forwardInterfaceName[100];
+    if (getForwardNetworkInterfaceName(forwardInterfaceName) == -1) {
+        return -1;
+    }
+    printf("Using interface: %s\n", forwardInterfaceName);
+    if (masquerade(entrypointIp, forwardInterfaceName) == -1) {
+        return -1;
+    }
+    if (forwardRules1(forwardInterfaceName, entrypointVethName) == -1) {
+        return -1;
+    }
+    if (forwardRules2(forwardInterfaceName, entrypointVethName) == -1) {
         return -1;
     }
     return 0;
@@ -296,11 +385,12 @@ int deleteNetworkNamespace(const char *name) {
     return 0;
 }
 
-int enableVeths(const char *ns_name) {
-    char entrypointVethName[1024], sandboxVethName[1024];
+int enableVeths(const char *ns_name, int thirdByte, int secondByte) {
+    char entrypointVethName[1024], sandboxVethName[1024], defaultGateway[16];
     snprintf(sandboxVethName, sizeof(entrypointVethName), SANDBOX_VETH_FORMAT, ns_name);
     snprintf(entrypointVethName, sizeof(entrypointVethName), ENTRYPOINT_VETH_FORMAT, ns_name);
-    if (sandboxEnableVeth(ns_name, sandboxVethName) == -1) {
+    snprintf(defaultGateway, sizeof(defaultGateway), ENTRYPOINT_IP_FORMAT, secondByte, thirdByte);
+    if (sandboxEnableVeth(ns_name, sandboxVethName, defaultGateway) == -1) {
         return -1;
     }
     if (entrypointEnableVeth(entrypointVethName) == -1) {
@@ -321,3 +411,5 @@ int disableVeths(const char *ns_name) {
     }
     return 0;
 }
+
+

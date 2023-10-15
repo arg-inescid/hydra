@@ -13,10 +13,10 @@ int switchToDefaultNetworkNamespace();
 
 int switchNetworkNamespace(const char *name);
 
-int createNetworkNamespace(const char *name, int thirdByte, int fourthByte);
+int createNetworkNamespace(const char *name, int thirdByte, int secondByte);
 
 int deleteNetworkNamespace(const char *name);
 
-int enableVeths(const char *ns_name);
+int enableVeths(const char *ns_name, int thirdByte, int secondByte);
 
 int disableVeths(const char *ns_name);

@@ -1,11 +1,12 @@
 package org.graalvm.argo.graalvisor;
 
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class NetworkNamespaceManager implements Runnable {
 
-    private static final int MAX_NETWORK_NAMESPACES = 65280; // 255 * 256
+    private static final int MAX_NETWORK_NAMESPACES = 256 * 256;
     private final NetworkNamespaceProvider networkNamespaceProvider;
 
     public NetworkNamespaceManager(NetworkNamespaceProvider networkNamespaceProvider) {
@@ -14,7 +15,7 @@ public class NetworkNamespaceManager implements Runnable {
 
     public static void createNamespaces(final NetworkNamespaceProvider networkNamespaceProvider, final int minNetworkNamespaces) {
         final Queue<NetworkNamespace> availableNetworkNamespaces = networkNamespaceProvider.getAvailableNetworkNamespaces();
-        final AtomicLong allNetworkNamespacesCount = networkNamespaceProvider.getNetworkNamespacesCount();
+        final AtomicInteger allNetworkNamespacesCount = networkNamespaceProvider.getNetworkNamespacesCount();
         while (availableNetworkNamespaces.size() < minNetworkNamespaces && allNetworkNamespacesCount.get() < MAX_NETWORK_NAMESPACES) {
             networkNamespaceProvider.createNetworkNamespace();
         }

@@ -110,11 +110,11 @@ JNIEXPORT jint JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     return ret;
 }
 
-JNIEXPORT jint JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createNetworkNamespace(JNIEnv *env, jobject thisObj, jstring jName, jint jThirdByte, jint jFourthByte) {
+JNIEXPORT jint JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createNetworkNamespace(JNIEnv *env, jobject thisObj, jstring jName, jint jThirdByte, jint jSecondByte) {
     const char *ns_name = (*env)->GetStringUTFChars(env, jName, 0);
     int thirdByte = (int) jThirdByte;
-    int fourthByte = (int) jFourthByte;
-    int ret = createNetworkNamespace(ns_name, thirdByte, fourthByte);
+    int secondByte = (int) jSecondByte;
+    int ret = createNetworkNamespace(ns_name, thirdByte, secondByte);
     (*env)->ReleaseStringUTFChars(env, jName, ns_name);
     return ret;
 }
@@ -126,9 +126,11 @@ JNIEXPORT jint JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     return ret;
 }
 
-JNIEXPORT jint JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_enableVeths(JNIEnv *env, jobject thisObj, jstring jName) {
+JNIEXPORT jint JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_enableVeths(JNIEnv *env, jobject thisObj, jstring jName, jint jThirdByte, jint jSecondByte) {
     const char *ns_name = (*env)->GetStringUTFChars(env, jName, 0);
-    int ret = enableVeths(ns_name);
+    int thirdByte = (int) jThirdByte;
+    int secondByte = (int) jSecondByte;
+    int ret = enableVeths(ns_name, thirdByte, secondByte);
     (*env)->ReleaseStringUTFChars(env, jName, ns_name);
     return ret;
 }

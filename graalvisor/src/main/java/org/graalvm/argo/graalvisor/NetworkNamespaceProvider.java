@@ -10,46 +10,22 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class NetworkNamespaceProvider {
 
-	private static final int MAX_COUNT_FOURTH_BYTE = 255;
-	private static final int MAX_COUNT_THIRD_BYTE = 256;
-
-	private int thirdByte;
-	private int fourthByte;
 	private final Queue<NetworkNamespace> availableNetworkNamespaces;
-	private final AtomicLong count;
+	private final AtomicInteger count;
 
 	public NetworkNamespaceProvider() {
-		this.thirdByte = 0;
-		this.fourthByte = 0;
 		this.availableNetworkNamespaces = new ArrayBlockingQueue<>(Integer.MAX_VALUE);
-		this.count = new AtomicLong(0);
+		this.count = new AtomicInteger(0);
 	}
 
 	public void createNetworkNamespace() {
 		long start, finish;
 		start = System.nanoTime();
-		final int newThirdByte;
-		final int newFourthByte;
-		synchronized (this) {
-			if ((fourthByte + 1) % MAX_COUNT_FOURTH_BYTE == 0) {
-				if ((thirdByte + 1) % MAX_COUNT_THIRD_BYTE == 0) {
-					thirdByte = 0;
-					fourthByte = 1;
-				} else {
-					thirdByte++;
-					fourthByte = 1;
-				}
-			} else {
-				fourthByte++;
-			}
-			newThirdByte = thirdByte;
-			newFourthByte = fourthByte;
-		}
-		final NetworkNamespace networkNamespace = new NetworkNamespace(newThirdByte, newFourthByte);
+		final NetworkNamespace networkNamespace = new NetworkNamespace(count.incrementAndGet());
 		NativeSandboxInterface.createNetworkNamespace(
 			networkNamespace.getName(),
-			networkNamespace.getThirdByte(),
-			networkNamespace.getFourthByte());
+			networkNamespace.getId() % 256,
+			networkNamespace.getId() / 256);
 		availableNetworkNamespaces.add(networkNamespace);
 		finish = System.nanoTime();
 		System.out.println(String.format(
@@ -84,7 +60,7 @@ public class NetworkNamespaceProvider {
 		long start, finish;
 		start = System.nanoTime();
 		NativeSandboxInterface.disableVeths(networkNamespace.getName());
-		NativeSandboxInterface.enableVeths(networkNamespace.getName());
+		NativeSandboxInterface.enableVeths(networkNamespace.getName(), networkNamespace.getThirdByte(), networkNamespace.getFourthByte());
 		availableNetworkNamespaces.add(networkNamespace);
 		finish = System.nanoTime();
 		System.out.println(String.format(
@@ -98,7 +74,7 @@ public class NetworkNamespaceProvider {
 		return availableNetworkNamespaces;
 	}
 
-	public AtomicLong getNetworkNamespacesCount() {
+	public AtomicInteger getNetworkNamespacesCount() {
 		return count;
 	}
 
