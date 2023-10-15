@@ -91,40 +91,40 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     };
     printf("Created gv-cgroups at %s\n", cgroupPath);
 
-//    int fd = open("/sys/fs/cgroup/cgroup.subtree_control", O_WRONLY);
-//    if (fd == -1) {
-//        printf("Failed to open cgroup.subtree_control ERROR: %d\n", errno);
-//    }
-//    if (write(fd, "+cpu +cpuset", 13) != 0) {
-//        printf("Failed to write to cgroup.subtree_control ERROR: %d\n", errno);
-//    }
-//    if (close(fd) != 0) {
-//        printf("Failed to close cgroup.subtree_control ERROR: %d\n", errno);
-//    }
-//
-//    fd = open("/sys/fs/cgroup/user.slice/cgroup.subtree_control", O_WRONLY);
-//    if (fd == -1) {
-//        printf("Failed to open user.slice/cgroup.subtree_control ERROR: %d\n", errno);
-//    }
-//    if (write(fd, "+cpu +cpuset", 13) != 0) {
-//        printf("Failed to write to user.slice/cgroup.subtree_control ERROR: %d\n", errno);
-//    }
-//    if (close(fd) != 0) {
-//        printf("Failed to close user.slice/cgroup.subtree_control ERROR: %d\n", errno);
-//    }
-//
-//    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/cgroup.subtree_control", O_WRONLY);
-//    if (fd == -1) {
-//        printf("Failed to open user.slice/user-1000.slice/cgroup.subtree_control ERROR: %d\n", errno);
-//    }
-//    if (write(fd, "+cpu +cpuset", 13) != 0) {
-//        printf("Failed to write to user.slice/user-1000.slice/cgroup.subtree_control ERROR: %d\n", errno);
-//    }
-//    if (close(fd) != 0) {
-//        printf("Failed to close user.slice/user-1000.slice/cgroup.subtree_control ERROR: %d\n", errno);
-//    }
-//
-    int fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control", O_WRONLY);
+    int fd = open("/sys/fs/cgroup/cgroup.subtree_control", O_WRONLY);
+    if (fd == -1) {
+        printf("Failed to open cgroup.subtree_control ERROR: %d\n", errno);
+    }
+    if (write(fd, "+cpu +cpuset", 13) != 0) {
+        printf("Failed to write to cgroup.subtree_control ERROR: %d\n", errno);
+    }
+    if (close(fd) != 0) {
+        printf("Failed to close cgroup.subtree_control ERROR: %d\n", errno);
+    }
+
+    fd = open("/sys/fs/cgroup/user.slice/cgroup.subtree_control", O_WRONLY);
+    if (fd == -1) {
+        printf("Failed to open user.slice/cgroup.subtree_control ERROR: %d\n", errno);
+    }
+    if (write(fd, "+cpu +cpuset", 13) != 0) {
+        printf("Failed to write to user.slice/cgroup.subtree_control ERROR: %d\n", errno);
+    }
+    if (close(fd) != 0) {
+        printf("Failed to close user.slice/cgroup.subtree_control ERROR: %d\n", errno);
+    }
+
+    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/cgroup.subtree_control", O_WRONLY);
+    if (fd == -1) {
+        printf("Failed to open user.slice/user-1000.slice/cgroup.subtree_control ERROR: %d\n", errno);
+    }
+    if (write(fd, "+cpu +cpuset", 13) != 0) {
+        printf("Failed to write to user.slice/user-1000.slice/cgroup.subtree_control ERROR: %d\n", errno);
+    }
+    if (close(fd) != 0) {
+        printf("Failed to close user.slice/user-1000.slice/cgroup.subtree_control ERROR: %d\n", errno);
+    }
+
+    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control", O_WRONLY);
     if (fd == -1) {
         printf("Failed to open user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control ERROR: %d\n", errno);
     }
@@ -137,13 +137,13 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 
     fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cpuset.cpus", O_WRONLY);
     if (fd == -1) {
-        printf("Failed to open user.slice/user-1000.slice/gv-cgroups/cpuset.cpus\n");
+        printf("Failed to open user.slice/user-1000.slice/gv-cgroups/cpuset.cpus ERROR: %d\n", errno);
     }
-    if (write(fd, "0", 2) != 0) {
-        printf("Failed to write to user.slice/user-1000.slice/gv-cgroups/cpuset.cpus\n");
+    if (write(fd, "0", 2) == -1) {
+        printf("Failed to write to user.slice/user-1000.slice/gv-cgroups/cpuset.cpus ERROR: %d\n", errno);
     }
     if (close(fd) != 0) {
-        printf("Failed to close user.slice/user-1000.slice/gv-cgroups/cpuset.cpus\n");
+        printf("Failed to close user.slice/user-1000.slice/gv-cgroups/cpuset.cpus ERROR: %d\n", errno);
     }
 
     strcat(cgroupPath, "/cgroup.procs");
