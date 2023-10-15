@@ -149,7 +149,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     int fd = open(cgroupPath, O_WRONLY);
     if (fd != 0) {
         int errsv = errno;
-        printf("Failed to open %s ERROR: %s\n", cgroupPath, errsv);
+        printf("Failed to open %s ERROR: %d\n", cgroupPath, errsv);
     }
 
     int pid = getpid();
@@ -157,11 +157,11 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     sprintf(str, "%d", pid);
     if (write(fd, str, strlen(str) + 1) != 0) {
         int errsv = errno;
-        printf("Failed to write to %s ERROR: %s\n", cgroupPath, errsv);
+        printf("Failed to write to %s ERROR: %d\n", cgroupPath, errsv);
     }
     if (close(fd) != 0) {
         int errsv = errno;
-        printf("Failed to close %s ERROR: %s\n", cgroupPath, errsv);
+        printf("Failed to close %s ERROR: %d\n", cgroupPath, errsv);
     }
 }
 
@@ -178,7 +178,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     sprintf(cgroupPath, "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/%s", cgroup);
     if (mkdir(cgroupPath, 0777) != 0) {
         int errsv = errno;
-        printf("Failed to create %s ERROR: %s\n", cgroupPath, errsv);
+        printf("Failed to create %s ERROR: %d\n", cgroupPath, errsv);
     }
 
     strcat(cgroupPath, "/cgroup.type");
@@ -186,15 +186,15 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     if (fd != 0)
     {
         int errsv = errno;
-        printf("Failed to open %s ERROR: %s\n", cgroupPath, errsv);
+        printf("Failed to open %s ERROR: %d\n", cgroupPath, errsv);
     }
     if (write(fd, "threaded", 9) != 0) {
         int errsv = errno;
-        printf("Failed to write to %s ERROR: %s\n", cgroupPath, errsv);
+        printf("Failed to write to %s ERROR: %d\n", cgroupPath, errsv);
     }
     if (close(fd) != 0) {
         int errsv = errno;
-        printf("Failed to close %s ERROR: %s\n", cgroupPath, errsv);
+        printf("Failed to close %s ERROR: %d\n", cgroupPath, errsv);
     }
 }
 
