@@ -91,7 +91,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     };
     printf("Created gv-cgroups at %s\n", cgroupPath);
 //    int fd = open("/sys/fs/cgroup/cgroup.subtree_control", O_WRONLY);
-//    if (fd != 0) {
+//    if (fd == -1) {
 //        printf("Failed to open cgroup.subtree_control\n");
 //    }
 //    if (write(fd, "+cpu +cpuset", 13) != 0) {
@@ -102,7 +102,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 //    }
 //
 //    fd = open("/sys/fs/cgroup/user.slice/cgroup.subtree_control", O_WRONLY);
-//    if (fd != 0) {
+//    if (fd == -1) {
 //        printf("Failed to open user.slice/cgroup.subtree_control\n");
 //    }
 //    if (write(fd, "+cpu +cpuset", 13) != 0) {
@@ -113,7 +113,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 //    }
 //
 //    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/cgroup.subtree_control", O_WRONLY);
-//    if (fd != 0) {
+//    if (fd == -1) {
 //        printf("Failed to open user.slice/user-1000.slice/cgroup.subtree_control\n");
 //    }
 //    if (write(fd, "+cpu +cpuset", 13) != 0) {
@@ -124,7 +124,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 //    }
 //
 //    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control", O_WRONLY);
-//    if (fd != 0) {
+//    if (fd == -1) {
 //        printf("Failed to open user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control\n");
 //    }
 //    if (write(fd, "+cpu +cpuset", 13) != 0) {
@@ -135,7 +135,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 //    }
 //
 //    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cpuset.cpus", O_WRONLY);
-//    if (fd != 0) {
+//    if (fd == -1) {
 //        printf("Failed to open user.slice/user-1000.slice/gv-cgroups/cpuset.cpus\n");
 //    }
 //    if (write(fd, "0", 2) != 0) {
@@ -145,9 +145,9 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 //        printf("Failed to close user.slice/user-1000.slice/gv-cgroups/cpuset.cpus\n");
 //    }
 
-    strcat(cgroupPath, "/cgroup.procs");
+    sprintf(cgroupPath, "/cgroup.procs");
     int fd = open(cgroupPath, O_WRONLY);
-    if (fd != 0) {
+    if (fd == -1) {
         int errsv = errno;
         printf("Failed to open %s ERROR: %d\n", cgroupPath, errsv);
     }
@@ -183,7 +183,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 
     strcat(cgroupPath, "/cgroup.type");
     int fd = open(cgroupPath, O_WRONLY);
-    if (fd != 0)
+    if (fd == -1)
     {
         int errsv = errno;
         printf("Failed to open %s ERROR: %d\n", cgroupPath, errsv);
@@ -238,7 +238,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     sprintf(cGroupThreads, "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/%s/cgroup.threads", isol);
 
     int fd = open(cGroupThreads, O_WRONLY);
-    if (fd != 0)
+    if (fd == -1)
     {
         printf("Failed to open %s\n", cGroupThreads);
     }
@@ -257,7 +257,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     sprintf(cGroupThreads, "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cgroup.threads");
 
     int fd = open(cGroupThreads, O_WRONLY);
-    if (fd != 0)
+    if (fd == -1)
     {
         printf("Failed to open %s\n", cGroupThreads);
     }
