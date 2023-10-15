@@ -74,23 +74,21 @@ public class CgroupCache {
         long start = System.nanoTime();
         int threadId = NativeSandboxInterface.getThreadId();
         NativeSandboxInterface.removeThreadFromCgroup(String.valueOf(threadId));
+        long finish = System.nanoTime();
         if (cgroupCacheEnabled) {
             cgroupCache.get(quota).add(cgroupId);
+            finish = System.nanoTime();
+            System.out.printf("Updated %s (deleted thread %s) in %s us%n", cgroupId, threadId, (finish - start) / 1000);
             System.out.println("Added " + cgroupId + " to cache");
         } else {
-            deleteCgroup(cgroupId, quota);
+            System.out.printf("Updated %s (deleted thread %s) in %s us%n", cgroupId, threadId, (finish - start) / 1000);
+            deleteCgroup(cgroupId);
         }
-        long finish = System.nanoTime();
-        System.out.printf("Updated %s (deleted thread %s) in %s us%n", cgroupId, threadId, (finish - start) / 1000);
     }
 
-    private void deleteCgroup(String cgroupId, int quota) {
+    private void deleteCgroup(String cgroupId) {
         long start = System.nanoTime();
         NativeSandboxInterface.deleteCgroup(cgroupId);
-        if (cgroupCacheEnabled) {
-            cgroupCache.get(quota).remove(cgroupId);
-            System.out.println("Removed " + cgroupId + " from cache");
-        }
         long finish = System.nanoTime();
         System.out.printf("Deleted %s in %s us%n", cgroupId, (finish - start) / 1000);
     }
