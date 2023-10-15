@@ -180,7 +180,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
                 function.getSandboxProvider().getName(), worker, (finish - start) / 1000));
 
         int quota = function.getCpuCgroupQuota();
-        cgroupCache.insertThreadInCgroup(cgroupCache.getCgroupIdByQuota(quota), quota);
+        cgroupCache.insertThreadInCgroup(quota);
 
         return worker;
     }
@@ -190,7 +190,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
                 function.getSandboxProvider().getName(), shandle));
 
         int quota = function.getCpuCgroupQuota();
-        cgroupCache.removeThreadFromCgroup(cgroupCache.getCgroupIdByQuota(quota), quota);
+        cgroupCache.removeThreadFromCgroup(quota);
 
         function.getSandboxProvider().destroySandbox(shandle);
     }
