@@ -145,23 +145,20 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 //        printf("Failed to close user.slice/user-1000.slice/gv-cgroups/cpuset.cpus\n");
 //    }
 
-    sprintf(cgroupPath, "/cgroup.procs");
-    int fd = open(cgroupPath, O_WRONLY);
+    strcat(cgroupPath, "/cgroup.procs");
+    int fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cgroup.procs", O_WRONLY);
     if (fd == -1) {
-        int errsv = errno;
-        printf("Failed to open %s ERROR: %d\n", cgroupPath, errsv);
+        printf("Failed to open %s ERROR: %d\n", cgroupPath, errno);
     }
 
     int pid = getpid();
     char str[10];
     sprintf(str, "%d", pid);
     if (write(fd, str, strlen(str) + 1) != 0) {
-        int errsv = errno;
-        printf("Failed to write to %s ERROR: %d\n", cgroupPath, errsv);
+        printf("Failed to write to %s ERROR: %d\n", cgroupPath, errno);
     }
     if (close(fd) != 0) {
-        int errsv = errno;
-        printf("Failed to close %s ERROR: %d\n", cgroupPath, errsv);
+        printf("Failed to close %s ERROR: %d\n", cgroupPath, errno);
     }
 }
 
@@ -177,24 +174,20 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     char cgroupPath[300];
     sprintf(cgroupPath, "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/%s", cgroup);
     if (mkdir(cgroupPath, 0777) != 0) {
-        int errsv = errno;
-        printf("Failed to create %s ERROR: %d\n", cgroupPath, errsv);
+        printf("Failed to create %s ERROR: %d\n", cgroupPath, errno);
     }
 
     strcat(cgroupPath, "/cgroup.type");
     int fd = open(cgroupPath, O_WRONLY);
     if (fd == -1)
     {
-        int errsv = errno;
-        printf("Failed to open %s ERROR: %d\n", cgroupPath, errsv);
+        printf("Failed to open %s ERROR: %d\n", cgroupPath, errno);
     }
     if (write(fd, "threaded", 9) != 0) {
-        int errsv = errno;
-        printf("Failed to write to %s ERROR: %d\n", cgroupPath, errsv);
+        printf("Failed to write to %s ERROR: %d\n", cgroupPath, errno);
     }
     if (close(fd) != 0) {
-        int errsv = errno;
-        printf("Failed to close %s ERROR: %d\n", cgroupPath, errsv);
+        printf("Failed to close %s ERROR: %d\n", cgroupPath, errno);
     }
 }
 
@@ -217,15 +210,15 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     sprintf(cGroupMax, "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/%s/cpu.max", isol);
 
     int maxF = open(cGroupMax, O_WRONLY);
-    if (maxF != 0)
+    if (maxF == -1)
     {
-        printf("Failed to open %s\n", cGroupMax);
+        printf("Failed to open %s ERRNO: %d \n", cGroupMax, errno);
     }
     if (write(maxF, maxQuota, strlen(maxQuota) + 1) != 0) {
-        printf("Failed to write to %s\n", cGroupMax);
+        printf("Failed to write to %s ERRNO: %d \n", cGroupMax, errno);
     }
     if (close(maxF) != 0) {
-        printf("Failed to close %s\n", cGroupMax);
+        printf("Failed to close %s ERRNO: %d \n", cGroupMax, errno);
     }
 }
 
