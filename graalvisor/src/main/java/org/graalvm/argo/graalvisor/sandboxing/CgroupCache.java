@@ -111,12 +111,14 @@ public class CgroupCache {
         String cgroupId = "cgroup-" + quota + "-" + UUID.randomUUID();
         NativeSandboxInterface.createCgroup(cgroupId);
         NativeSandboxInterface.setCgroupQuota(cgroupId, quota);
-        if (cgroupCacheEnabled && toCache) {
+        if (cgroupCacheEnabled) {
             if (!cgroupCache.containsKey(quota)) {
                 cgroupCache.put(quota, new CopyOnWriteArrayList<>());
             }
-            cgroupCache.get(quota).add(cgroupId);
-            System.out.println("Added " + cgroupId + " to cache");
+            if (toCache) {
+                cgroupCache.get(quota).add(cgroupId);
+                System.out.println("Added " + cgroupId + " to cache");
+            }
         }
         long finish = System.nanoTime();
         System.out.printf("Created %s in %s us%n", cgroupId, (finish - start) / 1000);
