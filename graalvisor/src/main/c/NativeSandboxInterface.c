@@ -14,9 +14,6 @@
 
 #define PIPE_READ_END 0
 #define PIPE_WRITE_END 1
-//#define CGROUP_BASE_PATH "/sys/fs/cgroup/"
-//#define USER_CGROUP_PATH "/sys/fs/cgroup/user.slice/"
-//#define GV_CGROUP_FULL_PATH "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups"
 
 void close_parent_fds(int childWrite, int parentRead)
 {
@@ -83,96 +80,71 @@ JNIEXPORT jint JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createMainCgroup(JNIEnv *env, jclass thisObject) {
     printf("Creating main cgroup\n");
-
-    char cgroupPath[300];
-    sprintf(cgroupPath, "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups");
+    const char* cgroupPath = "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups";
     if (mkdir(cgroupPath, 0777) != 0) {
         printf("Failed to create gv-cgroups - path: %s\n", cgroupPath);
     };
-    printf("Created gv-cgroups at %s\n", cgroupPath);
 
-    int fd = open("/sys/fs/cgroup/cgroup.subtree_control", O_WRONLY);
+    char cgroupSubtreePath[128];
+    sprintf(cgroupSubtreePath, "%s/cgroup.subtree_control", cgroupPath);
+    int fd = open(cgroupSubtreePath, O_WRONLY);
     if (fd == -1) {
-        printf("Failed to open cgroup.subtree_control ERROR: %d\n", errno);
+        printf("Failed to open %s ERROR: %d\n", cgroupSubtreePath, errno);
     }
     if (write(fd, "+cpu +cpuset", 13) == -1) {
-        printf("Failed to write to cgroup.subtree_control ERROR: %d\n", errno);
+        printf("Failed to write to %s ERROR: %d\n", cgroupSubtreePath, errno);
     }
     if (close(fd) != 0) {
-        printf("Failed to close cgroup.subtree_control ERROR: %d\n", errno);
+        printf("Failed to close %s ERROR: %d\n", cgroupSubtreePath, errno);
     }
 
-    fd = open("/sys/fs/cgroup/user.slice/cgroup.subtree_control", O_WRONLY);
+    char cgroupCpuSet[128];
+    sprintf(cgroupCpuSet, "%s/cpuset.cpus", cgroupPath);
+    fd = open(cgroupCpuSet, O_WRONLY);
     if (fd == -1) {
-        printf("Failed to open user.slice/cgroup.subtree_control ERROR: %d\n", errno);
-    }
-    if (write(fd, "+cpu +cpuset", 13) == -1) {
-        printf("Failed to write to user.slice/cgroup.subtree_control ERROR: %d\n", errno);
-    }
-    if (close(fd) != 0) {
-        printf("Failed to close user.slice/cgroup.subtree_control ERROR: %d\n", errno);
-    }
-
-    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/cgroup.subtree_control", O_WRONLY);
-    if (fd == -1) {
-        printf("Failed to open user.slice/user-1000.slice/cgroup.subtree_control ERROR: %d\n", errno);
-    }
-    if (write(fd, "+cpu +cpuset", 13) == -1) {
-        printf("Failed to write to user.slice/user-1000.slice/cgroup.subtree_control ERROR: %d\n", errno);
-    }
-    if (close(fd) != 0) {
-        printf("Failed to close user.slice/user-1000.slice/cgroup.subtree_control ERROR: %d\n", errno);
-    }
-
-    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control", O_WRONLY);
-    if (fd == -1) {
-        printf("Failed to open user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control ERROR: %d\n", errno);
-    }
-    if (write(fd, "+cpu +cpuset", 13) == -1) {
-        printf("Failed to write to user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control ERROR: %d\n", errno);
-    }
-    if (close(fd) != 0) {
-        printf("Failed to close user.slice/user-1000.slice/gv-cgroups/cgroup.subtree_control ERROR: %d\n", errno);
-    }
-
-    fd = open("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cpuset.cpus", O_WRONLY);
-    if (fd == -1) {
-        printf("Failed to open user.slice/user-1000.slice/gv-cgroups/cpuset.cpus ERROR: %d\n", errno);
+        printf("Failed to open %s ERROR: %d\n", cgroupCpuSet, errno);
     }
     if (write(fd, "0", 2) == -1) {
-        printf("Failed to write to user.slice/user-1000.slice/gv-cgroups/cpuset.cpus ERROR: %d\n", errno);
+        printf("Failed to write to %s ERROR: %d\n", cgroupCpuSet, errno);
     }
     if (close(fd) != 0) {
-        printf("Failed to close user.slice/user-1000.slice/gv-cgroups/cpuset.cpus ERROR: %d\n", errno);
+        printf("Failed to close %s ERROR: %d\n", cgroupCpuSet, errno);
     }
 
-    strcat(cgroupPath, "/cgroup.procs");
-    fd = open(cgroupPath, O_WRONLY);
+    char cgroupCpuProcs[128];
+    sprintf(cgroupCpuProcs, "%s/cgroup.procs", cgroupPath);
+    fd = open(cgroupCpuProcs, O_WRONLY);
     if (fd == -1) {
-        printf("Failed to open %s ERROR: %d\n", cgroupPath, errno);
+        printf("Failed to open %s ERROR: %d\n", cgroupCpuProcs, errno);
     }
 
     int pid = getpid();
     char str[10];
     sprintf(str, "%d", pid);
     if (write(fd, str, strlen(str) + 1) == -1) {
-        printf("Failed to write to %s ERROR: %d\n", cgroupPath, errno);
+        printf("Failed to write to %s ERROR: %d\n", cgroupCpuProcs, errno);
     }
     if (close(fd) != 0) {
-        printf("Failed to close %s ERROR: %d\n", cgroupPath, errno);
+        printf("Failed to close %s ERROR: %d\n", cgroupCpuProcs, errno);
     }
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_deleteMainCgroup(JNIEnv *env, jclass thisObject) {
     printf("Deleting main cgroup\n");
-    rmdir("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cgroup-*");
-    rmdir("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups");
+
+    if (rmdir("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cgroup-*") != 0) {
+        printf("Failed to delete cgroup-* ERROR: %d\n", errno);
+    }
+
+    if (rmdir("/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups") != 0) {
+        printf("Failed to delete gv-cgroups ERROR: %d\n", errno);
+    }
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createCgroup(JNIEnv *env, jclass thisObject, jstring cgroupId)
 {
     const char *cgroup = (*env)->GetStringUTFChars(env, cgroupId, NULL);
-    char cgroupPath[300];
+    char cgroupPath[128];
     sprintf(cgroupPath, "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/%s", cgroup);
     if (mkdir(cgroupPath, 0777) != 0) {
         printf("Failed to create %s ERROR: %d\n", cgroupPath, errno);
@@ -194,21 +166,24 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_deleteCgroup(JNIEnv *env, jclass thisObject, jstring cgroupId)
 {
-    const char *isol = (*env)->GetStringUTFChars(env, cgroupId, NULL);
-    char cgroupPath[300];
-    sprintf(cgroupPath, "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/%s", isol);
-    rmdir(cgroupPath);
+    const char *cgroup = (*env)->GetStringUTFChars(env, cgroupId, NULL);
+    char cgroupPath[128];
+    sprintf(cgroupPath, "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/%s", cgroup);
+
+    if (rmdir(cgroupPath) != 0) {
+        printf("Failed to delete %s ERROR: %d\n", cgroupPath, errno);
+    }
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_setCgroupQuota(JNIEnv *env, jclass thisObject, jstring cgroupId, jint quota)
 {
     const int period = 100000;
-    const char *isol = (*env)->GetStringUTFChars(env, cgroupId, NULL);
+    const char *cgroup = (*env)->GetStringUTFChars(env, cgroupId, NULL);
     char maxQuota[32];
-    char cGroupMax[256];
+    char cGroupMax[128];
 
     sprintf(maxQuota, "%d %d", quota, period);
-    sprintf(cGroupMax, "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/%s/cpu.max", isol);
+    sprintf(cGroupMax, "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/%s/cpu.max", cgroup);
 
     int maxF = open(cGroupMax, O_WRONLY);
     if (maxF == -1)
@@ -225,11 +200,11 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_insertThreadInCgroup(JNIEnv *env, jclass thisObject, jstring cgroupId, jstring threadId)
 {
-    const char *isol = (*env)->GetStringUTFChars(env, cgroupId, NULL);
+    const char *cgroup = (*env)->GetStringUTFChars(env, cgroupId, NULL);
     const char *t = (*env)->GetStringUTFChars(env, threadId, NULL);
-    char cGroupThreads[300];
+    char cGroupThreads[128];
 
-    sprintf(cGroupThreads, "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/%s/cgroup.threads", isol);
+    sprintf(cGroupThreads, "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/%s/cgroup.threads", cgroup);
 
     int fd = open(cGroupThreads, O_WRONLY);
     if (fd == -1)
@@ -247,9 +222,8 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_removeThreadFromCgroup(JNIEnv *env, jclass thisObject, jstring threadId)
 {
     const char *t = (*env)->GetStringUTFChars(env, threadId, NULL);
-    char cGroupThreads[300];
+    char cGroupThreads[128];
     sprintf(cGroupThreads, "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/cgroup.threads");
-
     int fd = open(cGroupThreads, O_WRONLY);
     if (fd == -1)
     {
