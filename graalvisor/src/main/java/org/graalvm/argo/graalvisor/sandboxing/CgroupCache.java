@@ -49,8 +49,8 @@ public class CgroupCache {
         }
 
         int threadId = NativeSandboxInterface.getThreadId();
-        NativeSandboxInterface.insertThreadInCgroup(cgroupId, String.valueOf(threadId));
         threadCgroupMap.put(threadId, cgroupId);
+        NativeSandboxInterface.insertThreadInCgroup(cgroupId, String.valueOf(threadId));
 
         long finish = System.nanoTime();
         System.out.printf("Updated %s (added thread %s) in %s us%n", cgroupId, threadId, (finish - start) / 1000);
@@ -112,6 +112,9 @@ public class CgroupCache {
         NativeSandboxInterface.createCgroup(cgroupId);
         NativeSandboxInterface.setCgroupQuota(cgroupId, quota);
         if (cgroupCacheEnabled && toCache) {
+            if (!cgroupCache.containsKey(quota)) {
+                cgroupCache.put(quota, new CopyOnWriteArrayList<>());
+            }
             cgroupCache.get(quota).add(cgroupId);
             System.out.println("Added " + cgroupId + " to cache");
         }
