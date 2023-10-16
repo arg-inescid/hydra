@@ -34,14 +34,24 @@ public class CgroupCache {
 
     public void insertThreadInCgroup(int quota) {
         long start = System.nanoTime();
+        String cgroupId;
+
+        if (!cgroupCacheEnabled) {
+            cgroupId = createCgroup(quota);
+        } else {
+            cgroupId = getCgroupIdByQuota(quota);
+            if (cgroupId != null) {
+                cgroupCache.get(quota).remove(cgroupId);
+                System.out.println("Removed " + cgroupId + " from cache");
+            } else {
+                cgroupId = createCgroup(quota, false);
+            }
+        }
+
         int threadId = NativeSandboxInterface.getThreadId();
-        String cgroupId = getOrAddCgroupIdByQuota(quota);
         NativeSandboxInterface.insertThreadInCgroup(cgroupId, String.valueOf(threadId));
         threadCgroupMap.put(threadId, cgroupId);
-        if (cgroupCacheEnabled) {
-            cgroupCache.get(quota).remove(cgroupId);
-            System.out.println("Cleared " + cgroupId + " from cache");
-        }
+
         long finish = System.nanoTime();
         System.out.printf("Updated %s (added thread %s) in %s us%n", cgroupId, threadId, (finish - start) / 1000);
     }
@@ -49,45 +59,29 @@ public class CgroupCache {
     public void removeThreadFromCgroup(int quota) {
         long start = System.nanoTime();
         int threadId = NativeSandboxInterface.getThreadId();
-        NativeSandboxInterface.removeThreadFromCgroup(String.valueOf(threadId));
-        long finish = System.nanoTime();
-
         String cgroupId = threadCgroupMap.get(threadId);
+
         if (cgroupCacheEnabled) {
+            NativeSandboxInterface.removeThreadFromCgroup(String.valueOf(threadId));
             cgroupCache.get(quota).add(cgroupId);
-            finish = System.nanoTime();
+            long finish = System.nanoTime();
             System.out.printf("Updated %s (deleted thread %s) in %s us%n", cgroupId, threadId, (finish - start) / 1000);
             System.out.println("Added " + cgroupId + " to cache");
         } else {
-            System.out.printf("Updated %s (deleted thread %s) in %s us%n", cgroupId, threadId, (finish - start) / 1000);
             deleteCgroup(cgroupId);
         }
     }
 
-    private String getOrAddCgroupIdByQuota(int quota) {
-        if (!cgroupCacheEnabled) {
-            return createCgroup(quota);
-        }
-
-        String cgroupId;
-
+    private String getCgroupIdByQuota(int quota) {
         long start = System.nanoTime();
-        if (!cgroupCache.containsKey(quota)) {
-            System.out.printf("New cache entry for %d CPU quota%n", quota);
-            cgroupCache.put(quota, new CopyOnWriteArrayList<>());
-        }
-
-        if (cgroupCache.get(quota).isEmpty()) {
-            cgroupId = createCgroup(quota);
+        if (cgroupCache.containsKey(quota) && !cgroupCache.get(quota).isEmpty()) {
+            String cgroupId = cgroupCache.get(quota).get(0);
+            long finish = System.nanoTime();
+            System.out.printf("Retrieved %s for %s us%n", cgroupId, (finish - start) / 1000);
+            return cgroupId;
         } else {
-            cgroupId = cgroupCache.get(quota).get(0);
-            System.out.printf("Using existing cgroup %s%n", cgroupId);
+            return null;
         }
-
-        long finish = System.nanoTime();
-
-        System.out.printf("Retrieved %s for %s us%n", cgroupId, (finish - start) / 1000);
-        return cgroupId;
     }
 
     private void deleteCgroup(String cgroupId) {
@@ -109,11 +103,15 @@ public class CgroupCache {
     }
 
     private String createCgroup(int quota) {
+        return createCgroup(quota, true);
+    }
+
+    private String createCgroup(int quota, boolean toCache) {
         long start = System.nanoTime();
         String cgroupId = "cgroup-" + quota + "-" + UUID.randomUUID();
         NativeSandboxInterface.createCgroup(cgroupId);
         NativeSandboxInterface.setCgroupQuota(cgroupId, quota);
-        if (cgroupCacheEnabled) {
+        if (cgroupCacheEnabled && toCache) {
             cgroupCache.get(quota).add(cgroupId);
             System.out.println("Added " + cgroupId + " to cache");
         }
