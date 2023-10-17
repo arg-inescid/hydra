@@ -49,6 +49,18 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
         initialize_seccomp();
 #endif
 #ifdef MEM_ISOLATION
+        void *handle = dlopen("libpreload.so", RTLD_LAZY);
+        if (!handle) {
+            fprintf(stderr, "dlopen error: %s\n", dlerror());
+            return;
+        }  
+
+        void (*initialize_memory_isolation)() = (void (*)())dlsym(handle, "initialize_memory_isolation");
+        if (!initialize_memory_isolation) {
+            fprintf(stderr, "dlsym error: %s\n", dlerror());
+            dlclose(handle);
+            return;
+        }
         initialize_memory_isolation();
 #endif
 }

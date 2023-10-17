@@ -1,5 +1,4 @@
 #define _GNU_SOURCE
-#include <dlfcn.h>
 #include <err.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -7,6 +6,7 @@
 #include <linux/audit.h>
 #include <linux/filter.h>
 #include <linux/seccomp.h>
+#include <pthread.h>
 #include <sched.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -24,11 +24,10 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
-
-#include "memisolation.h"
 #include "utils/appmap.h"
 #include "utils/threadmap.h"
 #include "helpers/helpers.h"
+#include "memisolation.h"
 
 /* erim includes */
 #include <common.h>
@@ -49,7 +48,9 @@
                 (offsetof(struct seccomp_data, nr)))
 
 /* File descriptors */
-struct NotifyFileDescriptor notifyFDs[NUM_DOMAINS];
+struct Supervisor supervisors[NUM_DOMAINS];
+
+int dom = 1;
 
 /* Maps */
 AppMap appMap;
@@ -70,13 +71,7 @@ seccomp(unsigned int operation, unsigned int flags, void *args)
     return syscall(SYS_seccomp, operation, flags, args);
 }
 
-int
-is_domain_empty(int domain)
-{
-    return threadMap.buckets[domain]->nthreads == 0;
-}
-
-/* extern functions */
+/* Thread sync */
 void
 lock()
 {
@@ -89,30 +84,18 @@ unlock()
     pthread_mutex_unlock(&mutex);
 }
 
+/* Domain Management algorithm */
 int
 find_empty_domain()
 {
     for (int domain = 1; domain < NUM_DOMAINS; domain++) {
-        if (is_domain_empty(domain)) /* is domain empty */
+        if (threadMap.buckets[domain]->nthreads == 0) /* is domain empty */
             return domain;
     }
     return -1; /* Empty Domain not found */
 }
 
-void 
-set_permissions(const char* id, int protectionFlag, int pkey)
-{
-    size_t count;
-    MemoryRegion* regions = get_regions(appMap, (char*)id, &count);
-
-    for (size_t i = 0; i < count; ++i) {
-        if (pkey_mprotect(regions[i].address, regions[i].size, protectionFlag, pkey) == -1) {
-            fprintf(stderr, "pkey_mprotect error\n");
-            exit(EXIT_FAILURE);
-        }
-    }
-}
-
+/* Lazy Loading */
 void 
 insert_app_id(int domain, const char* id)
 {
@@ -135,6 +118,131 @@ get_app_id(int domain)
 {
     return (appIDs[domain] != NULL) ? appIDs[domain] : "";
 }
+
+/* Supervisors */
+void
+wait_set(int domain)
+{
+    int value;
+    if (sem_getvalue(&supervisors[domain].set, &value) == 0)
+        if (value) sem_wait(&supervisors[domain].set);
+    sem_wait(&supervisors[domain].set);
+}
+
+void
+signal_set(int domain)
+{
+    sem_post(&supervisors[domain].set);
+}
+
+void
+wait_filter(int domain)
+{
+    int value;
+    if (sem_getvalue(&supervisors[domain].filter, &value) == 0)
+        if (value) sem_wait(&supervisors[domain].filter);
+    sem_wait(&supervisors[domain].filter);
+}
+
+void
+signal_filter(int domain)
+{
+    sem_post(&supervisors[domain].filter);
+}
+
+void
+wait_perms(int domain)
+{
+    int value;
+    if (sem_getvalue(&supervisors[domain].perms, &value) == 0)
+        if (value) sem_wait(&supervisors[domain].perms);
+    sem_wait(&supervisors[domain].perms);
+}
+
+void
+signal_perms(int domain)
+{
+    sem_post(&supervisors[domain].perms);
+}
+
+void
+wait_handler(int domain)
+{
+    int value;
+    if (sem_getvalue(&supervisors[domain].handler, &value) == 0)
+        if (value) sem_wait(&supervisors[domain].handler);
+    sem_wait(&supervisors[domain].handler);
+}
+
+void
+signal_handler(int domain)
+{
+    sem_post(&supervisors[domain].handler);
+}
+
+void
+update_supervisor_app(int domain, const char* app)
+{
+    SEC_DBM("\t[S%d]: assigning application -> %s", domain, app);
+    strcpy(supervisors[domain].app, app);
+}
+
+void
+update_supervisor_status(int domain)
+{
+    supervisors[domain].status = DONE;
+}
+
+/* MPK domains */
+static void 
+set_permissions(const char* id, int protectionFlag, int pkey)
+{
+    size_t count;
+    MemoryRegion* regions = get_regions(appMap, (char*)id, &count);
+
+    for (size_t i = 0; i < count; ++i) {
+        if (pkey_mprotect(regions[i].address, regions[i].size, protectionFlag, pkey) == -1) {
+            fprintf(stderr, "pkey_mprotect error\n");
+            exit(EXIT_FAILURE);
+        }
+    }
+}
+
+/* Library loading */
+void *
+dlopen(const char * input, int flag)
+{
+    if (real_dlopen == NULL)
+        real_dlopen = (void *(*) (const char *, int)) dlsym(RTLD_NEXT, "dlopen");
+    
+    if (!input || strchr(input, ':') == NULL)
+        return real_dlopen(input, flag);
+
+    // Parse input
+    char pathname[256] = "";
+    char libname[256] = "lib";
+    char id[256] = "";
+    char filename[256] = "";
+    
+    char * basename = extract_basename(input);
+    sscanf(basename, "%[^:]:%s", id, filename);
+    strcat(libname, filename);
+
+    size_t size = strlen(input) - strlen(basename);
+    strncpy(pathname, input, size);
+    strcat(pathname, libname);
+
+    void *handle = real_dlopen(pathname, RTLD_NOW | RTLD_DEEPBIND | RTLD_GLOBAL);
+
+    SEC_DBM("\t[PRELOAD]: storing %s addresses and sizes in map...", libname);
+    get_memory_regions(&appMap, id, pathname);
+
+    remove(input);
+
+    return handle;
+}
+
+/* Seccomp */
 
 /* Installs a seccomp filter that blocks all pkey related system calls;
     the filter generates user-space notifications (SECCOMP_RET_USER_NOTIF)
@@ -181,53 +289,20 @@ install_notify_filter(int domain)
         .filter = filter,
     };
 
+    if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0))
+        err(EXIT_FAILURE, "prctl");
+
     /* Install the filter with the SECCOMP_FILTER_FLAG_NEW_LISTENER flag;
         as a result, seccomp() returns a notification file descriptor. */
 
     int nfd = seccomp(SECCOMP_SET_MODE_FILTER,
                         SECCOMP_FILTER_FLAG_NEW_LISTENER, &prog);
+    
     if (nfd == -1)
         err(EXIT_FAILURE, "seccomp-install-notify-filter");
 
-    notifyFDs[domain].fd = nfd;
-    signal_semaphore(&notifyFDs[domain]);
+    supervisors[domain].fd = nfd;
 }
-
-/* Library loading */
-void *
-dlopen(const char * input, int flag)
-{
-    if (real_dlopen == NULL) {
-        real_dlopen = (void *(*) (const char *, int)) dlsym(RTLD_NEXT, "dlopen");
-    }
-    
-    if (!input || strchr(input, ':') == NULL) {
-        return real_dlopen(input, flag);
-    }
-
-    // Parse input
-    char pathname[256] = "";
-    char libname[256] = "lib";
-    char id[256] = "";
-    char filename[256] = "";
-    
-    char * basename = extract_basename(input);
-    sscanf(basename, "%[^:]:%s", id, filename);
-    strcat(libname, filename);
-
-    size_t size = strlen(input) - strlen(basename);
-    strncpy(pathname, input, size);
-    strcat(pathname, libname);
-
-    void *handle = real_dlopen(pathname, RTLD_NOW | RTLD_DEEPBIND | RTLD_GLOBAL);
-
-    SEC_DBM("Storing %s addresses and sizes in map...", libname);
-    get_memory_regions(&appMap, id, pathname);
-
-    remove(input);
-    return handle;
-}
-
 
 /* Check that the notification ID provided by a SECCOMP_IOCTL_NOTIF_RECV
     operation is still valid. It will no longer be valid if the target
@@ -350,10 +425,9 @@ handle_notifications(int notifyFd, int domain)
 
     alloc_seccomp_notif_buffers(&req, &resp, &sizes, domain);
 
-    insert_thread(&threadMap, domain);
+    signal_handler(domain);
 
     /* Loop handling notifications */
-
     for (;;) {
 
         /* Wait for next notification, returning info in '*req' */
@@ -410,8 +484,10 @@ handle_notifications(int notifyFd, int domain)
         }
         SEC_DBM("\t--------------------\n");
 
-        if (is_domain_empty(domain))
+        if (supervisors[domain].status && threadMap.buckets[domain]->nthreads == 1) { // == 1 on Graal
+            remove_thread(&threadMap, domain);
             break;
+        }
     }
 
     free(req);
@@ -428,13 +504,40 @@ static void *
 supervisor(void *arg)
 {   
     int* domain = (int*)arg;
+    SEC_DBM("\t[S%d]: up and running...", *domain);
 
-    loop:
-        SEC_DBM("\t[S%d]: waiting for semaphore...", *domain);
-        wait_semaphore(&notifyFDs[*domain]);
-        handle_notifications(notifyFDs[*domain].fd, *domain);
+    while(1) {
+        // wait to set permissions
+        wait_perms(*domain);
+        SEC_DBM("\t[S%d]: setting library permissions...", *domain);
 
-    goto loop;
+#ifdef EAGER_LOAD
+	    set_permissions(supervisors[*domain].app, PROT_READ|PROT_WRITE|PROT_EXEC, *domain);
+#else
+        char* app = get_app_id(*domain);
+        if (strcmp(app, supervisors[*domain].app)) {
+            if (strcmp(app, ""))
+                set_permissions(app, PROT_NONE, *domain);
+            insert_app_id(*domain, supervisors[*domain].app);
+            set_permissions(supervisors[*domain].app, PROT_READ|PROT_WRITE|PROT_EXEC, *domain);
+        }
+#endif
+
+        /* Populate domain */
+        insert_thread(&threadMap, *domain);
+
+        SEC_DBM("\t[S%d]: permissions set, signaling app...", *domain);
+        signal_set(*domain);
+
+        wait_filter(*domain);
+        SEC_DBM("\t[S%d]: filter is applied, handling notifications...", *domain);
+
+        handle_notifications(supervisors[*domain].fd, *domain);
+
+#ifdef EAGER_LOAD
+	    set_permissions(supervisors[*domain].app, PROT_NONE, *domain);
+#endif
+    }
 
     return NULL;
 }
@@ -446,7 +549,7 @@ initialize_memory_isolation()
     init_thread_map(&threadMap);
 
     init_app_array(appIDs);
-    init_notify_array(notifyFDs);
+    init_supervisors(supervisors);
 
     pthread_mutex_init(&mutex, NULL);
 

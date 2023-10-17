@@ -1,18 +1,26 @@
 #include "../utils/appmap.h"
 #include <semaphore.h>
 
-struct NotifyFileDescriptor {
-    sem_t semaphore;
-    int fd;
+enum Status {
+    IN_PROGRESS = 0,
+    DONE = 1
 };
 
-/* Notify file descriptors (Seccomp) */
-void signal_semaphore(struct NotifyFileDescriptor* nfd);
-void wait_semaphore(struct NotifyFileDescriptor* nfd);
-void init_notify_array(struct NotifyFileDescriptor array[]);
+struct Supervisor {
+    sem_t filter;
+    sem_t perms;
+    sem_t set;
+    sem_t handler;
+    enum Status status;
+    int fd;
+    char app[33];
+};
 
 /* Lazy loading */
 void init_app_array(char* array[]);
+
+/* Seccomp */
+void init_supervisors(struct Supervisor array[]);
 
 /* Preload */
 char* extract_basename(const char* filePath);
