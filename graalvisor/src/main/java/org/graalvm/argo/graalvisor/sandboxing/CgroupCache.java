@@ -73,12 +73,8 @@ public class CgroupCache {
     }
 
     private String getCgroupIdByQuota(int quota) {
-        long start = System.nanoTime();
         if (cgroupCache.containsKey(quota) && !cgroupCache.get(quota).isEmpty()) {
-            String cgroupId = cgroupCache.get(quota).get(0);
-            long finish = System.nanoTime();
-            System.out.printf("Retrieved %s for %s us%n", cgroupId, (finish - start) / 1000);
-            return cgroupId;
+            return cgroupCache.get(quota).get(0);
         } else {
             return null;
         }
