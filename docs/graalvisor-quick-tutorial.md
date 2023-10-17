@@ -11,9 +11,9 @@ Prerequisites for this tutorial:
 ## How to build
 
 1. Build GraalVisor Library
-   * Execute the `/path/to/argo/graavisor-lib/build.sh` script.
+   * Execute the `/path/to/argo/graalvisor-lib/build.sh` script.
 2. Build GraalVisor
-   * Execute the `/path/to/argo/graavisor/build.sh` script. When asked about JavaScript/Python support and NIUk build, input `no` - we don't need these features for this tutorial.
+   * Execute the `/path/to/argo/graalvisor/build.sh` script. When asked about JavaScript/Python support and NIUk build, input `no` - we don't need these features for this tutorial.
 3. Build guest application
    * Execute the `/path/to/benchmarks/src/java/gv-hello-world/build_script.sh` script.
 
