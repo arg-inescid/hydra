@@ -4,6 +4,7 @@
 
 #define NETNS_RUN_DIR "/var/run/netns"
 #define NETNS_FILE_FORMAT "/var/run/netns/%s"
+#define DEFAULT_NETWORK_NAMESPACE_FILE "/proc/1/ns/net"
 
 #define SANDBOX_VETH_FORMAT "%s_sb"
 #define ENTRYPOINT_VETH_FORMAT "%s_ep"
@@ -31,7 +32,7 @@ static const char GET_INTERNET_INTERFACE[] = "ip -o route | grep default | awk '
 int switchToDefaultNetworkNamespace() {
     struct timeval tbegin, tend;
     gettimeofday(&tbegin, NULL);
-    int fd = open("/proc/1/ns/net", O_RDONLY);
+    int fd = open(DEFAULT_NETWORK_NAMESPACE_FILE, O_RDONLY);
     if (setns(fd, CLONE_NEWNET) < 0) {
         fprintf(stderr, "could not change to default network namespace. errno: %s", strerror(errno));
         return -1;
@@ -147,6 +148,23 @@ int addAddressToContainerNamespace(const char *ns_name, char *ipAddress, char *s
     return 0;
 }
 
+int setContainerDefaultNetworkGateway(const char *namespaceName, char *ip, char *sandboxVethName) {
+    struct timeval tbegin, tend;
+    gettimeofday(&tbegin, NULL);
+    char command[256];
+    if (sprintf(command, SET_NETWORK_GATEWAY, namespaceName, ip, sandboxVethName) < 0) {
+        fprintf(stderr, "Error formatting set_network_gateway command\n");
+        return -1;
+    }
+    if (system(command) == -1) {
+        fprintf(stderr, "Error while running set_network_gateway command\n");
+        return -1;
+    }
+    gettimeofday(&tend, NULL);
+    //printf("default_gateway %ld\n", (tend.tv_sec * 1000000 + tend.tv_usec) - (tbegin.tv_sec * 1000000 + tbegin.tv_usec));
+    return 0;
+}
+
 int sandboxEnableVeth(const char *ns_name, char *sandboxVethName, char *defaultGateway) {
     struct timeval tbegin, tend;
     gettimeofday(&tbegin, NULL);
@@ -215,23 +233,6 @@ int entrypointDisableVeth(char *entrypointVethName) {
     }
     gettimeofday(&tend, NULL);
     //printf("disable_veth_ep %ld\n", (tend.tv_sec * 1000000 + tend.tv_usec) - (tbegin.tv_sec * 1000000 + tbegin.tv_usec));
-    return 0;
-}
-
-int setContainerDefaultNetworkGateway(const char *namespaceName, char *ip, char *sandboxVethName) {
-    struct timeval tbegin, tend;
-    gettimeofday(&tbegin, NULL);
-    char command[256];
-    if (sprintf(command, SET_NETWORK_GATEWAY, namespaceName, ip, sandboxVethName) < 0) {
-        fprintf(stderr, "Error formatting set_network_gateway command\n");
-        return -1;
-    }
-    if (system(command) == -1) {
-        fprintf(stderr, "Error while running set_network_gateway command\n");
-        return -1;
-    }
-    gettimeofday(&tend, NULL);
-    //printf("default_gateway %ld\n", (tend.tv_sec * 1000000 + tend.tv_usec) - (tbegin.tv_sec * 1000000 + tbegin.tv_usec));
     return 0;
 }
 

@@ -190,8 +190,11 @@ public class SubstrateVMProxy extends RuntimeProxy {
     }
 
     private static void destroySandbox(PolyglotFunction function, SandboxHandle shandle) throws Exception {
+        long start = System.nanoTime();
         System.out.println(String.format("[thread %s] Destroying %s sandbox %s", Thread.currentThread().getId(), function.getSandboxProvider().getName(), shandle));
         function.getSandboxProvider().destroySandbox(shandle);
+        long finish = System.nanoTime();
+        System.out.println(String.format("Destroyed in %s", finish - start));
     }
 
     private static void freeNetworkNamespace(final NetworkNamespace networkNamespace) {
@@ -212,7 +215,10 @@ public class SubstrateVMProxy extends RuntimeProxy {
             SandboxHandle shandle = prepareSandbox(function);
             Optional<NetworkNamespace> networkNamespace = prepareNetworkNamespace();
             networkNamespace.ifPresent(NetworkNamespace::switchToNetworkNamespace);
+            long start = System.nanoTime();
             res = shandle.invokeSandbox(arguments);
+            long finish = System.nanoTime();
+            System.out.println(String.format("Invoke in %s", finish - start));
             networkNamespace.ifPresent(NetworkNamespace::switchToDefaultNetworkNamespace);
             networkNamespace.ifPresent(SubstrateVMProxy::freeNetworkNamespace);
             destroySandbox(function, shandle);
