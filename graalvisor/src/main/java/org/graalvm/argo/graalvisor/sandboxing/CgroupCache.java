@@ -59,10 +59,10 @@ public class CgroupCache {
     public void removeThreadFromCgroup(int quota) {
         long start = System.nanoTime();
         int threadId = NativeSandboxInterface.getThreadId();
-        String cgroupId = threadCgroupMap.get(threadId);
+        String cgroupId = threadCgroupMap.remove(threadId);
+        NativeSandboxInterface.removeThreadFromCgroup(String.valueOf(threadId));
 
         if (cgroupCacheEnabled) {
-            NativeSandboxInterface.removeThreadFromCgroup(String.valueOf(threadId));
             cgroupCache.get(quota).add(cgroupId);
             long finish = System.nanoTime();
             System.out.printf("Updated %s (deleted thread %s) in %s us%n", cgroupId, threadId, (finish - start) / 1000);
