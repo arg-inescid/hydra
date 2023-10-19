@@ -49,8 +49,8 @@ public class CgroupCache {
         }
 
         int threadId = NativeSandboxInterface.getThreadId();
-        threadCgroupMap.put(threadId, cgroupId);
         NativeSandboxInterface.insertThreadInCgroup(cgroupId, String.valueOf(threadId));
+        threadCgroupMap.put(threadId, cgroupId);
 
         long finish = System.nanoTime();
         System.out.printf("Updated %s (added thread %s) in %s us%n", cgroupId, threadId, (finish - start) / 1000);
