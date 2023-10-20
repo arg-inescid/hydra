@@ -183,10 +183,14 @@ public class SubstrateVMProxy extends RuntimeProxy {
         int quota = function.getCpuCgroupQuota();
         cgroupCache.insertThreadInCgroup(quota);
 
+        long finish2 = System.nanoTime();
+
+        System.out.println("PrepareSandbox took " + (finish2 - finish) / 1000 + " us");
         return worker;
     }
 
     private static void destroySandbox(PolyglotFunction function, SandboxHandle shandle) throws Exception {
+        long start = System.nanoTime();
         System.out.println(String.format("[thread %s] Destroying %s sandbox %s", Thread.currentThread().getId(),
                 function.getSandboxProvider().getName(), shandle));
 
@@ -194,6 +198,8 @@ public class SubstrateVMProxy extends RuntimeProxy {
         cgroupCache.removeThreadFromCgroup(quota);
 
         function.getSandboxProvider().destroySandbox(shandle);
+        long finish = System.nanoTime();
+        System.out.println("DestroySandbox took " + (finish - start) / 1000 + " us");
     }
 
     @Override
@@ -206,17 +212,9 @@ public class SubstrateVMProxy extends RuntimeProxy {
         } else if (cached) {
             res = getFunctionPipeline(function).invokeInCachedSandbox(arguments);
         } else {
-            long prepareStart = System.nanoTime();
             SandboxHandle shandle = prepareSandbox(function);
-            long invokeStart = System.nanoTime();
             res = shandle.invokeSandbox(arguments);
-            long invokeFinish = System.nanoTime();
             destroySandbox(function, shandle);
-            long destroy = System.nanoTime();
-
-            System.out.println("Prepare time: " + (invokeStart - prepareStart) / 1000 + " us");
-            System.out.println("Invoke time: " + (invokeFinish - invokeStart) / 1000 + " us");
-            System.out.println("Destroy time: " + (destroy - invokeFinish) / 1000 + " us");
         }
 
         return res;
