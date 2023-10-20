@@ -89,6 +89,8 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 
     char cgroupSubtreePath[256];
     sprintf(cgroupSubtreePath, "%s/cgroup.subtree_control", cgroupBasePath);
+
+    printf("Opening %s\n", cgroupSubtreePath);
     int fd = open(cgroupSubtreePath, O_WRONLY);
     if (fd == -1) {
         printf("Failed to open %s ERROR: %d\n", cgroupSubtreePath, errno);
@@ -102,6 +104,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 
     char cgroupUserSubtreePath[256];
     sprintf(cgroupUserSubtreePath, "%s/user.slice/cgroup.subtree_control", cgroupBasePath);
+    printf("Opening %s\n", cgroupUserSubtreePath);
     fd = open(cgroupUserSubtreePath, O_WRONLY);
     if (fd == -1) {
         printf("Failed to open %s ERROR: %d\n", cgroupUserSubtreePath, errno);
@@ -115,6 +118,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 
     char cgroupUserKSubtreePath[256];
     sprintf(cgroupUserKSubtreePath, "%s/user.slice/user-1000.slice/cgroup.subtree_control", cgroupBasePath);
+    printf("Opening %s\n", cgroupUserKSubtreePath);
     fd = open(cgroupUserKSubtreePath, O_WRONLY);
     if (fd == -1) {
         printf("Failed to open %s ERROR: %d\n", cgroupUserKSubtreePath, errno);
@@ -128,6 +132,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 
     char cgroupGVSubtreePath[256];
     sprintf(cgroupGVSubtreePath, "%s/cgroup.subtree_control", cgroupPath);
+    printf("Opening %s\n", cgroupGVSubtreePath);
     fd = open(cgroupGVSubtreePath, O_WRONLY);
     if (fd == -1) {
         printf("Failed to open %s ERROR: %d\n", cgroupGVSubtreePath, errno);
@@ -141,6 +146,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 
     char cgroupCpuSet[256];
     sprintf(cgroupCpuSet, "%s/cpuset.cpus", cgroupPath);
+    printf("Opening %s\n", cgroupCpuSet);
     fd = open(cgroupCpuSet, O_WRONLY);
     if (fd == -1) {
         printf("Failed to open %s ERROR: %d\n", cgroupCpuSet, errno);
@@ -154,6 +160,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 
     char cgroupCpuProcs[256];
     sprintf(cgroupCpuProcs, "%s/cgroup.procs", cgroupPath);
+    printf("Opening %s\n", cgroupCpuProcs);
     fd = open(cgroupCpuProcs, O_WRONLY);
     if (fd == -1) {
         printf("Failed to open %s ERROR: %d\n", cgroupCpuProcs, errno);
@@ -168,6 +175,9 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     if (close(fd) != 0) {
         printf("Failed to close %s ERROR: %d\n", cgroupCpuProcs, errno);
     }
+
+    printf("CreateMain PID: %d\n", pid);
+    printf("CreateMain TID: %d\n", gettid());
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_deleteMainCgroup(JNIEnv *env, jclass thisObject) {
@@ -197,6 +207,9 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     if (close(fd) != 0) {
         printf("Failed to close %s ERROR: %d\n", cgroupPath, errno);
     }
+
+    printf("CreateChild PID: %d\n", getpid());
+    printf("CreateChild TID: %d\n", gettid());
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_deleteCgroup(JNIEnv *env, jclass thisObject, jstring cgroupId)
@@ -207,7 +220,8 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 
     if (rmdir(cgroupPath) != 0) {
         printf("Failed to delete %s ERROR: %d\n", cgroupPath, errno);
-    }}
+    }
+}
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_setCgroupQuota(JNIEnv *env, jclass thisObject, jstring cgroupId, jint quota)
 {
@@ -230,6 +244,9 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     if (close(maxF) != 0) {
         printf("Failed to close %s ERRNO: %d \n", cGroupMax, errno);
     }
+
+    printf("SetQuota PID: %d\n", getpid());
+    printf("SetQuota TID: %d\n", gettid());
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_insertThreadInCgroup(JNIEnv *env, jclass thisObject, jstring cgroupId, jstring threadId)
@@ -251,6 +268,9 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     if (close(fd) != 0) {
         printf("Failed to close %s ERROR: %d\n", cGroupThreads, errno);
     }
+
+    printf("InsertThread PID: %d\n", getpid());
+    printf("InsertThread TID: %d\n", gettid());
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_removeThreadFromCgroup(JNIEnv *env, jclass thisObject, jstring threadId)
@@ -269,6 +289,9 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     if (close(fd) != 0) {
         printf("Failed to close %s ERROR: %d\n", cGroupThreads, errno);
     }
+
+    printf("RemoveThread PID: %d\n", getpid());
+    printf("RemoveThread TID: %d\n", gettid());
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_enterNativeProcessSandbox(JNIEnv *env, jobject thisObj)

@@ -2,6 +2,7 @@ package org.graalvm.argo.graalvisor;
 
 import org.graalvm.argo.graalvisor.function.PolyglotFunction;
 import org.graalvm.argo.graalvisor.sandboxing.CgroupCache;
+import org.graalvm.argo.graalvisor.sandboxing.NativeSandboxInterface;
 import org.graalvm.argo.graalvisor.sandboxing.SandboxHandle;
 
 import java.io.IOException;
@@ -207,6 +208,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
         } else {
             SandboxHandle shandle = prepareSandbox(function);
             res = shandle.invokeSandbox(arguments);
+            System.out.println(String.format("threadID [thread %s]", NativeSandboxInterface.getThreadId()));
             destroySandbox(function, shandle);
         }
 

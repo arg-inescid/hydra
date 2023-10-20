@@ -22,6 +22,7 @@ public class IsolateSandboxHandle extends SandboxHandle {
     @Override
     public String invokeSandbox(String jsonArguments) throws Exception {
         PolyglotFunction function = isProvider.getFunction();
+        System.out.println("Invoke ThreadId: " + NativeSandboxInterface.getThreadId());
         return isProvider.getGraalvisorAPI().invokeFunction((IsolateThread) isolateThread, function.getEntryPoint(), jsonArguments);
     }
 

@@ -19,7 +19,7 @@ public class CgroupCache {
 
     private ConcurrentMap<Integer, String> threadCgroupMap = new ConcurrentHashMap<>();
     private ConcurrentMap<Integer, CopyOnWriteArrayList<String>> cgroupCache;
-    private boolean cgroupCacheEnabled = true;
+    private boolean cgroupCacheEnabled = false;
 
     public CgroupCache(boolean cgroupCacheEnabled) {
         createMainCgroup();
