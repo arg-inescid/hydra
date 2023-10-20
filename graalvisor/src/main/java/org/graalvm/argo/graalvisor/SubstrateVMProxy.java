@@ -190,14 +190,13 @@ public class SubstrateVMProxy extends RuntimeProxy {
     }
 
     private static void destroySandbox(PolyglotFunction function, SandboxHandle shandle) throws Exception {
-        long start = System.nanoTime();
         System.out.println(String.format("[thread %s] Destroying %s sandbox %s", Thread.currentThread().getId(),
                 function.getSandboxProvider().getName(), shandle));
+        function.getSandboxProvider().destroySandbox(shandle);
 
+        long start = System.nanoTime();
         int quota = function.getCpuCgroupQuota();
         cgroupCache.removeThreadFromCgroup(quota);
-
-        function.getSandboxProvider().destroySandbox(shandle);
         long finish = System.nanoTime();
         System.out.println("DestroySandbox took " + (finish - start) / 1000 + " us");
     }
