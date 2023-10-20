@@ -182,10 +182,6 @@ public class SubstrateVMProxy extends RuntimeProxy {
 
         int quota = function.getCpuCgroupQuota();
         cgroupCache.insertThreadInCgroup(quota);
-
-        long finish2 = System.nanoTime();
-
-        System.out.println("PrepareSandbox took " + (finish2 - finish) / 1000 + " us");
         return worker;
     }
 
@@ -193,12 +189,8 @@ public class SubstrateVMProxy extends RuntimeProxy {
         System.out.println(String.format("[thread %s] Destroying %s sandbox %s", Thread.currentThread().getId(),
                 function.getSandboxProvider().getName(), shandle));
         function.getSandboxProvider().destroySandbox(shandle);
-
-        long start = System.nanoTime();
         int quota = function.getCpuCgroupQuota();
         cgroupCache.removeThreadFromCgroup(quota);
-        long finish = System.nanoTime();
-        System.out.println("DestroySandbox took " + (finish - start) / 1000 + " us");
     }
 
     @Override
