@@ -206,10 +206,17 @@ public class SubstrateVMProxy extends RuntimeProxy {
         } else if (cached) {
             res = getFunctionPipeline(function).invokeInCachedSandbox(arguments);
         } else {
+            long prepareStart = System.nanoTime();
             SandboxHandle shandle = prepareSandbox(function);
+            long invokeStart = System.nanoTime();
             res = shandle.invokeSandbox(arguments);
-            System.out.println(String.format("threadID [thread %s]", NativeSandboxInterface.getThreadId()));
+            long invokeFinish = System.nanoTime();
             destroySandbox(function, shandle);
+            long destroy = System.nanoTime();
+
+            System.out.println("Prepare time: " + (invokeStart - prepareStart) / 1000 + " us");
+            System.out.println("Invoke time: " + (invokeFinish - invokeStart) / 1000 + " us");
+            System.out.println("Destroy time: " + (destroy - invokeFinish) / 1000 + " us");
         }
 
         return res;

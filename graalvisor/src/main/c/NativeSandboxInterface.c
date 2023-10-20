@@ -175,9 +175,6 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     if (close(fd) != 0) {
         printf("Failed to close %s ERROR: %d\n", cgroupCpuProcs, errno);
     }
-
-    printf("CreateMain PID: %d\n", pid);
-    printf("CreateMain TID: %d\n", gettid());
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_deleteMainCgroup(JNIEnv *env, jclass thisObject) {
@@ -207,9 +204,6 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     if (close(fd) != 0) {
         printf("Failed to close %s ERROR: %d\n", cgroupPath, errno);
     }
-
-    printf("CreateChild PID: %d\n", getpid());
-    printf("CreateChild TID: %d\n", gettid());
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_deleteCgroup(JNIEnv *env, jclass thisObject, jstring cgroupId)
@@ -244,9 +238,6 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     if (close(maxF) != 0) {
         printf("Failed to close %s ERRNO: %d \n", cGroupMax, errno);
     }
-
-    printf("SetQuota PID: %d\n", getpid());
-    printf("SetQuota TID: %d\n", gettid());
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_insertThreadInCgroup(JNIEnv *env, jclass thisObject, jstring cgroupId, jstring threadId)
@@ -268,9 +259,6 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     if (close(fd) != 0) {
         printf("Failed to close %s ERROR: %d\n", cGroupThreads, errno);
     }
-
-    printf("InsertThread PID: %d\n", getpid());
-    printf("InsertThread TID: %d\n", gettid());
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_removeThreadFromCgroup(JNIEnv *env, jclass thisObject, jstring threadId)
@@ -289,9 +277,6 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     if (close(fd) != 0) {
         printf("Failed to close %s ERROR: %d\n", cGroupThreads, errno);
     }
-
-    printf("RemoveThread PID: %d\n", getpid());
-    printf("RemoveThread TID: %d\n", gettid());
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_enterNativeProcessSandbox(JNIEnv *env, jobject thisObj)
