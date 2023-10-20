@@ -21,6 +21,7 @@ import org.graalvm.nativeimage.c.type.CTypeConversion;
 import org.graalvm.word.WordFactory;
 
 import com.oracle.svm.graalvisor.GraalVisor;
+import com.oracle.svm.graalvisor.utils.StringUtils;
 
 @SuppressWarnings("unused")
 public class GuestAPI {
@@ -170,7 +171,7 @@ public class GuestAPI {
         long isolateId = CurrentIsolate.getIsolate().rawValue();
         try (CTypeConversion.CCharPointerHolder argumentsHolder = CTypeConversion.toCString(arguments)) {
             CCharPointer result = graalVisorStructHost.getHostExecuteDBMethodFunction().invoke(hostIsolateThread, isolateId, methodCode, argumentsHolder.get());
-            return CTypeConversion.toJavaString(result);
+            return StringUtils.copyString(result);
         }
     }
 }

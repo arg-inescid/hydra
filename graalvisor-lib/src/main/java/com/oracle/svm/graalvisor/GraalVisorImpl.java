@@ -14,6 +14,7 @@ import org.graalvm.nativeimage.c.type.CTypeConversion;
 
 import com.oracle.svm.graalvisor.api.AsGraalVisorHost;
 import com.oracle.svm.graalvisor.jdbc.JdbcImpl;
+import com.oracle.svm.graalvisor.utils.StringUtils;
 
 public class GraalVisorImpl {
 
@@ -49,7 +50,7 @@ public class GraalVisorImpl {
     @SuppressWarnings("unused")
     @CEntryPoint(include = AsGraalVisorHost.class)
     private static CCharPointer hostExecuteDBMethod(@CEntryPoint.IsolateThreadContext IsolateThread hostThread, long isolateId, int methodCode, CCharPointer cArguments) {
-        String arguments = CTypeConversion.toJavaString(cArguments);
+        String arguments = StringUtils.copyString(cArguments);
         String result = JdbcImpl.invoke(isolateId, methodCode, arguments);
         return CTypeConversion.toCString(result).get();
     }
