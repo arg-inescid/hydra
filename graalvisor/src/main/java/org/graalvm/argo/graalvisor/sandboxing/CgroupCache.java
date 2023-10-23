@@ -90,10 +90,10 @@ public class CgroupCache {
     private void warmupCgroupCache() {
         long start = System.nanoTime();
         System.out.println("Cgroup cache warmup...");
-        cgroupCache.put(10000, new CopyOnWriteArrayList<>());
         createCgroup(10000);
-        cgroupCache.put(100000, new CopyOnWriteArrayList<>());
-        createCgroup(100000);
+        for (int i = 0; i < 5; i++) {
+            createCgroup(100000);
+        }
         long finish = System.nanoTime();
         System.out.printf("Cgroup cache warmup ended in %s us%n", (finish - start) / 1000);
     }
