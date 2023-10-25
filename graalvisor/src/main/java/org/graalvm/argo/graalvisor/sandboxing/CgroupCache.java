@@ -17,11 +17,11 @@ public class CgroupCache {
         }
     }
 
-    private final ConcurrentMap<Integer, String> threadCgroupMap = new ConcurrentHashMap<>();
-    private final ConcurrentMap<String, Integer> cgroupThreadMap = new ConcurrentHashMap<>();
+    private ConcurrentMap<Integer, String> threadCgroupMap = new ConcurrentHashMap<>();
+    private ConcurrentMap<String, Integer> cgroupThreadMap = new ConcurrentHashMap<>();
     private ConcurrentMap<Integer, CopyOnWriteArrayList<String>> cgroupCache;
     private boolean cgroupCacheEnabled = false;
-    private final boolean isCacheLazy = true;
+    private boolean isCacheLazy = true;
 
     public CgroupCache(boolean cgroupCacheEnabled) {
         createMainCgroup();
