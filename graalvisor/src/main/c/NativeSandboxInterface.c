@@ -151,7 +151,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     if (fd == -1) {
         printf("Failed to open %s ERROR: %d\n", cgroupCpuSet, errno);
     }
-    if (write(fd, "0", 2) == -1) {
+    if (write(fd, "0,1,2,3", 8) != 8) {
         printf("Failed to write to %s ERROR: %d\n", cgroupCpuSet, errno);
     }
     if (close(fd) != 0) {
@@ -242,18 +242,19 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_insertThreadInCgroup(JNIEnv *env, jclass thisObject, jstring cgroupId, jstring threadId)
 {
+    clock_t time = clock();
     const char *cgroup = (*env)->GetStringUTFChars(env, cgroupId, NULL);
     const char *t = (*env)->GetStringUTFChars(env, threadId, NULL);
     char cGroupThreads[256];
 
     sprintf(cGroupThreads, "/sys/fs/cgroup/user.slice/user-1000.slice/gv-cgroups/%s/cgroup.threads", cgroup);
-
     int fd = open(cGroupThreads, O_WRONLY);
     if (fd == -1)
     {
         printf("Failed to open %s ERROR: %d\n", cGroupThreads, errno);
     }
-    if (write(fd, t, strlen(t) + 1) == -1) {
+    int size = strlen(t) + 1;
+    if (write(fd, t, size) != size) {
         printf("Failed to write to %s ERROR: %d\n", cGroupThreads, errno);
     }
     if (close(fd) != 0) {
@@ -271,7 +272,8 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     {
         printf("Failed to open %s ERROR: %d\n", cGroupThreads, errno);
     }
-    if (write(fd, t, strlen(t) + 1) == -1) {
+    int size = strlen(t) + 1;
+    if (write(fd, t, size) != size) {
         printf("Failed to write to %s ERROR: %d\n", cGroupThreads, errno);
     }
     if (close(fd) != 0) {
