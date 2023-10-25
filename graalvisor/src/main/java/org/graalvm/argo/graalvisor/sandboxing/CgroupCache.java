@@ -17,9 +17,11 @@ public class CgroupCache {
         }
     }
 
-    private ConcurrentMap<Integer, String> threadCgroupMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Integer, String> threadCgroupMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Integer> cgroupThreadMap = new ConcurrentHashMap<>();
     private ConcurrentMap<Integer, CopyOnWriteArrayList<String>> cgroupCache;
     private boolean cgroupCacheEnabled = false;
+    private final boolean isCacheLazy = true;
 
     public CgroupCache(boolean cgroupCacheEnabled) {
         createMainCgroup();
@@ -35,11 +37,15 @@ public class CgroupCache {
     public void insertThreadInCgroup(int quota) {
         long start = System.nanoTime();
         String cgroupId;
+        int threadId = NativeSandboxInterface.getThreadId();
 
         if (!cgroupCacheEnabled) {
             cgroupId = createCgroup(quota);
         } else {
-            cgroupId = getCgroupIdByQuota(quota);
+            cgroupId = threadCgroupMap.get(threadId);
+            if (cgroupId == null) {
+                cgroupId = getCgroupIdByQuota(quota);
+            }
             if (cgroupId != null) {
                 cgroupCache.get(quota).remove(cgroupId);
                 System.out.println("Removed " + cgroupId + " from cache");
@@ -48,27 +54,43 @@ public class CgroupCache {
             }
         }
 
-        int threadId = NativeSandboxInterface.getThreadId();
-        NativeSandboxInterface.insertThreadInCgroup(cgroupId, String.valueOf(threadId));
-        threadCgroupMap.put(threadId, cgroupId);
-
-        long finish = System.nanoTime();
-        System.out.printf("Updated %s (added thread %s) in %s us%n", cgroupId, threadId, (finish - start) / 1000);
+        if (cgroupCacheEnabled && isCacheLazy) {
+            if (cgroupThreadMap.containsKey(cgroupId)) {
+                int allocatedThread = cgroupThreadMap.get(cgroupId);
+                if (allocatedThread != threadId) {
+                    NativeSandboxInterface.removeThreadFromCgroup(String.valueOf(allocatedThread));
+                    NativeSandboxInterface.insertThreadInCgroup(cgroupId, String.valueOf(threadId));
+                }
+            }
+            cgroupThreadMap.put(cgroupId, threadId);
+            threadCgroupMap.put(threadId, cgroupId);
+        } else {
+            NativeSandboxInterface.insertThreadInCgroup(cgroupId, String.valueOf(threadId));
+            threadCgroupMap.put(threadId, cgroupId);
+            long finish = System.nanoTime();
+            System.out.printf("Updated %s (added thread %s) in %s us%n", cgroupId, threadId, (finish - start) / 1000);
+        }
     }
 
     public void removeThreadFromCgroup(int quota) {
         long start = System.nanoTime();
         int threadId = NativeSandboxInterface.getThreadId();
-        String cgroupId = threadCgroupMap.remove(threadId);
-        NativeSandboxInterface.removeThreadFromCgroup(String.valueOf(threadId));
+        String cgroupId = threadCgroupMap.get(threadId);
 
-        if (cgroupCacheEnabled) {
-            cgroupCache.get(quota).add(cgroupId);
-            long finish = System.nanoTime();
-            System.out.printf("Updated %s (deleted thread %s) in %s us%n", cgroupId, threadId, (finish - start) / 1000);
-            System.out.println("Added " + cgroupId + " to cache");
-        } else {
+        if (!cgroupCacheEnabled) {
+            threadCgroupMap.remove(threadId);
+            cgroupThreadMap.remove(cgroupId);
+            NativeSandboxInterface.removeThreadFromCgroup(String.valueOf(threadId));
             deleteCgroup(cgroupId);
+        } else {
+            if (!isCacheLazy) {
+                threadCgroupMap.remove(threadId);
+                cgroupThreadMap.remove(cgroupId);
+                NativeSandboxInterface.removeThreadFromCgroup(String.valueOf(threadId));
+                System.out.printf("Updated %s (deleted thread %s) in %s us%n", cgroupId, threadId, (System.nanoTime() - start) / 1000);
+            }
+            cgroupCache.get(quota).add(cgroupId);
+            System.out.println("Added " + cgroupId + " to cache");
         }
     }
 
