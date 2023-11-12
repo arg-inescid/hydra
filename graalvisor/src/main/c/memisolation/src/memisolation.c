@@ -61,9 +61,6 @@ char* appIDs[NUM_DOMAINS];
 
 pthread_mutex_t mutex;
 
-/* dlopen function pointer */
-static void * ( * real_dlopen)(const char * , int) = NULL;
-
 /* seccomp system call */
 static int
 seccomp(unsigned int operation, unsigned int flags, void *args)
@@ -190,6 +187,7 @@ update_supervisor_app(int domain, const char* app)
 void
 update_supervisor_status(int domain)
 {
+    SEC_DBM("\t[S%d]: application finished.", domain);
     supervisors[domain].status = DONE;
 }
 
@@ -208,39 +206,11 @@ set_permissions(const char* id, int protectionFlag, int pkey)
     }
 }
 
-/* Library loading */
-void *
-dlopen(const char * input, int flag)
-{
-    if (real_dlopen == NULL)
-        real_dlopen = (void *(*) (const char *, int)) dlsym(RTLD_NEXT, "dlopen");
-    
-    if (!input || strchr(input, ':') == NULL)
-        return real_dlopen(input, flag);
-
-    // Parse input
-    char pathname[256] = "";
-    char libname[256] = "lib";
-    char id[256] = "";
-    char filename[256] = "";
-    
-    char * basename = extract_basename(input);
-    sscanf(basename, "%[^:]:%s", id, filename);
-    strcat(libname, filename);
-
-    size_t size = strlen(input) - strlen(basename);
-    strncpy(pathname, input, size);
-    strcat(pathname, libname);
-
-    void *handle = real_dlopen(pathname, RTLD_NOW | RTLD_DEEPBIND | RTLD_GLOBAL);
-
-    SEC_DBM("\t[PRELOAD]: storing %s addresses and sizes in map...", libname);
-    get_memory_regions(&appMap, id, pathname);
-
-    remove(input);
-
-    return handle;
+void
+insert_memory_regions(char* id, const char* path) {
+    get_memory_regions(&appMap, id, path);
 }
+
 
 /* Seccomp */
 
@@ -429,7 +399,6 @@ handle_notifications(int notifyFd, int domain)
 
     /* Loop handling notifications */
     for (;;) {
-
         /* Wait for next notification, returning info in '*req' */
 
         memset(req, 0, sizes.seccomp_notif);
@@ -484,6 +453,7 @@ handle_notifications(int notifyFd, int domain)
         }
         SEC_DBM("\t--------------------\n");
 
+        fprintf(stderr, "threads: %d\n", threadMap.buckets[domain]->nthreads);
         if (supervisors[domain].status && threadMap.buckets[domain]->nthreads == 1) { // == 1 on Graal
             remove_thread(&threadMap, domain);
             break;
@@ -522,7 +492,6 @@ supervisor(void *arg)
             set_permissions(supervisors[*domain].app, PROT_READ|PROT_WRITE|PROT_EXEC, *domain);
         }
 #endif
-
         /* Populate domain */
         insert_thread(&threadMap, *domain);
 

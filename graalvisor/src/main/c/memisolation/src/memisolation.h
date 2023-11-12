@@ -46,4 +46,6 @@ int find_empty_domain();
 
 void initialize_memory_isolation();
 
+void insert_memory_regions(char* id, const char* path);
+
 #endif
