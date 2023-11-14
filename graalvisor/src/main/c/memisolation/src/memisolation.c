@@ -57,7 +57,7 @@ AppMap appMap;
 ThreadMap threadMap;
 
 /* Lazy loading array */
-char* appIDs[NUM_DOMAINS];
+struct CacheApp cache[NUM_DOMAINS];
 
 pthread_mutex_t mutex;
 
@@ -81,39 +81,46 @@ unlock()
     pthread_mutex_unlock(&mutex);
 }
 
+int
+app_in_cache(const char* app, int domain) {
+    if (!strcmp(app, cache[domain].app)) {
+        SEC_DBM("[App in cache]");
+        cache[domain].value++;
+        return 1;
+    }
+    return 0;
+}
+
 /* Domain Management algorithm */
 int
-find_empty_domain()
-{
-    for (int domain = 1; domain < NUM_DOMAINS; domain++) {
-        if (threadMap.buckets[domain]->nthreads == 0) /* is domain empty */
-            return domain;
+find_domain(const char* app) {
+    int minIndex = 1;
+    int check = 0;
+    
+    if (app_in_cache(app, 1)) {
+        return 1;
     }
-    return -1; /* Empty Domain not found */
+    for (int i = 2; i < NUM_DOMAINS; ++i) {
+        if (app_in_cache(app, i)) {
+            return i;
+        }
+        // The lowest value corresponds to the LRU domain
+        if (threadMap.buckets[i]->nthreads == 0) {
+            check = 1;
+            if (cache[i].value < cache[minIndex].value) {
+                minIndex = i;
+            }
+        }
+    }
+    return check ? minIndex : -1;
 }
 
 /* Lazy Loading */
 void 
-insert_app_id(int domain, const char* id)
+insert_app_cache(int domain, const char* id)
 {
-    appIDs[domain] = strdup(id);
-}
-
-int
-find_app_domain(const char* id)
-{
-    for (int domain = 0; domain < NUM_DOMAINS; domain++) {
-        if (appIDs[domain] != NULL && !strcmp(id, appIDs[domain])) {
-            return domain;
-        }
-    }
-    return -1; /* App not found */
-}
-
-char *
-get_app_id(int domain)
-{
-    return (appIDs[domain] != NULL) ? appIDs[domain] : "";
+    strcpy(cache[domain].app, id);
+    cache[domain].value++;
 }
 
 /* Supervisors */
@@ -397,16 +404,42 @@ handle_notifications(int notifyFd, int domain)
 
     signal_handler(domain);
 
+    int             retval;
+    fd_set          rfds;
+    struct timeval  tv;
+
+    /* Watch stdin (supervisor's fd) to see when it has input. */
+
+    FD_ZERO(&rfds);
+    FD_SET(domain, &rfds);
+
+    /* Wait up to five seconds. */
+
+    tv.tv_sec = 0.1;
+    tv.tv_usec = 0;
+
     /* Loop handling notifications */
     for (;;) {
         /* Wait for next notification, returning info in '*req' */
 
         memset(req, 0, sizes.seccomp_notif);
-        if (ioctl(notifyFd, SECCOMP_IOCTL_NOTIF_RECV, req) == -1) {
-            if (errno == EINTR)
-                continue;
-            err(EXIT_FAILURE, "\t[S%d]: ioctl-SECCOMP_IOCTL_NOTIF_RECV", domain);
+
+        retval = select(1, &rfds, NULL, NULL, &tv);
+        if (retval == -1)
+            perror("select()");
+        else if (retval) {
+            if (ioctl(notifyFd, SECCOMP_IOCTL_NOTIF_RECV, req) == -1) {
+                if (errno == EINTR)
+                    continue;
+                err(EXIT_FAILURE, "\t[S%d]: ioctl-SECCOMP_IOCTL_NOTIF_RECV", domain);
+            }
         }
+        else if (supervisors[domain].status && threadMap.buckets[domain]->nthreads == 1) {
+            remove_thread(&threadMap, domain);
+            break;
+        }
+        else
+            continue;
 
         SEC_DBM("\t[S%d]: received notifaction id [%lld], from tid: %d, syscall nr: %d\n", 
                 domain, req->id, req->pid, req->data.nr);
@@ -452,12 +485,6 @@ handle_notifications(int notifyFd, int domain)
                 perror("ioctl-SECCOMP_IOCTL_NOTIF_SEND");
         }
         SEC_DBM("\t--------------------\n");
-
-        fprintf(stderr, "threads: %d\n", threadMap.buckets[domain]->nthreads);
-        if (supervisors[domain].status && threadMap.buckets[domain]->nthreads == 1) { // == 1 on Graal
-            remove_thread(&threadMap, domain);
-            break;
-        }
     }
 
     free(req);
@@ -484,11 +511,11 @@ supervisor(void *arg)
 #ifdef EAGER_LOAD
 	    set_permissions(supervisors[*domain].app, PROT_READ|PROT_WRITE|PROT_EXEC, *domain);
 #else
-        char* app = get_app_id(*domain);
+        char* app = cache[*domain].app;
         if (strcmp(app, supervisors[*domain].app)) {
             if (strcmp(app, ""))
                 set_permissions(app, PROT_NONE, *domain);
-            insert_app_id(*domain, supervisors[*domain].app);
+            insert_app_cache(*domain, supervisors[*domain].app);
             set_permissions(supervisors[*domain].app, PROT_READ|PROT_WRITE|PROT_EXEC, *domain);
         }
 #endif
@@ -517,8 +544,8 @@ initialize_memory_isolation()
     init_app_map(&appMap);
     init_thread_map(&threadMap);
 
-    init_app_array(appIDs);
-    init_supervisors(supervisors);
+    init_cache_array(cache, NUM_DOMAINS);
+    init_supervisors(supervisors, NUM_DOMAINS);
 
     pthread_mutex_init(&mutex, NULL);
 

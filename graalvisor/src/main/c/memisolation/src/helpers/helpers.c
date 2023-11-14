@@ -6,9 +6,9 @@
 
 /* Auxiliary functions */
 void
-init_supervisors(struct Supervisor array[])
+init_supervisors(struct Supervisor array[], int size)
 {
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < size; i++) {
         sem_init(&array[i].set, 0, 0);
         sem_init(&array[i].filter, 0, 0);
         sem_init(&array[i].perms, 0, 0);
@@ -20,10 +20,11 @@ init_supervisors(struct Supervisor array[])
 }
 
 void
-init_app_array(char* array[])
+init_cache_array(struct CacheApp cache[], int size)
 {
-    for (size_t i = 0; i < 16; i++) {
-        array[i] = NULL;
+    for (int i = 0; i < size; i++) {
+        strcpy(cache[i].app, "");
+        cache[i].value = 1;
     }
 }
 
