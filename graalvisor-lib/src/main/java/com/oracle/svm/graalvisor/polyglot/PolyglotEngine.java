@@ -11,6 +11,11 @@ import org.graalvm.polyglot.Value;
 public class PolyglotEngine {
 
     /**
+     * Wether Truffle compilation is enabled. Compilation is very expensive for short-running functions.
+     */
+    private static final boolean COMPILATION = false;
+
+    /**
      * Each thread owns it function value, where polyglot functions execute.
      */
     private final ThreadLocal<Value> function = new ThreadLocal<>();
@@ -18,11 +23,12 @@ public class PolyglotEngine {
     /**
      * Each sandbox has a corresponding truffle engine that should be used for the invocation.
      */
-    private final Engine engine = Engine.create();
+    private final Engine engine = COMPILATION ? Engine.create() : null;
 
     public void init(String language, String source, String entrypoint) {
         Map<String, String> options = new HashMap<>();
         String javaHome = System.getenv("JAVA_HOME");
+        Context context = null;
 
         if (javaHome == null) {
             System.err.println("JAVA_HOME not found in the environment. Polyglot functionality significantly limited.");
@@ -32,6 +38,9 @@ public class PolyglotEngine {
             System.setProperty("org.graalvm.language.js.home", javaHome + "/languages/js");
         }
 
+        // Adding compilation option.
+        options.put("engine.Compilation", Boolean.toString(COMPILATION));
+
         if (PolyglotLanguage.PYTHON.toString().equals(language)) {
             // Necessary to allow python imports.
             options.put("python.ForceImportSite", "true");
@@ -40,7 +49,11 @@ public class PolyglotEngine {
         }
 
         // Build context.
-        Context context = Context.newBuilder().allowAllAccess(true).engine(engine).options(options).build();
+        if (COMPILATION) {
+            context = Context.newBuilder().allowAllAccess(true).engine(engine).options(options).build();
+        } else {
+            context = Context.newBuilder().allowAllAccess(true).allowExperimentalOptions(true).options(options).build();
+        }
         System.out.println(String.format("[thread %s] Creating context %s", Thread.currentThread().getId(), context.toString()));
 
         // Host access to implement missing language functionalities.
