@@ -5,9 +5,15 @@
 #include "threadmap.h"
 
 void
-init_thread_map(ThreadMap* map)
+init_thread_map(ThreadMap* map, size_t size)
 {
-    for (int i = 0; i < TABLE_SIZE; i++) {
+    map->buckets = (ThreadNode**)calloc(size, sizeof(ThreadNode*));
+    if (map->buckets == NULL) {
+        perror("Error creating Thread map");
+        exit(EXIT_FAILURE);
+    }
+
+    for (int i = 0; i < size; i++) {
         map->buckets[i] = create_thread_node();
     }
 }

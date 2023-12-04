@@ -7,6 +7,7 @@ typedef struct Node {
 } Node;
 
 typedef struct {
+    pthread_mutex_t mutex;
     Node** table;
     size_t size;
 } AppLock;

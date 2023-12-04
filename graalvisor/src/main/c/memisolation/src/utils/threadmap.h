@@ -11,11 +11,11 @@ typedef struct ThreadNode {
 } ThreadNode;
 
 typedef struct ThreadMap {
-    ThreadNode* buckets[TABLE_SIZE];
+    ThreadNode** buckets;
 } ThreadMap;
 
 ThreadNode* create_thread_node();
-void init_thread_map(ThreadMap* map);
+void init_thread_map(ThreadMap* map, size_t size);
 void insert_thread(ThreadMap* map, int domain);
 void remove_thread(ThreadMap* map, int domain);
 

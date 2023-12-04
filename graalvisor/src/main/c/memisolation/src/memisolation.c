@@ -24,7 +24,7 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
-#include <utils/applock.h>
+#include "utils/applock.h"
 #include "utils/appmap.h"
 #include "utils/threadmap.h"
 #include "helpers/helpers.h"
@@ -192,6 +192,7 @@ update_supervisor_app(int domain, const char* app)
 {
     SEC_DBM("\t[S%d]: assigning application -> %s", domain, app);
     strcpy(supervisors[domain].app, app);
+    insert_applock(&appLock, (char *)app);
 }
 
 void
@@ -511,6 +512,9 @@ supervisor(void *arg)
         wait_perms(*domain);
         SEC_DBM("\t[S%d]: setting library permissions...", *domain);
 
+        // Lock App's libraries in case of multiple invocations
+        lock_app(&appLock, supervisors[*domain].app);
+
 #ifdef EAGER_LOAD
 	    set_permissions(supervisors[*domain].app, PROT_READ|PROT_WRITE|PROT_EXEC, *domain);
 #else
@@ -536,6 +540,8 @@ supervisor(void *arg)
 #ifdef EAGER_LOAD
 	    set_permissions(supervisors[*domain].app, PROT_NONE, *domain);
 #endif
+
+        unlock_app(&appLock, supervisors[*domain].app);
     }
 
     return NULL;
@@ -545,8 +551,8 @@ void
 initialize_memory_isolation()
 {   
     init_applock_map(&appLock, NUM_DOMAINS);
-    init_app_map(&appMap);
-    init_thread_map(&threadMap);
+    init_app_map(&appMap, NUM_DOMAINS);
+    init_thread_map(&threadMap, NUM_DOMAINS);
 
     init_cache_array(cache, NUM_DOMAINS);
     init_supervisors(supervisors, NUM_DOMAINS);

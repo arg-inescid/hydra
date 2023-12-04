@@ -4,8 +4,6 @@
 #include <dlfcn.h>
 #include <pthread.h>
 
-#define TABLE_SIZE 16
-
 typedef struct {
     void* address;
     size_t size;
@@ -19,10 +17,11 @@ typedef struct AppNode {
 
 typedef struct AppMap {
     pthread_mutex_t mutex;
-    AppNode* buckets[TABLE_SIZE];
+    AppNode** buckets;
+    size_t size;
 } AppMap;
 
-void init_app_map(AppMap* map);
+void init_app_map(AppMap* map, size_t size);
 void insert_app(AppMap* map, char* id, MemoryRegion memReg);
 unsigned long hash_str(const char *str);
 AppNode* create_app_node(char* id, MemoryRegion memReg);
