@@ -21,7 +21,7 @@ struct CacheApp {
     int value;
 };
 
-/* Lazy loading */
+/* Eager/Lazy setting */
 void init_cache_array(struct CacheApp cache[], int size);
 
 /* Seccomp */

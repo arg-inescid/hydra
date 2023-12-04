@@ -24,6 +24,7 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
+#include <utils/applock.h>
 #include "utils/appmap.h"
 #include "utils/threadmap.h"
 #include "helpers/helpers.h"
@@ -50,13 +51,14 @@
 /* File descriptors */
 struct Supervisor supervisors[NUM_DOMAINS];
 
-int dom = 1;
+/* Invocation synchronization Map */
+AppLock appLock;
 
 /* Maps */
 AppMap appMap;
 ThreadMap threadMap;
 
-/* Lazy loading array */
+/* Eager/Lazy setting array */
 struct CacheApp cache[NUM_DOMAINS];
 
 pthread_mutex_t mutex;
@@ -84,7 +86,6 @@ unlock()
 int
 app_in_cache(const char* app, int domain) {
     if (!strcmp(app, cache[domain].app)) {
-        SEC_DBM("[App in cache]");
         cache[domain].value++;
         return 1;
     }
@@ -97,11 +98,13 @@ find_domain(const char* app) {
     int minIndex = 1;
     int check = 0;
     
-    if (app_in_cache(app, 1)) {
+    if (app_in_cache(app, 1) && threadMap.buckets[1]->nthreads == 0) {
+        SEC_DBM("[App in cache]");
         return 1;
     }
     for (int i = 2; i < NUM_DOMAINS; ++i) {
-        if (app_in_cache(app, i)) {
+        if (app_in_cache(app, i) && threadMap.buckets[i]->nthreads == 0) {
+            SEC_DBM("[App in cache]");
             return i;
         }
         // The lowest value corresponds to the LRU domain
@@ -541,6 +544,7 @@ supervisor(void *arg)
 void
 initialize_memory_isolation()
 {   
+    init_applock_map(&appLock, NUM_DOMAINS);
     init_app_map(&appMap);
     init_thread_map(&threadMap);
 

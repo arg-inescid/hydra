@@ -25,7 +25,11 @@ dlopen(const char * input, int flag)
     }
 
     if (strstr(input, "/tmp/apps") != NULL) {
-        char* jni_dir = getenv("JNI_DIR");
+        char* argo_home = getenv("ARGO_HOME");
+        char* graal_libs_dir = "graalvisor/build/libs";
+        char jni_dir[128];
+        sprintf(jni_dir, "%s/%s", argo_home, graal_libs_dir);
+
         char* id = extract_id(input);
 
         char native_path[256];
@@ -33,6 +37,8 @@ dlopen(const char * input, int flag)
         
         real_dlopen(native_path, RTLD_NOW | RTLD_DEEPBIND | RTLD_GLOBAL);
         insert_memory_regions(id, native_path);
+        fprintf(stderr, "NATIVE: %s\n", native_path);
+
     }
 
     return real_dlopen(input, flag);
