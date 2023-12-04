@@ -20,17 +20,16 @@ function build_memisolation {
     LIBRARIES="$ERIM_HOME/bin/common/libswscommon.a $ERIM_HOME/bin/erim/liberim.a"
 
 	if [ $major_version -ge 5 ] && [ $minor_version -ge 10 ]; then
+	    	gcc -c -I"$MEM_DIR" $CFLAGS -o $LIB_DIR/applock.o $MEM_DIR/utils/applock.c
 	    	gcc -c -I"$MEM_DIR" $CFLAGS -o $LIB_DIR/appmap.o $MEM_DIR/utils/appmap.c
 	    	gcc -c -I"$MEM_DIR" $CFLAGS -o $LIB_DIR/threadmap.o $MEM_DIR/utils/threadmap.c
 	    	gcc -c -I"$MEM_DIR" $CFLAGS -o $LIB_DIR/helpers.o $MEM_DIR/helpers/helpers.c
         	gcc -c -I"$MEM_DIR" $CFLAGS -o $LIB_DIR/memisolation.o $MEM_DIR/memisolation.c
             gcc -c -I"$MEM_DIR" $CFLAGS -o $LIB_DIR/preload.o $PRELOAD_DIR/preload.c
-            gcc $CFLAGS -o $LIB_DIR/libtest.so $LIB_DIR/preload.o $LIB_DIR/helpers.o $LIB_DIR/appmap.o $LIB_DIR/memisolation.o 
-            gcc $CFLAGS -o $LIB_DIR/libpreload.so $LIB_DIR/appmap.o $LIB_DIR/threadmap.o $LIB_DIR/helpers.o $LIB_DIR/memisolation.o -lm $LIBRARIES
+            gcc $CFLAGS -o $LIB_DIR/libtest.so $LIB_DIR/preload.o $LIB_DIR/helpers.o $LIB_DIR/applock.o $LIB_DIR/appmap.o $LIB_DIR/memisolation.o 
+            gcc $CFLAGS -o $LIB_DIR/libpreload.so $LIB_DIR/applock.o $LIB_DIR/appmap.o $LIB_DIR/threadmap.o $LIB_DIR/helpers.o $LIB_DIR/memisolation.o -lm $LIBRARIES
             
-
             MEM_FLAGS="-DMEM_ISOLATION"
-            #LD_LIBRARY_PATH="$LIB_DIR:$LD_LIBRARY_PATH"
     fi
 }
 
