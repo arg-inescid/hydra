@@ -6,6 +6,7 @@
 #include "lazyisolation.h"
 #endif
 #ifdef MEM_ISOLATION
+#include <time.h>
 #include "memisolation.h"
 #endif
 #include "org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface.h"
@@ -49,6 +50,11 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
         initialize_seccomp();
 #endif
 #ifdef MEM_ISOLATION
+        clock_t start_time, end_time;
+        double execution_time;
+
+        start_time = clock();
+
         void *handle = dlopen("libpreload.so", RTLD_LAZY);
         if (!handle) {
             fprintf(stderr, "dlopen error: %s\n", dlerror());
@@ -61,7 +67,14 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
             dlclose(handle);
             return;
         }
+        
         initialize_memory_isolation();
+
+        end_time = clock();
+
+        execution_time = ((double)(end_time - start_time) / CLOCKS_PER_SEC) * 1000000.0;
+
+        fprintf(stderr, "Init Execution time: %.2f microseconds\n", execution_time);
 #endif
 }
 
