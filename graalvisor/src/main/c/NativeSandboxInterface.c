@@ -74,7 +74,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 
         execution_time = ((double)(end_time - start_time) / CLOCKS_PER_SEC) * 1000000.0;
 
-        fprintf(stderr, "Init Execution time: %.2f microseconds\n", execution_time);
+        fprintf(stdout, "Init Execution time: %.2f microseconds\n", execution_time);
 #endif
 }
 

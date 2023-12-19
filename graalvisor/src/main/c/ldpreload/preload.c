@@ -48,7 +48,7 @@ dlopen(const char * input, int flag)
 
         execution_time = ((double)(end_time - start_time) / CLOCKS_PER_SEC) * 1000000.0;
 
-        fprintf(stderr, "Load Execution time: %.2f microseconds\n", execution_time);
+        fprintf(stdout, "Load Execution time: %.2f microseconds\n", execution_time);
     }
 
     return real_dlopen(input, flag);
