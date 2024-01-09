@@ -12,3 +12,4 @@ resources/truffle-build/*
 start-vm
 stop-vm
 /.metadata/
+env.sh
