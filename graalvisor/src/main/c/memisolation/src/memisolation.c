@@ -128,75 +128,22 @@ insert_app_cache(int domain, const char* id)
 
 /* Supervisors */
 void
-wait_set(int domain)
+wait_sem(int domain)
 {
     int value;
-    if (sem_getvalue(&supervisors[domain].set, &value) == 0)
-        if (value) sem_wait(&supervisors[domain].set);
-    sem_wait(&supervisors[domain].set);
+    if (sem_getvalue(&supervisors[domain].sem, &value) == 0)
+        if (value) sem_wait(&supervisors[domain].sem);
+    sem_wait(&supervisors[domain].sem);
 }
 
 void
-signal_set(int domain)
+signal_sem(int domain)
 {
-    sem_post(&supervisors[domain].set);
+    sem_post(&supervisors[domain].sem);
 }
 
 void
-wait_filter(int domain)
-{
-    int value;
-    if (sem_getvalue(&supervisors[domain].filter, &value) == 0)
-        if (value) sem_wait(&supervisors[domain].filter);
-    sem_wait(&supervisors[domain].filter);
-}
-
-void
-signal_filter(int domain)
-{
-    sem_post(&supervisors[domain].filter);
-}
-
-void
-wait_perms(int domain)
-{
-    int value;
-    if (sem_getvalue(&supervisors[domain].perms, &value) == 0)
-        if (value) sem_wait(&supervisors[domain].perms);
-    sem_wait(&supervisors[domain].perms);
-}
-
-void
-signal_perms(int domain)
-{
-    sem_post(&supervisors[domain].perms);
-}
-
-void
-wait_handler(int domain)
-{
-    int value;
-    if (sem_getvalue(&supervisors[domain].handler, &value) == 0)
-        if (value) sem_wait(&supervisors[domain].handler);
-    sem_wait(&supervisors[domain].handler);
-}
-
-void
-signal_handler(int domain)
-{
-    sem_post(&supervisors[domain].handler);
-}
-
-void
-update_supervisor_app(int domain, const char* app)
-{
-    SEC_DBM("\t[S%d]: assigning application -> %s", domain, app);
-    strcpy(supervisors[domain].app, app);
-    insert_applock(&appLock, (char *)app);
-}
-
-void
-update_supervisor_status(int domain)
+mark_supervisor_done(int domain)
 {
     SEC_DBM("\t[S%d]: application finished.", domain);
     supervisors[domain].status = DONE;
@@ -222,6 +169,43 @@ insert_memory_regions(char* id, const char* path) {
     get_memory_regions(&appMap, id, path);
 }
 
+
+void
+prepare_environment(int domain, const char* application)
+{
+    insert_applock(&appLock, (char *)application);
+
+    // Lock App's libraries in case of multiple invocations
+    lock_app(&appLock, (char *)application);
+
+#ifdef EAGER_LOAD
+    set_permissions(application, PROT_READ|PROT_WRITE|PROT_EXEC, domain);
+#else
+    char* app = cache[domain].app;
+    if (strcmp(app, application)) {
+        if (strcmp(app, ""))
+            set_permissions(app, PROT_NONE, domain);
+        insert_app_cache(domain, application);
+        set_permissions(application, PROT_READ|PROT_WRITE|PROT_EXEC, domain);
+    }
+#endif
+
+    /* Populate domain */
+    insert_thread(&threadMap, domain);
+}
+
+void
+reset_environment(int domain, const char* application)
+{
+    remove_thread(&threadMap, domain);
+    supervisors[domain].status = ACTIVE;
+    
+#ifdef EAGER_LOAD
+	    set_permissions(application, PROT_NONE, domain);
+#endif
+
+    unlock_app(&appLock, (char *)application);
+}
 
 /* Seccomp */
 
@@ -398,7 +382,7 @@ handle_exit(struct seccomp_notif_resp *resp, int domain)
     descriptor, 'notifyFd'. */
 
 static void
-handle_notifications(int notifyFd, int domain)
+handle_notifications(int domain)
 {
     struct seccomp_notif        *req;
     struct seccomp_notif_resp   *resp;
@@ -406,16 +390,15 @@ handle_notifications(int notifyFd, int domain)
 
     alloc_seccomp_notif_buffers(&req, &resp, &sizes, domain);
 
-    signal_handler(domain);
-
     int             retval;
     fd_set          rfds;
     struct timeval  tv;
 
-    /* Watch stdin (supervisor's fd) to see when it has input. */
+    wait_sem(domain);
 
+    /* Watch stdin (supervisor's fd) to see when it has input. */
     FD_ZERO(&rfds);
-    FD_SET(domain, &rfds);
+    FD_SET(supervisors[domain].fd, &rfds);
 
     /* Wait up to five seconds. */
 
@@ -432,14 +415,13 @@ handle_notifications(int notifyFd, int domain)
         if (retval == -1)
             perror("select()");
         else if (retval) {
-            if (ioctl(notifyFd, SECCOMP_IOCTL_NOTIF_RECV, req) == -1) {
+            if (ioctl(supervisors[domain].fd, SECCOMP_IOCTL_NOTIF_RECV, req) == -1) {
                 if (errno == EINTR)
                     continue;
                 err(EXIT_FAILURE, "\t[S%d]: ioctl-SECCOMP_IOCTL_NOTIF_RECV", domain);
             }
         }
         else if (supervisors[domain].status && threadMap.buckets[domain]->nthreads == 1) {
-            remove_thread(&threadMap, domain);
             break;
         }
         else
@@ -448,7 +430,7 @@ handle_notifications(int notifyFd, int domain)
         SEC_DBM("\t[S%d]: received notifaction id [%lld], from tid: %d, syscall nr: %d\n", 
                 domain, req->id, req->pid, req->data.nr);
 
-        if (!cookie_is_valid(notifyFd, req->id)) {
+        if (!cookie_is_valid(supervisors[domain].fd, req->id)) {
             perror("ioctl(SECCOMP_IOCTL_NOTIF_ID_VALID)");
             continue;
         }
@@ -480,7 +462,7 @@ handle_notifications(int notifyFd, int domain)
                 "(flags = %#x; val = %lld; error = %d)",
                 domain, resp->flags, resp->val, resp->error);
 
-        if (ioctl(notifyFd, SECCOMP_IOCTL_NOTIF_SEND, resp) == -1) {
+        if (ioctl(supervisors[domain].fd, SECCOMP_IOCTL_NOTIF_SEND, resp) == -1) {
             if (errno == ENOENT)
                 SEC_DBM("\t[S%d]: response failed with ENOENT; "
                         "perhaps target process's syscall was "
@@ -508,40 +490,7 @@ supervisor(void *arg)
     SEC_DBM("\t[S%d]: up and running...", *domain);
 
     while(1) {
-        // wait to set permissions
-        wait_perms(*domain);
-        SEC_DBM("\t[S%d]: setting library permissions...", *domain);
-
-        // Lock App's libraries in case of multiple invocations
-        lock_app(&appLock, supervisors[*domain].app);
-
-#ifdef EAGER_LOAD
-	    set_permissions(supervisors[*domain].app, PROT_READ|PROT_WRITE|PROT_EXEC, *domain);
-#else
-        char* app = cache[*domain].app;
-        if (strcmp(app, supervisors[*domain].app)) {
-            if (strcmp(app, ""))
-                set_permissions(app, PROT_NONE, *domain);
-            insert_app_cache(*domain, supervisors[*domain].app);
-            set_permissions(supervisors[*domain].app, PROT_READ|PROT_WRITE|PROT_EXEC, *domain);
-        }
-#endif
-        /* Populate domain */
-        insert_thread(&threadMap, *domain);
-
-        SEC_DBM("\t[S%d]: permissions set, signaling app...", *domain);
-        signal_set(*domain);
-
-        wait_filter(*domain);
-        SEC_DBM("\t[S%d]: filter is applied, handling notifications...", *domain);
-
-        handle_notifications(supervisors[*domain].fd, *domain);
-
-#ifdef EAGER_LOAD
-	    set_permissions(supervisors[*domain].app, PROT_NONE, *domain);
-#endif
-
-        unlock_app(&appLock, supervisors[*domain].app);
+        handle_notifications(*domain);
     }
 
     return NULL;

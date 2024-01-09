@@ -2,18 +2,14 @@
 #include <semaphore.h>
 
 enum Status {
-    IN_PROGRESS = 0,
+    ACTIVE = 0,
     DONE = 1
 };
 
 struct Supervisor {
-    sem_t filter;
-    sem_t perms;
-    sem_t set;
-    sem_t handler;
+    sem_t sem;
     enum Status status;
     int fd;
-    char app[33];
 };
 
 struct CacheApp {

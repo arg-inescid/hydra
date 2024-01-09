@@ -26,7 +26,7 @@ function build_memisolation {
 	    	gcc -c -I"$MEM_DIR" $CFLAGS -o $LIB_DIR/helpers.o $MEM_DIR/helpers/helpers.c
         	gcc -c -I"$MEM_DIR" $CFLAGS -o $LIB_DIR/memisolation.o $MEM_DIR/memisolation.c
             gcc -c -I"$MEM_DIR" $CFLAGS -o $LIB_DIR/preload.o $PRELOAD_DIR/preload.c
-            gcc $CFLAGS -o $LIB_DIR/libtest.so $LIB_DIR/preload.o $LIB_DIR/helpers.o $LIB_DIR/applock.o $LIB_DIR/appmap.o $LIB_DIR/memisolation.o 
+            gcc $CFLAGS -o $LIB_DIR/libtest.so $LIB_DIR/preload.o $LIB_DIR/helpers.o $LIB_DIR/applock.o $LIB_DIR/appmap.o $LIB_DIR/threadmap.o $LIB_DIR/memisolation.o 
             gcc $CFLAGS -o $LIB_DIR/libpreload.so $LIB_DIR/applock.o $LIB_DIR/appmap.o $LIB_DIR/threadmap.o $LIB_DIR/helpers.o $LIB_DIR/memisolation.o -lm $LIBRARIES
             
             MEM_FLAGS="-DMEM_ISOLATION"
