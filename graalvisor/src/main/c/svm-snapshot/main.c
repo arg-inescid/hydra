@@ -14,34 +14,22 @@
 #include <sys/mman.h>
 #include <errno.h>
 #include <poll.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #include <string.h>
-#include "graal_isolate.h"
 
-// TODO - move this into a demo.
-// Note - we assume that there are no other threads attached to an isolate, there are no open files, etc.
-// Note - we might need to make sure that all libraries that the isolate depends on are loaded at the same location
-// Note - we also need to make sure that the isolate is loaded back to the same location.
+#include "main.h"
+#include "list.h"
+#include "cr.h"
 
-// TODO - next steps: set a reserved size for the isolate so that we can quickly find it using mmap.
+#define CHECKPOINT
+//#define RESTORE
 
-
-#define APP "/home/rbruno/git/graalserverless/benchmarks/src/java/gv-hello-world/build/libhelloworld.so"
-//#define APP "/home/rbruno/git/graalserverless/benchmarks/src/python/gv-hello-world/build/libhelloworld.so"
-//#define APP "/home/rbruno/git/graalserverless/benchmarks/src/javascript/gv-hello-world/build/libhelloworld.so"
-
-// Native Image ABI: https://github.com/oracle/graal/blob/master/substratevm/src/com.oracle.svm.core/headers/graal_isolate.preamble
-// Debugging NI binaries: https://www.graalvm.org/22.2/reference-manual/native-image/guides/debug-native-image-process/
-// Graal implementation: https://github.com/oracle/graal/blob/a4eada95ef403fdda4c5835fe3299f1dbfdcaecb/substratevm/src/com.oracle.svm.core/src/com/oracle/svm/core/c/function/CEntryPointNativeFunctions.java
-struct isolate_abi {
-    int  (*graal_create_isolate)   (graal_create_isolate_params_t*, graal_isolate_t**, graal_isolatethread_t**);
-    int  (*graal_tear_down_isolate)(graal_isolatethread_t*);
-    void (*entrypoint)             (graal_isolatethread_t*);
-    int  (*graal_detach_thread)    (graal_isolatethread_t*);
-    int  (*graal_attach_thread)    (graal_isolate_t*, graal_isolatethread_t**);
-};
-
-int load_isolate_abi(void* dhandle, struct isolate_abi* abi) {
+int load_isolate_abi(struct isolate_abi* abi) {
     char* derror = NULL;
+    void* dhandle = dlopen(APP, RTLD_LAZY);
+
+    // TODO - check for dlopen error.
 
     abi->graal_create_isolate = (int (*)(graal_create_isolate_params_t*, graal_isolate_t**, graal_isolatethread_t**)) dlsym(dhandle, "graal_create_isolate");
     if ((derror = dlerror()) != NULL) {
@@ -74,57 +62,6 @@ int load_isolate_abi(void* dhandle, struct isolate_abi* abi) {
     }
 
     return 0;
-}
-
-void wait_continue(char* tag) {
-    char c;
-    printf("[pid = %d, location = %s] Press any key to continue...\n", getpid(), tag);
-    scanf("%c",&c);
-}
-void* run_function(void* arg) {
-    struct isolate_abi abi;
-    
-    wait_continue("Before dlopen");
-
-    void* dhandle = dlopen(APP, RTLD_LAZY);
-    graal_isolate_t *isolate = NULL;
-    graal_isolatethread_t *thread = NULL;
-
-    if (load_isolate_abi(dhandle, &abi)) {
-        fprintf(stderr, "failed to load isolate abi\n");
-        return NULL;       
-    }
-
-    wait_continue("Before isolate");
-
-    // TODO - decide between loading from disk or creating a new one.
-    // TODO - if loading, then attach.
-    graal_create_isolate_params_t params;
-    memset(&params, 0, sizeof(graal_create_isolate_params_t));
-    params.reserved_address_space_size = 1024*1024*512;
-    if (abi.graal_create_isolate(&params, &isolate, &thread) != 0) {
-        fprintf(stderr, "failed to create isolate\n");
-        return NULL;
-    }
-
-    wait_continue("Before invoke");
-    
-    abi.entrypoint(thread);
-    
-    wait_continue("Before detatch");
-
-    abi.graal_detach_thread(thread);
-    
-    // TODO - decide if we should write to disk or not.
-
-    wait_continue("Before teardown");
-    
-    abi.graal_attach_thread(isolate, &thread);
-    abi.graal_tear_down_isolate(thread);
-
-
-    wait_continue("Final");
-    return NULL;
 }
 
 int install_filter() {
@@ -163,22 +100,123 @@ int install_filter() {
     return fd;
 }
 
-void* run_filtered_function(void* arg) {
-    int* fd = (int *)arg;
-    
-    *fd = install_filter();
-    if (*fd < 0) {
+void* run_function(void* args) {
+    struct function_args* fargs = (struct function_args*) args;
+    graal_isolate_t *isolate = NULL;
+    graal_isolatethread_t *thread = NULL;
+
+#ifdef CHECKPOINT
+    fargs->meta_snapshot_fd = open("snapshot.meta",  O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR);
+    fargs->seccomp_fd = install_filter();
+    if (fargs->seccomp_fd < 0) {
         fprintf(stderr, "failed install seccomp filter\n");
         return NULL;
     }
+#endif
+
+#ifdef RESTORE
+    isolate = restore(args);
+    fprintf(stderr, "hello = %p\n", isolate);
+    fargs->abi.graal_attach_thread(isolate, &thread);
+    fprintf(stderr, "hello isolate=%p\n", isolate);
+#else
+    graal_create_isolate_params_t params;
+        memset(&params, 0, sizeof(graal_create_isolate_params_t));
+        if (fargs->abi.graal_create_isolate(&params, &isolate, &thread) != 0) {
+            fprintf(stderr, "failed to create isolate\n");
+            return NULL;
+        }
+#endif
+
+    fargs->abi.entrypoint(thread);
+    fargs->abi.graal_detach_thread(thread);
     
-    void* ret = run_function(NULL);
-    
-    close(*fd);
-    return ret;
+#ifdef CHECKPOINT
+    checkpoint_memory(fargs);
+    checkpoint_isolate(fargs, isolate);
+    close(fargs->meta_snapshot_fd);
+    // TODO - find a better way to prevent the monitor thread from writting to this fd.
+    fargs->meta_snapshot_fd = 0;
+#endif
+
+    fargs->abi.graal_attach_thread(isolate, &thread);
+    fargs->abi.graal_tear_down_isolate(thread);
+
+#ifdef CHECKPOINT
+    close(fargs->seccomp_fd);
+#endif
+    return NULL;
 }
 
-void handle_notifications(int fd) {
+/*
+ * We will save and replay all mmap and munmap operations.
+ * In addition, we will copy all mapped memory pages. This means that during execution we will not need to track reserve ops, but only commit.
+ */
+void handle_mmap(struct function_args* fargs, void* addr, size_t length, int prot, int flags, int fd, off_t offset, void* ret) {
+
+    // TODO - move printf to checkpoint?
+    fprintf(stderr, "mmap:\t addr = %16p size = 0x%lx prot = %d flags = %8d fd = %2d offset = %8d ret = %16p\n", 
+        addr, length, prot, flags, fd, offset, ret);
+    checkpoint_mmap(fargs, addr, length, prot, flags, fd, offset, ret);
+
+    if (prot != PROT_NONE && fd != -1) {
+        list_push(&(fargs->mappings), ret, length, prot, flags);
+        fprintf(stderr, "[new mapping] %16p to %16p\n", ret, ((char*) ret) + length);
+    }
+}
+
+void handle_munmap(struct function_args* fargs, void* addr, size_t length, int ret) {
+    void* munmap_finish = ((char*) addr) + length;
+    mapping_t * current = &(fargs->mappings);
+
+    // TODO - move printf to checkpoint?
+    fprintf(stderr, "munmap:\t addr = %16p size = 0x%lx ret = %d\n", addr, length, ret);
+    checkpoint_munmap(fargs, addr, length, ret);
+
+    // If the list is empty, skip.
+    if (current->start == NULL) {
+        return;
+    }
+
+    while (current != NULL) {
+        void* mapping_finish = ((char*) current->start) + current->size;
+
+        // If we are removing a block from the start.
+        if (addr == current->start && munmap_finish <= mapping_finish) {
+            current->size -= length;
+            current->start = munmap_finish;
+            fprintf(stderr, "[upd mapping] [%16p to %16p] (clipping beg)\n", current->start, mapping_finish);
+            if (current->size == 0) {
+                // TODO - remove
+            }
+        } 
+        // If we are removing a block from the end.
+        else if (munmap_finish == mapping_finish && addr >= current->start) {
+            current->size -= length;
+            mapping_finish = ((char*) current->start) + current->size;
+            fprintf(stderr, "[upd mapping] [%16p to %16p] (clipping end)\n", current->start, mapping_finish);
+             if (current->size == 0) {
+                // TODO - remove
+            }
+        }
+        // If we are removing a range that includes this mapping.
+        else if (addr < current->start && munmap_finish > mapping_finish) {
+            current->size = 0;
+            fprintf(stderr, "[del mapping] [%16p to %16p] (deleting)\n", current->start, mapping_finish);
+            // TODO - remove
+        }
+        // If we are removing a range before or after this mapping.
+        else if (munmap_finish < current->start || addr > mapping_finish) {
+            // ignore
+        } else {
+            fprintf(stderr, "error: unsupported munmap: len = %lx [%16p to %16p] from [%16p to %16p]\n", 
+                length, addr, munmap_finish, current->start, mapping_finish);
+        }
+        current = current->next;
+    }
+}
+
+void handle_notifications(struct function_args* fargs) {
     struct seccomp_notif_sizes sizes;
     if (syscall(SYS_seccomp, SECCOMP_GET_NOTIF_SIZES, 0, &sizes) < 0) {
         perror("seccomp(SECCOMP_GET_NOTIF_SIZES)");
@@ -189,7 +227,7 @@ void handle_notifications(int fd) {
     struct seccomp_notif_resp *resp = (struct seccomp_notif_resp*)malloc(sizes.seccomp_notif_resp);
     struct pollfd fds[1] = {
         {
-            .fd  = fd,
+            .fd  = fargs->seccomp_fd,
             .events = POLLIN,
         },
     };
@@ -206,13 +244,13 @@ void handle_notifications(int fd) {
         // Receive notification
         memset(req, 0, sizes.seccomp_notif);
         memset(resp, 0, sizes.seccomp_notif_resp);
-        if (ioctl(fd, SECCOMP_IOCTL_NOTIF_RECV, req) == -1) {
+        if (ioctl(fargs->seccomp_fd, SECCOMP_IOCTL_NOTIF_RECV, req) == -1) {
             perror("ioctl(SECCOMP_IOCTL_NOTIF_RECV)");
             continue;
         }
 
         // Validate notification
-        if (ioctl(fd, SECCOMP_IOCTL_NOTIF_ID_VALID, &req->id) == -1 ) {
+        if (ioctl(fargs->seccomp_fd, SECCOMP_IOCTL_NOTIF_ID_VALID, &req->id) == -1 ) {
             perror("ioctl(SECCOMP_IOCTL_NOTIF_ID_VALID)");
             continue;
         }
@@ -223,18 +261,13 @@ void handle_notifications(int fd) {
         switch (req->data.nr) {
             case __NR_mmap:
                 resp->val = syscall(__NR_mmap, args[0], args[1], args[2], args[3], args[4], args[5]);
-                // Ignore when fd != -1, file mapping
-                // Ignore when mapping has PROT_NONE
-                if (((int)args[4]) == -1 && ((int)args[2] != PROT_NONE)) {
-                    fprintf(stderr, "mmap:\t addr = %16p size = %12d prot = %d flags = %8d fd = %2d offset = %8d ret = %16p\n",
-                        (void*)args[0], (size_t)args[1], (int)args[2], (int)args[3], (int)args[4], (off_t)args[5], (void*)resp->val);
-                }
+                handle_mmap(fargs, (void*) args[0], (size_t) args[1], (int) args[2], (int) args[3], (int) args[4], (off_t) args[5], (void*) resp->val);
                 resp->error = resp->val >= 0 ? 0 : errno;
                 resp->flags = 0;
                 break;
             case __NR_munmap:
-                fprintf(stderr, "munmap:\t addr = %16p size = %12d\n", (void*)args[0], (size_t)args[1]);
                 resp->val = syscall(__NR_munmap, args[0], args[1]);
+                handle_munmap(fargs, (void*) args[0], (size_t) args[1], (int) resp->val);
                 resp->error = resp->val >= 0 ? 0 : errno;
                 resp->flags = 0;
                 break;
@@ -242,7 +275,7 @@ void handle_notifications(int fd) {
                 resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
                 break;
         }
-        if (ioctl(fd, SECCOMP_IOCTL_NOTIF_SEND, resp) == -1) {
+        if (ioctl(fargs->seccomp_fd, SECCOMP_IOCTL_NOTIF_SEND, resp) == -1) {
             perror("ioctl(SECCOMP_IOCTL_NOTIF_SEND)");
             continue;
         }
@@ -252,13 +285,31 @@ void handle_notifications(int fd) {
 }
 
 int main(int argc, char** argv) {
-    int seccomp_fd = 0;
+    struct function_args fargs;
     pthread_t thread;
-    pthread_create(&thread, NULL, run_filtered_function, &seccomp_fd);
 
-    while (!seccomp_fd) ; // TODO - avoid active waiting
+    // Zero the entire argument data structure.
+    memset(&fargs, 0, sizeof(struct function_args));
 
-    handle_notifications(seccomp_fd);
+    // Load function and initialize abi.
+    if (load_isolate_abi(&(fargs.abi))) {
+        fprintf(stderr, "failed to load isolate abi\n");
+        return 1;
+    }
 
+    // Launch worker thread.
+    pthread_create(&thread, NULL, run_function, &fargs);
+
+#ifdef CHECKPOINT
+    // Wait while the thread initilizes and installs the seccomp filter.
+    while (!fargs.seccomp_fd) ; // TODO - avoid active waiting
+
+    // Keep handling syscall notifications.
+    handle_notifications(&fargs);
+#endif
+
+    // Join and terminat.e
     pthread_join(thread, NULL);
+
+    list_print(&(fargs.mappings));
 }

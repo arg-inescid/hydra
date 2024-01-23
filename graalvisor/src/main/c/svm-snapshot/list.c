@@ -1,0 +1,51 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include "list.h"
+
+mapping_t* new_mapping(void* start, size_t size, int prot, int flags) {
+    mapping_t * mapping = (mapping_t *) malloc(sizeof(mapping_t));
+    mapping->start = start;
+    mapping->size = size;
+    mapping->prot = prot;
+    mapping->flags = flags;
+    mapping->next = NULL;
+    return mapping;
+}
+
+void list_push(mapping_t* head, void* start, size_t size, int prot, int flags) {
+    mapping_t* current = head;
+
+    // If the list is empty, fill in the head and return.
+    if (current->start == NULL) {
+        current->start = start;
+        current->size = size;
+        current->prot = prot;
+        current->flags = flags;
+        return;
+    }
+
+    // Otherwise, find te last element.
+    while (current->next != NULL) {
+        current = current->next;
+    }
+
+    // Insert new element.
+    current->next = new_mapping(start, size, prot, flags);
+    current->next->next = NULL;
+}
+
+void list_print(mapping_t * head) {
+    mapping_t* current = head;
+
+    // If the list if empty, nothing to print.
+    if (current->start == NULL) {
+        return;
+    }
+
+    while (current != NULL) {
+        void* finish = ((char*) current->start) + current->size;
+        fprintf(stderr, "mapping: start = %16p finish = %16p size = 0x%lx prot = %d flags = %8d\n",
+            current->start, finish, current->size, current->prot, current->flags);
+        current = current->next;
+    }
+}

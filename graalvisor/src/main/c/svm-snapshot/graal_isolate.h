@@ -1,3 +1,6 @@
+#ifndef GRAAL_ISOLATE_H
+#define GRAAL_ISOLATE_H
+
 /*
  * Structure representing an isolate. A pointer to such a structure can be
  * passed to an entry point as the execution context.
@@ -50,3 +53,5 @@ struct __graal_create_isolate_params_t {
     char           _reserved_4;                 /* Internal usage, do not use. */
 };
 typedef struct __graal_create_isolate_params_t graal_create_isolate_params_t;
+
+#endif
