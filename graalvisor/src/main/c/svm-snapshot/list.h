@@ -7,12 +7,10 @@
 typedef struct mapping {
     void* start;
     size_t size;
-    int prot;
-    int flags;
     struct mapping* next;
 } mapping_t;
 
-void list_push(mapping_t * head, void* start, size_t size, int prot, int flags);
+void list_push(mapping_t * head, void* start, size_t size);
 void list_print(mapping_t * head);
 
 #endif

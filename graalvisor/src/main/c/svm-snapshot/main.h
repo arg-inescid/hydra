@@ -9,9 +9,8 @@
 // Note - we might need to make sure that all libraries that the isolate depends on are loaded at the same location
 // Note - we also need to make sure that the isolate is loaded back to the same location.
 
-#define APP "/home/rbruno/git/graalserverless/benchmarks/src/java/gv-hello-world/build/libhelloworld.so"
-//#define APP "/home/rbruno/git/graalserverless/benchmarks/src/python/gv-hello-world/build/libhelloworld.so"
-//#define APP "/home/rbruno/git/graalserverless/benchmarks/src/javascript/gv-hello-world/build/libhelloworld.so"
+// TODO - the app library is open with a particular file descriptor, we should try to keep it open
+// TODO - should we intercept mprotect?
 
 // Native Image ABI: https://github.com/oracle/graal/blob/master/substratevm/src/com.oracle.svm.core/headers/graal_isolate.preamble
 // Debugging NI binaries: https://www.graalvm.org/22.2/reference-manual/native-image/guides/debug-native-image-process/
@@ -31,6 +30,10 @@ struct function_args {
     int seccomp_fd;
     // List of memory mappings being tracked in the sandbox.
     mapping_t mappings;
+    // Path of the function library.
+    char* function_path;
+    // File descriptor of the function library.
+    int function_fd;
     // Function arguments.
     void* args;
     // Snapshot metadata file descriptor;

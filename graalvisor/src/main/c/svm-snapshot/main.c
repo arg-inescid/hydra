@@ -22,14 +22,15 @@
 #include "list.h"
 #include "cr.h"
 
-#define CHECKPOINT
-//#define RESTORE
+#define DEBUG
 
-int load_isolate_abi(struct isolate_abi* abi) {
+enum EXECUTION_MODE { NORMAL, CHECKPOINT, RESTORE };
+
+// Wether we are checkpointing or restoreing.
+enum EXECUTION_MODE CURRENT_MODE = NORMAL;
+
+int load_isolate_abi(void* dhandle, struct isolate_abi* abi) {
     char* derror = NULL;
-    void* dhandle = dlopen(APP, RTLD_LAZY);
-
-    // TODO - check for dlopen error.
 
     abi->graal_create_isolate = (int (*)(graal_create_isolate_params_t*, graal_isolate_t**, graal_isolatethread_t**)) dlsym(dhandle, "graal_create_isolate");
     if ((derror = dlerror()) != NULL) {
@@ -48,7 +49,7 @@ int load_isolate_abi(struct isolate_abi* abi) {
         fprintf(stderr, "%s\n", derror);
         return 1;
     }
- 
+
     abi->graal_detach_thread = (int (*)(graal_isolatethread_t*)) dlsym(dhandle, "graal_detach_thread");
     if ((derror = dlerror()) != NULL) {
         fprintf(stderr, "%s\n", derror);
@@ -73,8 +74,12 @@ int install_filter() {
 
         // add rules here
         // TODO - we should probably track clone, exit, open, and close.
-        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_mmap, 1, 0),
-        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_munmap, 0, 1),
+//        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_open,   5, 0),
+//        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_close,  4, 0),
+//        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_clone,  3, 0),
+        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_mprotect, 2, 0),
+        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_mmap,     1, 0),
+        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_munmap,   0, 1),
         BPF_STMT(BPF_RET + BPF_K, SECCOMP_RET_USER_NOTIF),
 
         // default rule
@@ -105,46 +110,52 @@ void* run_function(void* args) {
     graal_isolate_t *isolate = NULL;
     graal_isolatethread_t *thread = NULL;
 
-#ifdef CHECKPOINT
-    fargs->meta_snapshot_fd = open("snapshot.meta",  O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR);
-    fargs->seccomp_fd = install_filter();
-    if (fargs->seccomp_fd < 0) {
-        fprintf(stderr, "failed install seccomp filter\n");
-        return NULL;
+    if (CURRENT_MODE == CHECKPOINT) {
+        fargs->meta_snapshot_fd = open("metadata.snap",  O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
+        fargs->seccomp_fd = install_filter();
+        if (fargs->seccomp_fd < 0) {
+            fprintf(stderr, "failed install seccomp filter\n");
+            return NULL;
+        }
     }
-#endif
 
-#ifdef RESTORE
-    isolate = restore(args);
-    fprintf(stderr, "hello = %p\n", isolate);
-    fargs->abi.graal_attach_thread(isolate, &thread);
-    fprintf(stderr, "hello isolate=%p\n", isolate);
-#else
-    graal_create_isolate_params_t params;
+    if (CURRENT_MODE == RESTORE) {
+        isolate = restore(args);
+#ifdef DEBUG
+        print_proc_self_maps("after_restore.txt");
+#endif
+        fargs->abi.graal_attach_thread(isolate, &thread);
+    } else {
+        graal_create_isolate_params_t params;
         memset(&params, 0, sizeof(graal_create_isolate_params_t));
         if (fargs->abi.graal_create_isolate(&params, &isolate, &thread) != 0) {
             fprintf(stderr, "failed to create isolate\n");
             return NULL;
         }
-#endif
+    }
 
     fargs->abi.entrypoint(thread);
     fargs->abi.graal_detach_thread(thread);
-    
-#ifdef CHECKPOINT
-    checkpoint_memory(fargs);
-    checkpoint_isolate(fargs, isolate);
-    close(fargs->meta_snapshot_fd);
-    // TODO - find a better way to prevent the monitor thread from writting to this fd.
-    fargs->meta_snapshot_fd = 0;
+
+
+
+   if (CURRENT_MODE == CHECKPOINT) {
+#ifdef DEBUG
+        print_proc_self_maps("before_checkpoint.txt");
 #endif
+        checkpoint_memory(fargs);
+        checkpoint_isolate(fargs, isolate);
+        close(fargs->meta_snapshot_fd);
+        // TODO - find a better way to prevent the monitor thread from writting to this fd.
+        fargs->meta_snapshot_fd = 0;
+   }
 
     fargs->abi.graal_attach_thread(isolate, &thread);
     fargs->abi.graal_tear_down_isolate(thread);
 
-#ifdef CHECKPOINT
-    close(fargs->seccomp_fd);
-#endif
+    if (CURRENT_MODE == CHECKPOINT) {
+        close(fargs->seccomp_fd);
+    }
     return NULL;
 }
 
@@ -154,13 +165,10 @@ void* run_function(void* args) {
  */
 void handle_mmap(struct function_args* fargs, void* addr, size_t length, int prot, int flags, int fd, off_t offset, void* ret) {
 
-    // TODO - move printf to checkpoint?
-    fprintf(stderr, "mmap:\t addr = %16p size = 0x%lx prot = %d flags = %8d fd = %2d offset = %8d ret = %16p\n", 
-        addr, length, prot, flags, fd, offset, ret);
     checkpoint_mmap(fargs, addr, length, prot, flags, fd, offset, ret);
 
-    if (prot != PROT_NONE && fd != -1) {
-        list_push(&(fargs->mappings), ret, length, prot, flags);
+    if (prot != PROT_NONE) { // TODO - are these the correct permissions?
+        list_push(&(fargs->mappings), ret, length);
         fprintf(stderr, "[new mapping] %16p to %16p\n", ret, ((char*) ret) + length);
     }
 }
@@ -169,8 +177,6 @@ void handle_munmap(struct function_args* fargs, void* addr, size_t length, int r
     void* munmap_finish = ((char*) addr) + length;
     mapping_t * current = &(fargs->mappings);
 
-    // TODO - move printf to checkpoint?
-    fprintf(stderr, "munmap:\t addr = %16p size = 0x%lx ret = %d\n", addr, length, ret);
     checkpoint_munmap(fargs, addr, length, ret);
 
     // If the list is empty, skip.
@@ -189,7 +195,7 @@ void handle_munmap(struct function_args* fargs, void* addr, size_t length, int r
             if (current->size == 0) {
                 // TODO - remove
             }
-        } 
+        }
         // If we are removing a block from the end.
         else if (munmap_finish == mapping_finish && addr >= current->start) {
             current->size -= length;
@@ -209,10 +215,20 @@ void handle_munmap(struct function_args* fargs, void* addr, size_t length, int r
         else if (munmap_finish < current->start || addr > mapping_finish) {
             // ignore
         } else {
-            fprintf(stderr, "error: unsupported munmap: len = %lx [%16p to %16p] from [%16p to %16p]\n", 
+            fprintf(stderr, "error: unsupported munmap: len = %lx [%16p to %16p] from [%16p to %16p]\n",
                 length, addr, munmap_finish, current->start, mapping_finish);
         }
         current = current->next;
+    }
+}
+
+void handle_mprotect(struct function_args* fargs, void* addr, size_t length, int prot, int ret) {
+
+    checkpoint_mprotect(fargs, addr, length, prot, ret);
+
+    if (prot != PROT_NONE) { // TODO - are these the correct permissions?
+        list_push(&(fargs->mappings), addr, length);
+        fprintf(stderr, "[new mapping] %16p to %16p\n", addr, ((char*) addr) + length);
     }
 }
 
@@ -254,7 +270,7 @@ void handle_notifications(struct function_args* fargs) {
             perror("ioctl(SECCOMP_IOCTL_NOTIF_ID_VALID)");
             continue;
         }
-    
+
         // Send response
         resp->id = req->id;
         long long unsigned int *args = req->data.args;
@@ -271,6 +287,12 @@ void handle_notifications(struct function_args* fargs) {
                 resp->error = resp->val >= 0 ? 0 : errno;
                 resp->flags = 0;
                 break;
+            case __NR_mprotect:
+                resp->val = syscall(__NR_mprotect, args[0], args[1], args[2]);
+                handle_mprotect(fargs, (void*) args[0], (size_t) args[1], (int) args[2], (int) resp->val);
+                resp->error = resp->val >= 0 ? 0 : errno;
+                resp->flags = 0;
+                break;
             default:
                 resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
                 break;
@@ -284,6 +306,11 @@ void handle_notifications(struct function_args* fargs) {
     free(resp);
 }
 
+void usage_exit() {
+    fprintf(stderr, "Syntax: main <normal|checkpoint|restore> <path to native image app library>\n");
+    exit(1);
+}
+
 int main(int argc, char** argv) {
     struct function_args fargs;
     pthread_t thread;
@@ -291,8 +318,35 @@ int main(int argc, char** argv) {
     // Zero the entire argument data structure.
     memset(&fargs, 0, sizeof(struct function_args));
 
-    // Load function and initialize abi.
-    if (load_isolate_abi(&(fargs.abi))) {
+    if (argc != 3) {
+        usage_exit();
+    } else {
+        switch (argv[1][0])
+        {
+        case 'n':
+            CURRENT_MODE = NORMAL;
+            break;
+        case 'c':
+            CURRENT_MODE = CHECKPOINT;
+            break;
+        case 'r':
+            CURRENT_MODE = RESTORE;
+            break;
+        default:
+            usage_exit();
+        }
+        fargs.function_path = argv[2];
+    }
+
+    // Load function library.
+    void* dhandle = dlopen(fargs.function_path, RTLD_LAZY);
+    if (dhandle == NULL) {
+        fprintf(stderr, "failed to load dynamic library: %s\n", dlerror());
+        return 1;
+    }
+
+    // Initialize abi.
+    if (load_isolate_abi(dhandle, &(fargs.abi))) {
         fprintf(stderr, "failed to load isolate abi\n");
         return 1;
     }
@@ -300,16 +354,14 @@ int main(int argc, char** argv) {
     // Launch worker thread.
     pthread_create(&thread, NULL, run_function, &fargs);
 
-#ifdef CHECKPOINT
-    // Wait while the thread initilizes and installs the seccomp filter.
-    while (!fargs.seccomp_fd) ; // TODO - avoid active waiting
+    if (CURRENT_MODE == CHECKPOINT) {
+         // Wait while the thread initilizes and installs the seccomp filter.
+        while (!fargs.seccomp_fd) ; // TODO - avoid active waiting
 
-    // Keep handling syscall notifications.
-    handle_notifications(&fargs);
-#endif
+        // Keep handling syscall notifications.
+        handle_notifications(&fargs);
+    }
 
     // Join and terminat.e
     pthread_join(thread, NULL);
-
-    list_print(&(fargs.mappings));
 }
