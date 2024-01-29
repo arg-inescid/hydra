@@ -196,10 +196,7 @@ prepare_environment(int domain, const char* application)
 
 void
 reset_environment(int domain, const char* application)
-{
-    remove_thread(&threadMap, domain);
-    supervisors[domain].status = ACTIVE;
-    
+{    
 #ifdef EAGER_LOAD
 	    set_permissions(application, PROT_NONE, domain);
 #endif
@@ -422,10 +419,13 @@ handle_notifications(int domain)
             }
         }
         else if (supervisors[domain].status && threadMap.buckets[domain]->nthreads == 1) {
+            supervisors[domain].status = ACTIVE;
+            remove_thread(&threadMap, domain);
             break;
         }
-        else
+        else {
             continue;
+        }
 
         SEC_DBM("\t[S%d]: received notifaction id [%lld], from tid: %d, syscall nr: %d\n", 
                 domain, req->id, req->pid, req->data.nr);
