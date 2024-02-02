@@ -42,17 +42,13 @@ import java.util.logging.Level;
 @SuppressWarnings("unused")
 public class RoundedRobinScheduler implements Scheduler {
 
-    // Wether a lambda is being decommissioned.
-    public static volatile boolean hasDecommissionedLambdas;
-
     private Lambda findLambda(Function function, LambdaExecutionMode targetMode, Set<Lambda> lambdas) {
         for (Lambda lambda : lambdas) {
 
             boolean hotSpotMatch = targetMode == LambdaExecutionMode.HOTSPOT && lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT;
             boolean modeMatch = targetMode == lambda.getExecutionMode() || hotSpotMatch;
-            boolean lambdaOverloaded = !function.canCollocateInvocation() && lambda.getOpenRequestCount() >= Environment.LAMBDA_MAX_OPEN_REQ_COUNT;
-            // If lambda is decomissioned, not of the correct target, overloaded, or cannot register this function, skip.
-            if (lambda.isDecommissioned() || !modeMatch || lambdaOverloaded || !lambda.canRegisterInLambda(function)) {
+            // If lambda is decomissioned, not of the correct target, or cannot register this function, skip.
+            if (lambda.isDecommissioned() || !modeMatch || !lambda.canRegisterInLambda(function)) {
                 continue;
             }
 
@@ -77,6 +73,7 @@ public class RoundedRobinScheduler implements Scheduler {
             if (lambda == null) {
                 Lambda newLambda = Configuration.argumentStorage.getLambdaPool().getLambda(targetMode);
                 if (newLambda != null) {
+                    Logger.log(Level.INFO, "Obtained a new lambda from the pool.");
                     newLambda.resetTimer();
                     LambdaManager.lambdas.add(newLambda);
                     function.updateStatus(targetMode);
@@ -87,13 +84,13 @@ public class RoundedRobinScheduler implements Scheduler {
             } else {
                 // Cancel the lambda timeout timer and increment the open request count.
                 lambda.incOpenRequests();
-                // Break the while true.
+                // We found a lambda, exit the loop.
                 break;
             }
 
             if (!obtainedLambda) {
                 try {
-                    Thread.sleep(100);
+                    Thread.sleep(1000);
                 } catch (InterruptedException e) {
                     // Ignored.
                 }
@@ -102,19 +99,14 @@ public class RoundedRobinScheduler implements Scheduler {
         }
 
         synchronized (function) {
-            // We only one lambda to be decommissioned at a time.
-            if (!hasDecommissionedLambdas) {
-                if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT && function.getStatus() == FunctionStatus.READY && !lambda.isDecommissioned()) {
-                    hasDecommissionedLambdas = true;
-                    lambda.setDecommissioned(true);
-                    Logger.log(Level.INFO, "Decommissioning (hotspot to native image) lambda " + lambda.getLambdaID());
-                }
+            if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT && function.getStatus() == FunctionStatus.READY && !lambda.isDecommissioned()) {
+                lambda.setDecommissioned(true);
+                Logger.log(Level.INFO, "Decommissioning (hotspot to native image) lambda " + lambda.getLambdaID());
+            }
 
-                if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT && lambda.getClosedRequestCount() > 1000 && !lambda.isDecommissioned()) {
-                    hasDecommissionedLambdas = true;
-                    lambda.setDecommissioned(true);
-                    Logger.log(Level.INFO, "Decommissioning (wrapping agent) lambda " + lambda.getLambdaID());
-                }
+            if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT && lambda.getClosedRequestCount() > 1000 && !lambda.isDecommissioned()) {
+                lambda.setDecommissioned(true);
+                Logger.log(Level.INFO, "Decommissioning (wrapping agent) lambda " + lambda.getLambdaID());
             }
         }
 
@@ -126,8 +118,6 @@ public class RoundedRobinScheduler implements Scheduler {
     public void reschedule(Lambda lambda, Function function) {
         // Decrement the open request count and reset the lambda timeout timer.
         lambda.decOpenRequests();
-        if (function.canCollocateInvocation()) {
-            lambda.getMemoryPool().deallocateMemoryLambda(function.getMemory());
-        }
+        lambda.deallocateMemory(function);
     }
 }

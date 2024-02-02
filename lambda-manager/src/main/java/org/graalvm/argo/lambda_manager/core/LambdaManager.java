@@ -5,11 +5,11 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.graalvm.argo.lambda_manager.exceptions.argument_parser.ErrorDuringParsingJSONFile;
 import org.graalvm.argo.lambda_manager.exceptions.user.FunctionNotFound;
+import org.graalvm.argo.lambda_manager.metrics.MetricsProvider;
 import org.graalvm.argo.lambda_manager.optimizers.FunctionStatus;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.utils.JsonUtils;
 import org.graalvm.argo.lambda_manager.utils.Messages;
-import org.graalvm.argo.lambda_manager.utils.MetricsProvider;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 import org.graalvm.argo.lambda_manager.utils.parser.ArgumentParser;
 import io.micronaut.context.BeanContext;
@@ -60,11 +60,11 @@ public class LambdaManager {
                 synchronized (lambda) {
                     if (lambda.isFunctionUploadRequired(function)) {
                         response = Configuration.client.registerFunction(lambda, function);
-                        long spentTime = System.currentTimeMillis() - start;
-                        MetricsProvider.reportColdStartTime(spentTime);
                         Logger.log(Level.FINE, String.format("Function %s registration in lambda %s returned %s", function.getName(), lambda.getLambdaName(), response));
                     }
                 }
+
+                MetricsProvider.reportInfrastructureTime(System.currentTimeMillis() - start);
 
                 response = Configuration.client.invokeFunction(lambda, function, arguments);
 

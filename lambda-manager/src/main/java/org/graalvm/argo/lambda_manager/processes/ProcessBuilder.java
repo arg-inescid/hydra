@@ -15,15 +15,17 @@ public class ProcessBuilder extends Thread {
     private final String commandAsString;
     private final OnProcessFinishCallback callback;
     private final String outputFilename;
+    private final String errorFilename;
     private final String processType;
     private final long pid;
     private Process process;
 
-    public ProcessBuilder(String processType, long pid, List<String> command, OnProcessFinishCallback callback, String outputFilename) {
+    public ProcessBuilder(String processType, long pid, List<String> command, OnProcessFinishCallback callback, String outputFilename, String errorFilename) {
         this.command = command;
         this.commandAsString = Arrays.toString(command.toArray());
         this.callback = callback;
         this.outputFilename = outputFilename;
+        this.errorFilename = errorFilename;
         this.processType = processType;
         this.pid = pid;
     }
@@ -81,8 +83,9 @@ public class ProcessBuilder extends Thread {
 
     private java.lang.ProcessBuilder prepareStartup() throws InterruptedException {
         File outputFile = new File(outputFilename);
+        File errorFile = errorFilename.equals(outputFilename) ? outputFile : new File(errorFilename);
         java.lang.ProcessBuilder processBuilder = new java.lang.ProcessBuilder();
-        processBuilder.redirectOutput(outputFile).redirectError(outputFile);
+        processBuilder.redirectOutput(outputFile).redirectError(errorFile);
         processBuilder.command(command);
         logProcessStart();
         return processBuilder;

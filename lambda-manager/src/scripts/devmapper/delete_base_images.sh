@@ -10,7 +10,7 @@ function delete_base {
   rm $DIR/$BASENAME.loop
 }
 
-declare -a image_names=("graalvisor" "hotspot" "hotspot-agent" "java-openwhisk")
+declare -a image_names=("graalvisor" "hotspot" "hotspot-agent" "java-openwhisk" "javascript-openwhisk" "python-openwhisk")
 
 for image in "${image_names[@]}"
 do

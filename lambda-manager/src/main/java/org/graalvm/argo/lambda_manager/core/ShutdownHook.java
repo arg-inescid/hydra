@@ -16,6 +16,9 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 @SuppressWarnings("unused")
@@ -29,10 +32,19 @@ public class ShutdownHook implements ApplicationEventListener<ApplicationShutdow
     }
 
     private void shutdownLambdas() {
+        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         for (Lambda lambda : LambdaManager.lambdas) {
-            new DefaultLambdaShutdownHandler(lambda).run();
+            executor.execute(new DefaultLambdaShutdownHandler(lambda)::run);
         }
         LambdaManager.lambdas.clear();
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(600, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+        }
     }
 
     @Override
@@ -44,6 +56,7 @@ public class ShutdownHook implements ApplicationEventListener<ApplicationShutdow
             if (Configuration.isInitialized()) {
                 shutdownLambdas();
                 Configuration.argumentStorage.getLambdaPool().tearDown();
+                Configuration.argumentStorage.tearDownMetricsScraper();
                 LambdaType lambdaType = Configuration.argumentStorage.getLambdaType();
                 if (lambdaType == LambdaType.VM_FIRECRACKER || lambdaType == LambdaType.VM_FIRECRACKER_SNAPSHOT) {
                     deleteDevmapperBase();

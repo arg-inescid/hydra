@@ -17,6 +17,7 @@ public class StartGraalvisorFirecracker extends StartFirecracker {
         command.add(TIMESTAMP_TAG + System.currentTimeMillis());
         command.add(PORT_TAG + Configuration.argumentStorage.getLambdaPort());
         command.add("LD_LIBRARY_PATH=/lib:/lib64:/tmp/apps:/usr/local/lib");
+        command.add("JAVA_HOME=/jvm");
         return command;
     }
 

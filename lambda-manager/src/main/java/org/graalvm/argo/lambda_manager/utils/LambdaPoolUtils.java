@@ -35,6 +35,10 @@ public class LambdaPoolUtils {
     private static final int EXECUTOR_THREAD_COUNT = Runtime.getRuntime().availableProcessors() / 2;
 
     private static final int DAEMON_SLEEP_PERIOD_MS = 5000;
+    /**
+     * Only reclaim lambdas that were used more than "LRU_RECLAMATION_PERIOD_MS" ms ago.
+     */
+    private static final int LRU_RECLAMATION_PERIOD_MS = 5000;
     private static final float LAMBDA_RECLAIM_THRESHOLD = 0.3f;
     private static final float LAMBDA_PERCENTAGE_TO_RECLAIM = LAMBDA_RECLAIM_THRESHOLD * 0.5f;
 
@@ -44,7 +48,9 @@ public class LambdaPoolUtils {
         startLambdasPerMode(lambdaPool, LambdaExecutionMode.HOTSPOT_W_AGENT, poolConfiguration.getHotspotWithAgent(), executor);
         startLambdasPerMode(lambdaPool, LambdaExecutionMode.HOTSPOT, poolConfiguration.getHotspot(), executor);
         startLambdasPerMode(lambdaPool, LambdaExecutionMode.GRAALVISOR, poolConfiguration.getGraalvisor(), executor);
-        startLambdasPerMode(lambdaPool, LambdaExecutionMode.CUSTOM, poolConfiguration.getCustom(), executor);
+        startLambdasPerMode(lambdaPool, LambdaExecutionMode.CUSTOM_JAVA, poolConfiguration.getCustomJava(), executor);
+        startLambdasPerMode(lambdaPool, LambdaExecutionMode.CUSTOM_JAVASCRIPT, poolConfiguration.getCustomJavaScript(), executor);
+        startLambdasPerMode(lambdaPool, LambdaExecutionMode.CUSTOM_PYTHON, poolConfiguration.getCustomPython(), executor);
         executor.shutdown();
         try {
             if (!executor.awaitTermination(600, TimeUnit.SECONDS)) {
@@ -100,7 +106,9 @@ public class LambdaPoolUtils {
                 return Configuration.argumentStorage.getLambdaFactory().createHotspot(lambda);
             case GRAALVISOR:
                 return Configuration.argumentStorage.getLambdaFactory().createGraalvisor(lambda);
-            case CUSTOM:
+            case CUSTOM_JAVA:
+            case CUSTOM_JAVASCRIPT:
+            case CUSTOM_PYTHON:
                 return Configuration.argumentStorage.getLambdaFactory().createOpenWhisk(lambda);
             default:
                 throw new IllegalStateException("Unexpected value: " + targetMode);
@@ -108,21 +116,32 @@ public class LambdaPoolUtils {
     }
 
     public static void shutdownLambdas(Map<LambdaExecutionMode, ConcurrentLinkedQueue<Lambda>> lambdaPool) {
+        ExecutorService executor = Executors.newFixedThreadPool(EXECUTOR_THREAD_COUNT);
         // Shutdown lambdas being currently started.
         for (Lambda lambda : startingLambdas) {
-            new DefaultLambdaShutdownHandler(lambda).run();
+            executor.execute(new DefaultLambdaShutdownHandler(lambda)::run);
         }
         startingLambdas.clear();
         // Shutdown lambdas from the pool.
         for (Queue<Lambda> queue : lambdaPool.values()) {
             for (Lambda lambda : queue) {
-                new DefaultLambdaShutdownHandler(lambda).run();
+                executor.execute(new DefaultLambdaShutdownHandler(lambda)::run);
             }
         }
         lambdaPool.get(LambdaExecutionMode.HOTSPOT_W_AGENT).clear();
         lambdaPool.get(LambdaExecutionMode.HOTSPOT).clear();
         lambdaPool.get(LambdaExecutionMode.GRAALVISOR).clear();
-        lambdaPool.get(LambdaExecutionMode.CUSTOM).clear();
+        lambdaPool.get(LambdaExecutionMode.CUSTOM_JAVA).clear();
+        lambdaPool.get(LambdaExecutionMode.CUSTOM_JAVASCRIPT).clear();
+        lambdaPool.get(LambdaExecutionMode.CUSTOM_PYTHON).clear();
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(600, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+        }
     }
 
     public static void shutdownLambda(Lambda lambda, LambdaType lambdaType) throws InterruptedException {
@@ -206,7 +225,9 @@ public class LambdaPoolUtils {
             this.maxLambdas.put(LambdaExecutionMode.HOTSPOT_W_AGENT, poolConfiguration.getHotspotWithAgent());
             this.maxLambdas.put(LambdaExecutionMode.HOTSPOT, poolConfiguration.getHotspot());
             this.maxLambdas.put(LambdaExecutionMode.GRAALVISOR, poolConfiguration.getGraalvisor());
-            this.maxLambdas.put(LambdaExecutionMode.CUSTOM, poolConfiguration.getCustom());
+            this.maxLambdas.put(LambdaExecutionMode.CUSTOM_JAVA, poolConfiguration.getCustomJava());
+            this.maxLambdas.put(LambdaExecutionMode.CUSTOM_JAVASCRIPT, poolConfiguration.getCustomJavaScript());
+            this.maxLambdas.put(LambdaExecutionMode.CUSTOM_PYTHON, poolConfiguration.getCustomPython());
             this.lambdaPool = lambdaPool;
         }
 
@@ -231,7 +252,8 @@ public class LambdaPoolUtils {
             if (lambdasInPool < minimalThreshold) {
                 // Use Math.ceil to always reclaim at least one lambda.
                 int lambdasToReclaim = (int) Math.ceil(total * LAMBDA_PERCENTAGE_TO_RECLAIM);
-                LambdaManager.lambdas.stream().filter(l -> l.getExecutionMode() == mode).sorted(this::compare)
+                long ts = System.currentTimeMillis();
+                LambdaManager.lambdas.stream().filter(l -> l.getExecutionMode() == mode && l.getOpenRequestCount() <= 0 && ts - l.getTimerTimestamp() > LRU_RECLAMATION_PERIOD_MS).sorted(this::compare)
                         .limit(lambdasToReclaim).parallel().forEach(l -> new DefaultLambdaShutdownHandler(l).run());
             }
         }

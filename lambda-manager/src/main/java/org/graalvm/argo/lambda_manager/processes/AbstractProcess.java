@@ -17,7 +17,7 @@ public abstract class AbstractProcess {
     }
 
     public final ProcessBuilder build() {
-        return new ProcessBuilder(this.getClass().getName(), pid, makeCommand(), callback(), outputFilename());
+        return new ProcessBuilder(this.getClass().getName(), pid, makeCommand(), callback(), outputFilename(), errorFilename());
     }
 
     protected abstract List<String> makeCommand();
@@ -31,6 +31,10 @@ public abstract class AbstractProcess {
     }
 
     protected abstract String outputFilename();
+
+    protected String errorFilename() {
+        return outputFilename();
+    }
 
     protected String memoryFilename() {
         return Environment.DEFAULT_FILENAME;

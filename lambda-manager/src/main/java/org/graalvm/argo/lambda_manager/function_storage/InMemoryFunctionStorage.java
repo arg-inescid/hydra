@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @SuppressWarnings("unused")
 public class InMemoryFunctionStorage implements FunctionStorage {
 
-    private final ConcurrentHashMap<String, Function> functions = new ConcurrentHashMap<>();
+    protected final ConcurrentHashMap<String, Function> functions = new ConcurrentHashMap<>();
 
     @Override
     public Function register(String functionName, Function function, byte[] functionCode) throws Exception {

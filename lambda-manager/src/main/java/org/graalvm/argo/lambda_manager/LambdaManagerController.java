@@ -7,8 +7,9 @@ import io.micronaut.http.annotation.*;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.reactivex.Single;
+
 import org.graalvm.argo.lambda_manager.core.LambdaManager;
-import org.graalvm.argo.lambda_manager.utils.MetricsProvider;
+import org.graalvm.argo.lambda_manager.metrics.MetricsProvider;
 
 import javax.inject.Inject;
 
@@ -31,7 +32,8 @@ public class LambdaManagerController {
                 LambdaManager.processRequest(username, functionName, arguments);
             }
         }
-        return LambdaManager.processRequest(username, functionName, arguments);
+        Single<String> res = LambdaManager.processRequest(username, functionName, arguments);
+        return res;
     }
 
     @Get("/get_functions")
@@ -69,7 +71,7 @@ public class LambdaManagerController {
 
     @Get(value = "/metrics", produces = MediaType.TEXT_PLAIN)
     public Single<String> scrapeMetrics() {
-        return MetricsProvider.getFootprintAndScalability();
+        return Single.just(MetricsProvider.getMetricsRecord());
     }
 
 }

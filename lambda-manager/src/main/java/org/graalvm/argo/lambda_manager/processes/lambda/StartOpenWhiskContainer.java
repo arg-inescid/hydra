@@ -4,15 +4,14 @@ import java.util.List;
 
 import org.graalvm.argo.lambda_manager.core.Lambda;
 
-public class RestoreOpenWhiskFirecracker extends RestoreFirecracker {
+public class StartOpenWhiskContainer extends StartContainer {
 
-    public RestoreOpenWhiskFirecracker(Lambda lambda) {
+    public StartOpenWhiskContainer(Lambda lambda) {
         super(lambda);
     }
 
     @Override
     protected List<String> makeCommand() {
-        return prepareCommand(lambda.getExecutionMode().getOpenWhiskVMImage());
+        return prepareCommand(lambda.getExecutionMode().getOpenWhiskContainerImage());
     }
-
 }

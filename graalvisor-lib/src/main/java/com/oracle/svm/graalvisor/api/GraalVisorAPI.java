@@ -3,6 +3,7 @@ package com.oracle.svm.graalvisor.api;
 import static com.oracle.svm.core.posix.headers.Dlfcn.RTLD_NOW;
 import static com.oracle.svm.core.posix.headers.Dlfcn.dlclose;
 import static com.oracle.svm.graalvisor.GraalVisorImpl.getGraalVisorHostDescriptor;
+import static com.oracle.svm.graalvisor.GraalVisorImpl.getCreateIsolateParametersHostDescriptor;
 import static com.oracle.svm.graalvisor.utils.StringUtils.retrieveString;
 
 import java.io.Closeable;
@@ -78,7 +79,7 @@ public class GraalVisorAPI implements Closeable {
 
     public IsolateThread createIsolate() {
         CEntryPointNativeFunctions.IsolateThreadPointer isolateThreadPointer = StackValue.get(CEntryPointNativeFunctions.IsolateThreadPointer.class);
-        createIsolateFunctionPointer.invoke(WordFactory.nullPointer(), WordFactory.nullPointer(), isolateThreadPointer);
+        createIsolateFunctionPointer.invoke(getCreateIsolateParametersHostDescriptor(), WordFactory.nullPointer(), isolateThreadPointer);
         IsolateThread isolateThread = (IsolateThread) isolateThreadPointer.read();
         guestInstallGraalvisorFunctionPointer.invoke(isolateThread, getGraalVisorHostDescriptor());
         return isolateThread;

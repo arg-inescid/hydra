@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 
 public class Lambda {
@@ -23,7 +24,7 @@ public class Lambda {
 	private long lid;
 
 	/** Number of requests currently being executed. */
-	private int openRequestCount;
+	private final AtomicInteger openRequestCount;
 
 	/** Number of processed requests since the lambda started. */
 	private int closedRequestCount;
@@ -47,12 +48,13 @@ public class Lambda {
 
 	private String customRuntimeId;
 
-	public Lambda(LambdaExecutionMode executionMode) {
-	    this.executionMode = executionMode;
-		this.registeredFunctions = new ConcurrentHashMap<>();
+    public Lambda(LambdaExecutionMode executionMode) {
+        this.openRequestCount = new AtomicInteger(0);
+        this.executionMode = executionMode;
+        this.registeredFunctions = new ConcurrentHashMap<>();
         this.requiresFunctionUpload = ConcurrentHashMap.newKeySet();
         this.memoryPool = new FixedMemoryPool(Configuration.argumentStorage.getMaxMemory(), Configuration.argumentStorage.getMaxMemory());
-	}
+    }
 
 	public long setLambdaID(long lid) {
 		return this.lid = lid;
@@ -62,17 +64,16 @@ public class Lambda {
 		return this.lid;
 	}
 
-    public synchronized void incOpenRequests() {
+    public void incOpenRequests() {
         timer.cancel();
-        ++openRequestCount;
+        openRequestCount.incrementAndGet();
     }
 
-    public synchronized void decOpenRequests() {
-        --openRequestCount;
-        ++closedRequestCount;
-        if (openRequestCount == 0) {
+    public void decOpenRequests() {
+        if (openRequestCount.decrementAndGet() == 0) {
             resetTimer();
         }
+        ++closedRequestCount;
     }
 
 	public void resetClosedRequestCount() {
@@ -84,7 +85,7 @@ public class Lambda {
 	}
 
 	public int getOpenRequestCount() {
-		return openRequestCount;
+		return openRequestCount.get();
 	}
 
 	public Timer getTimer() {
@@ -154,20 +155,28 @@ public class Lambda {
         }
     }
 
-    public synchronized boolean tryRegisterInLambda(Function function) {
-        if (canRegisterInLambda(function)) {
-            // Only allocate memory in a memory pool if the function is collocatable.
-            if (!function.canCollocateInvocation() || memoryPool.allocateMemoryLambda(function.getMemory())) {
-                // Success, this lambda fits for the function.
-                if (!isRegisteredInLambda(function)) {
-                    // Instead of registering function inside synchronized block, we set the flag.
-                    setRequiresFunctionUpload(function);
-                    setRegisteredInLambda(function);
+    public boolean tryRegisterInLambda(Function function) {
+        boolean lambdaAvailable = allocateMemory(function);
+        if (lambdaAvailable) {
+            // We need the synchronized block to avoid double-registration in collocatable lambdas.
+            // The race condition happens because we first test if we can register, and then set registered.
+            synchronized (this) {
+                if (canRegisterInLambda(function)) {
+                    // Success, this lambda fits for the function.
+                    if (!isRegisteredInLambda(function)) {
+                        // Instead of registering function inside synchronized block, we set the flag.
+                        setRequiresFunctionUpload(function);
+                        setRegisteredInLambda(function);
+                    }
+                    return true;
+                } else {
+                    // Deallocate lambda resources as we cannot use it for this request.
+                    deallocateMemory(function);
                 }
-                return true;
-            } else {
-                Logger.log(Level.INFO, String.format("[function=%s, mode=%s]: Couldn't allocate memory in lambda %d.", function.getName(), executionMode, lid));
             }
+        } else if (function.canCollocateInvocation()) {
+            // Print a message only if we did not manage to allocate memory in the memory pool.
+            Logger.log(Level.INFO, String.format("[function=%s, mode=%s]: Couldn't allocate memory in lambda %d.", function.getName(), executionMode, lid));
         }
         return false;
     }
@@ -230,5 +239,17 @@ public class Lambda {
      */
     public boolean isIntact() {
         return !decommissioned && username == null && requiresFunctionUpload.isEmpty();
+    }
+
+    public boolean allocateMemory(Function function) {
+        return function.canCollocateInvocation()
+                ? memoryPool.allocateMemoryLambda(function.getMemory())
+                : memoryPool.allocateMemoryLambda(memoryPool.getMaxMemory());
+    }
+
+    public boolean deallocateMemory(Function function) {
+        return function.canCollocateInvocation()
+                ? memoryPool.deallocateMemoryLambda(function.getMemory())
+                : memoryPool.deallocateMemoryLambda(memoryPool.getMaxMemory());
     }
 }

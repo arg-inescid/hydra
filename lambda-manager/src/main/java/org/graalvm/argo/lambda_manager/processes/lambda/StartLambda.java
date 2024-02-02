@@ -3,6 +3,7 @@ package org.graalvm.argo.lambda_manager.processes.lambda;
 import static org.graalvm.argo.lambda_manager.core.Environment.LAMBDA_LOGS;
 import static org.graalvm.argo.lambda_manager.core.Environment.MEMORY;
 import static org.graalvm.argo.lambda_manager.core.Environment.OUTPUT;
+import static org.graalvm.argo.lambda_manager.core.Environment.ERROR;
 import java.io.File;
 import java.nio.file.Paths;
 
@@ -36,6 +37,13 @@ public abstract class StartLambda extends AbstractProcess {
         String dirPath = Paths.get(LAMBDA_LOGS, lambda.getLambdaName()).toString();
         new File(dirPath).mkdirs();
         return Paths.get(dirPath, OUTPUT).toString();
+    }
+
+    @Override
+    protected String errorFilename() {
+        String dirPath = Paths.get(LAMBDA_LOGS, lambda.getLambdaName()).toString();
+        new File(dirPath).mkdirs();
+        return Paths.get(dirPath, ERROR).toString();
     }
 
     @Override

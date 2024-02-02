@@ -72,7 +72,7 @@ public class Function {
             this.status = FunctionStatus.READY;
         }
         this.functionIsolation = functionIsolation;
-        this.invocationCollocation = invocationCollocation || this.getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR;
+        this.invocationCollocation = invocationCollocation;
         this.gvSandbox = gvSandbox;
         this.window = new ColdStartSlidingWindow(Environment.AOT_OPTIMIZATION_THRESHOLD, Environment.SLIDING_WINDOW_PERIOD);
     }
@@ -124,19 +124,28 @@ public class Function {
 
     public LambdaExecutionMode getLambdaExecutionMode() {
         switch (getStatus()) {
-        case NOT_BUILT_NOT_CONFIGURED:
-            return LambdaExecutionMode.HOTSPOT_W_AGENT;
-        case NOT_BUILT_CONFIGURED:
-        case CONFIGURING_OR_BUILDING:
-            return LambdaExecutionMode.HOTSPOT;
-        case READY:
-            if (getRuntime().equals(Environment.GRAALVISOR_RUNTIME)) {
-                return LambdaExecutionMode.GRAALVISOR;
-            } else {
-                return LambdaExecutionMode.CUSTOM;
-            }
-        default:
-            throw new IllegalStateException("Unexpected value: " + getStatus());
+            case NOT_BUILT_NOT_CONFIGURED:
+                return LambdaExecutionMode.HOTSPOT_W_AGENT;
+            case NOT_BUILT_CONFIGURED:
+            case CONFIGURING_OR_BUILDING:
+                return LambdaExecutionMode.HOTSPOT;
+            case READY:
+                if (getRuntime().equals(Environment.GRAALVISOR_RUNTIME)) {
+                    return LambdaExecutionMode.GRAALVISOR;
+                } else {
+                    switch (getLanguage()) {
+                        case JAVA:
+                            return LambdaExecutionMode.CUSTOM_JAVA;
+                        case JAVASCRIPT:
+                            return LambdaExecutionMode.CUSTOM_JAVASCRIPT;
+                        case PYTHON:
+                            return LambdaExecutionMode.CUSTOM_PYTHON;
+                        default:
+                            throw new IllegalStateException("Unexpected language: " + getLanguage());
+                    }
+                }
+            default:
+                throw new IllegalStateException("Unexpected value: " + getStatus());
         }
     }
 
@@ -152,7 +161,7 @@ public class Function {
         if (mode == LambdaExecutionMode.HOTSPOT_W_AGENT || mode == LambdaExecutionMode.HOTSPOT) {
             return false;
         }
-        return !Configuration.argumentStorage.isSnapshotEnabled() && (this.invocationCollocation || mode == LambdaExecutionMode.GRAALVISOR);
+        return !Configuration.argumentStorage.isSnapshotEnabled() && this.invocationCollocation;
     }
 
     public String getGraalvisorSandbox() {

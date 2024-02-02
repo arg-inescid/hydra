@@ -12,13 +12,6 @@ public class Environment {
 
     public static final int RAND_STRING_LEN = 10;
 
-    // Time to wait until a new Lambda can be started.
-    public static final int LAMBDA_STARTUP_THRESHOLD = 1000;
-
-    // Maximum number of open requests that we will accept to send another request.
-    // TODO: Make sure non-graalvisor runtimes do not run invocations concurrently.
-    public static final int LAMBDA_MAX_OPEN_REQ_COUNT = 100;
-
     // Tap name is limited to 15 characters. In our case tap names are created from prefix (4 chars) + random string (10 chars).
     public static final String TAP_PREFIX = "lmt";
 
@@ -26,16 +19,20 @@ public class Environment {
     public static final String CODEBASE = "codebase";
     public static final String MANAGER_LOGS = "manager_logs";
     public static final String LAMBDA_LOGS = "lambda_logs";
+    public static final String MANAGER_METRICS = "manager_metrics";
 
     // Filenames.
     public static final String DEFAULT_FILENAME = "default_filename.log";
     public static final String OUTPUT = "output.log";
+    public static final String ERROR = "error.log";
     public static final String MEMORY = "memory.log";
     public static final String MANAGER_LOG_FILENAME = Paths.get(MANAGER_LOGS, "lambda_manager.log").toString();
     public static final String CREATE_TAPS_FILENAME = Paths.get(MANAGER_LOGS, "create_taps.log").toString();
     public static final String REMOVE_TAPS_FILENAME = Paths.get(MANAGER_LOGS, "remove_taps.log").toString();
     public static final String PREPARE_DEVMAPPER_BASE_FILENAME = Paths.get(MANAGER_LOGS, "prepare_devmapper_base.log").toString();
     public static final String DELETE_DEVMAPPER_BASE_FILENAME = Paths.get(MANAGER_LOGS, "delete_devmapper_base.log").toString();
+
+    public static final String MANAGER_METRICS_FILENAME = Paths.get(MANAGER_METRICS, "metrics.log").toString();
 
     // Graalvisor runtime identifiers.
     public static final String GRAALVISOR_RUNTIME = "graalvisor";
