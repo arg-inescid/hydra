@@ -495,8 +495,6 @@ initialize_memory_isolation()
     init_cache_array(cache, NUM_DOMAINS);
     init_supervisors(supervisors, NUM_DOMAINS);
 
-    pthread_mutex_init(&mutex, NULL);
-
     if(erim_init(8192, ERIM_FLAG_ISOLATE_UNTRUSTED | ERIM_FLAG_SWAP_STACK, NUM_DOMAINS)) {
         exit(EXIT_FAILURE);
     }
