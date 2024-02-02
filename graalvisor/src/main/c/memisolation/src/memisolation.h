@@ -21,10 +21,6 @@
 char* get_app_id(int domain);
 void insert_app_id(int domain, const char* id);
 
-/* Thread synchronization */
-void lock();
-void unlock();
-
 /* Supervisors */
 void wait_sem(int domain);
 void signal_sem(int domain);
