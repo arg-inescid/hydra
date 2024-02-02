@@ -219,6 +219,11 @@ void checkpoint_memory_library(struct function_args* fargs, int memsnap_fd) {
             sscanf(buffer, "%lx-%lx %c%c%c%c", &start, &finish, &r, &w, &x, &p);
             size_t size = finish - start;
 
+            // We ignore mappings of the library that were mmapped by the function.
+            if (list_find(&(fargs->mappings), (void*) start, size) != NULL) {
+                continue;
+            }
+
             if (w == '-') {
                 continue; // TODO - should we skip read/execute-only pages?
             }
@@ -238,7 +243,7 @@ void checkpoint_memory_library(struct function_args* fargs, int memsnap_fd) {
             if (write(fargs->meta_snapshot_fd, &tag, sizeof(int)) != sizeof(int)) {
                 perror("failed to serialize memory tag");
             }
-            // Write metadata location.
+            // Write metadata content.
             memory_t s = {.addr = (void*)start, .length = size};
             if (write(fargs->meta_snapshot_fd, &s, sizeof(memory_t)) != sizeof(memory_t)) {
                 perror("failed to serialize memory header");

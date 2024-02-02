@@ -167,10 +167,12 @@ void handle_mmap(struct function_args* fargs, void* addr, size_t length, int pro
 
     checkpoint_mmap(fargs, addr, length, prot, flags, fd, offset, ret);
 
-    if (prot != PROT_NONE) { // TODO - are these the correct permissions?
-        list_push(&(fargs->mappings), ret, length);
-        fprintf(stderr, "ntracking %16p - %16p\n", ret, ((char*) ret) + length);
+    if (prot == PROT_NONE || prot == PROT_READ) {
+        return;
     }
+
+    list_push(&(fargs->mappings), ret, length);
+    fprintf(stderr, "ntracking %16p - %16p\n", ret, ((char*) ret) + length);
 }
 
 void handle_munmap(struct function_args* fargs, void* addr, size_t length, int ret) {
@@ -226,7 +228,13 @@ void handle_mprotect(struct function_args* fargs, void* addr, size_t length, int
 
     checkpoint_mprotect(fargs, addr, length, prot, ret);
 
-    if (prot != PROT_NONE) { // TODO - are these the correct permissions?
+    if (prot == PROT_NONE || prot == PROT_READ) {
+        return;
+    }
+
+    // We check if there is no mapping yet with this range.
+    if (list_find(&(fargs->mappings), addr, length) == NULL) {
+        // TODO - there are cases where we are extending an existing mapping.
         list_push(&(fargs->mappings), addr, length);
         fprintf(stderr, "ntracking %16p - %16p\n", addr, ((char*) addr) + length);
     }

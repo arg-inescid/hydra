@@ -30,6 +30,25 @@ void list_push(mapping_t* head, void* start, size_t size) {
     current->next->next = NULL;
 }
 
+mapping_t* list_find(mapping_t* head, void* start, size_t size) {
+    mapping_t* current = head;
+    void* finish = ((char*) start) + size;
+
+    // If the list if empty, nothing to print.
+    if (current->start == NULL) {
+        return NULL;
+    }
+
+    while (current != NULL) {
+        void* current_finish = ((char*) current->start) + current->size;
+        if (start >= current->start && finish <= current_finish) {
+            return current;
+        } else {
+            current = current->next;
+        }
+    }
+}
+
 void list_print(mapping_t * head) {
     mapping_t* current = head;
 
