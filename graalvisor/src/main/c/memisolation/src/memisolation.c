@@ -85,7 +85,7 @@ find_domain(const char* app) {
     for (int i = 1; i < NUM_DOMAINS; ++i) {
         int* nthreads = &threadMap.buckets[i]->nthreads;
 
-        // __sync_bool_compare_and_swap returns 1 if *nthreads equals 0
+        // __sync_bool_compare_and_swap returns and stores 1 if *nthreads equals 0
         if (app_in_cache(app, i) && __sync_bool_compare_and_swap(nthreads, 0, 1)) {
             SEC_DBM("[App in cache]");
             return i;
