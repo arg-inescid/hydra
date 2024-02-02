@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <sys/syscall.h>
 #include <unistd.h>
 #include <errno.h>
@@ -145,6 +146,27 @@ void print_library_maps(char* library_path) {
     fclose(file);
 }
 
+int check_filepath_fd(int fd, char* path) {
+    char fdpath[512];
+    char filepath[512];
+    sprintf(fdpath, "/proc/self/fd/%d", fd);
+
+    size_t bytes = readlink(fdpath, filepath, sizeof(fdpath));
+
+    // Note: readlink does not place a terminating null byte.
+    filepath[bytes] = '\0';
+    return strcmp(path, filepath);
+}
+
+int find_fd_filepath(char* path) {
+    for (int i = 0; i < 8; i++) {
+        if (!check_filepath_fd(i, path)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 void checkpoint_memory_mapping(struct function_args* fargs, int memsnap_fd ) {
     int tag = MEMORY_TAG;
     mapping_t* current = &(fargs->mappings);
@@ -152,8 +174,12 @@ void checkpoint_memory_mapping(struct function_args* fargs, int memsnap_fd ) {
     // If the list is not empty
     if (current->start != NULL) {
         while (current != NULL) {
-            fprintf(stderr, "checkpoint memory:  start = %16p size = 0x%16lx popcount = %d\n",
-                current->start, current->size, popcount((char*) current->start, current->size));
+            fprintf(stderr, "cmemory:  %16p - %16p size = 0x%16lx popcount = %d\n",
+                current->start,
+                ((char*) current->start) + current->size,
+                current->size,
+                popcount((char*) current->start,
+                current->size));
             // Write contents to file.
             memory_to_file(memsnap_fd, current->start, current->size);
             // Write metadata tag.
@@ -197,8 +223,13 @@ void checkpoint_memory_library(struct function_args* fargs, int memsnap_fd) {
                 continue; // TODO - should we skip read/execute-only pages?
             }
 
-            fprintf(stderr, "checkpoint library: start = %16p size = 0x%16lx %c%c%c%c popcount = %d \n",
-                start, size, r, w, x, p, popcount((char*)start, size));
+            fprintf(stderr, "clibrary: %16p - %16p size = 0x%16lx prot = %c%c%c%c popcount = %d \n",
+                start,
+                ((char*) start) + size,
+                size,
+                r, w, x, p,
+                popcount((char*)start,
+                size));
 
             // Write contents to file.
             memory_to_file(memsnap_fd, (char*)start, size);
@@ -241,6 +272,7 @@ void restore_memory(struct function_args* fargs, int mem_snapshot_fd) {
         perror("failed to deserialize memory header");
     }
 
+    // TODO - this code is just for having a 2-step popcount verification.
     char* buffer = (void*)malloc(s.length);
     if (buffer == NULL) {
         fprintf(stderr, "failed to malloc");
@@ -249,6 +281,8 @@ void restore_memory(struct function_args* fargs, int mem_snapshot_fd) {
     fprintf(stderr, "restore mapping: start = %16p size = 0x%16lx popcount = %d\n",
         s.addr, s.length, popcount((char*)buffer, s.length));
     memcpy(s.addr, buffer, s.length);
+
+    // TODO - this is the line we want to execute in the end.
     //file_to_memory(mem_snapshot_fd, (char*)s.addr, s.length);
     fprintf(stderr, "restore mapping: start = %16p size = 0x%16lx popcount = %d\n",
         s.addr, s.length, popcount(s.addr, s.length));
@@ -256,7 +290,7 @@ void restore_memory(struct function_args* fargs, int mem_snapshot_fd) {
 
 void checkpoint_isolate(struct function_args* fargs, void* isolate) {
     int tag = ISOLATE_TAG;
-    fprintf(stderr, "checkpoint isolate: %16p\n", isolate);
+    fprintf(stderr, "cisolate: %16p\n", isolate);
     if (write(fargs->meta_snapshot_fd, &tag, sizeof(int)) != sizeof(int)) {
         perror("failed to serialize isolate tag");
     }
@@ -276,13 +310,14 @@ void* restore_isolate(struct function_args* fargs) {
 }
 
 void print_mmap(void* addr, size_t length, int prot, int flags, int fd, off_t offset, void* ret) {
-    fprintf(stderr, "mmap:     addr = %16p size = 0x%16lx prot = %s%s%s%s flags = %8d fd = %2d offset = %8d ret = %16p\n",
+    fprintf(stderr, "mmap:     %16p - %16p size = 0x%16lx prot = %s%s%s%s flags = %8d fd = %2d offset = %8d ret = %16p\n",
         addr,
+        addr == NULL ? NULL : ((char*) addr) + length,
         length,
-        prot & PROT_EXEC   ? "E" : "-",
-        prot & PROT_READ   ? "R" : "-",
-        prot & PROT_WRITE  ? "W" : "-",
-        prot == PROT_NONE  ? "N" : "-",
+        prot & PROT_EXEC   ? "x" : "-",
+        prot & PROT_READ   ? "r" : "-",
+        prot & PROT_WRITE  ? "w" : "-",
+        prot == PROT_NONE  ? "n" : "-",
         flags,
         fd,
         offset,
@@ -291,17 +326,22 @@ void print_mmap(void* addr, size_t length, int prot, int flags, int fd, off_t of
 }
 
 void print_munmap(void* addr, size_t length, int ret) {
-    fprintf(stderr, "munmap:   addr = %16p size = 0x%16lx ret  =  %d\n", addr, length, ret);
+    fprintf(stderr, "munmap:   %16p - %16p size = 0x%16lx ret  =  %d\n",
+        addr,
+        ((char*) addr) + length,
+        length,
+        ret);
 }
 
 void print_mprotect(void* addr, size_t length, int prot, int ret) {
-    fprintf(stderr, "mprotect: addr = %16p size = 0x%16lx prot = %s%s%s%s ret = %d\n",
+    fprintf(stderr, "mprotect: %16p - %16p size = 0x%16lx prot = %s%s%s%s ret = %d\n",
         addr,
+        ((char*) addr) + length,
         length,
-        prot & PROT_EXEC   ? "E" : "-",
-        prot & PROT_READ   ? "R" : "-",
-        prot & PROT_WRITE  ? "W" : "-",
-        prot == PROT_NONE  ? "N" : "-",
+        prot & PROT_EXEC   ? "x" : "-",
+        prot & PROT_READ   ? "r" : "-",
+        prot & PROT_WRITE  ? "w" : "-",
+        prot == PROT_NONE  ? "n" : "-",
         ret);
 
 }
@@ -312,6 +352,13 @@ void checkpoint_mmap(struct function_args* fargs, void* addr, size_t length, int
 
     if (fargs->meta_snapshot_fd) {
         int tag = MMAP_TAG;
+
+        // If we are mapping a file that is not our library.
+        if (fd != -1 && check_filepath_fd(fd, fargs->function_path)) {
+            fprintf(stderr, "error, fd %d does not correspond to function path %s\n", fd, fargs->function_path);
+            return;
+        }
+
         mmap_t s = {.addr = addr, .length = length, .prot = prot, .flags = flags, .fd = fd, .offset = offset, .ret = ret};
         if (write(fargs->meta_snapshot_fd, &tag, sizeof(int)) != sizeof(int)) {
             perror("failed to serialize mmap tag");
@@ -330,13 +377,26 @@ void restore_mmap(struct function_args* fargs) {
         perror("failed to deserialize mmap arguments");
     }
 
-    print_mmap(s.addr, s.length, s.prot, s.flags, s.fd, s.offset, s.ret);
-
-    // TODO - if we are issuing fd-based, we need to make sure we are loading from the correct file.
     if (s.fd != -1) {
-        fprintf(stderr, "NOTE: replacing file descripor %d with %d\n", s.fd, fargs->function_fd);
-        s.fd = fargs->function_fd;
+        // If the file path does not correspond to the fd.
+        if (check_filepath_fd(s.fd, fargs->function_path)) {
+            int fd = find_fd_filepath(fargs->function_path);
+            // Invalid fd, we didn't manage to find a valid fd.
+            if (fd < 0) {
+                fprintf(stderr, "error, fd %d does not correspond to function path %s\n", s.fd, fargs->function_path);
+                return;
+            // We found a fd that corresponds to the target file.
+            } else {
+                fprintf(stderr, "found fd %d to %s\n", fd, fargs->function_path);
+                s.fd = fd;
+            }
+        // else (it corresponds).
+        } else {
+            s.fd = fargs->function_fd;
+        }
     }
+
+    print_mmap(s.addr, s.length, s.prot, s.flags, s.fd, s.offset, s.ret);
 
     // We use the previously returned address and MAP_FIXED to ensure that we recover the correct address.
     ret = (void*) syscall(__NR_mmap, s.ret, s.length, s.prot, s.flags | MAP_FIXED, s.fd, s.offset);

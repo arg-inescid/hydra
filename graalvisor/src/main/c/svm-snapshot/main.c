@@ -169,7 +169,7 @@ void handle_mmap(struct function_args* fargs, void* addr, size_t length, int pro
 
     if (prot != PROT_NONE) { // TODO - are these the correct permissions?
         list_push(&(fargs->mappings), ret, length);
-        fprintf(stderr, "[new mapping] %16p to %16p\n", ret, ((char*) ret) + length);
+        fprintf(stderr, "ntracking %16p - %16p\n", ret, ((char*) ret) + length);
     }
 }
 
@@ -191,7 +191,7 @@ void handle_munmap(struct function_args* fargs, void* addr, size_t length, int r
         if (addr == current->start && munmap_finish <= mapping_finish) {
             current->size -= length;
             current->start = munmap_finish;
-            fprintf(stderr, "[upd mapping] [%16p to %16p] (clipping beg)\n", current->start, mapping_finish);
+            fprintf(stderr, "utracking %16p - %16p (clipping beg)\n", current->start, mapping_finish);
             if (current->size == 0) {
                 // TODO - remove
             }
@@ -200,7 +200,7 @@ void handle_munmap(struct function_args* fargs, void* addr, size_t length, int r
         else if (munmap_finish == mapping_finish && addr >= current->start) {
             current->size -= length;
             mapping_finish = ((char*) current->start) + current->size;
-            fprintf(stderr, "[upd mapping] [%16p to %16p] (clipping end)\n", current->start, mapping_finish);
+            fprintf(stderr, "utracking %16p - %16p (clipping end)\n", current->start, mapping_finish);
              if (current->size == 0) {
                 // TODO - remove
             }
@@ -208,7 +208,7 @@ void handle_munmap(struct function_args* fargs, void* addr, size_t length, int r
         // If we are removing a range that includes this mapping.
         else if (addr < current->start && munmap_finish > mapping_finish) {
             current->size = 0;
-            fprintf(stderr, "[del mapping] [%16p to %16p] (deleting)\n", current->start, mapping_finish);
+            fprintf(stderr, "utracking %16p - %16p (deleting)\n", current->start, mapping_finish);
             // TODO - remove
         }
         // If we are removing a range before or after this mapping.
@@ -228,7 +228,7 @@ void handle_mprotect(struct function_args* fargs, void* addr, size_t length, int
 
     if (prot != PROT_NONE) { // TODO - are these the correct permissions?
         list_push(&(fargs->mappings), addr, length);
-        fprintf(stderr, "[new mapping] %16p to %16p\n", addr, ((char*) addr) + length);
+        fprintf(stderr, "ntracking %16p - %16p\n", addr, ((char*) addr) + length);
     }
 }
 
