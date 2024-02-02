@@ -14,9 +14,9 @@ function build_memisolation {
 	CFLAGS="-Wall -g -fno-inline -fPIC -shared \
             -I"$ERIM_HOME/src/erim" \
             -I"$ERIM_HOME/src/common" \
-            -DERIM_DBG \
-            -DERIM_SWAP_STACKS \
-            -DSEC_DBG"
+            -DERIM_SWAP_STACKS"
+            #-DERIM_DBG \
+            #-DSEC_DBG"
     LIBRARIES="$ERIM_HOME/bin/common/libswscommon.a $ERIM_HOME/bin/erim/liberim.a"
 
 	if [ $major_version -ge 5 ] && [ $minor_version -ge 10 ]; then
