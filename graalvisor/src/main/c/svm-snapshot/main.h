@@ -10,7 +10,6 @@
 // Note - we also need to make sure that the isolate is loaded back to the same location.
 
 // TODO - the app library is open with a particular file descriptor, we should try to keep it open
-// TODO - should we intercept mprotect?
 
 // Native Image ABI: https://github.com/oracle/graal/blob/master/substratevm/src/com.oracle.svm.core/headers/graal_isolate.preamble
 // Debugging NI binaries: https://www.graalvm.org/22.2/reference-manual/native-image/guides/debug-native-image-process/

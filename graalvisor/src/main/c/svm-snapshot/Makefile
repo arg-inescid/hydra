@@ -1,9 +1,8 @@
 #app = "test0-clib/libhello.so"
-app = "test1-staticvar/libhello.so"
-#app = "/home/rbruno/git/graalserverless/benchmarks/src/java/gv-hello-world/build/libhelloworld.so"
+#app = "test1-staticvar/libhello.so"
+app = "/home/rbruno/git/graalserverless/benchmarks/src/java/gv-hello-world/build/libhelloworld.so"
 #app = "/home/rbruno/git/graalserverless/benchmarks/src/python/gv-hello-world/build/libhelloworld.so"
 #app = "/home/rbruno/git/graalserverless/benchmarks/src/javascript/gv-hello-world/build/libhelloworld.so"
-
 gcommands = -x gdb-commands.txt
 
 all: *.h *.c
@@ -11,8 +10,8 @@ all: *.h *.c
 	gcc -g -o main *.o
 
 tests:
-	make -C test0-clib
-	make -C test1-staticvar
+	make -C test0-clib run
+	make -C test1-staticvar run
 
 run-normal:
 	setarch -R ./main normal $(app) 2>&1
@@ -38,4 +37,6 @@ strace-restore:
 	setarch -R strace -f ./main restore $(app) 2>&1
 
 clean:
-	rm *.o main
+	rm *.o main *.snap
+	make -C test0-clib clean
+	make -C test1-staticvar clean
