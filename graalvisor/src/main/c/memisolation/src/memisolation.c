@@ -95,27 +95,34 @@ app_in_cache(const char* app, int domain) {
 /* Domain Management algorithm */
 int
 find_domain(const char* app) {
-    int minIndex = 1;
-    int check = 0;
-    
-    if (app_in_cache(app, 1) && threadMap.buckets[1]->nthreads == 0) {
-        SEC_DBM("[App in cache]");
-        return 1;
-    }
-    for (int i = 2; i < NUM_DOMAINS; ++i) {
-        if (app_in_cache(app, i) && threadMap.buckets[i]->nthreads == 0) {
+    int minDomain = -1;
+
+    for (int i = 1; i < NUM_DOMAINS; ++i) {
+        int* nthreads = &threadMap.buckets[i]->nthreads;
+
+        // __sync_val_compare_and_swap returns 0 if *nthreads is 0
+        if (app_in_cache(app, i) && __sync_bool_compare_and_swap(nthreads, 0, 1)) {
             SEC_DBM("[App in cache]");
             return i;
         }
         // The lowest value corresponds to the LRU domain
-        if (threadMap.buckets[i]->nthreads == 0) {
-            check = 1;
-            if (cache[i].value < cache[minIndex].value) {
-                minIndex = i;
+        if (__sync_bool_compare_and_swap(nthreads, 0, 0)) {
+            if (cache[i].value < cache[minDomain].value) {
+                minDomain = i;
             }
         }
     }
-    return check ? minIndex : -1;
+
+    // No Empty domains
+    if (minDomain == -1)
+        return minDomain;
+
+    // No other thread as chosen this domain till this point
+    if (__sync_bool_compare_and_swap(&threadMap.buckets[minDomain]->nthreads, 0, 1))
+        return minDomain;
+    
+    // If some thread chose the domain first
+    return find_domain(app);        
 }
 
 /* Lazy Loading */
@@ -189,9 +196,6 @@ prepare_environment(int domain, const char* application)
         set_permissions(application, PROT_READ|PROT_WRITE|PROT_EXEC, domain);
     }
 #endif
-
-    /* Populate domain */
-    insert_thread(&threadMap, domain);
 }
 
 void

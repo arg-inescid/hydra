@@ -14,7 +14,7 @@
       fprintf(stderr, "\n");			\
     } while(0)
 #else // disable debug
-  #define SEC_DBG(...)
+  #define SEC_DBM(...)
 #endif
 
 /* Lazy loading */
