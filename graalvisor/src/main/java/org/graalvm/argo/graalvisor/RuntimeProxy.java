@@ -31,6 +31,7 @@ import org.graalvm.argo.graalvisor.sandboxing.PolyContextSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.ContextSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.ContextSnapshotSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.IsolateSandboxProvider;
+import org.graalvm.argo.graalvisor.sandboxing.PgoSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.ProcessSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.RuntimeSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.SandboxProvider;
@@ -192,7 +193,9 @@ public abstract class RuntimeProxy {
     private static class RegisterHandler implements ProxyHttpHandler {
 
         private SandboxProvider getDefaultSandboxProvider(PolyglotFunction function) {
-            if (function.getLanguage() == PolyglotLanguage.JAVA) {
+            if (function.isBinary()) {
+                return new PgoSandboxProvider(function);
+            } else if (function.getLanguage() == PolyglotLanguage.JAVA) {
                 return new IsolateSandboxProvider(function);
             } else {
                 return new PolyContextSandboxProvider(function);
@@ -216,6 +219,8 @@ public abstract class RuntimeProxy {
                     return new RuntimeSandboxProvider(function);
                 } else if (sandboxName.equals("process")) {
                     return new ProcessSandboxProvider(function);
+                } else if (sandboxName.equals("pgo")) {
+                    return new PgoSandboxProvider(function);
                 }
             } else {
                 if (sandboxName.equals("context")) {
@@ -240,9 +245,10 @@ public abstract class RuntimeProxy {
             String functionLanguage = metaData.get("language");
             String sandboxName = metaData.get("sandbox");
             int svmID = Integer.parseInt(metaData.getOrDefault("svmid", "0"));
+            final boolean isBinary = Boolean.parseBoolean(metaData.get("isBinary"));
 
             if (System.getProperty("java.vm.name").equals("Substrate VM") || !functionLanguage.equalsIgnoreCase("java")) {
-                handlePolyglotRegistration(t, functionName, codeFileName, functionEntryPoint, functionLanguage, sandboxName, svmID);
+                handlePolyglotRegistration(t, functionName, codeFileName, functionEntryPoint, functionLanguage, sandboxName, svmID, isBinary);
             } else {
                 handleHotSpotRegistration(t, functionName, codeFileName, functionEntryPoint);
             }
@@ -277,7 +283,7 @@ public abstract class RuntimeProxy {
             writeResponse(t, 200, String.format("Function %s registered!", functionName));
         }
 
-        private void handlePolyglotRegistration(HttpExchange t, String functionName, String soFileName, String functionEntryPoint, String functionLanguage, String sandboxName, int svmID) throws IOException {
+        private void handlePolyglotRegistration(HttpExchange t, String functionName, String soFileName, String functionEntryPoint, String functionLanguage, String sandboxName, int svmID, boolean isBinary) throws IOException {
             long start = System.currentTimeMillis();
             PolyglotFunction function = null;
             SandboxProvider sprovider = null;
@@ -295,7 +301,7 @@ public abstract class RuntimeProxy {
                             bis.transferTo(fos);
                         }
                     }
-                    function = new NativeFunction(functionName, functionEntryPoint, functionLanguage, soFileName);
+                    function = new NativeFunction(functionName, functionEntryPoint, functionLanguage, soFileName, isBinary);
                 } else {
                     try (InputStream bis = new BufferedInputStream(t.getRequestBody(), 4096)) {
                         String sourceCode = new String(bis.readAllBytes(), StandardCharsets.UTF_8);
@@ -305,7 +311,7 @@ public abstract class RuntimeProxy {
 
                 sprovider = getSandboxProvider(function, sandboxName);
                 if (sprovider == null) {
-                    writeResponse(t, 200, String.format("Failed to register fuction: unknown sandbox %s!", sandboxName));
+                    writeResponse(t, 200, String.format("Failed to register function: unknown sandbox %s!", sandboxName));
                     return;
                 } else if (sprovider instanceof ContextSnapshotSandboxProvider) {
                     ((ContextSnapshotSandboxProvider) sprovider).setSVMID(svmID);

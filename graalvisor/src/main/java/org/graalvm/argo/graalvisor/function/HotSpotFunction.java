@@ -7,7 +7,7 @@ public class HotSpotFunction extends PolyglotFunction {
     private final Method method;
 
     public HotSpotFunction(String name, String entryPoint, String language, Method method) {
-        super(name, entryPoint, language);
+        super(name, entryPoint, language, false);
         this.method = method;
     }
 

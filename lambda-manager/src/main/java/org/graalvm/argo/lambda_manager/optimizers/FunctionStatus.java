@@ -8,5 +8,11 @@ public enum FunctionStatus {
     // The function is being build or configured.
     CONFIGURING_OR_BUILDING,
     // The function is ready to be deployed.
-    READY
+    READY,
+    //
+    PGO_BUILDING,
+    PGO_READY,
+    PGO_PROFILING_DONE,
+    PGO_OPTIMIZED_BUILDING,
+    PGO_OPTIMIZED_READY
 }

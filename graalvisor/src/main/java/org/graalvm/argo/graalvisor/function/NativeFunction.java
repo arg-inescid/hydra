@@ -4,7 +4,7 @@ public class NativeFunction extends PolyglotFunction {
 
     private final String path;
 
-    public NativeFunction(String name, String entryPoint, String language, String path) {
+    public NativeFunction(String name, String entryPoint, String language, String path, boolean isBinary) {
         super(name, entryPoint, language);
         this.path = path;
     }

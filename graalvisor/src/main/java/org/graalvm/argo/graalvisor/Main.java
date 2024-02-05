@@ -6,6 +6,16 @@ import org.graalvm.argo.graalvisor.sandboxing.NativeSandboxInterface;
 
 public abstract class Main {
 
+    /**
+     * Location where function code will be placed.
+     */
+    public static String APP_DIR = System.getenv("app_dir");
+
+    public static String MINIO_URL = System.getenv("minio-url");
+    public static String MINIO_SERVER = "minio-storage";
+    public static String MINIO_USER = System.getenv("minio-user");
+    public static String MINIO_PASSWORD = System.getenv("minio-password");
+
     public static void main(String[] args) throws Exception {
         String lambda_port = System.getenv("lambda_port");
         String lambda_timestamp = System.getenv("lambda_timestamp");
@@ -21,6 +31,18 @@ public abstract class Main {
 
         if (app_dir == null) {
             app_dir = "/tmp/apps/";
+        }
+
+        if (MINIO_URL == null) {
+            MINIO_URL = "http://localhost:9000";
+        }
+
+        if (MINIO_USER == null) {
+            MINIO_USER = "ROOTNAME";
+        }
+
+        if (MINIO_PASSWORD == null) {
+            MINIO_PASSWORD = "CHANGEME123";
         }
 
         System.out.println(String.format("Graalvisor listening on port %s.", lambda_port));

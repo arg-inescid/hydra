@@ -3,23 +3,25 @@ package org.graalvm.argo.lambda_manager.encoders;
 @SuppressWarnings("unused")
 public class DefaultCoder implements Coder {
 
+    public static final String SEPARATOR = "-";
+
     @Override
     public String encodeFunctionName(String username, String functionName) {
-        return username + "_" + functionName;
+        return username + SEPARATOR + functionName;
     }
 
     @Override
     public String[] decode(String encodedName) {
-        return encodedName.split("_", 2);
+        return encodedName.split(SEPARATOR, 2);
     }
 
     @Override
     public String decodeUsername(String encodedName) {
-        return encodedName.split("_", 2)[0];
+        return encodedName.split(SEPARATOR, 2)[0];
     }
 
     @Override
     public String decodeFunctionName(String encodedName) {
-        return encodedName.split("_", 2)[1];
+        return encodedName.split(SEPARATOR, 2)[1];
     }
 }
