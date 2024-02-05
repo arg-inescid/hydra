@@ -39,7 +39,6 @@ public class PolyglotEngine {
         }
 
         // Adding compilation option.
-        options.put("engine.Compilation", Boolean.toString(COMPILATION));
 
         if (PolyglotLanguage.PYTHON.toString().equals(language)) {
             // Necessary to allow python imports.
@@ -52,6 +51,7 @@ public class PolyglotEngine {
         if (COMPILATION) {
             context = Context.newBuilder().allowAllAccess(true).engine(engine).options(options).build();
         } else {
+            options.put("engine.Compilation", "false");
             context = Context.newBuilder().allowAllAccess(true).allowExperimentalOptions(true).options(options).build();
         }
         System.out.println(String.format("[thread %s] Creating context %s", Thread.currentThread().getId(), context.toString()));

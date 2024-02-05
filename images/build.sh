@@ -6,7 +6,7 @@ function build_vm_image {
     IMAGE=$1
     cd "$DIR"/"$IMAGE"
     bash build_vm_image.sh "$IMAGE".img
-    rm "$DIR"/"$IMAGE"/base.ext4 "$DIR"/"$IMAGE"/init "$DIR"/"$IMAGE"/init.o "$DIR"/"$IMAGE"/random.o
+    rm "$DIR"/"$IMAGE"/base.ext4 "$DIR"/"$IMAGE"/init "$DIR"/"$IMAGE"/init.o "$DIR"/"$IMAGE"/random.o &> /dev/null
     cd "$DIR"
 }
 
