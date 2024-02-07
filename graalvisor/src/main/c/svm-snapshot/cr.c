@@ -47,6 +47,7 @@ typedef struct {
 typedef struct {
     void* addr;
     size_t length;
+    int prot;
 } memory_t;
 
 
@@ -167,35 +168,66 @@ int find_fd_filepath(char* path) {
     return -1;
 }
 
-void checkpoint_memory_mapping(struct function_args* fargs, int memsnap_fd ) {
+// A memory block is a set of contiguous memory pages with the same permission.
+void checkpoint_memory_block(void* block_start, void* block_finish, char block_perm, int memsnap_fd, int metasnap_fd) {
     int tag = MEMORY_TAG;
-    mapping_t* current = &(fargs->mappings);
+    size_t block_size = block_finish - block_start;
+    fprintf(stderr, "cmemory:  %16p - %16p size = 0x%16lx prot = %s%s%s%s popcount = %d\n",
+        block_start,
+        block_finish,
+        block_size,
+        block_perm & PROT_EXEC   ? "x" : "-",
+        block_perm & PROT_READ   ? "r" : "-",
+        block_perm & PROT_WRITE  ? "w" : "-",
+        block_perm == PROT_NONE  ? "n" : "-",
+        popcount(block_start, block_size));
 
-    // If the list is not empty
-    if (current->start != NULL) {
-        while (current != NULL) {
-            fprintf(stderr, "cmemory:  %16p - %16p size = 0x%16lx popcount = %d\n",
-                current->start,
-                ((char*) current->start) + current->size,
-                current->size,
-                popcount((char*) current->start,
-                current->size));
-            // Write contents to file.
-            memory_to_file(memsnap_fd, current->start, current->size);
-            // Write metadata tag.
-            if (write(fargs->meta_snapshot_fd, &tag, sizeof(int)) != sizeof(int)) {
-                perror("failed to serialize memory tag");
-            }
-            // Write metadata location.
-            memory_t s = {.addr = current->start, .length = current->size};
-            if (write(fargs->meta_snapshot_fd, &s, sizeof(memory_t)) != sizeof(memory_t)) {
-                perror("failed to serialize memory header");
-            }
-            current = current->next;
-        }
+    // Write contents to file.
+    memory_to_file(memsnap_fd, block_start, block_size);
+
+    // Write metadata tag.
+    if (write(metasnap_fd, &tag, sizeof(int)) != sizeof(int)) {
+        perror("failed to serialize memory tag");
     }
 
-    close(memsnap_fd);
+    // Write metadata content.
+    memory_t s = {.addr = block_start, .length = block_size, .prot = block_perm};
+    if (write(metasnap_fd, &s, sizeof(memory_t)) != sizeof(memory_t)) {
+        perror("failed to serialize memory header");
+    }
+}
+
+void checkpoint_memory_mapping(void* mapping_start, void* mapping_finish, char* mapping_perms, char* mapping_dirty, int memsnap_fd, int metasnap_fd) {
+    void* block_start = mapping_start;
+
+    while (block_start < mapping_finish) {
+        char  block_dirty = permission(mapping_start, mapping_finish, mapping_dirty, block_start);
+        char* block_finish = repeated(mapping_start, mapping_finish, mapping_dirty, block_start);
+        if (block_dirty == PROT_WRITE) {
+            char  block_perm = permission(mapping_start, mapping_finish, mapping_perms, block_start);
+            if (block_finish != repeated(mapping_start, mapping_finish, mapping_perms, block_start)) {
+                fprintf(stderr, "error: dirty mapping range overlaps with multiple perm ranges for bock %16p - %16p\n", block_start, block_finish);
+            }
+            checkpoint_memory_block(block_start, block_finish, block_perm, memsnap_fd, metasnap_fd);
+        }
+        block_start = block_finish;
+    }
+}
+
+void checkpoint_memory_mappings(struct function_args* fargs, int memsnap_fd) {
+    mapping_t* current = &(fargs->mappings);
+
+    // If the list if empty, do nothing.
+    if (current->start == NULL) {
+        return;
+    }
+
+    while (current != NULL) {
+        void* mapping_start = current->start;
+        void* mapping_finish = ((char*) mapping_start) + current->size;
+        checkpoint_memory_mapping(mapping_start, mapping_finish, current->permissions, current->dirty, memsnap_fd, fargs->meta_snapshot_fd);
+        current = current->next;
+    }
 }
 
 void checkpoint_memory_library(struct function_args* fargs, int memsnap_fd) {
@@ -244,7 +276,11 @@ void checkpoint_memory_library(struct function_args* fargs, int memsnap_fd) {
                 perror("failed to serialize memory tag");
             }
             // Write metadata content.
-            memory_t s = {.addr = (void*)start, .length = size};
+            memory_t s = {.addr = (void*)start, .length = size, .prot = 0};
+            s.prot = r == 'r' ? s.prot | PROT_READ : s.prot;
+            s.prot = w == 'w' ? s.prot | PROT_WRITE : s.prot;
+            s.prot = x == 'x' ? s.prot | PROT_EXEC : s.prot;
+            // Note: we are not passing the 'p' permission.
             if (write(fargs->meta_snapshot_fd, &s, sizeof(memory_t)) != sizeof(memory_t)) {
                 perror("failed to serialize memory header");
             }
@@ -265,7 +301,7 @@ void checkpoint_memory(struct function_args* fargs) {
     checkpoint_memory_library(fargs, memsnap_fd);
 
     // Checkpoint memory that hte function allocated after initialization.
-    checkpoint_memory_mapping(fargs, memsnap_fd);
+    checkpoint_memory_mappings(fargs, memsnap_fd);
 
     close(memsnap_fd);
 }
@@ -277,20 +313,9 @@ void restore_memory(struct function_args* fargs, int mem_snapshot_fd) {
         perror("failed to deserialize memory header");
     }
 
-    // TODO - this code is just for having a 2-step popcount verification.
-    char* buffer = (void*)malloc(s.length);
-    if (buffer == NULL) {
-        fprintf(stderr, "failed to malloc");
-    }
-    file_to_memory(mem_snapshot_fd, buffer, s.length);
-    fprintf(stderr, "restore mapping: start = %16p size = 0x%16lx popcount = %d\n",
-        s.addr, s.length, popcount((char*)buffer, s.length));
-    memcpy(s.addr, buffer, s.length);
-
-    // TODO - this is the line we want to execute in the end.
-    //file_to_memory(mem_snapshot_fd, (char*)s.addr, s.length);
-    fprintf(stderr, "restore mapping: start = %16p size = 0x%16lx popcount = %d\n",
-        s.addr, s.length, popcount(s.addr, s.length));
+    file_to_memory(mem_snapshot_fd, (char*)s.addr, s.length);
+    fprintf(stderr, "rmapping  %16p - %16p size = 0x%16lx popcount = %d\n",
+        s.addr, ((char*) s.addr) + s.length, s.length, popcount(s.addr, s.length));
 }
 
 void checkpoint_isolate(struct function_args* fargs, void* isolate) {

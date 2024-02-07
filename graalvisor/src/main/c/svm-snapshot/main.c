@@ -159,85 +159,54 @@ void* run_function(void* args) {
     return NULL;
 }
 
-/*
- * We will save and replay all mmap and munmap operations.
- * In addition, we will copy all mapped memory pages. This means that during execution we will not need to track reserve ops, but only commit.
- */
 void handle_mmap(struct function_args* fargs, void* addr, size_t length, int prot, int flags, int fd, off_t offset, void* ret) {
 
+    // Checkpoint the syscall.
     checkpoint_mmap(fargs, addr, length, prot, flags, fd, offset, ret);
 
-    if (prot == PROT_NONE || prot == PROT_READ) {
-        return;
+    mapping_t* mapping = list_find(&(fargs->mappings), ret, length);
+
+    // Add mapping if it does not exist yet.
+    if (mapping == NULL) {
+        mapping = list_push(&(fargs->mappings), ret, length);
     }
 
-    list_push(&(fargs->mappings), ret, length);
-    fprintf(stderr, "ntracking %16p - %16p\n", ret, ((char*) ret) + length);
+    // Update permissions.
+    mapping_update_permissions(mapping, ret, ((char*) ret + length), (char) prot);
 }
 
 void handle_munmap(struct function_args* fargs, void* addr, size_t length, int ret) {
-    void* munmap_finish = ((char*) addr) + length;
-    mapping_t * current = &(fargs->mappings);
 
+    // Checkpoint the syscall.
     checkpoint_munmap(fargs, addr, length, ret);
 
-    // If the list is empty, skip.
-    if (current->start == NULL) {
+    mapping_t* mapping = list_find(&(fargs->mappings), addr, length);
+
+    // Add mapping if it does not exist yet.
+    if (mapping == NULL) {
+        fprintf(stderr, "warning: unmapping unkown mapping %16p - %16p\n", addr, ((char*) addr) + length);
         return;
     }
 
-    while (current != NULL) {
-        void* mapping_finish = ((char*) current->start) + current->size;
-
-        // If we are removing a block from the start.
-        if (addr == current->start && munmap_finish <= mapping_finish) {
-            current->size -= length;
-            current->start = munmap_finish;
-            fprintf(stderr, "utracking %16p - %16p (clipping beg)\n", current->start, mapping_finish);
-            if (current->size == 0) {
-                // TODO - remove
-            }
-        }
-        // If we are removing a block from the end.
-        else if (munmap_finish == mapping_finish && addr >= current->start) {
-            current->size -= length;
-            mapping_finish = ((char*) current->start) + current->size;
-            fprintf(stderr, "utracking %16p - %16p (clipping end)\n", current->start, mapping_finish);
-             if (current->size == 0) {
-                // TODO - remove
-            }
-        }
-        // If we are removing a range that includes this mapping.
-        else if (addr < current->start && munmap_finish > mapping_finish) {
-            current->size = 0;
-            fprintf(stderr, "utracking %16p - %16p (deleting)\n", current->start, mapping_finish);
-            // TODO - remove
-        }
-        // If we are removing a range before or after this mapping.
-        else if (munmap_finish < current->start || addr > mapping_finish) {
-            // ignore
-        } else {
-            fprintf(stderr, "error: unsupported munmap: len = %lx [%16p to %16p] from [%16p to %16p]\n",
-                length, addr, munmap_finish, current->start, mapping_finish);
-        }
-        current = current->next;
-    }
+    // Update mapping size to comply with munmap.
+    mapping_update_size(mapping, addr, ((char*) addr) + length);
 }
 
 void handle_mprotect(struct function_args* fargs, void* addr, size_t length, int prot, int ret) {
 
+    // Checkpoint the syscall.
     checkpoint_mprotect(fargs, addr, length, prot, ret);
 
-    if (prot == PROT_NONE || prot == PROT_READ) {
+    mapping_t* mapping = list_find(&(fargs->mappings), addr, length);
+
+    // Add mapping if it does not exist yet.
+    if (mapping == NULL) {
+        fprintf(stderr, "warning: mprotecting unkown mapping %16p - %16p\n", addr, ((char*) addr) + length);
         return;
     }
 
-    // We check if there is no mapping yet with this range.
-    if (list_find(&(fargs->mappings), addr, length) == NULL) {
-        // TODO - there are cases where we are extending an existing mapping.
-        list_push(&(fargs->mappings), addr, length);
-        fprintf(stderr, "ntracking %16p - %16p\n", addr, ((char*) addr) + length);
-    }
+    // Update permissions.
+    mapping_update_permissions(mapping, addr, ((char*) addr + length), prot);
 }
 
 void handle_notifications(struct function_args* fargs) {
