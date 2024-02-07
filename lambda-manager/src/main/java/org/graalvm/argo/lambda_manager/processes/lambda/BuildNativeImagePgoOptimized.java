@@ -23,7 +23,6 @@ public class BuildNativeImagePgoOptimized extends AbstractProcess {
 
     @Override
     protected List<String> makeCommand() {
-        function.setStatus(PGO_OPTIMIZED_BUILDING);
         return Stream
                 .of("bash",
                         "src/scripts/build_native_image_pgo_optimized.sh",

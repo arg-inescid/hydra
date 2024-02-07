@@ -3,7 +3,7 @@ package org.graalvm.argo.lambda_manager.encoders;
 @SuppressWarnings("unused")
 public class DefaultCoder implements Coder {
 
-    public static final String SEPARATOR = "-";
+    private static final String SEPARATOR = "-";
 
     @Override
     public String encodeFunctionName(String username, String functionName) {
