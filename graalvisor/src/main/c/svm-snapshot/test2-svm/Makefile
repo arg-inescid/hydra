@@ -1,12 +1,12 @@
 app = "$(shell pwd)/libhello.so"
 
-libhello.so: src/main/java/com/hello_world/HelloWorld.java
-	./gradlew clean shadowJar assemble
+libhello.so: HelloWorld.java
+	${JAVA_HOME}/bin/javac HelloWorld.java
 	${JAVA_HOME}/bin/native-image \
 		-g -O0 -H:-AllowVMInternalThreads \
-		-cp build/libs/test2-svm-1.0-all.jar \
 		--shared \
-		-H:Name=libhello
+		-H:Name=libhello \
+		HelloWorld
 
 all: libhello.so
 
@@ -21,5 +21,5 @@ run-restore:
 run: all run-checkpoint run-restore
 
 clean:
-	rm *.txt *.so *.snap *.h *.debug
-	rm -r build sources
+	rm *.txt *.so *.snap *.h *.debug *.class
+	rm -r sources

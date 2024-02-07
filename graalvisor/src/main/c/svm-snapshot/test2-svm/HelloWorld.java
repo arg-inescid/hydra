@@ -1,5 +1,3 @@
-package com.hello_world;
-
 import java.util.HashMap;
 import java.util.Map;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
