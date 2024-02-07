@@ -1,12 +1,14 @@
 app = "$(shell pwd)/libhello.so"
 
-all:
+libhello.so: src/main/java/com/hello_world/HelloWorld.java
 	./gradlew clean shadowJar assemble
 	${JAVA_HOME}/bin/native-image \
 		-g -O0 -H:-AllowVMInternalThreads \
 		-cp build/libs/test2-svm-1.0-all.jar \
 		--shared \
 		-H:Name=libhello
+
+all: libhello.so
 
 run-checkpoint:
 	rm -f snapshot.mem
