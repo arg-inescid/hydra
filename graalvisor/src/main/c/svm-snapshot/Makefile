@@ -14,7 +14,7 @@ all: *.h *.c
 tests: all
 	make -C test0-clib run
 	make -C test1-staticvar run
-	#make -C test2-svm run
+	make -C test2-svm run
 	make -C test2-svm-jar run
 	make -C test2-svm-gradle run
 	#make -C test3-svm-truffle-js run

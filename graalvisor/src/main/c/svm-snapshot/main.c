@@ -137,8 +137,6 @@ void* run_function(void* args) {
     fargs->abi.entrypoint(thread);
     fargs->abi.graal_detach_thread(thread);
 
-
-
    if (CURRENT_MODE == CHECKPOINT) {
 #ifdef DEBUG
         print_proc_maps_extended("before_checkpoint.txt");

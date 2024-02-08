@@ -143,19 +143,20 @@ void print_proc_maps_extended(char* filename) {
     while (fgets(buffer, sizeof(buffer), pmaps)) {
         unsigned long start, finish, offset, inode, pop;
         char r, w, x, p;
-        char dev[6];
+        char dev[16];
         char mpath[256];
 
         // Resetting vars.
         dev[0] = '\0';
         mpath[0] = '\0';
 
-        int matched = sscanf(buffer, "%lx-%lx %c%c%c%c %lx %s %lu %s",
+        int matched = sscanf(buffer, "%lx-%lx %c%c%c%c %lx %15s %lu %255s",
             &start, &finish, &r, &w, &x, &p, &offset, dev, &inode, mpath);
         if (matched < 9) {
             fprintf(out, "matched = %d on %s\n", matched, buffer);
         }
 
+        // If we can't read or if we are looking into vvar/vdso, ignore.
         if (r == '-' || !strcmp(mpath, "[vvar]") || !strcmp(mpath, "[vdso]")) {
             pop = 0;
         } else {
@@ -171,6 +172,7 @@ void print_proc_maps_extended(char* filename) {
             pop,
             mpath);
     }
+
     fclose(pmaps);
     fclose(out);
 }
@@ -260,8 +262,9 @@ void checkpoint_memory_mappings(struct function_args* fargs, int memsnap_fd) {
 
 void checkpoint_memory_library(struct function_args* fargs, int memsnap_fd) {
     char buffer[512];
-    size_t parity = 0;
     int tag = MEMORY_TAG;
+    unsigned long start, finish, prevfinish;
+    char r, w, x, p;
     FILE* file = fopen("/proc/self/maps", "r");
     if (file == NULL) {
         fprintf(stderr, "failed to open proc self maps\n");
@@ -269,14 +272,14 @@ void checkpoint_memory_library(struct function_args* fargs, int memsnap_fd) {
     }
 
     while (fgets(buffer, sizeof(buffer), file)) {
-        if (strstr(buffer, fargs->function_path) == NULL) {
+        // Reading start and finish addresses
+        sscanf(buffer, "%lx-%lx %c%c%c%c", &start, &finish, &r, &w, &x, &p);
+
+        // If the proc map line does not contain our function library AND
+        // this map line is not a continuation of a previous mapping.
+        if (strstr(buffer, fargs->function_path) == NULL && prevfinish != 0 && prevfinish != start) {
             continue;
         } else {
-            unsigned long start, finish;
-            char r, w, x, p;
-
-            // Reading start and finish addresses
-            sscanf(buffer, "%lx-%lx %c%c%c%c", &start, &finish, &r, &w, &x, &p);
             size_t size = finish - start;
 
             // We ignore mappings of the library that were mmapped by the function.
@@ -313,6 +316,8 @@ void checkpoint_memory_library(struct function_args* fargs, int memsnap_fd) {
                 perror("failed to serialize memory header");
             }
 
+
+            prevfinish = finish;
         }
     }
     fclose(file);
