@@ -1,6 +1,7 @@
 #app = "test0-clib/libhello.so"
 #app = "test1-staticvar/libhello.so"
 app = "$(shell pwd)/test2-svm/libhello.so"
+#app = "$(shell pwd)/test2-svm-jar/libhello.so"
 #app = "$(shell pwd)/test2-svm-gradle/libhello.so"
 #app = "/home/rbruno/git/graalserverless/benchmarks/src/java/gv-hello-world/build/libhelloworld.so"
 #app = "/home/rbruno/git/graalserverless/benchmarks/src/python/gv-hello-world/build/libhelloworld.so"
@@ -15,6 +16,7 @@ tests:
 	make -C test0-clib run
 	make -C test1-staticvar run
 	make -C test2-svm run
+	make -C test2-svm-jar run
 	make -C test2-svm-gradle run
 
 run-normal:
@@ -45,4 +47,5 @@ clean:
 	make -C test0-clib clean
 	make -C test1-staticvar clean
 	make -C test2-svm clean
+	make -C test2-svm-jar clean
 	make -C test2-svm-gradle clean
