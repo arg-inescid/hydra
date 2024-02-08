@@ -4,8 +4,8 @@
 #include <sys/types.h>
 #include "main.h"
 
-void print_proc_self_maps(char* tag);
-void print_library_maps(char* library_path);
+void print_proc_maps(char* filename);
+void print_proc_maps_extended(char* filename);
 void checkpoint_isolate(struct function_args* fargs, void* isolate);
 void checkpoint_library(struct function_args* fargs);
 void checkpoint_memory(struct function_args* fargs);

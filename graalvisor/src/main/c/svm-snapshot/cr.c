@@ -92,8 +92,7 @@ size_t popcount(char* buffer, size_t count) {
     return result;
 }
 
-// TODO - move to main.c
-void print_proc_self_maps(char* filename) {
+void print_proc_maps(char* filename) {
     char buffer[512];
     size_t n = 0;
 
@@ -126,27 +125,54 @@ void print_proc_self_maps(char* filename) {
     close(out_fd);
 }
 
-// TODO - delete, not used?
-void print_library_maps(char* library_path) {
+void print_proc_maps_extended(char* filename) {
     char buffer[512];
-    FILE* file = fopen("/proc/self/maps", "r");
-    if (file == NULL) {
+
+    FILE* pmaps = fopen("/proc/self/maps", "r");
+    if (pmaps == NULL) {
         fprintf(stderr, "failed to open proc self maps\n");
         return;
     }
 
-    while (fgets(buffer, sizeof(buffer), file)) {
-        if (strstr(buffer, library_path) == NULL) {
-            continue;
-        } else {
-            unsigned long start, finish;
-            sscanf(buffer, "%lx-%lx", &start, &finish);
-
-            fprintf(stderr, "start = %16p finish = %16p size = 0x%lx\n",
-                (void*)start, (void*) finish, finish - start);
-        }
+    FILE* out = fopen(filename, "w");
+    if (out == NULL) {
+        fprintf(stderr, "failed to open %s\n", filename);
+        return;
     }
-    fclose(file);
+
+    while (fgets(buffer, sizeof(buffer), pmaps)) {
+        unsigned long start, finish, offset, inode, pop;
+        char r, w, x, p;
+        char dev[6];
+        char mpath[256];
+
+        // Resetting vars.
+        dev[0] = '\0';
+        mpath[0] = '\0';
+
+        int matched = sscanf(buffer, "%lx-%lx %c%c%c%c %lx %s %lu %s",
+            &start, &finish, &r, &w, &x, &p, &offset, dev, &inode, mpath);
+        if (matched < 9) {
+            fprintf(out, "matched = %d on %s\n", matched, buffer);
+        }
+
+        if (r == '-' || !strcmp(mpath, "[vvar]") || !strcmp(mpath, "[vdso]")) {
+            pop = 0;
+        } else {
+            pop = popcount((void*)start, finish - start);
+        }
+
+        fprintf(out, "%16p - %16p %c%c%c%c off=%8lu sz=0x%10lx pop=%10lu %s\n",
+            (void*)start,
+            (void*) finish,
+            r, w, x, p,
+            offset,
+            finish - start,
+            pop,
+            mpath);
+    }
+    fclose(pmaps);
+    fclose(out);
 }
 
 int check_filepath_fd(int fd, char* path) {

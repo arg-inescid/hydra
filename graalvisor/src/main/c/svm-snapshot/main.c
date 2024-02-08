@@ -122,7 +122,7 @@ void* run_function(void* args) {
     if (CURRENT_MODE == RESTORE) {
         isolate = restore(args);
 #ifdef DEBUG
-        print_proc_self_maps("after_restore.txt");
+        print_proc_maps_extended("after_restore.txt");
 #endif
         fargs->abi.graal_attach_thread(isolate, &thread);
     } else {
@@ -141,7 +141,7 @@ void* run_function(void* args) {
 
    if (CURRENT_MODE == CHECKPOINT) {
 #ifdef DEBUG
-        print_proc_self_maps("before_checkpoint.txt");
+        print_proc_maps_extended("before_checkpoint.txt");
         print_list(&(fargs->mappings)); // TODO - new
 #endif
         checkpoint_memory(fargs);

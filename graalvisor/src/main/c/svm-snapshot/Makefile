@@ -36,6 +36,8 @@ run-checkpoint:
 run-restore:
 	setarch -R ./main restore $(app) 2>&1
 
+run: run-checkpoint run-restore
+
 gdb-restore:
 	setarch -R gdb $(gcommands) --args ./main restore $(app)
 
