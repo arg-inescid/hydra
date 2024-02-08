@@ -174,7 +174,7 @@ int find_fd_filepath(char* path) {
 void checkpoint_memory_block(void* block_start, void* block_finish, char block_perm, int memsnap_fd, int metasnap_fd) {
     int tag = MEMORY_TAG;
     size_t block_size = block_finish - block_start;
-    fprintf(stderr, "cmemory:  %16p - %16p size = 0x%16lx prot = %s%s%s%s popcount = %d\n",
+    fprintf(stderr, "cmemory:  %16p - %16p size = 0x%16lx prot = %s%s%s%s popcount = %lu\n",
         block_start,
         block_finish,
         block_size,
@@ -262,8 +262,8 @@ void checkpoint_memory_library(struct function_args* fargs, int memsnap_fd) {
                 continue; // TODO - should we skip read/execute-only pages?
             }
 
-            fprintf(stderr, "clibrary: %16p - %16p size = 0x%16lx prot = %c%c%c%c popcount = %d \n",
-                start,
+            fprintf(stderr, "clibrary: %16p - %16p size = 0x%16lx prot = %c%c%c%c popcount = %lu \n",
+                (void*) start,
                 ((char*) start) + size,
                 size,
                 r, w, x, p,
@@ -316,7 +316,7 @@ void restore_memory(struct function_args* fargs, int mem_snapshot_fd) {
     }
 
     file_to_memory(mem_snapshot_fd, (char*)s.addr, s.length);
-    fprintf(stderr, "rmapping  %16p - %16p size = 0x%16lx popcount = %d\n",
+    fprintf(stderr, "rmapping  %16p - %16p size = 0x%16lx popcount = %lu\n",
         s.addr, ((char*) s.addr) + s.length, s.length, popcount(s.addr, s.length));
 }
 
@@ -342,7 +342,7 @@ void* restore_isolate(struct function_args* fargs) {
 }
 
 void print_mmap(void* addr, size_t length, int prot, int flags, int fd, off_t offset, void* ret) {
-    fprintf(stderr, "mmap:     %16p - %16p size = 0x%16lx prot = %s%s%s%s flags = %8d fd = %2d offset = %8d ret = %16p\n",
+    fprintf(stderr, "mmap:     %16p - %16p size = 0x%16lx prot = %s%s%s%s flags = %8d fd = %2d offset = %8ld ret = %16p\n",
         addr,
         addr == NULL ? NULL : ((char*) addr) + length,
         length,

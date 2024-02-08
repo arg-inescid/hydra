@@ -21,5 +21,5 @@ run-restore:
 run: all run-checkpoint run-restore
 
 clean:
-	rm *.txt *.so *.snap *.h *.debug
-	rm -r build sources
+	rm -f *.txt *.so *.snap *.h *.debug
+	rm -f -r build sources bin

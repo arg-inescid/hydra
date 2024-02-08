@@ -9,7 +9,7 @@
 
 size_t bytes_to_pages(size_t bytes) {
     if (bytes % 4096 != 0) {
-        fprintf(stderr, "warning, %d is not a multiple of a page size (%d)\n", bytes, PAGE_SIZE);
+        fprintf(stderr, "warning, %lu is not a multiple of a page size (%d)\n", bytes, PAGE_SIZE);
     }
     return bytes / PAGE_SIZE;
 }
@@ -24,7 +24,7 @@ char permission(void* mapping_start, void* mapping_finish, char* mapping_perms, 
     // Number of bytes after the start of the mapping.
     size_t bytes = (char*) addr - (char*) mapping_start;
     if (bytes % 4096 != 0) {
-        fprintf(stderr, "warning, %d is not a multiple of a page size (%d)\n", bytes, PAGE_SIZE);
+        fprintf(stderr, "warning, %lu is not a multiple of a page size (%d)\n", bytes, PAGE_SIZE);
     }
 
     return mapping_perms[bytes_to_pages(bytes)];

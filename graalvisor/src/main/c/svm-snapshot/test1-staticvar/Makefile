@@ -15,4 +15,4 @@ run-restore:
 run: all run-checkpoint run-restore
 
 clean:
-	rm *.txt *.o *.so *.snap
+	rm -f *.txt *.o *.so *.snap
