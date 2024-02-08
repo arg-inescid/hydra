@@ -92,6 +92,7 @@ size_t popcount(char* buffer, size_t count) {
     return result;
 }
 
+// TODO - move to main.c
 void print_proc_self_maps(char* filename) {
     char buffer[512];
     size_t n = 0;
@@ -118,13 +119,14 @@ void print_proc_self_maps(char* filename) {
                 fprintf(stderr, "Could not read() data\n");
             }
         } else {
-            memory_to_file(out_fd, buffer, n);
+            memory_to_file(out_fd, buffer, n); // TODO - we should also print popcount.
         }
     }
     close(in_fd);
     close(out_fd);
 }
 
+// TODO - delete, not used?
 void print_library_maps(char* library_path) {
     char buffer[512];
     FILE* file = fopen("/proc/self/maps", "r");
