@@ -142,6 +142,7 @@ void* run_function(void* args) {
    if (CURRENT_MODE == CHECKPOINT) {
 #ifdef DEBUG
         print_proc_self_maps("before_checkpoint.txt");
+        print_list(&(fargs->mappings)); // TODO - new
 #endif
         checkpoint_memory(fargs);
         checkpoint_isolate(fargs, isolate);

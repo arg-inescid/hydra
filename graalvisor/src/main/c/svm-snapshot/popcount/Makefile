@@ -1,3 +1,3 @@
 all:
-	gcc *.c
+	gcc -c popcount.c
 	gcc -o popcount *.o
