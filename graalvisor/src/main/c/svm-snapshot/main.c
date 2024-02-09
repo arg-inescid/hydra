@@ -74,9 +74,9 @@ int install_filter() {
 
         // add rules here
         // TODO - we should probably track clone, exit, open, and close.
-//        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_open,   5, 0),
-//        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_close,  4, 0),
-//        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_clone,  3, 0),
+        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_exit,     5, 0),
+        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_clone,    4, 0),
+        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_clone3,   3, 0),
         BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_mprotect, 2, 0),
         BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_mmap,     1, 0),
         BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_munmap,   0, 1),
@@ -122,7 +122,7 @@ void* run_function(void* args) {
     if (CURRENT_MODE == RESTORE) {
         isolate = restore(args);
 #ifdef DEBUG
-        print_proc_maps_extended("after_restore.txt");
+        print_proc_maps("after_restore.txt");
 #endif
         fargs->abi.graal_attach_thread(isolate, &thread);
     } else {
@@ -139,7 +139,7 @@ void* run_function(void* args) {
 
    if (CURRENT_MODE == CHECKPOINT) {
 #ifdef DEBUG
-        print_proc_maps_extended("before_checkpoint.txt");
+        print_proc_maps("before_checkpoint.txt");
         print_list(&(fargs->mappings));
 #endif
         checkpoint_memory(fargs);
@@ -151,10 +151,6 @@ void* run_function(void* args) {
 
     fargs->abi.graal_attach_thread(isolate, &thread);
     fargs->abi.graal_tear_down_isolate(thread);
-
-    if (CURRENT_MODE == CHECKPOINT) {
-        close(fargs->seccomp_fd);
-    }
     return NULL;
 }
 
@@ -209,6 +205,8 @@ void handle_mprotect(struct function_args* fargs, void* addr, size_t length, int
 }
 
 void handle_notifications(struct function_args* fargs) {
+    // This number represents the number of threads that are initially running in the sandbox.
+    int active_threads = 1;
     struct seccomp_notif_sizes sizes;
     if (syscall(SYS_seccomp, SECCOMP_GET_NOTIF_SIZES, 0, &sizes) < 0) {
         perror("seccomp(SECCOMP_GET_NOTIF_SIZES)");
@@ -224,7 +222,7 @@ void handle_notifications(struct function_args* fargs) {
         },
     };
 
-    while (1) {
+    while (active_threads) {
 
 		// Wait for a notification
         if (poll(fds, 1, -1) <= 0) {
@@ -251,6 +249,21 @@ void handle_notifications(struct function_args* fargs) {
         resp->id = req->id;
         long long unsigned int *args = req->data.args;
         switch (req->data.nr) {
+            case __NR_exit:
+                fprintf(stderr, "warning: exit was invoked!\n");
+                active_threads--;
+                resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
+                break;
+            case __NR_clone:
+                fprintf(stderr, "warning: clone was invoked!\n");
+                active_threads++;
+                resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
+                break;
+            case __NR_clone3:
+                fprintf(stderr, "warning: clone3 was invoked!\n");
+                active_threads++;
+                resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
+                break;
             case __NR_mmap:
                 resp->val = syscall(__NR_mmap, args[0], args[1], args[2], args[3], args[4], args[5]);
                 handle_mmap(fargs, (void*) args[0], (size_t) args[1], (int) args[2], (int) args[3], (int) args[4], (off_t) args[5], (void*) resp->val);
@@ -278,6 +291,8 @@ void handle_notifications(struct function_args* fargs) {
             continue;
         }
     }
+
+    close(fargs->seccomp_fd);
     free(req);
     free(resp);
 }

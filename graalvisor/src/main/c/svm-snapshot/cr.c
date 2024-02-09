@@ -94,39 +94,6 @@ size_t popcount(char* buffer, size_t count) {
 
 void print_proc_maps(char* filename) {
     char buffer[512];
-    size_t n = 0;
-
-    int in_fd = open("/proc/self/maps", O_RDONLY);
-    if (in_fd < 0) {
-        fprintf(stderr, "failed to open proc self maps\n");
-        return;
-    }
-
-    int out_fd = open(filename,  O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
-    if (out_fd < 0) {
-        fprintf(stderr, "failed to open %s\n", filename);
-        return;
-    }
-
-    while (n = read(in_fd, buffer, sizeof(buffer))) {
-        if (n == 0) {
-            break;
-        } else if (n < 0) {
-            if (errno == EINTR || errno == EAGAIN) {
-                continue;
-            } else {
-                fprintf(stderr, "Could not read() data\n");
-            }
-        } else {
-            memory_to_file(out_fd, buffer, n);
-        }
-    }
-    close(in_fd);
-    close(out_fd);
-}
-
-void print_proc_maps_extended(char* filename) {
-    char buffer[512];
 
     FILE* pmaps = fopen("/proc/self/maps", "r");
     if (pmaps == NULL) {

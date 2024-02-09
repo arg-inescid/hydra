@@ -90,7 +90,8 @@ mapping_t* list_find(mapping_t* head, void* start, size_t size) {
             return current;
         }
         // We do not support partial overlaps. Quit with error message.
-        else if ((start >= current->start && start <= current_finish) || (finish >= current->start && finish <= current_finish)) {
+        // Note that start is part of the range but the finish address is already outside.
+        else if ((start >= current->start && start < current_finish) || (finish > current->start && finish <= current_finish)) {
             fprintf(stderr, "error: requested mapping %16p - %16p partially overlaps with existing mapping %16p - %16p\n",
                start, finish, current->start, current_finish);
             return NULL;

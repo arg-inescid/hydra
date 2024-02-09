@@ -5,7 +5,6 @@
 #include "main.h"
 
 void print_proc_maps(char* filename);
-void print_proc_maps_extended(char* filename);
 void checkpoint_isolate(struct function_args* fargs, void* isolate);
 void checkpoint_library(struct function_args* fargs);
 void checkpoint_memory(struct function_args* fargs);

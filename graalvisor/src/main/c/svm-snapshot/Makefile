@@ -9,8 +9,8 @@ app = "$(shell pwd)/test3-svm-truffle-py/libhello.so"
 gcommands = -x gdb-commands.txt
 
 all: *.h *.c
-	gcc -g -c *.c
-	gcc -g -o main *.o
+	gcc -g -Wall -c *.c
+	gcc -g -Wall -o main *.o
 
 tests: all
 	make -C test0-clib run
@@ -30,10 +30,18 @@ strace-normal:
 gdb-normal:
 	setarch -R gdb $(gcommands) --args ./main normal $(app)
 
+gdb-checkpoint:
+	setarch -R gdb $(gcommands) --args ./main checkpoint $(app)
+
 run-checkpoint:
 	rm -f snapshot.mem
 	rm -f snapshot.meta
 	setarch -R ./main checkpoint $(app) 2>&1
+
+strace-checkpoint:
+	rm -f snapshot.mem
+	rm -f snapshot.meta
+	setarch -R strace -f ./main checkpoint $(app) 2>&1
 
 run-restore:
 	setarch -R ./main restore $(app) 2>&1
