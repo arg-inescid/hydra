@@ -1,3 +1,6 @@
-*.class
-*.build_artifacts.txt
-*.image
+.gradle
+build
+sources
+/*.h
+libhello.so.debug
+libhello.so
