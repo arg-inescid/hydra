@@ -118,7 +118,7 @@ void print_proc_maps(char* filename) {
                 fprintf(stderr, "Could not read() data\n");
             }
         } else {
-            memory_to_file(out_fd, buffer, n); // TODO - we should also print popcount.
+            memory_to_file(out_fd, buffer, n);
         }
     }
     close(in_fd);
@@ -198,22 +198,22 @@ int find_fd_filepath(char* path) {
     return -1;
 }
 
-// A memory block is a set of contiguous memory pages with the same permission.
-void checkpoint_memory_block(void* block_start, void* block_finish, char block_perm, int memsnap_fd, int metasnap_fd) {
+// A memory seg is a set of contiguous memory pages with the same permission.
+void checkpoint_memory_segment(void* seg_start, void* seg_finish, char seg_perm, int memsnap_fd, int metasnap_fd) {
     int tag = MEMORY_TAG;
-    size_t block_size = block_finish - block_start;
+    size_t seg_size = seg_finish - seg_start;
     fprintf(stderr, "cmemory:  %16p - %16p size = 0x%16lx prot = %s%s%s%s popcount = %lu\n",
-        block_start,
-        block_finish,
-        block_size,
-        block_perm & PROT_EXEC   ? "x" : "-",
-        block_perm & PROT_READ   ? "r" : "-",
-        block_perm & PROT_WRITE  ? "w" : "-",
-        block_perm == PROT_NONE  ? "n" : "-",
-        popcount(block_start, block_size));
+        seg_start,
+        seg_finish,
+        seg_size,
+        seg_perm & PROT_EXEC   ? "x" : "-",
+        seg_perm & PROT_READ   ? "r" : "-",
+        seg_perm & PROT_WRITE  ? "w" : "-",
+        seg_perm == PROT_NONE  ? "n" : "-",
+        popcount(seg_start, seg_size));
 
     // Write contents to file.
-    memory_to_file(memsnap_fd, block_start, block_size);
+    memory_to_file(memsnap_fd, seg_start, seg_size);
 
     // Write metadata tag.
     if (write(metasnap_fd, &tag, sizeof(int)) != sizeof(int)) {
@@ -221,24 +221,32 @@ void checkpoint_memory_block(void* block_start, void* block_finish, char block_p
     }
 
     // Write metadata content.
-    memory_t s = {.addr = block_start, .length = block_size, .prot = block_perm};
+    memory_t s = {.addr = seg_start, .length = seg_size, .prot = seg_perm};
     if (write(metasnap_fd, &s, sizeof(memory_t)) != sizeof(memory_t)) {
         perror("failed to serialize memory header");
     }
 }
 
-void checkpoint_memory_mapping(void* mapping_start, void* mapping_finish, char* mapping_perms, char* mapping_dirty, int memsnap_fd, int metasnap_fd) {
-    void* block_start = mapping_start;
+void checkpoint_dirty_block(void* map_start, void* map_finish, void* block_start, void* block_finish, char* perms, int memsnap_fd, int metasnap_fd) {
+    void* seg_start = block_start;
 
-    while (block_start < mapping_finish) {
-        char  block_dirty = permission(mapping_start, mapping_finish, mapping_dirty, block_start);
-        char* block_finish = repeated(mapping_start, mapping_finish, mapping_dirty, block_start);
+    // Within a single dirty block we might have several memory permissions so we need to iterate these segments.
+     while (seg_start < block_finish) {
+        char  seg_perm = permission(map_start, map_finish, perms, seg_start);
+        char* seg_finish = repeated(map_start, map_finish, perms, seg_start);
+        checkpoint_memory_segment(seg_start, seg_finish, seg_perm, memsnap_fd, metasnap_fd);
+        seg_start = seg_finish;
+    }
+}
+
+void checkpoint_memory_mapping(void* map_start, void* map_finish, char* map_perms, char* map_dirty, int memsnap_fd, int metasnap_fd) {
+    void* block_start = map_start;
+
+    while (block_start < map_finish) {
+        char  block_dirty = permission(map_start, map_finish, map_dirty, block_start);
+        char* block_finish = repeated(map_start, map_finish, map_dirty, block_start);
         if (block_dirty == PROT_WRITE) {
-            char  block_perm = permission(mapping_start, mapping_finish, mapping_perms, block_start);
-            if (block_finish != repeated(mapping_start, mapping_finish, mapping_perms, block_start)) {
-                fprintf(stderr, "error: dirty mapping range overlaps with multiple perm ranges for bock %16p - %16p\n", block_start, block_finish);
-            }
-            checkpoint_memory_block(block_start, block_finish, block_perm, memsnap_fd, metasnap_fd);
+            checkpoint_dirty_block(map_start, map_finish, block_start, block_finish, map_perms, memsnap_fd, metasnap_fd);
         }
         block_start = block_finish;
     }
@@ -346,9 +354,31 @@ void restore_memory(struct function_args* fargs, int mem_snapshot_fd) {
         perror("failed to deserialize memory header");
     }
 
+    // We might need to restore memory into a range that is not writeable.
+    if (!(s.prot & PROT_WRITE)) {
+        if (mprotect(s.addr, s.length, PROT_WRITE)) {
+            perror("failed to mprotect before loading snap into memory");
+        }
+    }
+
     file_to_memory(mem_snapshot_fd, (char*)s.addr, s.length);
-    fprintf(stderr, "rmapping  %16p - %16p size = 0x%16lx popcount = %lu\n",
-        s.addr, ((char*) s.addr) + s.length, s.length, popcount(s.addr, s.length));
+
+    // Restore the original permissions after restoring memory from snapshot.
+    if (!(s.prot & PROT_WRITE)) {
+        if (mprotect(s.addr, s.length, s.prot)) {
+            perror("failed to mprotect after loading snap into memory");
+        }
+    }
+
+    fprintf(stderr, "rmemory:  %16p - %16p size = 0x%16lx prot = %s%s%s%s popcount = %lu\n",
+        s.addr,
+        ((char*) s.addr) + s.length,
+        s.length,
+        s.prot & PROT_EXEC   ? "x" : "-",
+        s.prot & PROT_READ   ? "r" : "-",
+        s.prot & PROT_WRITE  ? "w" : "-",
+        s.prot == PROT_NONE  ? "n" : "-",
+        popcount(s.addr, s.length));
 }
 
 void checkpoint_isolate(struct function_args* fargs, void* isolate) {

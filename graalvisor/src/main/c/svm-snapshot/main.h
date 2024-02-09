@@ -4,7 +4,6 @@
 #include "graal_isolate.h"
 #include "list.h"
 
-// TODO - move this into a demo.
 // Note - we assume that there are no other threads attached to an isolate, there are no open files, etc.
 // Note - we might need to make sure that all libraries that the isolate depends on are loaded at the same location
 // Note - we also need to make sure that the isolate is loaded back to the same location.

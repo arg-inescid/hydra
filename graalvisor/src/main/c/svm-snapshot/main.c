@@ -140,7 +140,7 @@ void* run_function(void* args) {
    if (CURRENT_MODE == CHECKPOINT) {
 #ifdef DEBUG
         print_proc_maps_extended("before_checkpoint.txt");
-        print_list(&(fargs->mappings)); // TODO - new
+        print_list(&(fargs->mappings));
 #endif
         checkpoint_memory(fargs);
         checkpoint_isolate(fargs, isolate);
