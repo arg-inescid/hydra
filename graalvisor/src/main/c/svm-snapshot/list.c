@@ -109,7 +109,7 @@ void print_block(void* block_start, void* block_finish, char block_perm) {
     fprintf(stderr, "pmapping: %16p - %16p size = 0x%16lx prot = %s%s%s%s\n",
         block_start,
         block_finish,
-        block_finish - block_start,
+        (char*) block_finish - (char*) block_start,
         block_perm & PROT_EXEC   ? "x" : "-",
         block_perm & PROT_READ   ? "r" : "-",
         block_perm & PROT_WRITE  ? "w" : "-",

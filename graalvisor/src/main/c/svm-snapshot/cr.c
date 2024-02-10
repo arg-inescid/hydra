@@ -45,9 +45,14 @@ typedef struct {
 
 // Serialized memory struct.
 typedef struct {
+    // Start address of the memory segment.
     void* addr;
+    // Length of the memory segment in bytes.
     size_t length;
+    // Permissions of the memory segment.
     int prot;
+    // Population count (used to verify integrity).
+    size_t pop;
 } memory_t;
 
 
@@ -168,7 +173,8 @@ int find_fd_filepath(char* path) {
 // A memory seg is a set of contiguous memory pages with the same permission.
 void checkpoint_memory_segment(void* seg_start, void* seg_finish, char seg_perm, int memsnap_fd, int metasnap_fd) {
     int tag = MEMORY_TAG;
-    size_t seg_size = seg_finish - seg_start;
+    size_t seg_size = (char*) seg_finish - (char*) seg_start;
+    size_t pop = popcount(seg_start, seg_size);
     fprintf(stderr, "cmemory:  %16p - %16p size = 0x%16lx prot = %s%s%s%s popcount = %lu\n",
         seg_start,
         seg_finish,
@@ -177,7 +183,7 @@ void checkpoint_memory_segment(void* seg_start, void* seg_finish, char seg_perm,
         seg_perm & PROT_READ   ? "r" : "-",
         seg_perm & PROT_WRITE  ? "w" : "-",
         seg_perm == PROT_NONE  ? "n" : "-",
-        popcount(seg_start, seg_size));
+        pop);
 
     // Write contents to file.
     memory_to_file(memsnap_fd, seg_start, seg_size);
@@ -188,7 +194,7 @@ void checkpoint_memory_segment(void* seg_start, void* seg_finish, char seg_perm,
     }
 
     // Write metadata content.
-    memory_t s = {.addr = seg_start, .length = seg_size, .prot = seg_perm};
+    memory_t s = {.addr = seg_start, .length = seg_size, .prot = seg_perm, .pop = pop};
     if (write(metasnap_fd, &s, sizeof(memory_t)) != sizeof(memory_t)) {
         perror("failed to serialize memory header");
     }
@@ -266,13 +272,11 @@ void checkpoint_memory_library(struct function_args* fargs, int memsnap_fd) {
                 continue; // TODO - should we skip read/execute-only pages?
             }
 
+            // Calculate population count.
+            size_t pop = popcount((char*)start, size);
+
             fprintf(stderr, "clibrary: %16p - %16p size = 0x%16lx prot = %c%c%c%c popcount = %lu \n",
-                (void*) start,
-                ((char*) start) + size,
-                size,
-                r, w, x, p,
-                popcount((char*)start,
-                size));
+                (void*) start, ((char*) start) + size, size, r, w, x, p, pop);
 
             // Write contents to file.
             memory_to_file(memsnap_fd, (char*)start, size);
@@ -282,7 +286,7 @@ void checkpoint_memory_library(struct function_args* fargs, int memsnap_fd) {
                 perror("failed to serialize memory tag");
             }
             // Write metadata content.
-            memory_t s = {.addr = (void*)start, .length = size, .prot = 0};
+            memory_t s = {.addr = (void*)start, .length = size, .prot = 0, .pop = pop};
             s.prot = r == 'r' ? s.prot | PROT_READ : s.prot;
             s.prot = w == 'w' ? s.prot | PROT_WRITE : s.prot;
             s.prot = x == 'x' ? s.prot | PROT_EXEC : s.prot;
@@ -290,7 +294,6 @@ void checkpoint_memory_library(struct function_args* fargs, int memsnap_fd) {
             if (write(fargs->meta_snapshot_fd, &s, sizeof(memory_t)) != sizeof(memory_t)) {
                 perror("failed to serialize memory header");
             }
-
 
             prevfinish = finish;
         }
@@ -337,6 +340,12 @@ void restore_memory(struct function_args* fargs, int mem_snapshot_fd) {
         }
     }
 
+    // We are checking the the population count matches.
+    if (s.pop != popcount(s.addr, s.length)) {
+        fprintf(stderr, "error, popcount for %16p - %16p doesn't match: before checkpoint = %lu after restore = %lu\n",
+            s.addr, ((char*) s.addr) + s.length, s.pop, popcount(s.addr, s.length));
+    }
+
     fprintf(stderr, "rmemory:  %16p - %16p size = 0x%16lx prot = %s%s%s%s popcount = %lu\n",
         s.addr,
         ((char*) s.addr) + s.length,
@@ -345,7 +354,7 @@ void restore_memory(struct function_args* fargs, int mem_snapshot_fd) {
         s.prot & PROT_READ   ? "r" : "-",
         s.prot & PROT_WRITE  ? "w" : "-",
         s.prot == PROT_NONE  ? "n" : "-",
-        popcount(s.addr, s.length));
+        s.pop);
 }
 
 void checkpoint_isolate(struct function_args* fargs, void* isolate) {

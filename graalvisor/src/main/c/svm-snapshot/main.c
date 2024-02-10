@@ -250,7 +250,9 @@ void handle_notifications(struct function_args* fargs) {
         long long unsigned int *args = req->data.args;
         switch (req->data.nr) {
             case __NR_exit:
-                fprintf(stderr, "warning: exit was invoked!\n");
+                if (active_threads > 1) {
+                    fprintf(stderr, "warning: exit was invoked!\n");
+                }
                 active_threads--;
                 resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
                 break;

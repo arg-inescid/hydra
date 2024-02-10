@@ -36,7 +36,7 @@ gdb-checkpoint:
 run-checkpoint:
 	rm -f snapshot.mem
 	rm -f snapshot.meta
-	setarch -R ./main checkpoint $(app) 2>&1
+	setarch -R ./main checkpoint $(app) 2>&1 | tee checkpoint.log
 
 strace-checkpoint:
 	rm -f snapshot.mem
@@ -44,7 +44,7 @@ strace-checkpoint:
 	setarch -R strace -f ./main checkpoint $(app) 2>&1
 
 run-restore:
-	setarch -R ./main restore $(app) 2>&1
+	setarch -R ./main restore $(app) 2>&1 | tee restore.log
 
 run: run-checkpoint run-restore
 
