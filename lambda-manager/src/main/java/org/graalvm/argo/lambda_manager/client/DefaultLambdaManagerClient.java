@@ -52,7 +52,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         // TODO: optimization: read chunks of file and send it in parts.
         try (InputStream sourceFile = Files.newInputStream(function.buildFunctionSourceCodePath())) {
             String path = null;
-            if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR || lambda.getExecutionMode() == GRAALVISOR_PGO || lambda.getExecutionMode() == GRAALVISOR_PGO_OPTIMIZED || lambda.getExecutionMode() == GRAALVISOR_PGO_OPTIMIZING) {
+            if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZING) {
                 String sandbox = function.getGraalvisorSandbox();
                 if (sandbox != null) {
                     path = String.format("/register?name=%s&language=%s&entryPoint=%s&sandbox=%s", function.getName(), function.getLanguage().toString(), function.getEntryPoint(), sandbox);
@@ -79,7 +79,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         String path = null;
         String payload = null;
 
-        if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR || lambda.getExecutionMode() == GRAALVISOR_PGO || lambda.getExecutionMode() == GRAALVISOR_PGO_OPTIMIZED || lambda.getExecutionMode() == GRAALVISOR_PGO_OPTIMIZING) {
+        if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZING) {
             path ="/deregister";
             payload = JsonUtils.convertParametersIntoJsonObject(null, null, function.getName());
         } else if (lambda.getExecutionMode().isCustom()) {
@@ -98,7 +98,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
 
         if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT || lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT) {
             payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getName());
-        } else if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR || lambda.getExecutionMode() == GRAALVISOR_PGO || lambda.getExecutionMode() == GRAALVISOR_PGO_OPTIMIZED || lambda.getExecutionMode() == GRAALVISOR_PGO_OPTIMIZING) {
+        } else if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZING) {
             // Both canRebuild and readily-provided GV functions go here
             payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getName(), Configuration.argumentStorage.isDebugMode());
         } else if (lambda.getExecutionMode().isCustom()) {
@@ -112,6 +112,6 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
     }
 
     private static boolean isBinaryFunctionExecution(Lambda lambda) {
-        return lambda.getExecutionMode() == GRAALVISOR_PGO || lambda.getExecutionMode() == GRAALVISOR_PGO_OPTIMIZED || lambda.getExecutionMode() == GRAALVISOR_PGO_OPTIMIZING;
+        return lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZING;
     }
 }

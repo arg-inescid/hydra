@@ -14,11 +14,11 @@ public enum LambdaExecutionMode {
     CUSTOM_JAVA,
     CUSTOM_JAVASCRIPT,
     CUSTOM_PYTHON,
-    //With profile-guided optimizations enabled
+    // With profile-guided optimizations enabled.
     GRAALVISOR_PGO,
-    //Optimizing with the iprof files
+    // Optimizing with the iprof files.
     GRAALVISOR_PGO_OPTIMIZING,
-    //Optimized with PGO
+    // Optimized with PGO.
     GRAALVISOR_PGO_OPTIMIZED;
 
     public boolean isCustom() {

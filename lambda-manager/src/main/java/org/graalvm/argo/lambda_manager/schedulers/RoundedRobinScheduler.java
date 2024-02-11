@@ -110,7 +110,7 @@ public class RoundedRobinScheduler implements Scheduler {
             }
 
             if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO && lambda.getClosedRequestCount() > 1000 && !lambda.isDecommissioned()) {
-                function.setStatus(PGO_PROFILING_DONE);
+                function.setStatus(FunctionStatus.PGO_PROFILING_DONE);
                 lambda.setDecommissioned(true);
                 Logger.log(Level.INFO, "Decommissioning (wrapping PGO) lambda " + lambda.getLambdaID());
             }

@@ -3,7 +3,10 @@ package org.graalvm.argo.lambda_manager.core;
 import org.graalvm.argo.lambda_manager.optimizers.ColdStartSlidingWindow;
 import org.graalvm.argo.lambda_manager.optimizers.FunctionStatus;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
+import org.graalvm.argo.lambda_manager.processes.lambda.BuildNativeImagePgo;
+import org.graalvm.argo.lambda_manager.processes.lambda.BuildNativeImagePgoOptimized;
 import org.graalvm.argo.lambda_manager.processes.lambda.BuildSO;
+import org.graalvm.argo.lambda_manager.utils.MinioUtils;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 
 import java.nio.file.Path;
@@ -215,7 +218,7 @@ public class Function {
                 }
                 break;
             case GRAALVISOR:
-                if (function.getStatus() == FunctionStatus.READY) {
+                if (status == FunctionStatus.READY) {
                     status = FunctionStatus.PGO_BUILDING;
                     new BuildNativeImagePgo(this).build().start();
                     Logger.log(Level.INFO, "Starting new native image with PGO enabled " + name);
@@ -227,13 +230,6 @@ public class Function {
                     status = FunctionStatus.PGO_OPTIMIZED_BUILDING;
                     new BuildNativeImagePgoOptimized(this).build().start();
                     Logger.log(Level.INFO, "Starting new native image with PGO optimized " + name);
-                }
-                break;
-            case GRAALVISOR_PGO_OPTIMIZED:
-                if (argumentStorage.getLambdaType() == CONTAINER) {
-                    process = new StartGraalvisorPgoOptimizedContainer(lambda, function);
-                } else {
-                    throw new RuntimeException("Lambda type must be container");
                 }
                 break;
             default:

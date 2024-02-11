@@ -1,6 +1,5 @@
 package org.graalvm.argo.lambda_manager.processes.lambda;
 
-import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.core.Lambda;
 
 import java.util.List;
@@ -8,18 +7,15 @@ import java.util.List;
 import static java.lang.String.format;
 import static java.lang.String.valueOf;
 import static java.lang.System.currentTimeMillis;
-import static org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode.GRAALVISOR_PGO;
 
 public class StartGraalvisorPgoContainer extends StartContainer {
 
-    public StartGraalvisorPgoContainer(Lambda lambda, Function function) {
-        super(lambda, function);
+    public StartGraalvisorPgoContainer(Lambda lambda) {
+        super(lambda);
     }
 
     @Override
     protected List<String> makeCommand() {
-        lambda.setExecutionMode(GRAALVISOR_PGO);
-
         return List.of(
                 "/usr/bin/time",
                 "--append",

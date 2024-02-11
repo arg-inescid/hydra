@@ -10,7 +10,6 @@ import java.util.stream.Stream;
 import static java.lang.String.valueOf;
 import static java.util.stream.Collectors.toList;
 import static org.graalvm.argo.lambda_manager.core.Environment.LAMBDA_LOGS;
-import static org.graalvm.argo.lambda_manager.optimizers.FunctionStatus.PGO_OPTIMIZED_BUILDING;
 import static org.graalvm.argo.lambda_manager.optimizers.FunctionStatus.PGO_OPTIMIZED_READY;
 
 public class BuildNativeImagePgoOptimized extends AbstractProcess {
