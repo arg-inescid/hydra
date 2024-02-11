@@ -419,22 +419,20 @@ void checkpoint_mmap(struct function_args* fargs, void* addr, size_t length, int
 
     print_mmap(addr, length, prot, flags, fd, offset, ret);
 
-    if (fargs->meta_snapshot_fd) {
-        int tag = MMAP_TAG;
+    int tag = MMAP_TAG;
 
-        // If we are mapping a file that is not our library.
-        if (fd != -1 && check_filepath_fd(fd, fargs->function_path)) {
-            fprintf(stderr, "error, fd %d does not correspond to function path %s\n", fd, fargs->function_path);
-            return;
-        }
+    // If we are mapping a file that is not our library.
+    if (fd != -1 && check_filepath_fd(fd, fargs->function_path)) {
+        fprintf(stderr, "error, fd %d does not correspond to function path %s\n", fd, fargs->function_path);
+        return;
+    }
 
-        mmap_t s = {.addr = addr, .length = length, .prot = prot, .flags = flags, .fd = fd, .offset = offset, .ret = ret};
-        if (write(fargs->meta_snapshot_fd, &tag, sizeof(int)) != sizeof(int)) {
-            perror("failed to serialize mmap tag");
-        }
-        if (write(fargs->meta_snapshot_fd, &s, sizeof(mmap_t)) != sizeof(mmap_t)) {
-            perror("failed to serialize mmap arguments");
-        }
+    mmap_t s = {.addr = addr, .length = length, .prot = prot, .flags = flags, .fd = fd, .offset = offset, .ret = ret};
+    if (write(fargs->meta_snapshot_fd, &tag, sizeof(int)) != sizeof(int)) {
+        perror("failed to serialize mmap tag");
+    }
+    if (write(fargs->meta_snapshot_fd, &s, sizeof(mmap_t)) != sizeof(mmap_t)) {
+        perror("failed to serialize mmap arguments");
     }
 }
 
@@ -478,15 +476,13 @@ void checkpoint_munmap(struct function_args* fargs, void* addr, size_t length, i
 
     print_munmap(addr, length, ret);
 
-    if (fargs->meta_snapshot_fd) {
-        int tag = MUNMAP_TAG;
-        munmap_t s = {.addr = addr, .length = length, .ret = ret};
-        if (write(fargs->meta_snapshot_fd, &tag, sizeof(int)) != sizeof(int)) {
-            perror("failed to serialize munmap tag");
-        }
-        if (write(fargs->meta_snapshot_fd, &s, sizeof(munmap_t)) != sizeof(munmap_t)) {
-            perror("failed to serialize munmap arguments");
-        }
+    int tag = MUNMAP_TAG;
+    munmap_t s = {.addr = addr, .length = length, .ret = ret};
+    if (write(fargs->meta_snapshot_fd, &tag, sizeof(int)) != sizeof(int)) {
+        perror("failed to serialize munmap tag");
+    }
+    if (write(fargs->meta_snapshot_fd, &s, sizeof(munmap_t)) != sizeof(munmap_t)) {
+        perror("failed to serialize munmap arguments");
     }
 }
 
@@ -494,15 +490,13 @@ void checkpoint_mprotect(struct function_args* fargs, void* addr, size_t length,
 
     print_mprotect(addr, length, prot, ret);
 
-    if (fargs->meta_snapshot_fd) {
-        int tag = MPROTECT_TAG;
-        mprotect_t s = {.addr = addr, .length = length, .prot = prot, .ret = ret};
-        if (write(fargs->meta_snapshot_fd, &tag, sizeof(int)) != sizeof(int)) {
-            perror("failed to serialize mprotect tag");
-        }
-        if (write(fargs->meta_snapshot_fd, &s, sizeof(mprotect_t)) != sizeof(mprotect_t)) {
-            perror("failed to serialize mprotect arguments");
-        }
+    int tag = MPROTECT_TAG;
+    mprotect_t s = {.addr = addr, .length = length, .prot = prot, .ret = ret};
+    if (write(fargs->meta_snapshot_fd, &tag, sizeof(int)) != sizeof(int)) {
+        perror("failed to serialize mprotect tag");
+    }
+    if (write(fargs->meta_snapshot_fd, &s, sizeof(mprotect_t)) != sizeof(mprotect_t)) {
+        perror("failed to serialize mprotect arguments");
     }
 }
 

@@ -13,13 +13,13 @@ all: *.h *.c
 	gcc -g -Wall -o main *.o
 
 tests: all
-	make -C test0-clib run
-	make -C test1-staticvar run
-	make -C test2-svm run
-	make -C test2-svm-jar run
-	make -C test2-svm-gradle run
-	make -C test3-svm-truffle-js run
-	make -C test3-svm-truffle-py run
+	make -C test0-clib run 2>&1      | tee test0-clibc.log
+	make -C test1-staticvar run      | tee test1-staticvar.log
+	make -C test2-svm run            | tee test2-svm.log
+	make -C test2-svm-jar run        | tee test2-svm-jar.log
+	make -C test2-svm-gradle run     | tee test2-svm-gradle.log
+	make -C test3-svm-truffle-js run | tee test3-svm-truffle-js.log
+	make -C test3-svm-truffle-py run | tee test3-svm-truffle-py.log
 
 run-normal:
 	setarch -R ./main normal $(app) 2>&1

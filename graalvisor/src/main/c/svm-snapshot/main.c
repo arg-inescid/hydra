@@ -72,8 +72,7 @@ int install_filter() {
         BPF_STMT(BPF_RET + BPF_K, SECCOMP_RET_KILL),
         BPF_STMT(BPF_LD + BPF_W + BPF_ABS, (offsetof(struct seccomp_data, nr))),
 
-        // add rules here
-        // TODO - we should probably track clone, exit, open, and close.
+        // TODO - we should probably track open, creat, openat, openat2, and close.
         BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_exit,     5, 0),
         BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_clone,    4, 0),
         BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_clone3,   3, 0),
@@ -107,11 +106,10 @@ int install_filter() {
 
 void* run_function(void* args) {
     struct function_args* fargs = (struct function_args*) args;
-    graal_isolate_t *isolate = NULL;
-    graal_isolatethread_t *thread = NULL;
+    graal_isolatethread_t *isolatethread = NULL;
 
+    // If checkpointing, install seccomp filter.
     if (CURRENT_MODE == CHECKPOINT) {
-        fargs->meta_snapshot_fd = open("metadata.snap",  O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
         fargs->seccomp_fd = install_filter();
         if (fargs->seccomp_fd < 0) {
             fprintf(stderr, "failed install seccomp filter\n");
@@ -119,38 +117,23 @@ void* run_function(void* args) {
         }
     }
 
+    // If restoring, attach instead of creating a new isolate.
     if (CURRENT_MODE == RESTORE) {
-        isolate = restore(args);
-#ifdef DEBUG
-        print_proc_maps("after_restore.txt");
-#endif
-        fargs->abi.graal_attach_thread(isolate, &thread);
+        fargs->abi.graal_attach_thread(fargs->isolate, &isolatethread);
     } else {
         graal_create_isolate_params_t params;
         memset(&params, 0, sizeof(graal_create_isolate_params_t));
-        if (fargs->abi.graal_create_isolate(&params, &isolate, &thread) != 0) {
+        if (fargs->abi.graal_create_isolate(&params, &(fargs->isolate), &isolatethread) != 0) {
             fprintf(stderr, "failed to create isolate\n");
             return NULL;
         }
     }
 
-    fargs->abi.entrypoint(thread);
-    fargs->abi.graal_detach_thread(thread);
+    // Call function.
+    fargs->abi.entrypoint(isolatethread);
 
-   if (CURRENT_MODE == CHECKPOINT) {
-#ifdef DEBUG
-        print_proc_maps("before_checkpoint.txt");
-        print_list(&(fargs->mappings));
-#endif
-        checkpoint_memory(fargs);
-        checkpoint_isolate(fargs, isolate);
-        close(fargs->meta_snapshot_fd);
-        // TODO - find a better way to prevent the monitor thread from writting to this fd.
-        fargs->meta_snapshot_fd = 0;
-   }
-
-    fargs->abi.graal_attach_thread(isolate, &thread);
-    fargs->abi.graal_tear_down_isolate(thread);
+    // Detach thread function isolate and quit.
+    fargs->abi.graal_detach_thread(isolatethread);
     return NULL;
 }
 
@@ -304,13 +287,7 @@ void usage_exit() {
     exit(1);
 }
 
-int main(int argc, char** argv) {
-    struct function_args fargs;
-    pthread_t thread;
-
-    // Zero the entire argument data structure.
-    memset(&fargs, 0, sizeof(struct function_args));
-
+void init_args(struct function_args* fargs, int argc, char** argv) {
     if (argc != 3) {
         usage_exit();
     } else {
@@ -328,8 +305,19 @@ int main(int argc, char** argv) {
         default:
             usage_exit();
         }
-        fargs.function_path = argv[2];
+        fargs->function_path = argv[2];
     }
+}
+
+int main(int argc, char** argv) {
+    struct function_args fargs;
+    pthread_t thread;
+
+    // Zero the entire argument data structure.
+    memset(&fargs, 0, sizeof(struct function_args));
+
+    // Initialize based on arguments.
+    init_args(&fargs, argc, argv);
 
     // Load function library.
     void* dhandle = dlopen(fargs.function_path, RTLD_LAZY);
@@ -344,10 +332,20 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    // If in restore mode, start by restoring from the snapshot.
+    if (CURRENT_MODE == RESTORE) {
+        fargs.isolate = restore(&fargs);
+#ifdef DEBUG
+        print_proc_maps("after_restore.txt"); // TODO - print a tag with the name of the library.
+#endif
+    }
+
     // Launch worker thread.
     pthread_create(&thread, NULL, run_function, &fargs);
 
+    // If in checkpoint mode, open metadata file, wait for seccomp to be ready and handle notifications.
     if (CURRENT_MODE == CHECKPOINT) {
+        fargs.meta_snapshot_fd = open("metadata.snap",  O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
          // Wait while the thread initilizes and installs the seccomp filter.
         while (!fargs.seccomp_fd) ; // TODO - avoid active waiting
 
@@ -355,6 +353,22 @@ int main(int argc, char** argv) {
         handle_notifications(&fargs);
     }
 
-    // Join and terminat.e
+    // Join thread.
     pthread_join(thread, NULL);
+
+    // If in checkpoint mode, checkpoint memory and isolate address.
+   if (CURRENT_MODE == CHECKPOINT) {
+#ifdef DEBUG
+        print_proc_maps("before_checkpoint.txt");
+        print_list(&(fargs.mappings));
+#endif
+        checkpoint_memory(&fargs);
+        checkpoint_isolate(&fargs, fargs.isolate);
+        close(fargs.meta_snapshot_fd);
+   }
+
+    // Tear down isolate after checkpointing.
+    graal_isolatethread_t *isolatethread = NULL;
+    fargs.abi.graal_attach_thread(fargs.isolate, &isolatethread);
+    fargs.abi.graal_tear_down_isolate(isolatethread);
 }
