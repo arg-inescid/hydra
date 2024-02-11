@@ -145,9 +145,19 @@ void* run_function(void* args) {
 }
 
 void handle_mmap(struct function_args* fargs, void* addr, size_t length, int prot, int flags, int fd, off_t offset, void* ret) {
+    mmap_t syscall_args = {.addr = addr, .length = length, .prot = prot, .flags = flags, .fd = fd, .offset = offset, .ret = ret};
+    print_mmap(&syscall_args);
+
+    // If we are mapping a file that is not our library.
+    if (syscall_args.fd != -1 && check_filepath_fd(syscall_args.fd, fargs->function_path)) {
+        fprintf(stderr, "error, fd %d does not correspond to function path %s\n",
+            syscall_args.fd,
+            fargs->function_path);
+        return;
+    }
 
     // Checkpoint the syscall.
-    checkpoint_mmap(fargs, addr, length, prot, flags, fd, offset, ret);
+    checkpoint_syscall(fargs, __NR_mmap, &syscall_args, sizeof(mmap_t));
 
     mapping_t* mapping = list_find(&(fargs->mappings), ret, length);
 
@@ -161,9 +171,11 @@ void handle_mmap(struct function_args* fargs, void* addr, size_t length, int pro
 }
 
 void handle_munmap(struct function_args* fargs, void* addr, size_t length, int ret) {
+    munmap_t syscall_args = {.addr = addr, .length = length, .ret = ret};
+    print_munmap(&syscall_args);
 
     // Checkpoint the syscall.
-    checkpoint_munmap(fargs, addr, length, ret);
+    checkpoint_syscall(fargs, __NR_munmap, &syscall_args, sizeof(munmap_t));
 
     mapping_t* mapping = list_find(&(fargs->mappings), addr, length);
 
@@ -178,9 +190,11 @@ void handle_munmap(struct function_args* fargs, void* addr, size_t length, int r
 }
 
 void handle_mprotect(struct function_args* fargs, void* addr, size_t length, int prot, int ret) {
+    mprotect_t syscall_args = {.addr = addr, .length = length, .prot = prot, .ret = ret};
+    print_mprotect(&syscall_args);
 
     // Checkpoint the syscall.
-    checkpoint_mprotect(fargs, addr, length, prot, ret);
+    checkpoint_syscall(fargs, __NR_mprotect, &syscall_args, sizeof(mprotect_t));
 
     mapping_t* mapping = list_find(&(fargs->mappings), addr, length);
 
@@ -418,8 +432,7 @@ int main(int argc, char** argv) {
         print_proc_maps("before_checkpoint.txt");
         print_list(&(fargs.mappings));
 #endif
-        checkpoint_memory(&fargs);
-        checkpoint_isolate(&fargs, fargs.isolate);
+        checkpoint(&fargs, fargs.isolate);
         close(fargs.meta_snapshot_fd);
    }
 

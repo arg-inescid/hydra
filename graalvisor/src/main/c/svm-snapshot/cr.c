@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/syscall.h>
-#include <unistd.h>
 #include <errno.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -10,38 +9,10 @@
 #include <sys/stat.h>
 #include "cr.h"
 #include "list.h"
+#include "syscalls.h"
 
 #define MEMORY_TAG  -2
 #define ISOLATE_TAG -1
-#define MMAP_TAG    __NR_mmap
-#define MUNMAP_TAG  __NR_munmap
-#define MPROTECT_TAG  __NR_mprotect
-
-// Serialized mmap arguments struct.
-typedef struct {
-    void* addr;
-    size_t length;
-    int prot;
-    int flags;
-    int fd;
-    off_t offset;
-    void* ret;
-} mmap_t;
-
-// Serialized munmap arguments struct.
-typedef struct {
-    void* addr;
-    size_t length;
-    int ret;
-} munmap_t;
-
-// Serialized mprotect arguments struct.
-typedef struct {
-    void* addr;
-    size_t length;
-    int prot;
-    int ret;
-} mprotect_t;
 
 // Serialized memory struct.
 typedef struct {
@@ -54,7 +25,6 @@ typedef struct {
     // Population count (used to verify integrity).
     size_t pop;
 } memory_t;
-
 
 size_t memory_to_file(int fd, char* buffer, size_t count) {
     size_t written = 0;
@@ -378,61 +348,12 @@ void* restore_isolate(struct function_args* fargs) {
     return isolate;
 }
 
-void print_mmap(void* addr, size_t length, int prot, int flags, int fd, off_t offset, void* ret) {
-    fprintf(stderr, "mmap:     %16p - %16p size = 0x%16lx prot = %s%s%s%s flags = %8d fd = %2d offset = %8ld ret = %16p\n",
-        addr,
-        addr == NULL ? NULL : ((char*) addr) + length,
-        length,
-        prot & PROT_EXEC   ? "x" : "-",
-        prot & PROT_READ   ? "r" : "-",
-        prot & PROT_WRITE  ? "w" : "-",
-        prot == PROT_NONE  ? "n" : "-",
-        flags,
-        fd,
-        offset,
-        ret);
-
-}
-
-void print_munmap(void* addr, size_t length, int ret) {
-    fprintf(stderr, "munmap:   %16p - %16p size = 0x%16lx ret  =  %d\n",
-        addr,
-        ((char*) addr) + length,
-        length,
-        ret);
-}
-
-void print_mprotect(void* addr, size_t length, int prot, int ret) {
-    fprintf(stderr, "mprotect: %16p - %16p size = 0x%16lx prot = %s%s%s%s ret = %d\n",
-        addr,
-        ((char*) addr) + length,
-        length,
-        prot & PROT_EXEC   ? "x" : "-",
-        prot & PROT_READ   ? "r" : "-",
-        prot & PROT_WRITE  ? "w" : "-",
-        prot == PROT_NONE  ? "n" : "-",
-        ret);
-
-}
-
-void checkpoint_mmap(struct function_args* fargs, void* addr, size_t length, int prot, int flags, int fd, off_t offset, void* ret) {
-
-    print_mmap(addr, length, prot, flags, fd, offset, ret);
-
-    int tag = MMAP_TAG;
-
-    // If we are mapping a file that is not our library.
-    if (fd != -1 && check_filepath_fd(fd, fargs->function_path)) {
-        fprintf(stderr, "error, fd %d does not correspond to function path %s\n", fd, fargs->function_path);
-        return;
-    }
-
-    mmap_t s = {.addr = addr, .length = length, .prot = prot, .flags = flags, .fd = fd, .offset = offset, .ret = ret};
+void checkpoint_syscall(struct function_args* fargs, int tag, void* syscall_args, size_t size) {
     if (write(fargs->meta_snapshot_fd, &tag, sizeof(int)) != sizeof(int)) {
-        perror("failed to serialize mmap tag");
+        perror("failed to serialize syscall tag");
     }
-    if (write(fargs->meta_snapshot_fd, &s, sizeof(mmap_t)) != sizeof(mmap_t)) {
-        perror("failed to serialize mmap arguments");
+    if (write(fargs->meta_snapshot_fd, syscall_args, size) != size) {
+        perror("failed to serialize syscall arguments");
     }
 }
 
@@ -463,40 +384,12 @@ void restore_mmap(struct function_args* fargs) {
         }
     }
 
-    print_mmap(s.addr, s.length, s.prot, s.flags, s.fd, s.offset, s.ret);
+    print_mmap(&s);
 
     // We use the previously returned address and MAP_FIXED to ensure that we recover the correct address.
     ret = (void*) syscall(__NR_mmap, s.ret, s.length, s.prot, s.flags | MAP_FIXED, s.fd, s.offset);
     if (s.ret != ret) {
         fprintf(stderr, "failed to replay mmap:\t original ret = %16p got ret = %16p\n",  s.ret, ret);
-    }
-}
-
-void checkpoint_munmap(struct function_args* fargs, void* addr, size_t length, int ret) {
-
-    print_munmap(addr, length, ret);
-
-    int tag = MUNMAP_TAG;
-    munmap_t s = {.addr = addr, .length = length, .ret = ret};
-    if (write(fargs->meta_snapshot_fd, &tag, sizeof(int)) != sizeof(int)) {
-        perror("failed to serialize munmap tag");
-    }
-    if (write(fargs->meta_snapshot_fd, &s, sizeof(munmap_t)) != sizeof(munmap_t)) {
-        perror("failed to serialize munmap arguments");
-    }
-}
-
-void checkpoint_mprotect(struct function_args* fargs, void* addr, size_t length, int prot, int ret) {
-
-    print_mprotect(addr, length, prot, ret);
-
-    int tag = MPROTECT_TAG;
-    mprotect_t s = {.addr = addr, .length = length, .prot = prot, .ret = ret};
-    if (write(fargs->meta_snapshot_fd, &tag, sizeof(int)) != sizeof(int)) {
-        perror("failed to serialize mprotect tag");
-    }
-    if (write(fargs->meta_snapshot_fd, &s, sizeof(mprotect_t)) != sizeof(mprotect_t)) {
-        perror("failed to serialize mprotect arguments");
     }
 }
 
@@ -508,7 +401,7 @@ void restore_munmap(struct function_args* fargs) {
         perror("failed to deserialize munmap arguments");
     }
 
-    print_munmap(s.addr, s.length, s.ret);
+    print_munmap(&s);
 
     ret = syscall(__NR_munmap, s.addr, s.length);
     if (s.ret != ret) {
@@ -524,12 +417,17 @@ void restore_mprotect(struct function_args* fargs) {
         perror("failed to deserialize mprotect arguments");
     }
 
-    print_mprotect(s.addr, s.length, s.prot, s.ret);
+    print_mprotect(&s);
 
     ret = syscall(__NR_mprotect, s.addr, s.length, s.prot);
     if (s.ret != ret) {
         fprintf(stderr, "failed to replay mprotect:\t original ret = %d got ret = %d\n",  s.ret, ret);
     }
+}
+
+void checkpoint(struct function_args* fargs, void* isolate) {
+    checkpoint_memory(fargs);
+    checkpoint_isolate(fargs, fargs->isolate);
 }
 
 void* restore(struct function_args* fargs) {
@@ -562,13 +460,13 @@ void* restore(struct function_args* fargs) {
 
         switch (tag)
         {
-        case MMAP_TAG:
+        case __NR_mmap:
             restore_mmap(fargs);
             break;
-        case MUNMAP_TAG:
+        case __NR_munmap:
             restore_munmap(fargs);
             break;
-        case MPROTECT_TAG:
+        case __NR_mprotect:
             restore_mprotect(fargs);
             break;
         case ISOLATE_TAG:

@@ -2,6 +2,7 @@
 #define MAIN_H
 
 #include "graal_isolate.h"
+#include "syscalls.h"
 #include "list.h"
 
 // Note - we assume that there are no other threads attached to an isolate, there are no open files, etc.

@@ -4,16 +4,18 @@
 #include <sys/types.h>
 #include "main.h"
 
+// Prints process memory maps to a give file.
 void print_proc_maps(char* filename);
-void checkpoint_isolate(struct function_args* fargs, void* isolate);
-void checkpoint_library(struct function_args* fargs);
-void checkpoint_memory(struct function_args* fargs);
-void checkpoint_mmap(struct function_args* fargs, void* addr, size_t length, int prot, int flags, int fd, off_t offset, void* ret);
-void checkpoint_munmap(struct function_args* fargs, void* addr, size_t length, int ret);
-void checkpoint_mprotect(struct function_args* fargs, void* addr, size_t length, int prot, int ret);
-void restore_mmap(struct function_args* fargs);
-void restore_munmap(struct function_args* fargs);
-void restore_mprotect(struct function_args* fargs);
+
+// Checkpoints a single syscall invocation.
+void checkpoint_syscall(struct function_args* fargs, int tag, void* syscall_args, size_t size);
+
+// Checkpoints a systrate vm instance.
+void checkpoint(struct function_args* fargs, void* isolate);
+
+// Restores a substrace vm instance.
 void* restore(struct function_args* fargs);
 
+// Checks if a particular file descriptor matches a given path.
+int check_filepath_fd(int fd, char* path);
 #endif
