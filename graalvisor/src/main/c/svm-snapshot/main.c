@@ -72,7 +72,14 @@ int install_filter() {
         BPF_STMT(BPF_RET + BPF_K, SECCOMP_RET_KILL),
         BPF_STMT(BPF_LD + BPF_W + BPF_ABS, (offsetof(struct seccomp_data, nr))),
 
-        // TODO - we should probably track open, creat, openat, openat2, and close.
+        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_dup3,    14, 0),
+        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_dup2,    13, 0),
+        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_dup,     11, 0),
+        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_close,   10, 0),
+        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_creat,    9, 0),
+        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_openat2,  8, 0),
+        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_openat,   7, 0),
+        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_open,     6, 0),
         BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_exit,     5, 0),
         BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_clone,    4, 0),
         BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_clone3,   3, 0),
@@ -232,6 +239,53 @@ void handle_notifications(struct function_args* fargs) {
         resp->id = req->id;
         long long unsigned int *args = req->data.args;
         switch (req->data.nr) {
+            // TODO - madvise?
+            case __NR_dup:
+                resp->val = syscall(__NR_dup, args[0]);
+                fprintf(stderr, "warning: dup(%d) = %d!\n", (int)args[0], (int)resp->val);
+                resp->error = resp->val == -1 ? errno : 0;
+                resp->flags = 0;
+                break;
+            case __NR_dup2:
+                resp->val = syscall(__NR_dup2, args[0], args[1], args[2]);
+                fprintf(stderr, "warning: dup2(%d, %d) = %d!\n", (int)args[0], (int)args[1], (int)resp->val);
+                resp->error = resp->val == -1 ? errno : 0;
+                resp->flags = 0;
+            case __NR_dup3:
+                resp->val = syscall(__NR_dup3, args[0], args[1], args[2]);
+                fprintf(stderr, "warning: dup3(%d, %d) = %d!\n", (int)args[0], (int)args[1], (int)resp->val);
+                resp->error = resp->val == -1 ? errno : 0;
+                resp->flags = 0;
+            case __NR_open:
+                resp->val = syscall(__NR_open, args[0], args[1], args[2]);
+                fprintf(stderr, "warning: open(%s) = %d!\n", (char*)args[0], (int)resp->val);
+                resp->error = resp->val == -1 ? errno : 0;
+                resp->flags = 0;
+                break;
+            case __NR_openat:
+                resp->val = syscall(__NR_openat, args[0], args[1], args[2], args[3]);
+                fprintf(stderr, "warning: openat(%s) = %d!\n", (char*)args[1], (int)resp->val);
+                resp->error = resp->val == -1 ? errno : 0;
+                resp->flags = 0;
+                break;
+            case __NR_openat2:
+                resp->val = syscall(__NR_openat2, args[0], args[1], args[2], args[3]);
+                fprintf(stderr, "warning: openat2(%s) = %d!\n", (char*)args[1], (int)resp->val);
+                resp->error = resp->val == -1 ? errno : 0;
+                resp->flags = 0;
+                break;
+            case __NR_creat:
+                resp->val = syscall(__NR_creat, args[0], args[1]);
+                fprintf(stderr, "warning: creat(%s) = %d!\n", (char*)args[0], (int)resp->val);
+                resp->error = resp->val == -1 ? errno : 0;
+                resp->flags = 0;
+                break;
+            case __NR_close:
+                resp->val = syscall(__NR_close, args[0]);
+                fprintf(stderr, "warning: close(%d) -> %d!\n", (int) args[0], (int)resp->val);
+                resp->error = resp->val == -1 ? errno : 0;
+                resp->flags = 0;
+                break;
             case __NR_exit:
                 if (active_threads > 1) {
                     fprintf(stderr, "warning: exit was invoked!\n");
@@ -268,6 +322,7 @@ void handle_notifications(struct function_args* fargs) {
                 resp->flags = 0;
                 break;
             default:
+                // TODO - in theory, we should be notified on all syscalls.
                 resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
                 break;
         }
@@ -320,6 +375,7 @@ int main(int argc, char** argv) {
     init_args(&fargs, argc, argv);
 
     // Load function library.
+    // TODO - move dlopen to traced thread?
     void* dhandle = dlopen(fargs.function_path, RTLD_LAZY);
     if (dhandle == NULL) {
         fprintf(stderr, "failed to load dynamic library: %s\n", dlerror());
