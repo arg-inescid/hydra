@@ -58,6 +58,21 @@ size_t file_to_memory(int fd, char* buffer, size_t count) {
     return written;
 }
 
+int move_fd(int oldfd, int newfd) {
+    if (oldfd == newfd) {
+        return oldfd;
+    } else {
+        int dupped = dup2(oldfd, newfd);
+        if (dupped < 0) {
+            perror("failed to move fd using dup2");
+            return oldfd;
+        } else {
+            close(oldfd);
+            return newfd;
+        }
+    }
+}
+
 size_t popcount(char* buffer, size_t count) {
     size_t result = 0;
     for (int i = 0; i < count / sizeof(unsigned int); i++) {
@@ -425,6 +440,75 @@ void restore_mprotect(struct function_args* fargs) {
     }
 }
 
+void restore_dup(struct function_args* fargs) {
+    dup_t s;
+    int ret;
+
+    if (read(fargs->meta_snapshot_fd, &s, sizeof(dup_t)) != sizeof(dup_t)) {
+        perror("failed to deserialize dup arguments");
+    }
+
+    print_dup(&s);
+
+    ret = syscall(__NR_dup2, s.oldfd, s.ret);
+    if (s.ret != ret) {
+        fprintf(stderr, "failed to replay dup:\t original ret = %d got ret = %d\n",  s.ret, ret);
+    }
+}
+
+void restore_open(struct function_args* fargs) {
+    open_t s;
+    int ret;
+
+    if (read(fargs->meta_snapshot_fd, &s, sizeof(open_t)) != sizeof(open_t)) {
+        perror("failed to deserialize open arguments");
+    }
+
+    print_open(&s);
+
+    ret = syscall(__NR_open, s.pathname, s.flags, s.mode);
+    if (s.ret != ret) {
+        // If the file descriptor picked by open is not the expected, try to move it.
+        ret = move_fd(ret, s.ret);
+        if (s.ret != ret) {
+            fprintf(stderr, "failed to replay open:\t original ret = %d got ret = %d\n",  s.ret, ret);
+        }
+    }
+}
+
+void restore_openat(struct function_args* fargs) {
+    openat_t s;
+    int ret;
+
+    if (read(fargs->meta_snapshot_fd, &s, sizeof(openat_t)) != sizeof(openat_t)) {
+        perror("failed to deserialize openat arguments");
+    }
+
+    print_openat(&s);
+
+    ret = syscall(__NR_openat, s.dirfd, s.pathname, s.flags, s.mode);
+    if (s.ret != ret) {
+        ret = move_fd(ret, s.ret);
+        if (s.ret != ret) {
+            fprintf(stderr, "failed to replay openat:\t original ret = %d got ret = %d\n",  s.ret, ret);
+        }
+    }
+}
+
+void restore_close(struct function_args* fargs) {
+    close_t s;
+
+    if (read(fargs->meta_snapshot_fd, &s, sizeof(close_t)) != sizeof(close_t)) {
+        perror("failed to deserialize close arguments");
+    }
+
+    print_close(&s);
+
+    // Note: we don't check the value of close because we are not tracking other syscalls that could
+    // leave open file descriptors (e.g., socket).
+    syscall(__NR_close, s.fd);
+}
+
 void checkpoint(struct function_args* fargs, void* isolate) {
     checkpoint_memory(fargs);
     checkpoint_isolate(fargs, fargs->isolate);
@@ -433,19 +517,31 @@ void checkpoint(struct function_args* fargs, void* isolate) {
 void* restore(struct function_args* fargs) {
     void* isolate = NULL;
 
+    // Open function library
     fargs->function_fd = open(fargs->function_path, O_RDONLY);
     if (fargs->function_fd < 0) {
         perror("failed to open native image function library file");
+    } else {
+        // Move to a reserved file descriptor.
+        fargs->function_fd = move_fd(fargs->function_fd, 1000);
     }
 
+    // Open the metadata file (syscall arguments, memory ranges, etc).
     fargs->meta_snapshot_fd = open("metadata.snap", O_RDONLY);
     if (fargs->meta_snapshot_fd < 0) {
         perror("failed to open meta snapshot file");
+    } else {
+        // Move to a reserved file descriptor.
+        fargs->meta_snapshot_fd = move_fd(fargs->meta_snapshot_fd, 1001);
     }
 
+    // Open the memory snapshot file.
     int mem_snapshot_fd = open("memory.snap", O_RDONLY);
     if (mem_snapshot_fd < 0) {
         perror("failed to open memory snapshot file");
+    } else {
+        // Move to a reserved file descriptor.
+        mem_snapshot_fd = move_fd(mem_snapshot_fd, 1002);
     }
 
     while(1) {
@@ -468,6 +564,18 @@ void* restore(struct function_args* fargs) {
             break;
         case __NR_mprotect:
             restore_mprotect(fargs);
+            break;
+        case __NR_dup:
+            restore_dup(fargs);
+            break;
+        case __NR_open:
+            restore_open(fargs);
+            break;
+        case __NR_openat:
+            restore_openat(fargs);
+            break;
+        case __NR_close:
+            restore_close(fargs);
             break;
         case ISOLATE_TAG:
             isolate = restore_isolate(fargs);

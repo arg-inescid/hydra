@@ -35,3 +35,19 @@ void print_mprotect(mprotect_t* sargs) {
         sargs->prot == PROT_NONE  ? "n" : "-",
         sargs->ret);
 }
+
+void print_dup(dup_t* sargs) {
+    fprintf(stderr, "dup(%d) -> %d\n", sargs->oldfd, sargs->ret);
+}
+
+void print_open(open_t* sargs) {
+    fprintf(stderr, "open(%s) -> %d\n", sargs->pathname, sargs->ret);
+}
+
+void print_openat(openat_t* sargs) {
+    fprintf(stderr, "openat(%d, %s) -> %d\n", sargs->dirfd, sargs->pathname, sargs->ret);
+}
+
+void print_close(close_t* sargs) {
+    fprintf(stderr, "close(%d) -> %d\n", sargs->fd, sargs->ret);
+}

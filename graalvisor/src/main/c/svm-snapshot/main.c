@@ -208,6 +208,46 @@ void handle_mprotect(struct function_args* fargs, void* addr, size_t length, int
     mapping_update_permissions(mapping, addr, ((char*) addr + length), prot);
 }
 
+void handle_dup(struct function_args* fargs, int oldfd, int ret) {
+    dup_t syscall_args = {.oldfd = oldfd, .ret = ret};
+    print_dup(&syscall_args);
+    checkpoint_syscall(fargs, __NR_dup, &syscall_args, sizeof(dup_t));
+}
+
+void handle_open(struct function_args* fargs, char* pathname, int flags, mode_t mode, int ret) {
+    open_t syscall_args = {.flags = flags, .mode = mode, .ret = ret};
+
+    // If pathname is larger than max, error out, otherwise, copy.
+    if (strlen(pathname) > MAX_PATHNAME) {
+        fprintf(stderr, "error, cannot checkpoint pathname longer than %d: %s\n", MAX_PATHNAME, pathname);
+    } else {
+        strcpy(syscall_args.pathname, pathname);
+    }
+
+    print_open(&syscall_args);
+    checkpoint_syscall(fargs, __NR_open, &syscall_args, sizeof(open_t));
+}
+
+void handle_openat(struct function_args* fargs, int dirfd, char* pathname, int flags, mode_t mode, int ret) {
+    openat_t syscall_args = {.dirfd = dirfd, .flags = flags, .mode = mode, .ret = ret};
+
+    // If pathname is larger than max, error out, otherwise, copy.
+    if (strlen(pathname) > MAX_PATHNAME) {
+        fprintf(stderr, "error, cannot checkpoint pathname longer than %d: %s\n", MAX_PATHNAME, pathname);
+    } else {
+        strcpy(syscall_args.pathname, pathname);
+    }
+
+    print_openat(&syscall_args);
+    checkpoint_syscall(fargs, __NR_openat, &syscall_args, sizeof(openat_t));
+}
+
+void handle_close(struct function_args* fargs, int fd, int ret) {
+    close_t syscall_args = {.fd = fd, .ret = ret};
+    print_close(&syscall_args);
+    checkpoint_syscall(fargs, __NR_close, &syscall_args, sizeof(close_t));
+}
+
 void handle_notifications(struct function_args* fargs) {
     // This number represents the number of threads that are initially running in the sandbox.
     int active_threads = 1;
@@ -256,47 +296,25 @@ void handle_notifications(struct function_args* fargs) {
             // TODO - madvise?
             case __NR_dup:
                 resp->val = syscall(__NR_dup, args[0]);
-                fprintf(stderr, "warning: dup(%d) = %d!\n", (int)args[0], (int)resp->val);
+                handle_dup(fargs, (int) args[0], resp->val);
                 resp->error = resp->val == -1 ? errno : 0;
                 resp->flags = 0;
                 break;
-            case __NR_dup2:
-                resp->val = syscall(__NR_dup2, args[0], args[1], args[2]);
-                fprintf(stderr, "warning: dup2(%d, %d) = %d!\n", (int)args[0], (int)args[1], (int)resp->val);
-                resp->error = resp->val == -1 ? errno : 0;
-                resp->flags = 0;
-            case __NR_dup3:
-                resp->val = syscall(__NR_dup3, args[0], args[1], args[2]);
-                fprintf(stderr, "warning: dup3(%d, %d) = %d!\n", (int)args[0], (int)args[1], (int)resp->val);
-                resp->error = resp->val == -1 ? errno : 0;
-                resp->flags = 0;
             case __NR_open:
                 resp->val = syscall(__NR_open, args[0], args[1], args[2]);
-                fprintf(stderr, "warning: open(%s) = %d!\n", (char*)args[0], (int)resp->val);
+                handle_open(fargs, (char*)args[0], (int)args[1], (mode_t)args[2], resp->val);
                 resp->error = resp->val == -1 ? errno : 0;
                 resp->flags = 0;
                 break;
             case __NR_openat:
                 resp->val = syscall(__NR_openat, args[0], args[1], args[2], args[3]);
-                fprintf(stderr, "warning: openat(%s) = %d!\n", (char*)args[1], (int)resp->val);
-                resp->error = resp->val == -1 ? errno : 0;
-                resp->flags = 0;
-                break;
-            case __NR_openat2:
-                resp->val = syscall(__NR_openat2, args[0], args[1], args[2], args[3]);
-                fprintf(stderr, "warning: openat2(%s) = %d!\n", (char*)args[1], (int)resp->val);
-                resp->error = resp->val == -1 ? errno : 0;
-                resp->flags = 0;
-                break;
-            case __NR_creat:
-                resp->val = syscall(__NR_creat, args[0], args[1]);
-                fprintf(stderr, "warning: creat(%s) = %d!\n", (char*)args[0], (int)resp->val);
+                handle_openat(fargs, (int) args[0], (char*)args[1], (int)args[2], (mode_t)args[3], resp->val);
                 resp->error = resp->val == -1 ? errno : 0;
                 resp->flags = 0;
                 break;
             case __NR_close:
                 resp->val = syscall(__NR_close, args[0]);
-                fprintf(stderr, "warning: close(%d) -> %d!\n", (int) args[0], (int)resp->val);
+                handle_close(fargs, (int)args[0], resp->val);
                 resp->error = resp->val == -1 ? errno : 0;
                 resp->flags = 0;
                 break;
@@ -337,6 +355,7 @@ void handle_notifications(struct function_args* fargs) {
                 break;
             default:
                 // TODO - in theory, we should be notified on all syscalls.
+                fprintf(stderr, "warning: unhandled syscall %d!\n", req->data.nr);
                 resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
                 break;
         }
