@@ -15,20 +15,21 @@ all: *.h *.c
 	gcc -g -Wall -o main *.o
 
 tests: all
-	make -C test0-clib run           | tee test0-clibc.log          | tail -n2
-	make -C test1-staticvar run      | tee test1-staticvar.log      | tail -n2
-	make -C test2-svm run            | tee test2-svm.log            | tail -n2
-	make -C test2-svm-jar run        | tee test2-svm-jar.log        | tail -n2
-	make -C test2-svm-gradle run     | tee test2-svm-gradle.log     | tail -n2
-	make -C test3-svm-truffle-js run | tee test3-svm-truffle-js.log | tail -n2
-	make -C test3-svm-truffle-py run | tee test3-svm-truffle-py.log | tail -n2
-	make -C test4-svm-exception run  | tee test4-svm-exception.log  | tail -n2
+	make -C test0-clib run | tail -n2
+	make -C test1-staticvar run | tail -n2
+	make -C test2-svm run | tail -n2
+	make -C test2-svm-jar run | tail -n2
+	make -C test2-svm-gradle run | tail -n2
+	make -C test3-svm-truffle-js run | tail -n2
+	make -C test3-svm-truffle-py run | tail -n2
+	make -C test4-svm-exception run | tail -n2
+	make -C test5-svm-truffle-cached-js run | tail -n2
 
 run-normal:
 	setarch -R ./main normal $(app) 2>&1 | tee normal.log
 
 strace-normal:
-	setarch -R strace -f ./main normal $(app) 2>&1
+	setarch -R strace -f ./main normal $(app) 2>&1 | tee strace-normal.log
 
 gdb-normal:
 	setarch -R gdb $(gcommands) --args ./main normal $(app)
@@ -44,7 +45,7 @@ run-checkpoint:
 strace-checkpoint:
 	rm -f snapshot.mem
 	rm -f snapshot.meta
-	setarch -R strace -f ./main checkpoint $(app) 2>&1
+	setarch -R strace -f ./main checkpoint $(app) 2>&1 | tee strace-checkpoint.log
 
 run-restore:
 	setarch -R ./main restore $(app) 2>&1 | tee restore.log
@@ -55,7 +56,7 @@ gdb-restore:
 	setarch -R gdb $(gcommands) --args ./main restore $(app)
 
 strace-restore:
-	setarch -R strace -f ./main restore $(app) 2>&1
+	setarch -R strace -f ./main restore $(app) 2>&1 | strace-restore.log
 
 clean:
 	rm -f *.o main *.snap *.log
