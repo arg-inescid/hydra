@@ -159,14 +159,15 @@ void* run_function(void* args) {
 
 void handle_mmap(struct function_args* fargs, void* addr, size_t length, int prot, int flags, int fd, off_t offset, void* ret) {
     mmap_t syscall_args = {.addr = addr, .length = length, .prot = prot, .flags = flags, .fd = fd, .offset = offset, .ret = ret};
+    int pagesize = getpagesize();
     print_mmap(&syscall_args);
 
     // Checkpoint the syscall.
     checkpoint_syscall(fargs, __NR_mmap, &syscall_args, sizeof(mmap_t));
 
     // When length is not a multiple of pagesize, we extend it to the next page boundary (check mmap man).
-    if (length % getpagesize()) {
-        size_t padding = (getpagesize() - (length % getpagesize()));
+    if (length % pagesize) {
+        size_t padding = (pagesize - (length % pagesize));
         length = length + padding;
     }
 
@@ -183,6 +184,7 @@ void handle_mmap(struct function_args* fargs, void* addr, size_t length, int pro
 
 void handle_munmap(struct function_args* fargs, void* addr, size_t length, int ret) {
     munmap_t syscall_args = {.addr = addr, .length = length, .ret = ret};
+    int pagesize = getpagesize();
     print_munmap(&syscall_args);
 
     // Checkpoint the syscall.
@@ -193,8 +195,8 @@ void handle_munmap(struct function_args* fargs, void* addr, size_t length, int r
      }
 
     // When length is not a multiple of pagesize, we extend it to the next page boundary (check mmap man).
-    if (length % getpagesize()) {
-        size_t padding = (getpagesize() - (length % getpagesize()));
+    if (length % pagesize) {
+        size_t padding = (pagesize - (length % pagesize));
         length = length + padding;
     }
 
@@ -425,21 +427,19 @@ int main(int argc, char** argv) {
     // Zero the entire argument data structure.
     memset(&fargs, 0, sizeof(struct function_args));
 
-    // TODO - install filter on parent thread? We would like to see parent mmaps.
-
     // Initialize based on arguments.
     init_args(&fargs, argc, argv);
 
     // If in restore mode, start by restoring from the snapshot.
     if (CURRENT_MODE == RESTORE) {
-        fargs.isolate = restore(&fargs);
+        restore(&fargs);
 #ifdef DEBUG
-        print_proc_maps("after_restore.txt"); // TODO - print a tag with the name of the library.
+        print_proc_maps("after_restore.log");
 #endif
     }
 
     // Launch worker thread.
-    pthread_create(&thread, NULL, run_function, &fargs); // TODO - set thread id?
+    pthread_create(&thread, NULL, run_function, &fargs);
 
     // If in checkpoint mode, open metadata file, wait for seccomp to be ready and handle notifications.
     if (CURRENT_MODE == CHECKPOINT) {
@@ -457,10 +457,10 @@ int main(int argc, char** argv) {
     // If in checkpoint mode, checkpoint memory and isolate address.
    if (CURRENT_MODE == CHECKPOINT) {
 #ifdef DEBUG
-        print_proc_maps("before_checkpoint.txt");
-        print_list(&(fargs.mappings)); // have no-allocation prints.
+        print_proc_maps("before_checkpoint.log");
+        print_list(&(fargs.mappings));
 #endif
-        checkpoint(&fargs, fargs.isolate);
+        checkpoint(&fargs);
         close(fargs.meta_snapshot_fd);
    }
 

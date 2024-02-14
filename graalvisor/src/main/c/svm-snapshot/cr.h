@@ -11,10 +11,10 @@ void print_proc_maps(char* filename);
 void checkpoint_syscall(struct function_args* fargs, int tag, void* syscall_args, size_t size);
 
 // Checkpoints a systrate vm instance.
-void checkpoint(struct function_args* fargs, void* isolate);
+void checkpoint(struct function_args* fargs);
 
 // Restores a substrace vm instance.
-void* restore(struct function_args* fargs);
+void restore(struct function_args* fargs);
 
 // Checks if a particular file descriptor matches a given path.
 int check_filepath_fd(int fd, char* path);

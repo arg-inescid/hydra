@@ -14,14 +14,14 @@ all: *.h *.c
 	gcc -g -Wall -o main *.o
 
 tests: all
-	make -C test0-clib run 2>&1      | tee test0-clibc.log
-	make -C test1-staticvar run      | tee test1-staticvar.log
-	make -C test2-svm run            | tee test2-svm.log
-	make -C test2-svm-jar run        | tee test2-svm-jar.log
-	make -C test2-svm-gradle run     | tee test2-svm-gradle.log
-	make -C test3-svm-truffle-js run | tee test3-svm-truffle-js.log
-	make -C test3-svm-truffle-py run | tee test3-svm-truffle-py.log
-	make -C test4-svm-exception run | tee test4-svm-exception.log
+	make -C test0-clib run 2>&1      | tee test0-clibc.log          | tail -n2
+	make -C test1-staticvar run      | tee test1-staticvar.log      | tail -n2
+	make -C test2-svm run            | tee test2-svm.log            | tail -n2
+	make -C test2-svm-jar run        | tee test2-svm-jar.log        | tail -n2
+	make -C test2-svm-gradle run     | tee test2-svm-gradle.log     | tail -n2
+	make -C test3-svm-truffle-js run | tee test3-svm-truffle-js.log | tail -n2
+	make -C test3-svm-truffle-py run | tee test3-svm-truffle-py.log | tail -n2
+	make -C test4-svm-exception run  | tee test4-svm-exception.log  | tail -n2
 
 run-normal:
 	setarch -R ./main normal $(app) 2>&1
@@ -57,7 +57,9 @@ strace-restore:
 	setarch -R strace -f ./main restore $(app) 2>&1
 
 clean:
-	rm -f *.o main *.snap
+	rm -f *.o main *.snap *.log
+
+clean-tests:
 	make -C test0-clib clean
 	make -C test1-staticvar clean
 	make -C test2-svm clean

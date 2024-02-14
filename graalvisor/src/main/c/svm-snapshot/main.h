@@ -31,8 +31,6 @@ struct function_args {
     mapping_t mappings;
     // Path of the function library.
     char* function_path;
-    // File descriptor of the function library.
-    int function_fd; // TODO - delete
     // Function arguments.
     void* args;
     // Snapshot metadata file descriptor;

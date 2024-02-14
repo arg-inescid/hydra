@@ -227,67 +227,6 @@ void checkpoint_memory_mappings(struct function_args* fargs, int memsnap_fd) {
     }
 }
 
-// TODO - delete
-void checkpoint_memory_library(struct function_args* fargs, int memsnap_fd) {
-    char buffer[512];
-    int tag = MEMORY_TAG;
-    unsigned long start, finish, prevfinish;
-    char r, w, x, p;
-    FILE* file = fopen("/proc/self/maps", "r");
-    if (file == NULL) {
-        fprintf(stderr, "failed to open proc self maps\n");
-        return;
-    }
-
-    while (fgets(buffer, sizeof(buffer), file)) {
-        // Reading start and finish addresses
-        sscanf(buffer, "%lx-%lx %c%c%c%c", &start, &finish, &r, &w, &x, &p);
-
-        // If the proc map line does not contain our function library AND
-        // this map line is not a continuation of a previous mapping.
-        if (strstr(buffer, fargs->function_path) == NULL && prevfinish != 0 && prevfinish != start) {
-            continue;
-        } else {
-            size_t size = finish - start;
-
-            // We ignore mappings of the library that were mmapped by the function.
-            if (list_find(&(fargs->mappings), (void*) start, size) != NULL) {
-                continue;
-            }
-
-            if (w == '-') {
-                continue; // TODO - should we skip read/execute-only pages?
-            }
-
-            // Calculate population count.
-            size_t pop = popcount((char*)start, size);
-
-            fprintf(stderr, "clibrary: %16p - %16p size = 0x%16lx prot = %c%c%c%c popcount = %lu \n",
-                (void*) start, ((char*) start) + size, size, r, w, x, p, pop);
-
-            // Write contents to file.
-            memory_to_file(memsnap_fd, (char*)start, size);
-
-            // Write metadata tag.
-            if (write(fargs->meta_snapshot_fd, &tag, sizeof(int)) != sizeof(int)) {
-                perror("failed to serialize memory tag");
-            }
-            // Write metadata content.
-            memory_t s = {.addr = (void*)start, .length = size, .prot = 0, .pop = pop};
-            s.prot = r == 'r' ? s.prot | PROT_READ : s.prot;
-            s.prot = w == 'w' ? s.prot | PROT_WRITE : s.prot;
-            s.prot = x == 'x' ? s.prot | PROT_EXEC : s.prot;
-            // Note: we are not passing the 'p' permission.
-            if (write(fargs->meta_snapshot_fd, &s, sizeof(memory_t)) != sizeof(memory_t)) {
-                perror("failed to serialize memory header");
-            }
-
-            prevfinish = finish;
-        }
-    }
-    fclose(file);
-}
-
 void checkpoint_memory(struct function_args* fargs) {
     int memsnap_fd = open("memory.snap",  O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
     if (memsnap_fd < 0) {
@@ -295,9 +234,7 @@ void checkpoint_memory(struct function_args* fargs) {
         return;
     }
 
-    // Checkpoint memory that hte function allocated after initialization.
     checkpoint_memory_mappings(fargs, memsnap_fd);
-
     close(memsnap_fd);
 }
 
@@ -341,25 +278,23 @@ void restore_memory(struct function_args* fargs, int mem_snapshot_fd) {
         s.pop);
 }
 
-void checkpoint_isolate(struct function_args* fargs, void* isolate) { // TODO - delete isolate
+void checkpoint_isolate(struct function_args* fargs) {
     int tag = ISOLATE_TAG;
-    fprintf(stderr, "isolate: %16p\n", isolate);
+    fprintf(stderr, "isolate: %16p\n", fargs->isolate);
     if (write(fargs->meta_snapshot_fd, &tag, sizeof(int)) != sizeof(int)) {
         perror("failed to serialize isolate tag");
     }
-    if (write(fargs->meta_snapshot_fd, &isolate, sizeof(void*)) != sizeof(void*)) {
+    if (write(fargs->meta_snapshot_fd, &(fargs->isolate), sizeof(void*)) != sizeof(void*)) {
         perror("failed to serialize isolate pointer");
     }
 }
 
-void* restore_isolate(struct function_args* fargs) {
-    void* isolate; // TODO - restore into fargs
-    if (read(fargs->meta_snapshot_fd, &isolate, sizeof(void*)) != sizeof(void*)) {
+void restore_isolate(struct function_args* fargs) {
+    if (read(fargs->meta_snapshot_fd, &(fargs->isolate), sizeof(void*)) != sizeof(void*)) {
         perror("failed to deserialize isolate pointer");
-        return NULL;
+        return;
     }
-    fprintf(stderr, "isolate: %16p\n", isolate);
-    return isolate;
+    fprintf(stderr, "isolate: %16p\n", fargs->isolate);
 }
 
 void print_abi(struct function_args* fargs) {
@@ -404,25 +339,6 @@ void restore_mmap(struct function_args* fargs) {
 
     if (read(fargs->meta_snapshot_fd, &s, sizeof(mmap_t)) != sizeof(mmap_t)) {
         perror("failed to deserialize mmap arguments");
-    }
-
-    if (0) { // TODO - delete
-        // If the file path does not correspond to the fd.
-        if (check_filepath_fd(s.fd, fargs->function_path)) {
-            int fd = find_fd_filepath(fargs->function_path);
-            // Invalid fd, we didn't manage to find a valid fd.
-            if (fd < 0) {
-                fprintf(stderr, "error, fd %d does not correspond to function path %s\n", s.fd, fargs->function_path);
-                return;
-            // We found a fd that corresponds to the target file.
-            } else {
-                fprintf(stderr, "found fd %d to %s\n", fd, fargs->function_path);
-                s.fd = fd;
-            }
-        // else (it corresponds).
-        } else {
-            s.fd = fargs->function_fd;
-        }
     }
 
     print_mmap(&s);
@@ -535,26 +451,13 @@ void restore_close(struct function_args* fargs) {
     syscall(__NR_close, s.fd);
 }
 
-void checkpoint(struct function_args* fargs, void* isolate) {
+void checkpoint(struct function_args* fargs) {
     checkpoint_memory(fargs);
     checkpoint_abi(fargs);
-    checkpoint_isolate(fargs, fargs->isolate);
+    checkpoint_isolate(fargs);
 }
 
-void* restore(struct function_args* fargs) {
-    void* isolate = NULL;
-
-/*
-    // Open function library
-    fargs->function_fd = open(fargs->function_path, O_RDONLY);
-    if (fargs->function_fd < 0) {
-        perror("failed to open native image function library file");
-    } else {
-        // Move to a reserved file descriptor.
-        fargs->function_fd = move_fd(fargs->function_fd, 1000);
-    }
-
-*/
+void restore(struct function_args* fargs) {
 
     // Open the metadata file (syscall arguments, memory ranges, etc).
     fargs->meta_snapshot_fd = open("metadata.snap", O_RDONLY);
@@ -608,7 +511,7 @@ void* restore(struct function_args* fargs) {
             restore_close(fargs);
             break;
         case ISOLATE_TAG:
-            isolate = restore_isolate(fargs);
+            restore_isolate(fargs);
             break;
         case ABI_TAG:
             restore_abi(fargs);
@@ -623,5 +526,4 @@ void* restore(struct function_args* fargs) {
 
     close(mem_snapshot_fd);
     close(fargs->meta_snapshot_fd);
-    return isolate;
 }

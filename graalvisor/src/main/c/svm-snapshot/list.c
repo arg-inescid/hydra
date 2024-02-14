@@ -1,17 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <sys/mman.h>
 #include "list.h"
 
-// Page size in bytes.
-#define PAGE_SIZE 4096 // TODO - getpagesize
-
 size_t bytes_to_pages(size_t bytes) {
-    if (bytes % 4096 != 0) { // TODO - remove
-        fprintf(stderr, "warning, %lu is not a multiple of a page size (%d)\n", bytes, PAGE_SIZE);
-    }
-    return bytes / PAGE_SIZE;
+    return bytes / getpagesize();
 }
 
 char permission(void* mapping_start, void* mapping_finish, char* mapping_perms, void* addr) {
@@ -23,17 +18,13 @@ char permission(void* mapping_start, void* mapping_finish, char* mapping_perms, 
 
     // Number of bytes after the start of the mapping.
     size_t bytes = (char*) addr - (char*) mapping_start;
-    if (bytes % 4096 != 0) { // TODO - remove
-        fprintf(stderr, "warning, %lu is not a multiple of a page size (%d)\n", bytes, PAGE_SIZE);
-    }
-
     return mapping_perms[bytes_to_pages(bytes)];
 }
 
 void* repeated(void* mapping_start, void* mapping_finish, char* mapping_perms, void* block_start) {
     char  block_perm = permission(mapping_start, mapping_finish, mapping_perms, block_start);
     char* block_finish = block_start;
-    for (; block_finish < (char*) mapping_finish; block_finish += PAGE_SIZE) {
+    for (; block_finish < (char*) mapping_finish; block_finish += getpagesize()) {
         if (permission(mapping_start, mapping_finish, mapping_perms, block_finish) != block_perm) {
             break;
         }
