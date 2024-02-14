@@ -12,6 +12,7 @@
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/mman.h>
+#include <sys/time.h>
 #include <errno.h>
 #include <poll.h>
 #include <fcntl.h>
@@ -149,7 +150,18 @@ void* run_function(void* args) {
     }
 
     // Call function.
-    fargs->abi.entrypoint(isolatethread);
+    for (int i = 0; i < ENTRYPOINT_ITERS; i++) {
+#ifdef PERF
+        struct timeval st;
+        gettimeofday(&st, NULL);
+#endif
+        fargs->abi.entrypoint(isolatethread);
+#ifdef PERF
+        struct timeval et;
+        gettimeofday(&et, NULL);
+        fprintf(stderr, "entrypoint took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
+#endif
+    }
 
     // Detach thread function isolate and quit.
     fargs->abi.graal_detach_thread(isolatethread);
@@ -431,7 +443,16 @@ int main(int argc, char** argv) {
 
     // If in restore mode, start by restoring from the snapshot.
     if (CURRENT_MODE == RESTORE) {
+#ifdef PERF
+        struct timeval st;
+        gettimeofday(&st, NULL);
+#endif
         restore(&fargs);
+#ifdef PERF
+        struct timeval et;
+        gettimeofday(&et, NULL);
+        fprintf(stderr, "restore took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
+#endif
 #ifdef DEBUG
         print_proc_maps("after_restore.log");
 #endif
@@ -459,7 +480,16 @@ int main(int argc, char** argv) {
         print_proc_maps("before_checkpoint.log");
         print_list(&(fargs.mappings));
 #endif
+#ifdef PERF
+        struct timeval st;
+        gettimeofday(&st, NULL);
+#endif
         checkpoint(&fargs);
+#ifdef PERF
+        struct timeval et;
+        gettimeofday(&et, NULL);
+        fprintf(stderr, "checkpoint took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
+#endif
         close(fargs.meta_snapshot_fd);
    }
 

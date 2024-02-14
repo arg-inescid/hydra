@@ -11,7 +11,8 @@
 
 
 //#define DEBUG
-
+#define PERF
+#define ENTRYPOINT_ITERS 5
 #ifdef DEBUG
     #define log(format, args...) do { fprintf(stderr, format, ## args); } while(0)
 #else
