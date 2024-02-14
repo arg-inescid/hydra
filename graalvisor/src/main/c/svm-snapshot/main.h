@@ -9,6 +9,17 @@
 // Note - we might need to make sure that all libraries that the isolate depends on are loaded at the same location
 // Note - we also need to make sure that the isolate is loaded back to the same location.
 
+
+//#define DEBUG
+
+#ifdef DEBUG
+    #define log(format, args...) do { fprintf(stderr, format, ## args); } while(0)
+#else
+    #define log(format, args...) do { } while(0)
+#endif
+
+#define err(format, args...) do { fprintf(stderr, format, ## args); } while(0)
+
 // Native Image ABI: https://github.com/oracle/graal/blob/master/substratevm/src/com.oracle.svm.core/headers/graal_isolate.preamble
 // Debugging NI binaries: https://www.graalvm.org/22.2/reference-manual/native-image/guides/debug-native-image-process/
 // Graal implementation: https://github.com/oracle/graal/blob/a4eada95ef403fdda4c5835fe3299f1dbfdcaecb/substratevm/src/com.oracle.svm.core/src/com/oracle/svm/core/c/function/CEntryPointNativeFunctions.java

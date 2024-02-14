@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include "list.h"
+#include "main.h"
 
 size_t bytes_to_pages(size_t bytes) {
     return bytes / getpagesize();
@@ -13,7 +14,7 @@ char permission(void* mapping_start, void* mapping_finish, char* mapping_perms, 
 
     // Check if the requested address is within the mapping limits.
     if (addr < mapping_start || addr > mapping_finish) {
-        fprintf(stderr, "warning, trying to get permission of page outside mapping %p\n", addr);
+        err("warning, trying to get permission of page outside mapping %p\n", addr);
     }
 
     // Number of bytes after the start of the mapping.
@@ -83,7 +84,7 @@ mapping_t* list_find(mapping_t* head, void* start, size_t size) {
         // We do not support partial overlaps. Quit with error message.
         // Note that start is part of the range but the finish address is already outside.
         else if ((start >= current->start && start < current_finish) || (finish > current->start && finish <= current_finish)) {
-            fprintf(stderr, "error: requested mapping %16p - %16p partially overlaps with existing mapping %16p - %16p\n",
+            err("error: requested mapping %16p - %16p partially overlaps with existing mapping %16p - %16p\n",
                start, finish, current->start, current_finish);
             return NULL;
         }
@@ -97,7 +98,7 @@ mapping_t* list_find(mapping_t* head, void* start, size_t size) {
 }
 
 void print_block(void* block_start, void* block_finish, char block_perm) {
-    fprintf(stderr, "pmapping: %16p - %16p size = 0x%16lx prot = %s%s%s%s\n",
+    log("pmapping: %16p - %16p size = 0x%16lx prot = %s%s%s%s\n",
         block_start,
         block_finish,
         (char*) block_finish - (char*) block_start,
@@ -147,7 +148,7 @@ void mapping_update_permissions(mapping_t* mapping, void* block_start, void* blo
     } else if (block_perm == PROT_NONE) {
         memset(mapping->dirty + i, PROT_NONE, j - i);
     }
-    fprintf(stderr, "tracking  %16p - %16p (permissions)\n", block_start, block_finish);
+    log("tracking  %16p - %16p (permissions)\n", block_start, block_finish);
 }
 
 
@@ -159,7 +160,7 @@ void mapping_update_size(mapping_t* mapping, void* unmapping_start, void* unmapp
     if (unmapping_start == mapping->start && unmapping_finish <= mapping_finish) {
         mapping->size -= unmapping_size;
         mapping->start = unmapping_finish;
-        fprintf(stderr, "tracking  %16p - %16p (clipping beg)\n", mapping->start, mapping_finish);
+        log("tracking  %16p - %16p (clipping beg)\n", mapping->start, mapping_finish);
         if (mapping->size == 0) {
             // TODO - remove
         }
@@ -168,7 +169,7 @@ void mapping_update_size(mapping_t* mapping, void* unmapping_start, void* unmapp
     else if (unmapping_finish == mapping_finish && unmapping_start >= mapping->start) {
         mapping->size -= unmapping_size;
         mapping_finish = ((char*) mapping->start) + mapping->size;
-        fprintf(stderr, "tracking  %16p - %16p (clipping end)\n", mapping->start, mapping_finish);
+        log("tracking  %16p - %16p (clipping end)\n", mapping->start, mapping_finish);
             if (mapping->size == 0) {
             // TODO - remove
         }
@@ -176,12 +177,12 @@ void mapping_update_size(mapping_t* mapping, void* unmapping_start, void* unmapp
     // If we are removing a range that includes this mapping.
     else if (unmapping_start < mapping->start && unmapping_finish > mapping_finish) {
         mapping->size = 0;
-        fprintf(stderr, "tracking  %16p - %16p (deleting)\n", mapping->start, mapping_finish);
+        log("tracking  %16p - %16p (deleting)\n", mapping->start, mapping_finish);
         // TODO - remove
     }
     // Unsupported unmapping range.
     else {
-        fprintf(stderr, "error: unsupported munmap: len = %lx [%16p to %16p] from [%16p to %16p]\n",
+        log("error: unsupported munmap: len = %lx [%16p to %16p] from [%16p to %16p]\n",
             unmapping_size, unmapping_start, unmapping_finish, mapping->start, mapping_finish);
     }
 }

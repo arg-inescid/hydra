@@ -10,6 +10,7 @@
 #include "cr.h"
 #include "list.h"
 #include "syscalls.h"
+#include "main.h"
 
 #define MEMORY_TAG  -3
 #define ABI_TAG     -2
@@ -35,7 +36,7 @@ size_t memory_to_file(int fd, char* buffer, size_t count) {
             if (errno == EINTR || errno == EAGAIN) {
                 continue;
             } else {
-                fprintf(stderr, "Could not write() data\n");
+                err("error: could not write data\n");
             }
         }
         written += n;
@@ -51,7 +52,7 @@ size_t file_to_memory(int fd, char* buffer, size_t count) {
             if (errno == EINTR || errno == EAGAIN) {
                 continue;
             } else {
-                fprintf(stderr, "Could not read() data\n");
+                err("error: could not read data\n");
             }
         }
         written += n;
@@ -65,7 +66,7 @@ int move_fd(int oldfd, int newfd) {
     } else {
         int dupped = dup2(oldfd, newfd);
         if (dupped < 0) {
-            perror("failed to move fd using dup2");
+            perror("error: failed to move fd using dup2");
             return oldfd;
         } else {
             close(oldfd);
@@ -88,13 +89,13 @@ void print_proc_maps(char* filename) {
 
     FILE* pmaps = fopen("/proc/self/maps", "r");
     if (pmaps == NULL) {
-        fprintf(stderr, "failed to open proc self maps\n");
+        err("error: failed to open proc self maps\n");
         return;
     }
 
     FILE* out = fopen(filename, "w");
     if (out == NULL) {
-        fprintf(stderr, "failed to open %s\n", filename);
+        err("error: failed to open %s\n", filename);
         return;
     }
 
@@ -161,7 +162,7 @@ void checkpoint_memory_segment(void* seg_start, void* seg_finish, char seg_perm,
     int tag = MEMORY_TAG;
     size_t seg_size = (char*) seg_finish - (char*) seg_start;
     size_t pop = popcount(seg_start, seg_size);
-    fprintf(stderr, "cmemory:  %16p - %16p size = 0x%16lx prot = %s%s%s%s popcount = %lu\n",
+    log("cmemory:  %16p - %16p size = 0x%16lx prot = %s%s%s%s popcount = %lu\n",
         seg_start,
         seg_finish,
         seg_size,
@@ -176,13 +177,13 @@ void checkpoint_memory_segment(void* seg_start, void* seg_finish, char seg_perm,
 
     // Write metadata tag.
     if (write(metasnap_fd, &tag, sizeof(int)) != sizeof(int)) {
-        perror("failed to serialize memory tag");
+        perror("error: failed to serialize memory tag");
     }
 
     // Write metadata content.
     memory_t s = {.addr = seg_start, .length = seg_size, .prot = seg_perm, .pop = pop};
     if (write(metasnap_fd, &s, sizeof(memory_t)) != sizeof(memory_t)) {
-        perror("failed to serialize memory header");
+        perror("error: failed to serialize memory header");
     }
 }
 
@@ -230,7 +231,7 @@ void checkpoint_memory_mappings(struct function_args* fargs, int memsnap_fd) {
 void checkpoint_memory(struct function_args* fargs) {
     int memsnap_fd = open("memory.snap",  O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
     if (memsnap_fd < 0) {
-        fprintf(stderr, "failed to open memory.snap file\n");
+        err("error: failed to open memory.snap file\n");
         return;
     }
 
@@ -242,13 +243,13 @@ void restore_memory(struct function_args* fargs, int mem_snapshot_fd) {
     memory_t s;
 
     if (read(fargs->meta_snapshot_fd, &s, sizeof(memory_t)) != sizeof(memory_t)) {
-        perror("failed to deserialize memory header");
+        perror("error: failed to deserialize memory header");
     }
 
     // We might need to restore memory into a range that is not writeable.
     if (!(s.prot & PROT_WRITE)) {
         if (mprotect(s.addr, s.length, PROT_WRITE)) {
-            perror("failed to mprotect before loading snap into memory");
+            perror("error: failed to mprotect before loading snap into memory");
         }
     }
 
@@ -257,17 +258,17 @@ void restore_memory(struct function_args* fargs, int mem_snapshot_fd) {
     // Restore the original permissions after restoring memory from snapshot.
     if (!(s.prot & PROT_WRITE)) {
         if (mprotect(s.addr, s.length, s.prot)) {
-            perror("failed to mprotect after loading snap into memory");
+            perror("error: failed to mprotect after loading snap into memory");
         }
     }
 
     // We are checking the the population count matches.
     if (s.pop != popcount(s.addr, s.length)) {
-        fprintf(stderr, "error, popcount for %16p - %16p doesn't match: before checkpoint = %lu after restore = %lu\n",
+        err("error: popcount for %16p - %16p doesn't match: before checkpoint = %lu after restore = %lu\n",
             s.addr, ((char*) s.addr) + s.length, s.pop, popcount(s.addr, s.length));
     }
 
-    fprintf(stderr, "rmemory:  %16p - %16p size = 0x%16lx prot = %s%s%s%s popcount = %lu\n",
+    log("rmemory:  %16p - %16p size = 0x%16lx prot = %s%s%s%s popcount = %lu\n",
         s.addr,
         ((char*) s.addr) + s.length,
         s.length,
@@ -280,45 +281,45 @@ void restore_memory(struct function_args* fargs, int mem_snapshot_fd) {
 
 void checkpoint_isolate(struct function_args* fargs) {
     int tag = ISOLATE_TAG;
-    fprintf(stderr, "isolate: %16p\n", fargs->isolate);
+    log("isolate: %16p\n", fargs->isolate);
     if (write(fargs->meta_snapshot_fd, &tag, sizeof(int)) != sizeof(int)) {
-        perror("failed to serialize isolate tag");
+        perror("error: failed to serialize isolate tag");
     }
     if (write(fargs->meta_snapshot_fd, &(fargs->isolate), sizeof(void*)) != sizeof(void*)) {
-        perror("failed to serialize isolate pointer");
+        perror("error: failed to serialize isolate pointer");
     }
 }
 
 void restore_isolate(struct function_args* fargs) {
     if (read(fargs->meta_snapshot_fd, &(fargs->isolate), sizeof(void*)) != sizeof(void*)) {
-        perror("failed to deserialize isolate pointer");
+        perror("error: failed to deserialize isolate pointer");
         return;
     }
-    fprintf(stderr, "isolate: %16p\n", fargs->isolate);
+    log("isolate: %16p\n", fargs->isolate);
 }
 
 void print_abi(struct function_args* fargs) {
-    fprintf(stderr, "abi.graal_create_isolate:    %16p\n", fargs->abi.graal_create_isolate);
-    fprintf(stderr, "abi.graal_tear_down_isolate: %16p\n", fargs->abi.graal_tear_down_isolate);
-    fprintf(stderr, "abi.entrypoint:              %16p\n", fargs->abi.entrypoint);
-    fprintf(stderr, "abi.graal_detach_thread:     %16p\n", fargs->abi.graal_detach_thread);
-    fprintf(stderr, "abi.graal_attach_thread:     %16p\n", fargs->abi.graal_attach_thread);
+    log("abi.graal_create_isolate:    %16p\n", fargs->abi.graal_create_isolate);
+    log("abi.graal_tear_down_isolate: %16p\n", fargs->abi.graal_tear_down_isolate);
+    log("abi.entrypoint:              %16p\n", fargs->abi.entrypoint);
+    log("abi.graal_detach_thread:     %16p\n", fargs->abi.graal_detach_thread);
+    log("abi.graal_attach_thread:     %16p\n", fargs->abi.graal_attach_thread);
 }
 
 void checkpoint_abi(struct function_args* fargs) {
     int tag = ABI_TAG;
     print_abi(fargs);
     if (write(fargs->meta_snapshot_fd, &tag, sizeof(int)) != sizeof(int)) {
-        perror("failed to serialize abi tag");
+        perror("error: failed to serialize abi tag");
     }
     if (write(fargs->meta_snapshot_fd, &(fargs->abi), sizeof(struct isolate_abi)) != sizeof(struct isolate_abi)) {
-        perror("failed to serialize function abi struct");
+        perror("error: failed to serialize function abi struct");
     }
 }
 
 void restore_abi(struct function_args* fargs) {
     if (read(fargs->meta_snapshot_fd, &(fargs->abi), sizeof(struct isolate_abi)) != sizeof(struct isolate_abi)) {
-        perror("failed to deserialize function abi struct");
+        perror("error: failed to deserialize function abi struct");
         return;
     }
     print_abi(fargs);
@@ -326,10 +327,10 @@ void restore_abi(struct function_args* fargs) {
 
 void checkpoint_syscall(struct function_args* fargs, int tag, void* syscall_args, size_t size) {
     if (write(fargs->meta_snapshot_fd, &tag, sizeof(int)) != sizeof(int)) {
-        perror("failed to serialize syscall tag");
+        perror("error: failed to serialize syscall tag");
     }
     if (write(fargs->meta_snapshot_fd, syscall_args, size) != size) {
-        perror("failed to serialize syscall arguments");
+        perror("error: failed to serialize syscall arguments");
     }
 }
 
@@ -338,7 +339,7 @@ void restore_mmap(struct function_args* fargs) {
     void* ret;
 
     if (read(fargs->meta_snapshot_fd, &s, sizeof(mmap_t)) != sizeof(mmap_t)) {
-        perror("failed to deserialize mmap arguments");
+        perror("error: failed to deserialize mmap arguments");
     }
 
     print_mmap(&s);
@@ -346,7 +347,7 @@ void restore_mmap(struct function_args* fargs) {
     // We use the previously returned address and MAP_FIXED to ensure that we recover the correct address.
     ret = (void*) syscall(__NR_mmap, s.ret, s.length, s.prot, s.flags | MAP_FIXED, s.fd, s.offset);
     if (s.ret != ret) {
-        fprintf(stderr, "failed to replay mmap:\t original ret = %16p got ret = %16p\n",  s.ret, ret);
+        err("error: failed to replay mmap:\t original ret = %16p got ret = %16p\n",  s.ret, ret);
     }
 }
 
@@ -355,14 +356,14 @@ void restore_munmap(struct function_args* fargs) {
     int ret;
 
     if (read(fargs->meta_snapshot_fd, &s, sizeof(munmap_t)) != sizeof(munmap_t)) {
-        perror("failed to deserialize munmap arguments");
+        perror("error: failed to deserialize munmap arguments");
     }
 
     print_munmap(&s);
 
     ret = syscall(__NR_munmap, s.addr, s.length);
     if (s.ret != ret) {
-        fprintf(stderr, "failed to replay munmap:\t original ret = %d got ret = %d\n",  s.ret, ret);
+        err("error: failed to replay munmap:\t original ret = %d got ret = %d\n",  s.ret, ret);
     }
 }
 
@@ -371,14 +372,14 @@ void restore_mprotect(struct function_args* fargs) {
     int ret;
 
     if (read(fargs->meta_snapshot_fd, &s, sizeof(mprotect_t)) != sizeof(mprotect_t)) {
-        perror("failed to deserialize mprotect arguments");
+        perror("error: failed to deserialize mprotect arguments");
     }
 
     print_mprotect(&s);
 
     ret = syscall(__NR_mprotect, s.addr, s.length, s.prot);
     if (s.ret != ret) {
-        fprintf(stderr, "failed to replay mprotect:\t original ret = %d got ret = %d\n",  s.ret, ret);
+        err("error: failed to replay mprotect:\t original ret = %d got ret = %d\n",  s.ret, ret);
     }
 }
 
@@ -387,14 +388,14 @@ void restore_dup(struct function_args* fargs) {
     int ret;
 
     if (read(fargs->meta_snapshot_fd, &s, sizeof(dup_t)) != sizeof(dup_t)) {
-        perror("failed to deserialize dup arguments");
+        perror("error: failed to deserialize dup arguments");
     }
 
     print_dup(&s);
 
     ret = syscall(__NR_dup2, s.oldfd, s.ret);
     if (s.ret != ret) {
-        fprintf(stderr, "failed to replay dup:\t original ret = %d got ret = %d\n",  s.ret, ret);
+        err("error: failed to replay dup:\t original ret = %d got ret = %d\n",  s.ret, ret);
     }
 }
 
@@ -403,7 +404,7 @@ void restore_open(struct function_args* fargs) {
     int ret;
 
     if (read(fargs->meta_snapshot_fd, &s, sizeof(open_t)) != sizeof(open_t)) {
-        perror("failed to deserialize open arguments");
+        perror("error: failed to deserialize open arguments");
     }
 
     print_open(&s);
@@ -413,7 +414,7 @@ void restore_open(struct function_args* fargs) {
         // If the file descriptor picked by open is not the expected, try to move it.
         ret = move_fd(ret, s.ret);
         if (s.ret != ret) {
-            fprintf(stderr, "failed to replay open:\t original ret = %d got ret = %d\n",  s.ret, ret);
+            err("error: failed to replay open:\t original ret = %d got ret = %d\n",  s.ret, ret);
         }
     }
 }
@@ -423,7 +424,7 @@ void restore_openat(struct function_args* fargs) {
     int ret;
 
     if (read(fargs->meta_snapshot_fd, &s, sizeof(openat_t)) != sizeof(openat_t)) {
-        perror("failed to deserialize openat arguments");
+        perror("error: failed to deserialize openat arguments");
     }
 
     print_openat(&s);
@@ -432,7 +433,7 @@ void restore_openat(struct function_args* fargs) {
     if (s.ret != ret) {
         ret = move_fd(ret, s.ret);
         if (s.ret != ret) {
-            fprintf(stderr, "failed to replay openat:\t original ret = %d got ret = %d\n",  s.ret, ret);
+            err("error: failed to replay openat:\t original ret = %d got ret = %d\n",  s.ret, ret);
         }
     }
 }
@@ -441,7 +442,7 @@ void restore_close(struct function_args* fargs) {
     close_t s;
 
     if (read(fargs->meta_snapshot_fd, &s, sizeof(close_t)) != sizeof(close_t)) {
-        perror("failed to deserialize close arguments");
+        perror("error: failed to deserialize close arguments");
     }
 
     print_close(&s);
@@ -462,7 +463,7 @@ void restore(struct function_args* fargs) {
     // Open the metadata file (syscall arguments, memory ranges, etc).
     fargs->meta_snapshot_fd = open("metadata.snap", O_RDONLY);
     if (fargs->meta_snapshot_fd < 0) {
-        perror("failed to open meta snapshot file");
+        perror("error: failed to open meta snapshot file");
     } else {
         // Move to a reserved file descriptor.
         fargs->meta_snapshot_fd = move_fd(fargs->meta_snapshot_fd, 1001);
@@ -471,7 +472,7 @@ void restore(struct function_args* fargs) {
     // Open the memory snapshot file.
     int mem_snapshot_fd = open("memory.snap", O_RDONLY);
     if (mem_snapshot_fd < 0) {
-        perror("failed to open memory snapshot file");
+        perror("error: failed to open memory snapshot file");
     } else {
         // Move to a reserved file descriptor.
         mem_snapshot_fd = move_fd(mem_snapshot_fd, 1002);
@@ -484,7 +485,7 @@ void restore(struct function_args* fargs) {
         if (n == 0) {
             break;
         } else if (n != sizeof(int)) {
-            perror("failed to read tag");
+            perror("error: failed to read tag");
         }
 
         switch (tag)
@@ -520,7 +521,7 @@ void restore(struct function_args* fargs) {
             restore_memory(fargs, mem_snapshot_fd);
             break;
         default:
-            fprintf(stderr, "unknown tag durin restore: %d", tag);
+            err("error: unknown tag durin restore: %d", tag);
         }
     }
 

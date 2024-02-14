@@ -15,7 +15,7 @@ all: *.h *.c
 	gcc -g -Wall -o main *.o
 
 tests: all
-	make -C test0-clib run 2>&1      | tee test0-clibc.log          | tail -n2
+	make -C test0-clib run           | tee test0-clibc.log          | tail -n2
 	make -C test1-staticvar run      | tee test1-staticvar.log      | tail -n2
 	make -C test2-svm run            | tee test2-svm.log            | tail -n2
 	make -C test2-svm-jar run        | tee test2-svm-jar.log        | tail -n2
@@ -25,7 +25,7 @@ tests: all
 	make -C test4-svm-exception run  | tee test4-svm-exception.log  | tail -n2
 
 run-normal:
-	setarch -R ./main normal $(app) 2>&1
+	setarch -R ./main normal $(app) 2>&1 | tee normal.log
 
 strace-normal:
 	setarch -R strace -f ./main normal $(app) 2>&1

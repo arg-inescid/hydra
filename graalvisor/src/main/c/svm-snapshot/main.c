@@ -22,8 +22,6 @@
 #include "list.h"
 #include "cr.h"
 
-#define DEBUG
-
 enum EXECUTION_MODE { NORMAL, CHECKPOINT, RESTORE };
 
 // Wether we are checkpointing or restoreing.
@@ -34,31 +32,31 @@ int load_isolate_abi(void* dhandle, struct isolate_abi* abi) {
 
     abi->graal_create_isolate = (int (*)(graal_create_isolate_params_t*, graal_isolate_t**, graal_isolatethread_t**)) dlsym(dhandle, "graal_create_isolate");
     if ((derror = dlerror()) != NULL) {
-        fprintf(stderr, "%s\n", derror);
+        err("%s\n", derror);
         return 1;
     }
 
     abi->graal_tear_down_isolate = (int (*)(graal_isolatethread_t*)) dlsym(dhandle, "graal_tear_down_isolate");
     if ((derror = dlerror()) != NULL) {
-        fprintf(stderr, "%s\n", derror);
+        err("%s\n", derror);
         return 1;
     }
 
     abi->entrypoint = (void (*)(graal_isolatethread_t*)) dlsym(dhandle, "entrypoint");
     if ((derror = dlerror()) != NULL) {
-        fprintf(stderr, "%s\n", derror);
+        err("%s\n", derror);
         return 1;
     }
 
     abi->graal_detach_thread = (int (*)(graal_isolatethread_t*)) dlsym(dhandle, "graal_detach_thread");
     if ((derror = dlerror()) != NULL) {
-        fprintf(stderr, "%s\n", derror);
+        err("%s\n", derror);
         return 1;
     }
 
     abi->graal_attach_thread = (int (*)(graal_isolate_t*, graal_isolatethread_t**)) dlsym(dhandle, "graal_attach_thread");
     if ((derror = dlerror()) != NULL) {
-        fprintf(stderr, "%s\n", derror);
+        err("%s\n", derror);
         return 1;
     }
 
@@ -98,13 +96,13 @@ int install_filter() {
     };
 
     if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0)) {
-        perror("prctl(NO_NEW_PRIVS)");
+        perror("error: failed to prctl(NO_NEW_PRIVS)");
         return -1;
     }
 
     int fd = syscall(SYS_seccomp, SECCOMP_SET_MODE_FILTER, SECCOMP_FILTER_FLAG_NEW_LISTENER, &prog);
     if (fd < 0) {
-        perror("seccomp(SECCOMP_SET_MODE_FILTER)");
+        perror("error: failed to seccomp(SECCOMP_SET_MODE_FILTER)");
         return -1;
     }
 
@@ -119,20 +117,7 @@ void* run_function(void* args) {
         // Install seccomp filter.
         fargs->seccomp_fd = install_filter();
         if (fargs->seccomp_fd < 0) {
-            fprintf(stderr, "failed install seccomp filter\n");
-            return NULL;
-        }
-
-        // Load function library.
-        void* dhandle = dlopen(fargs->function_path, RTLD_LAZY);
-        if (dhandle == NULL) {
-            fprintf(stderr, "failed to load dynamic library: %s\n", dlerror());
-            return NULL;
-        }
-
-        // Initialize abi.
-        if (load_isolate_abi(dhandle, &(fargs->abi))) {
-            fprintf(stderr, "failed to load isolate abi\n");
+            err("error: failed install seccomp filter\n");
             return NULL;
         }
     }
@@ -141,10 +126,24 @@ void* run_function(void* args) {
     if (CURRENT_MODE == RESTORE) {
         fargs->abi.graal_attach_thread(fargs->isolate, &isolatethread);
     } else {
+        // Load function library.
+        void* dhandle = dlopen(fargs->function_path, RTLD_LAZY);
+        if (dhandle == NULL) {
+            err("error: failed to load dynamic library: %s\n", dlerror());
+            return NULL;
+        }
+
+        // Initialize abi.
+        if (load_isolate_abi(dhandle, &(fargs->abi))) {
+            err("error: failed to load isolate abi\n");
+            return NULL;
+        }
+
+        // Create isolate.
         graal_create_isolate_params_t params;
         memset(&params, 0, sizeof(graal_create_isolate_params_t));
         if (fargs->abi.graal_create_isolate(&params, &(fargs->isolate), &isolatethread) != 0) {
-            fprintf(stderr, "failed to create isolate\n");
+            err("error: failed to create isolate\n");
             return NULL;
         }
     }
@@ -191,7 +190,7 @@ void handle_munmap(struct function_args* fargs, void* addr, size_t length, int r
     checkpoint_syscall(fargs, __NR_munmap, &syscall_args, sizeof(munmap_t));
 
      if ((unsigned long)addr % getpagesize()) {
-        fprintf(stderr, "warning, munmap start not a multiple of page boundary\n");
+        err("warning, munmap start not a multiple of page boundary\n");
      }
 
     // When length is not a multiple of pagesize, we extend it to the next page boundary (check mmap man).
@@ -204,7 +203,7 @@ void handle_munmap(struct function_args* fargs, void* addr, size_t length, int r
 
     // Add mapping if it does not exist yet.
     if (mapping == NULL) {
-        fprintf(stderr, "warning: unmapping unkown mapping %16p - %16p\n", addr, ((char*) addr) + length);
+        err("warning: unmapping unkown mapping %16p - %16p\n", addr, ((char*) addr) + length);
         return;
     }
 
@@ -223,7 +222,7 @@ void handle_mprotect(struct function_args* fargs, void* addr, size_t length, int
 
     // Add mapping if it does not exist yet.
     if (mapping == NULL) {
-        fprintf(stderr, "warning: mprotecting unkown mapping %16p - %16p\n", addr, ((char*) addr) + length);
+        err("warning: mprotecting unkown mapping %16p - %16p\n", addr, ((char*) addr) + length);
         return;
     }
 
@@ -242,7 +241,7 @@ void handle_open(struct function_args* fargs, char* pathname, int flags, mode_t 
 
     // If pathname is larger than max, error out, otherwise, copy.
     if (strlen(pathname) > MAX_PATHNAME) {
-        fprintf(stderr, "error, cannot checkpoint pathname longer than %d: %s\n", MAX_PATHNAME, pathname);
+        err("error, cannot checkpoint pathname longer than %d: %s\n", MAX_PATHNAME, pathname);
     } else {
         strcpy(syscall_args.pathname, pathname);
     }
@@ -256,7 +255,7 @@ void handle_openat(struct function_args* fargs, int dirfd, char* pathname, int f
 
     // If pathname is larger than max, error out, otherwise, copy.
     if (strlen(pathname) > MAX_PATHNAME) {
-        fprintf(stderr, "error, cannot checkpoint pathname longer than %d: %s\n", MAX_PATHNAME, pathname);
+        err("error, cannot checkpoint pathname longer than %d: %s\n", MAX_PATHNAME, pathname);
     } else {
         strcpy(syscall_args.pathname, pathname);
     }
@@ -276,8 +275,8 @@ void handle_notifications(struct function_args* fargs) {
     int active_threads = 1;
     struct seccomp_notif_sizes sizes;
     if (syscall(SYS_seccomp, SECCOMP_GET_NOTIF_SIZES, 0, &sizes) < 0) {
-        perror("seccomp(SECCOMP_GET_NOTIF_SIZES)");
-        exit(1);
+        err("error: failed to seccomp(SECCOMP_GET_NOTIF_SIZES)");
+        return;
     }
 
     struct seccomp_notif *req = (struct seccomp_notif*)malloc(sizes.seccomp_notif);
@@ -302,13 +301,13 @@ void handle_notifications(struct function_args* fargs) {
         memset(req, 0, sizes.seccomp_notif);
         memset(resp, 0, sizes.seccomp_notif_resp);
         if (ioctl(fargs->seccomp_fd, SECCOMP_IOCTL_NOTIF_RECV, req) == -1) {
-            perror("ioctl(SECCOMP_IOCTL_NOTIF_RECV)");
+            perror("error: failed to ioctl(SECCOMP_IOCTL_NOTIF_RECV)");
             continue;
         }
 
         // Validate notification
         if (ioctl(fargs->seccomp_fd, SECCOMP_IOCTL_NOTIF_ID_VALID, &req->id) == -1 ) {
-            perror("ioctl(SECCOMP_IOCTL_NOTIF_ID_VALID)");
+            perror("error: failed to ioctl(SECCOMP_IOCTL_NOTIF_ID_VALID)");
             continue;
         }
 
@@ -343,18 +342,18 @@ void handle_notifications(struct function_args* fargs) {
                 break;
             case __NR_exit:
                 if (active_threads > 1) {
-                    fprintf(stderr, "warning: exit was invoked!\n");
+                    err("warning: exit was invoked!\n");
                 }
                 active_threads--;
                 resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
                 break;
             case __NR_clone:
-                fprintf(stderr, "warning: clone was invoked!\n");
+                err("warning: clone was invoked!\n");
                 active_threads++;
                 resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
                 break;
             case __NR_clone3:
-                fprintf(stderr, "warning: clone3 was invoked!\n");
+                err("warning: clone3 was invoked!\n");
                 active_threads++;
                 resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
                 break;
@@ -378,12 +377,12 @@ void handle_notifications(struct function_args* fargs) {
                 break;
             default:
                 // TODO - in theory, we should be notified on all syscalls.
-                fprintf(stderr, "warning: unhandled syscall %d!\n", req->data.nr);
+                err("warning: unhandled syscall %d!\n", req->data.nr);
                 resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
                 break;
         }
         if (ioctl(fargs->seccomp_fd, SECCOMP_IOCTL_NOTIF_SEND, resp) == -1) {
-            perror("ioctl(SECCOMP_IOCTL_NOTIF_SEND)");
+            perror("error: failed to ioctl(SECCOMP_IOCTL_NOTIF_SEND)");
             continue;
         }
     }
@@ -394,7 +393,7 @@ void handle_notifications(struct function_args* fargs) {
 }
 
 void usage_exit() {
-    fprintf(stderr, "Syntax: main <normal|checkpoint|restore> <path to native image app library>\n");
+    err("Syntax: main <normal|checkpoint|restore> <path to native image app library>\n");
     exit(1);
 }
 
