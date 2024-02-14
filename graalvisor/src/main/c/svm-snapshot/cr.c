@@ -11,7 +11,8 @@
 #include "list.h"
 #include "syscalls.h"
 
-#define MEMORY_TAG  -2
+#define MEMORY_TAG  -3
+#define ABI_TAG     -2
 #define ISOLATE_TAG -1
 
 // Serialized memory struct.
@@ -226,6 +227,7 @@ void checkpoint_memory_mappings(struct function_args* fargs, int memsnap_fd) {
     }
 }
 
+// TODO - delete
 void checkpoint_memory_library(struct function_args* fargs, int memsnap_fd) {
     char buffer[512];
     int tag = MEMORY_TAG;
@@ -293,9 +295,6 @@ void checkpoint_memory(struct function_args* fargs) {
         return;
     }
 
-    // Checkpoint memory where the function dynamic library is installed.
-    checkpoint_memory_library(fargs, memsnap_fd);
-
     // Checkpoint memory that hte function allocated after initialization.
     checkpoint_memory_mappings(fargs, memsnap_fd);
 
@@ -342,9 +341,9 @@ void restore_memory(struct function_args* fargs, int mem_snapshot_fd) {
         s.pop);
 }
 
-void checkpoint_isolate(struct function_args* fargs, void* isolate) {
+void checkpoint_isolate(struct function_args* fargs, void* isolate) { // TODO - delete isolate
     int tag = ISOLATE_TAG;
-    fprintf(stderr, "cisolate: %16p\n", isolate);
+    fprintf(stderr, "isolate: %16p\n", isolate);
     if (write(fargs->meta_snapshot_fd, &tag, sizeof(int)) != sizeof(int)) {
         perror("failed to serialize isolate tag");
     }
@@ -354,13 +353,40 @@ void checkpoint_isolate(struct function_args* fargs, void* isolate) {
 }
 
 void* restore_isolate(struct function_args* fargs) {
-    void* isolate;
+    void* isolate; // TODO - restore into fargs
     if (read(fargs->meta_snapshot_fd, &isolate, sizeof(void*)) != sizeof(void*)) {
         perror("failed to deserialize isolate pointer");
         return NULL;
     }
-    fprintf(stderr, "restore isolate: %16p\n", isolate);
+    fprintf(stderr, "isolate: %16p\n", isolate);
     return isolate;
+}
+
+void print_abi(struct function_args* fargs) {
+    fprintf(stderr, "abi.graal_create_isolate:    %16p\n", fargs->abi.graal_create_isolate);
+    fprintf(stderr, "abi.graal_tear_down_isolate: %16p\n", fargs->abi.graal_tear_down_isolate);
+    fprintf(stderr, "abi.entrypoint:              %16p\n", fargs->abi.entrypoint);
+    fprintf(stderr, "abi.graal_detach_thread:     %16p\n", fargs->abi.graal_detach_thread);
+    fprintf(stderr, "abi.graal_attach_thread:     %16p\n", fargs->abi.graal_attach_thread);
+}
+
+void checkpoint_abi(struct function_args* fargs) {
+    int tag = ABI_TAG;
+    print_abi(fargs);
+    if (write(fargs->meta_snapshot_fd, &tag, sizeof(int)) != sizeof(int)) {
+        perror("failed to serialize abi tag");
+    }
+    if (write(fargs->meta_snapshot_fd, &(fargs->abi), sizeof(struct isolate_abi)) != sizeof(struct isolate_abi)) {
+        perror("failed to serialize function abi struct");
+    }
+}
+
+void restore_abi(struct function_args* fargs) {
+    if (read(fargs->meta_snapshot_fd, &(fargs->abi), sizeof(struct isolate_abi)) != sizeof(struct isolate_abi)) {
+        perror("failed to deserialize function abi struct");
+        return;
+    }
+    print_abi(fargs);
 }
 
 void checkpoint_syscall(struct function_args* fargs, int tag, void* syscall_args, size_t size) {
@@ -380,7 +406,7 @@ void restore_mmap(struct function_args* fargs) {
         perror("failed to deserialize mmap arguments");
     }
 
-    if (s.fd != -1) {
+    if (0) { // TODO - delete
         // If the file path does not correspond to the fd.
         if (check_filepath_fd(s.fd, fargs->function_path)) {
             int fd = find_fd_filepath(fargs->function_path);
@@ -511,12 +537,14 @@ void restore_close(struct function_args* fargs) {
 
 void checkpoint(struct function_args* fargs, void* isolate) {
     checkpoint_memory(fargs);
+    checkpoint_abi(fargs);
     checkpoint_isolate(fargs, fargs->isolate);
 }
 
 void* restore(struct function_args* fargs) {
     void* isolate = NULL;
 
+/*
     // Open function library
     fargs->function_fd = open(fargs->function_path, O_RDONLY);
     if (fargs->function_fd < 0) {
@@ -525,6 +553,8 @@ void* restore(struct function_args* fargs) {
         // Move to a reserved file descriptor.
         fargs->function_fd = move_fd(fargs->function_fd, 1000);
     }
+
+*/
 
     // Open the metadata file (syscall arguments, memory ranges, etc).
     fargs->meta_snapshot_fd = open("metadata.snap", O_RDONLY);
@@ -579,6 +609,9 @@ void* restore(struct function_args* fargs) {
             break;
         case ISOLATE_TAG:
             isolate = restore_isolate(fargs);
+            break;
+        case ABI_TAG:
+            restore_abi(fargs);
             break;
         case MEMORY_TAG:
             restore_memory(fargs, mem_snapshot_fd);

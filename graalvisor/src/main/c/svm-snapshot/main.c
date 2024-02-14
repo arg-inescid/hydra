@@ -115,11 +115,24 @@ void* run_function(void* args) {
     struct function_args* fargs = (struct function_args*) args;
     graal_isolatethread_t *isolatethread = NULL;
 
-    // If checkpointing, install seccomp filter.
     if (CURRENT_MODE == CHECKPOINT) {
+        // Install seccomp filter.
         fargs->seccomp_fd = install_filter();
         if (fargs->seccomp_fd < 0) {
             fprintf(stderr, "failed install seccomp filter\n");
+            return NULL;
+        }
+
+        // Load function library.
+        void* dhandle = dlopen(fargs->function_path, RTLD_LAZY);
+        if (dhandle == NULL) {
+            fprintf(stderr, "failed to load dynamic library: %s\n", dlerror());
+            return NULL;
+        }
+
+        // Initialize abi.
+        if (load_isolate_abi(dhandle, &(fargs->abi))) {
+            fprintf(stderr, "failed to load isolate abi\n");
             return NULL;
         }
     }
@@ -148,16 +161,14 @@ void handle_mmap(struct function_args* fargs, void* addr, size_t length, int pro
     mmap_t syscall_args = {.addr = addr, .length = length, .prot = prot, .flags = flags, .fd = fd, .offset = offset, .ret = ret};
     print_mmap(&syscall_args);
 
-    // If we are mapping a file that is not our library.
-    if (syscall_args.fd != -1 && check_filepath_fd(syscall_args.fd, fargs->function_path)) {
-        fprintf(stderr, "error, fd %d does not correspond to function path %s\n",
-            syscall_args.fd,
-            fargs->function_path);
-        return;
-    }
-
     // Checkpoint the syscall.
     checkpoint_syscall(fargs, __NR_mmap, &syscall_args, sizeof(mmap_t));
+
+    // When length is not a multiple of pagesize, we extend it to the next page boundary (check mmap man).
+    if (length % getpagesize()) {
+        size_t padding = (getpagesize() - (length % getpagesize()));
+        length = length + padding;
+    }
 
     mapping_t* mapping = list_find(&(fargs->mappings), ret, length);
 
@@ -176,6 +187,16 @@ void handle_munmap(struct function_args* fargs, void* addr, size_t length, int r
 
     // Checkpoint the syscall.
     checkpoint_syscall(fargs, __NR_munmap, &syscall_args, sizeof(munmap_t));
+
+     if ((unsigned long)addr % getpagesize()) {
+        fprintf(stderr, "warning, munmap start not a multiple of page boundary\n");
+     }
+
+    // When length is not a multiple of pagesize, we extend it to the next page boundary (check mmap man).
+    if (length % getpagesize()) {
+        size_t padding = (getpagesize() - (length % getpagesize()));
+        length = length + padding;
+    }
 
     mapping_t* mapping = list_find(&(fargs->mappings), addr, length);
 
@@ -404,22 +425,10 @@ int main(int argc, char** argv) {
     // Zero the entire argument data structure.
     memset(&fargs, 0, sizeof(struct function_args));
 
+    // TODO - install filter on parent thread? We would like to see parent mmaps.
+
     // Initialize based on arguments.
     init_args(&fargs, argc, argv);
-
-    // Load function library.
-    // TODO - move dlopen to traced thread?
-    void* dhandle = dlopen(fargs.function_path, RTLD_LAZY);
-    if (dhandle == NULL) {
-        fprintf(stderr, "failed to load dynamic library: %s\n", dlerror());
-        return 1;
-    }
-
-    // Initialize abi.
-    if (load_isolate_abi(dhandle, &(fargs.abi))) {
-        fprintf(stderr, "failed to load isolate abi\n");
-        return 1;
-    }
 
     // If in restore mode, start by restoring from the snapshot.
     if (CURRENT_MODE == RESTORE) {
@@ -430,7 +439,7 @@ int main(int argc, char** argv) {
     }
 
     // Launch worker thread.
-    pthread_create(&thread, NULL, run_function, &fargs);
+    pthread_create(&thread, NULL, run_function, &fargs); // TODO - set thread id?
 
     // If in checkpoint mode, open metadata file, wait for seccomp to be ready and handle notifications.
     if (CURRENT_MODE == CHECKPOINT) {
@@ -449,7 +458,7 @@ int main(int argc, char** argv) {
    if (CURRENT_MODE == CHECKPOINT) {
 #ifdef DEBUG
         print_proc_maps("before_checkpoint.txt");
-        print_list(&(fargs.mappings));
+        print_list(&(fargs.mappings)); // have no-allocation prints.
 #endif
         checkpoint(&fargs, fargs.isolate);
         close(fargs.meta_snapshot_fd);

@@ -32,7 +32,7 @@ struct function_args {
     // Path of the function library.
     char* function_path;
     // File descriptor of the function library.
-    int function_fd;
+    int function_fd; // TODO - delete
     // Function arguments.
     void* args;
     // Snapshot metadata file descriptor;
