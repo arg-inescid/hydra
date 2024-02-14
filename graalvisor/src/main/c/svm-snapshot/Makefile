@@ -5,7 +5,8 @@
 #app = "$(shell pwd)/test2-svm-gradle/libhello.so"
 #app = "$(shell pwd)/test3-svm-truffle-js/libhello.so"
 #app = "$(shell pwd)/test3-svm-truffle-py/libhello.so"
-app = "$(shell pwd)/test4-svm-exception/libhello.so"
+#app = "$(shell pwd)/test4-svm-exception/libhello.so"
+app = "$(shell pwd)/test5-svm-truffle-cached-js/libhello.so"
 
 gcommands = -x gdb-commands.txt
 
