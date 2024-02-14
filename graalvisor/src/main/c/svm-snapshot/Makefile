@@ -4,7 +4,8 @@
 #app = "$(shell pwd)/test2-svm-jar/libhello.so"
 #app = "$(shell pwd)/test2-svm-gradle/libhello.so"
 #app = "$(shell pwd)/test3-svm-truffle-js/libhello.so"
-app = "$(shell pwd)/test3-svm-truffle-py/libhello.so"
+#app = "$(shell pwd)/test3-svm-truffle-py/libhello.so"
+app = "$(shell pwd)/test4-svm-exception/libhello.so"
 
 gcommands = -x gdb-commands.txt
 
@@ -20,6 +21,7 @@ tests: all
 	make -C test2-svm-gradle run     | tee test2-svm-gradle.log
 	make -C test3-svm-truffle-js run | tee test3-svm-truffle-js.log
 	make -C test3-svm-truffle-py run | tee test3-svm-truffle-py.log
+	make -C test4-svm-exception run | tee test4-svm-exception.log
 
 run-normal:
 	setarch -R ./main normal $(app) 2>&1
@@ -63,3 +65,4 @@ clean:
 	make -C test2-svm-gradle clean
 	make -C test3-svm-truffle-js clean
 	make -C test3-svm-truffle-py clean
+	make -C test4-svm-exception clean
