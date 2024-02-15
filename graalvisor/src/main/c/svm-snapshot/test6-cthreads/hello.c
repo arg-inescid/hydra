@@ -1,15 +1,17 @@
 #include <stdio.h>
+#include <sys/syscall.h>
 #include <pthread.h>
 #include <unistd.h>
 #include "../graal_isolate.h"
 
-pthread_t worker;
+pthread_t worker = 0;
 int finished = 0;
 
 void* run_function(void* args) {
     int myvar = 0;
+    fprintf(stderr, "Worker thread with tid: %lu (pid = %d)\n", syscall(__NR_gettid), getpid());
     while(!finished) {
-        printf("myvar = %d\n", myvar++);
+        fprintf(stderr, "myvar = %d\n", myvar++);
         sleep(1);
     }
 }
@@ -26,7 +28,10 @@ int graal_tear_down_isolate(graal_isolatethread_t* thread) {
 }
 
 void entrypoint(graal_isolatethread_t* thread) {
-    pthread_create(&worker, NULL, run_function, NULL);
+    fprintf(stderr, "Function thread with tid: %lu (pid = %d)\n", syscall(__NR_gettid), getpid());
+    if (worker == 0) {
+        pthread_create(&worker, NULL, run_function, NULL);
+    }
 }
 
 int graal_detach_thread(graal_isolatethread_t* thread) {

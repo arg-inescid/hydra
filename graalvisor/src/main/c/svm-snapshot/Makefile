@@ -6,7 +6,10 @@
 #app = "$(shell pwd)/test3-svm-truffle-js/libhello.so"
 #app = "$(shell pwd)/test3-svm-truffle-py/libhello.so"
 #app = "$(shell pwd)/test4-svm-exception/libhello.so"
-app = "$(shell pwd)/test5-svm-truffle-cached-js/libhello.so"
+#app = "$(shell pwd)/test5-svm-truffle-cached-js/libhello.so"
+#app = "$(shell pwd)/test5-svm-truffle-cached-py/libhello.so"
+#app = "$(shell pwd)/test6-cthreads/libhello.so"
+app = "$(shell pwd)/test7-svm-truffle-function-py/libcompression.so"
 
 gcommands = -x gdb-commands.txt
 
@@ -56,7 +59,7 @@ gdb-restore:
 	setarch -R gdb $(gcommands) --args ./main restore $(app)
 
 strace-restore:
-	setarch -R strace -f ./main restore $(app) 2>&1 | strace-restore.log
+	setarch -R strace -f ./main restore $(app) 2>&1 | tee strace-restore.log
 
 clean:
 	rm -f *.o main *.snap *.log
