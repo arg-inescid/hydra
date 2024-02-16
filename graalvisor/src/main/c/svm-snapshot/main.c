@@ -463,9 +463,12 @@ int main(int argc, char** argv) {
 
     // If in checkpoint mode, open metadata file, wait for seccomp to be ready and handle notifications.
     if (CURRENT_MODE == CHECKPOINT) {
-        fargs.meta_snapshot_fd = open("metadata.snap",  O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
+        fargs.meta_snapshot_fd = move_to_reserved_fd(open("metadata.snap",  O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR));
+
          // Wait while the thread initilizes and installs the seccomp filter.
         while (!fargs.seccomp_fd) ; // TODO - avoid active waiting
+
+        fargs.seccomp_fd = move_to_reserved_fd(fargs.seccomp_fd);
 
         // Keep handling syscall notifications.
         handle_notifications(&fargs);

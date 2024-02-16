@@ -18,4 +18,8 @@ void restore(struct function_args* fargs);
 
 // Checks if a particular file descriptor matches a given path.
 int check_filepath_fd(int fd, char* path);
+
+// Using dup (or similar syscall), moves oldfd into a reserved fd.
+// Note: this function closes the oldfd.
+int move_to_reserved_fd(int oldfd);
 #endif

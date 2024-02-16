@@ -12,6 +12,12 @@
 #include "syscalls.h"
 #include "main.h"
 
+// This variable is used to generate reserved fds. Used for:
+// - meta snapshot fd;
+// - memory snapshot fd;
+// - seccomp fd.
+int reserved_fds = 1000;
+
 #define MEMORY_TAG  -3
 #define ABI_TAG     -2
 #define ISOLATE_TAG -1
@@ -73,6 +79,10 @@ int move_fd(int oldfd, int newfd) {
             return newfd;
         }
     }
+}
+
+int move_to_reserved_fd(int oldfd) {
+    return move_fd(oldfd, __atomic_fetch_add(&reserved_fds, 1, __ATOMIC_SEQ_CST));
 }
 
 size_t popcount(char* buffer, size_t count) {
@@ -229,10 +239,12 @@ void checkpoint_memory_mappings(struct function_args* fargs, int memsnap_fd) {
 }
 
 void checkpoint_memory(struct function_args* fargs) {
-    int memsnap_fd = open("memory.snap",  O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
+    int memsnap_fd = move_to_reserved_fd(open("memory.snap",  O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR));
     if (memsnap_fd < 0) {
         err("error: failed to open memory.snap file\n");
         return;
+    } else {
+        memsnap_fd = move_to_reserved_fd(memsnap_fd);
     }
 
     checkpoint_memory_mappings(fargs, memsnap_fd);
@@ -465,8 +477,7 @@ void restore(struct function_args* fargs) {
     if (fargs->meta_snapshot_fd < 0) {
         perror("error: failed to open meta snapshot file");
     } else {
-        // Move to a reserved file descriptor.
-        fargs->meta_snapshot_fd = move_fd(fargs->meta_snapshot_fd, 1001);
+        fargs->meta_snapshot_fd = move_to_reserved_fd(fargs->meta_snapshot_fd);
     }
 
     // Open the memory snapshot file.
@@ -474,8 +485,7 @@ void restore(struct function_args* fargs) {
     if (mem_snapshot_fd < 0) {
         perror("error: failed to open memory snapshot file");
     } else {
-        // Move to a reserved file descriptor.
-        mem_snapshot_fd = move_fd(mem_snapshot_fd, 1002);
+        mem_snapshot_fd = move_to_reserved_fd(mem_snapshot_fd);
     }
 
     while(1) {
