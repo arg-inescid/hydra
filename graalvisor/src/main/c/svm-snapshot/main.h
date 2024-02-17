@@ -48,6 +48,8 @@ struct function_args {
     void* args;
     // Snapshot metadata file descriptor;
     int meta_snapshot_fd;
+    // Integer used as a boolean to decide if the function has terminated.
+    int finished;
 };
 
 #endif

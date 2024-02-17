@@ -159,12 +159,13 @@ void* run_function(void* args) {
 #ifdef PERF
         struct timeval et;
         gettimeofday(&et, NULL);
-        fprintf(stderr, "entrypoint took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
+        log("entrypoint took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
 #endif
     }
 
     // Detach thread function isolate and quit.
     fargs->abi.graal_detach_thread(isolatethread);
+    fargs->finished = 1;
     return NULL;
 }
 
@@ -302,9 +303,14 @@ void handle_notifications(struct function_args* fargs) {
 
     while (active_threads) {
 
-		// Wait for a notification
-        if (poll(fds, 1, -1) <= 0) {
+        // Wait for a notification
+        int events = poll(fds, 1, 100);
+        if (events < 0) {
+            err("error: failed to pool for events");
             continue;
+        } else if (events == 0 && fargs->finished) {
+            err("warning: monitor exiting before all function threads terminate (%d active threads)!\n", active_threads);
+            break;
         } else if (fds[0].revents & POLLNVAL) {
             break;
         }
