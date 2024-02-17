@@ -13,13 +13,14 @@
 //#define DEBUG
 #define PERF
 #define ENTRYPOINT_ITERS 5
-#ifdef DEBUG
-    #define log(format, args...) do { fprintf(stderr, format, ## args); } while(0)
-#else
-    #define log(format, args...) do { } while(0)
-#endif
 
-#define err(format, args...) do { fprintf(stderr, format, ## args); } while(0)
+#define log(format, args...) do { fprintf(stdout, format, ## args); } while(0)
+#ifdef DEBUG
+    #define dbg(format, args...) do { fprintf(stdout, format, ## args); } while(0)
+#else
+    #define dbg(format, args...) do { } while(0)
+#endif
+#define err(format, args...) do { fprintf(stdout, format, ## args); } while(0)
 
 // Native Image ABI: https://github.com/oracle/graal/blob/master/substratevm/src/com.oracle.svm.core/headers/graal_isolate.preamble
 // Debugging NI binaries: https://www.graalvm.org/22.2/reference-manual/native-image/guides/debug-native-image-process/

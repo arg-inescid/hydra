@@ -360,13 +360,17 @@ void handle_notifications(struct function_args* fargs) {
                 resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
                 break;
             case __NR_clone:
-                err("warning: clone was invoked!\n");
+                // TODO - we will need to handle threads. To checkpoint threads, we need to know
+                // which threads belong to which sandbox. This is how we could do it:
+                // after each call to clone, check /proc/self/tasks and find the new tid.
+                // This is assuming we can identify the calling tid when intercepting w/ seccomp.
                 active_threads++;
+                err("warning: clone was invoked (%d active threads)!\n", active_threads);
                 resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
                 break;
             case __NR_clone3:
-                err("warning: clone3 was invoked!\n");
                 active_threads++;
+                err("warning: clone3 was invoked (%d active threads)!\n", active_threads);
                 resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
                 break;
             case __NR_mmap:
@@ -435,6 +439,9 @@ int main(int argc, char** argv) {
     struct function_args fargs;
     pthread_t thread;
 
+    // Disable buffering for stdout.
+    setvbuf(stdout, NULL, _IONBF, 0);
+
     // Zero the entire argument data structure.
     memset(&fargs, 0, sizeof(struct function_args));
 
@@ -451,7 +458,7 @@ int main(int argc, char** argv) {
 #ifdef PERF
         struct timeval et;
         gettimeofday(&et, NULL);
-        fprintf(stderr, "restore took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
+        log("restore took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
 #endif
 #ifdef DEBUG
         print_proc_maps("after_restore.log");
@@ -491,10 +498,16 @@ int main(int argc, char** argv) {
 #ifdef PERF
         struct timeval et;
         gettimeofday(&et, NULL);
-        fprintf(stderr, "checkpoint took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
+        log("checkpoint took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
 #endif
         close(fargs.meta_snapshot_fd);
    }
+
+    // Flush any open streammed file.
+    fflush(NULL);
+
+    // Exit even if there are unfinished threads running in function code.
+    exit(0);
 
     // Tear down isolate after checkpointing.
     graal_isolatethread_t *isolatethread = NULL;

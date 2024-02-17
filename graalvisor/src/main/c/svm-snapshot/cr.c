@@ -172,7 +172,7 @@ void checkpoint_memory_segment(void* seg_start, void* seg_finish, char seg_perm,
     int tag = MEMORY_TAG;
     size_t seg_size = (char*) seg_finish - (char*) seg_start;
     size_t pop = popcount(seg_start, seg_size);
-    log("cmemory:  %16p - %16p size = 0x%16lx prot = %s%s%s%s popcount = %lu\n",
+    dbg("cmemory:  %16p - %16p size = 0x%16lx prot = %s%s%s%s popcount = %lu\n",
         seg_start,
         seg_finish,
         seg_size,
@@ -280,7 +280,7 @@ void restore_memory(struct function_args* fargs, int mem_snapshot_fd) {
             s.addr, ((char*) s.addr) + s.length, s.pop, popcount(s.addr, s.length));
     }
 
-    log("rmemory:  %16p - %16p size = 0x%16lx prot = %s%s%s%s popcount = %lu\n",
+    dbg("rmemory:  %16p - %16p size = 0x%16lx prot = %s%s%s%s popcount = %lu\n",
         s.addr,
         ((char*) s.addr) + s.length,
         s.length,
@@ -293,7 +293,7 @@ void restore_memory(struct function_args* fargs, int mem_snapshot_fd) {
 
 void checkpoint_isolate(struct function_args* fargs) {
     int tag = ISOLATE_TAG;
-    log("isolate: %16p\n", fargs->isolate);
+    dbg("isolate: %16p\n", fargs->isolate);
     if (write(fargs->meta_snapshot_fd, &tag, sizeof(int)) != sizeof(int)) {
         perror("error: failed to serialize isolate tag");
     }
@@ -307,15 +307,15 @@ void restore_isolate(struct function_args* fargs) {
         perror("error: failed to deserialize isolate pointer");
         return;
     }
-    log("isolate: %16p\n", fargs->isolate);
+    dbg("isolate: %16p\n", fargs->isolate);
 }
 
 void print_abi(struct function_args* fargs) {
-    log("abi.graal_create_isolate:    %16p\n", fargs->abi.graal_create_isolate);
-    log("abi.graal_tear_down_isolate: %16p\n", fargs->abi.graal_tear_down_isolate);
-    log("abi.entrypoint:              %16p\n", fargs->abi.entrypoint);
-    log("abi.graal_detach_thread:     %16p\n", fargs->abi.graal_detach_thread);
-    log("abi.graal_attach_thread:     %16p\n", fargs->abi.graal_attach_thread);
+    dbg("abi.graal_create_isolate:    %16p\n", fargs->abi.graal_create_isolate);
+    dbg("abi.graal_tear_down_isolate: %16p\n", fargs->abi.graal_tear_down_isolate);
+    dbg("abi.entrypoint:              %16p\n", fargs->abi.entrypoint);
+    dbg("abi.graal_detach_thread:     %16p\n", fargs->abi.graal_detach_thread);
+    dbg("abi.graal_attach_thread:     %16p\n", fargs->abi.graal_attach_thread);
 }
 
 void checkpoint_abi(struct function_args* fargs) {

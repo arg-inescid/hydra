@@ -98,7 +98,7 @@ mapping_t* list_find(mapping_t* head, void* start, size_t size) {
 }
 
 void print_block(void* block_start, void* block_finish, char block_perm) {
-    log("pmapping: %16p - %16p size = 0x%16lx prot = %s%s%s%s\n",
+    dbg("pmapping: %16p - %16p size = 0x%16lx prot = %s%s%s%s\n",
         block_start,
         block_finish,
         (char*) block_finish - (char*) block_start,
@@ -148,7 +148,7 @@ void mapping_update_permissions(mapping_t* mapping, void* block_start, void* blo
     } else if (block_perm == PROT_NONE) {
         memset(mapping->dirty + i, PROT_NONE, j - i);
     }
-    log("tracking  %16p - %16p (permissions)\n", block_start, block_finish);
+    dbg("tracking  %16p - %16p (permissions)\n", block_start, block_finish);
 }
 
 
@@ -160,7 +160,7 @@ void mapping_update_size(mapping_t* mapping, void* unmapping_start, void* unmapp
     if (unmapping_start == mapping->start && unmapping_finish <= mapping_finish) {
         mapping->size -= unmapping_size;
         mapping->start = unmapping_finish;
-        log("tracking  %16p - %16p (clipping beg)\n", mapping->start, mapping_finish);
+        dbg("tracking  %16p - %16p (clipping beg)\n", mapping->start, mapping_finish);
         if (mapping->size == 0) {
             // TODO - remove
         }
@@ -169,7 +169,7 @@ void mapping_update_size(mapping_t* mapping, void* unmapping_start, void* unmapp
     else if (unmapping_finish == mapping_finish && unmapping_start >= mapping->start) {
         mapping->size -= unmapping_size;
         mapping_finish = ((char*) mapping->start) + mapping->size;
-        log("tracking  %16p - %16p (clipping end)\n", mapping->start, mapping_finish);
+        dbg("tracking  %16p - %16p (clipping end)\n", mapping->start, mapping_finish);
             if (mapping->size == 0) {
             // TODO - remove
         }
@@ -177,12 +177,12 @@ void mapping_update_size(mapping_t* mapping, void* unmapping_start, void* unmapp
     // If we are removing a range that includes this mapping.
     else if (unmapping_start < mapping->start && unmapping_finish > mapping_finish) {
         mapping->size = 0;
-        log("tracking  %16p - %16p (deleting)\n", mapping->start, mapping_finish);
+        dbg("tracking  %16p - %16p (deleting)\n", mapping->start, mapping_finish);
         // TODO - remove
     }
     // Unsupported unmapping range.
     else {
-        log("error: unsupported munmap: len = %lx [%16p to %16p] from [%16p to %16p]\n",
+        dbg("error: unsupported munmap: len = %lx [%16p to %16p] from [%16p to %16p]\n",
             unmapping_size, unmapping_start, unmapping_finish, mapping->start, mapping_finish);
     }
 }

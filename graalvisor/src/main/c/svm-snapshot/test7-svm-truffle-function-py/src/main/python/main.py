@@ -1,7 +1,8 @@
 import shutil
+import random
 
 def compression(path):
-    return shutil.make_archive(path, 'zip', path)
+    return shutil.make_archive(path + str(random.randint(1, 100)), 'zip', path)
 
 def main(args):
     try:

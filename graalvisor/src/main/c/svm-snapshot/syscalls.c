@@ -3,7 +3,7 @@
 #include <sys/mman.h>
 
 void print_mmap(mmap_t* sargs) {
-    log("mmap:     %16p - %16p size = 0x%16lx prot = %s%s%s%s flags = %8d fd = %2d offset = %8ld ret = %16p\n",
+    dbg("mmap:     %16p - %16p size = 0x%16lx prot = %s%s%s%s flags = %8d fd = %2d offset = %8ld ret = %16p\n",
         sargs->addr,
         sargs->addr == NULL ? NULL : ((char*) sargs->addr) + sargs->length,
         sargs->length,
@@ -18,7 +18,7 @@ void print_mmap(mmap_t* sargs) {
 }
 
 void print_munmap(munmap_t* sargs) {
-    log("munmap:   %16p - %16p size = 0x%16lx ret  =  %d\n",
+    dbg("munmap:   %16p - %16p size = 0x%16lx ret  =  %d\n",
         sargs->addr,
         ((char*) sargs->addr) + sargs->length,
         sargs->length,
@@ -26,7 +26,7 @@ void print_munmap(munmap_t* sargs) {
 }
 
 void print_mprotect(mprotect_t* sargs) {
-    log("mprotect: %16p - %16p size = 0x%16lx prot = %s%s%s%s ret = %d\n",
+    dbg("mprotect: %16p - %16p size = 0x%16lx prot = %s%s%s%s ret = %d\n",
         sargs->addr,
         ((char*) sargs->addr) + sargs->length,
         sargs->length,
@@ -38,17 +38,17 @@ void print_mprotect(mprotect_t* sargs) {
 }
 
 void print_dup(dup_t* sargs) {
-    log("dup(%d) -> %d\n", sargs->oldfd, sargs->ret);
+    dbg("dup(%d) -> %d\n", sargs->oldfd, sargs->ret);
 }
 
 void print_open(open_t* sargs) {
-    log("open(%s) -> %d\n", sargs->pathname, sargs->ret);
+    dbg("open(%s) -> %d\n", sargs->pathname, sargs->ret);
 }
 
 void print_openat(openat_t* sargs) {
-    log("openat(%d, %s) -> %d\n", sargs->dirfd, sargs->pathname, sargs->ret);
+    dbg("openat(%d, %s) -> %d\n", sargs->dirfd, sargs->pathname, sargs->ret);
 }
 
 void print_close(close_t* sargs) {
-    log("close(%d) -> %d\n", sargs->fd, sargs->ret);
+    dbg("close(%d) -> %d\n", sargs->fd, sargs->ret);
 }
