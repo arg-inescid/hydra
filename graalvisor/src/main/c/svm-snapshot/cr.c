@@ -16,7 +16,7 @@
 // - meta snapshot fd;
 // - memory snapshot fd;
 // - seccomp fd.
-int reserved_fds = 1000;
+int next_reserved_fd = RESERVED_FDS;
 
 #define MEMORY_TAG  -3
 #define ABI_TAG     -2
@@ -82,7 +82,7 @@ int move_fd(int oldfd, int newfd) {
 }
 
 int move_to_reserved_fd(int oldfd) {
-    return move_fd(oldfd, __atomic_fetch_add(&reserved_fds, 1, __ATOMIC_SEQ_CST));
+    return move_fd(oldfd, __atomic_fetch_add(&next_reserved_fd, 1, __ATOMIC_SEQ_CST));
 }
 
 size_t popcount(char* buffer, size_t count) {
@@ -258,6 +258,21 @@ void restore_memory(struct function_args* fargs, int mem_snapshot_fd) {
         perror("error: failed to deserialize memory header");
     }
 
+#ifdef OPT
+    off_t offset = lseek(mem_snapshot_fd, 0, SEEK_CUR);
+    if (offset == -1) {
+        perror("error: failed to get offset with lseek");
+    }
+
+    void* ret = mmap(s.addr, s.length, s.prot, MAP_PRIVATE | MAP_FIXED, mem_snapshot_fd, offset);
+    if (s.addr != ret) {
+        err("error: failed to replay mmap:\t expected = %16p got = %16p\n",  s.addr, ret);
+    }
+
+    if (lseek(mem_snapshot_fd, s.length, SEEK_CUR) == -1) {
+        perror("error: failed to advance offset with lseek");
+    }
+#else
     // We might need to restore memory into a range that is not writeable.
     if (!(s.prot & PROT_WRITE)) {
         if (mprotect(s.addr, s.length, PROT_WRITE)) {
@@ -273,12 +288,15 @@ void restore_memory(struct function_args* fargs, int mem_snapshot_fd) {
             perror("error: failed to mprotect after loading snap into memory");
         }
     }
+#endif
 
+#ifdef DEBUG
     // We are checking the the population count matches.
     if (s.pop != popcount(s.addr, s.length)) {
         err("error: popcount for %16p - %16p doesn't match: before checkpoint = %lu after restore = %lu\n",
             s.addr, ((char*) s.addr) + s.length, s.pop, popcount(s.addr, s.length));
     }
+#endif
 
     dbg("rmemory:  %16p - %16p size = 0x%16lx prot = %s%s%s%s popcount = %lu\n",
         s.addr,

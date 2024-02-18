@@ -55,6 +55,13 @@ run-restore:
 
 run: run-checkpoint run-restore
 
+run-perf:
+	rm -f snapshot.mem
+	rm -f snapshot.meta
+	setarch -R /bin/time -v ./main normal $(app) 2>&1 | tee normal.log
+	setarch -R /bin/time -v ./main checkpoint $(app) 2>&1 | tee checkpoint.log
+	setarch -R /bin/time -v ./main restore $(app) 2>&1 | tee restore.log
+
 gdb-restore:
 	setarch -R gdb $(gcommands) --args ./main restore $(app)
 

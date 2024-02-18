@@ -156,6 +156,7 @@ void* run_function(void* args) {
         gettimeofday(&st, NULL);
 #endif
         fargs->abi.entrypoint(isolatethread);
+
 #ifdef PERF
         struct timeval et;
         gettimeofday(&et, NULL);
@@ -313,6 +314,8 @@ void handle_notifications(struct function_args* fargs) {
             break;
         } else if (fds[0].revents & POLLNVAL) {
             break;
+        } else if (events > 1) {
+            err("warning: received multiple events at once!\n");
         }
 
         // Receive notification
@@ -368,8 +371,8 @@ void handle_notifications(struct function_args* fargs) {
             case __NR_clone:
                 // TODO - we will need to handle threads. To checkpoint threads, we need to know
                 // which threads belong to which sandbox. This is how we could do it:
-                // after each call to clone, check /proc/self/tasks and find the new tid.
-                // This is assuming we can identify the calling tid when intercepting w/ seccomp.
+                // By using this $pid the dumper walks though /proc/$pid/task/ directory collecting
+                // threads and through the /proc/$pid/task/$tid/children to gathers children recursively.
                 active_threads++;
                 err("warning: clone was invoked (%d active threads)!\n", active_threads);
                 resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
