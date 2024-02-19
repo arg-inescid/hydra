@@ -22,14 +22,17 @@ char* get_app_id(int domain);
 void insert_app_id(int domain, const char* id);
 
 /* Supervisors */
-void wait_sem(int domain);
-void signal_sem(int domain);
+void wait_set(int domain);
+void signal_set(int domain);
+void wait_filter(int domain);
+void signal_filter(int domain);
+void wait_perms(int domain);
+void signal_perms(int domain);
 void mark_supervisor_done(int domain);
-void prepare_environment(int domain, const char* application);
-void reset_environment(int domain, const char* application);
+void change_supervisor_fd(int domain, int fd);
 
 /* Seccomp */
-void install_notify_filter(int domain);
+int install_notify_filter(int domain);
 
 /* Domain management */
 int find_domain(const char* id);

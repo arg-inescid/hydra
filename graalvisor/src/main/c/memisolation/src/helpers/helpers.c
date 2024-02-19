@@ -9,8 +9,11 @@ void
 init_supervisors(struct Supervisor array[], int size)
 {
     for (int i = 0; i < size; i++) {
-        sem_init(&array[i].sem, 0, 0);
-        array[i].status = ACTIVE;
+        sem_init(&array[i].set, 0, 0);
+        sem_init(&array[i].filter, 0, 0);
+        sem_init(&array[i].perms, 0, 0);
+        strcpy(array[i].app, "");
+        array[i].status = INACTIVE;
         array[i].fd = 0;
     }
 }

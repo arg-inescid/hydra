@@ -3,12 +3,16 @@
 
 enum Status {
     ACTIVE = 0,
-    DONE = 1
+    DONE = 1,
+    INACTIVE = 2
 };
 
 struct Supervisor {
-    sem_t sem;
+    sem_t filter;
+    sem_t perms;
+    sem_t set;
     enum Status status;
+    char app[33];
     int fd;
 };
 

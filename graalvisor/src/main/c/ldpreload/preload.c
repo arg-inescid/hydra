@@ -26,11 +26,6 @@ dlopen(const char * input, int flag)
     }
 
     if (strstr(input, "/tmp/apps") != NULL) {
-        clock_t start_time, end_time;
-        double execution_time;
-
-        start_time = clock();
-
         char* argo_home = getenv("ARGO_HOME");
         char* graal_libs_dir = "graalvisor/build/libs";
         char jni_dir[128];
@@ -43,12 +38,6 @@ dlopen(const char * input, int flag)
         
         real_dlopen(native_path, RTLD_NOW | RTLD_DEEPBIND | RTLD_GLOBAL);
         insert_memory_regions(id, native_path);
-
-        end_time = clock();
-
-        execution_time = ((double)(end_time - start_time) / CLOCKS_PER_SEC) * 1000000.0;
-
-        fprintf(stdout, "Load Execution time: %.2f microseconds\n", execution_time);
     }
 
     return real_dlopen(input, flag);
