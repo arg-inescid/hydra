@@ -41,7 +41,6 @@ public class GraalVisorImpl {
     }
 
     public synchronized static CEntryPointCreateIsolateParameters getCreateIsolateParametersHostDescriptor() {
-        System.out.println("Getting isolate parameters!");
         if (createIsolateParametersStructHost.isNull()) {
             /* Note that malloc can only be invoked during runtime! */
             createIsolateParametersStructHost = malloc(SizeOf.get(CEntryPointCreateIsolateParameters.class));
@@ -75,7 +74,6 @@ public class GraalVisorImpl {
                     argv.write(i, CTypeConversion.toCString(args[i]).get());
                 }
                 createIsolateParametersStructHost.setArgv(argv);
-                System.out.println("Initializing isolate parameters!");
             }
         }
         return createIsolateParametersStructHost;

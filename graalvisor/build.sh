@@ -39,8 +39,9 @@ function build_ni {
     mkdir -p $GRAALVISOR_HOME &> /dev/null
     cd $GRAALVISOR_HOME
     if [[ $JAVA_VERSION == *"17"* ]]; then
+        JAVA_17_OPTS="$JAVA_17_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.os=ALL-UNNAMED"
         JAVA_17_OPTS="$JAVA_17_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.posix=ALL-UNNAMED"
-	JAVA_17_OPTS="$JAVA_17_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.posix.headers=ALL-UNNAMED"
+        JAVA_17_OPTS="$JAVA_17_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.posix.headers=ALL-UNNAMED"
         JAVA_17_OPTS="$JAVA_17_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.c=ALL-UNNAMED"
         JAVA_17_OPTS="$JAVA_17_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.c.function=ALL-UNNAMED"
         JAVA_17_OPTS="$JAVA_17_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.jdk=ALL-UNNAMED"
@@ -94,7 +95,7 @@ then  # Build native image inside Docker container.
     sudo chown -R $(id -u -n):$(id -g -n) $ARGO_HOME/graalvisor-lib/build
 else  # Build native image locally (inside container or directly on host).
     LANGS=""
-    read -p "Javascript support (y or Y, everything else as no)? " -n 1 -r
+    read -p "Native Javascript support (y or Y, everything else as no)? " -n 1 -r
     echo    # move to a new line
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
@@ -102,7 +103,7 @@ else  # Build native image locally (inside container or directly on host).
         echo "JavaScript support added!"
     fi
 
-    read -p "Python support (y or Y, everything else as no)? " -n 1 -r
+    read -p "Native Python support (y or Y, everything else as no)? " -n 1 -r
     echo    # move to a new line
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
