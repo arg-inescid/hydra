@@ -2,5 +2,6 @@
 disk/
 init
 init.o
+*.o
 *.ext4
 *.img
