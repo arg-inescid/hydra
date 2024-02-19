@@ -27,6 +27,8 @@ tests: all
 	make -C test3-svm-truffle-py run | tail -n2
 	make -C test4-svm-exception run | tail -n2
 	make -C test5-svm-truffle-cached-js run | tail -n2
+	make -C test6-cthreads run | tail -n2
+	make -C test7-svm-truffle-function-py run | tail -n2
 
 run-normal:
 	setarch -R ./main normal $(app) 2>&1 | tee normal.log
@@ -80,3 +82,6 @@ clean-tests:
 	make -C test3-svm-truffle-js clean
 	make -C test3-svm-truffle-py clean
 	make -C test4-svm-exception clean
+	make -C test5-svm-truffle-cached-js clean
+	make -C test6-cthreads clean
+	make -C test7-svm-truffle-function-py clean

@@ -1,10 +1,10 @@
 app = "$(shell pwd)/libcompression.so"
 
 libcompression.so: src/main/java/com/compression/Compression.java
-		#--enable-url-protocols=http 
 	./gradlew clean shadowJar assemble
+		#-g -O0
 	${JAVA_HOME}/bin/native-image \
-		-g -O0 -H:-AllowVMInternalThreads \
+		-H:-AllowVMInternalThreads \
 		-cp build/libs/compression-1.0-all.jar \
 		-Dcom.oracle.svm.graalvisor.polyglotengine.language=python \
 		-Dcom.oracle.svm.graalvisor.polyglotengine.entrypoint=main \
