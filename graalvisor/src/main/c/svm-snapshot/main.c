@@ -110,6 +110,29 @@ int install_filter() {
     return fd;
 }
 
+void run_serial_entrypoint(struct function_args* fargs, graal_isolatethread_t *isolatethread) {
+     for (int i = 0; i < ENTRYPOINT_ITERS; i++) {
+#ifdef PERF
+        struct timeval st, et;
+        gettimeofday(&st, NULL);
+#endif
+        fargs->abi.entrypoint(isolatethread);
+#ifdef PERF
+        gettimeofday(&et, NULL);
+        log("entrypoint took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
+#endif
+    }
+}
+
+void* run_parallel_entrypoint(void* args) {
+    struct function_args* fargs = (struct function_args*) args;
+    graal_isolatethread_t *isolatethread = NULL;
+    fargs->abi.graal_attach_thread(fargs->isolate, &isolatethread);
+    run_serial_entrypoint(fargs, isolatethread);
+    fargs->abi.graal_detach_thread(isolatethread);
+    return NULL;
+}
+
 void* run_function(void* args) {
     struct function_args* fargs = (struct function_args*) args;
     graal_isolatethread_t *isolatethread = NULL;
@@ -150,18 +173,16 @@ void* run_function(void* args) {
     }
 
     // Call function.
-    for (int i = 0; i < ENTRYPOINT_ITERS; i++) {
-#ifdef PERF
-        struct timeval st;
-        gettimeofday(&st, NULL);
-#endif
-        fargs->abi.entrypoint(isolatethread);
-
-#ifdef PERF
-        struct timeval et;
-        gettimeofday(&et, NULL);
-        log("entrypoint took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
-#endif
+    if (ENTRYPOINT_CONC == 1) {
+        run_serial_entrypoint(fargs, isolatethread);
+    } else {
+        pthread_t workers[ENTRYPOINT_CONC];
+        for (int i = 0; i < ENTRYPOINT_CONC; i++) {
+            pthread_create(&(workers[i]), NULL, run_parallel_entrypoint, fargs);
+        }
+        for (int i = 0; i < ENTRYPOINT_CONC; i++) {
+            pthread_join(workers[i], NULL);
+        }
     }
 
     // Detach thread function isolate and quit.
@@ -460,12 +481,11 @@ int main(int argc, char** argv) {
     // If in restore mode, start by restoring from the snapshot.
     if (CURRENT_MODE == RESTORE) {
 #ifdef PERF
-        struct timeval st;
+        struct timeval st, et;
         gettimeofday(&st, NULL);
 #endif
         restore(&fargs);
 #ifdef PERF
-        struct timeval et;
         gettimeofday(&et, NULL);
         log("restore took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
 #endif
@@ -500,12 +520,11 @@ int main(int argc, char** argv) {
         print_list(&(fargs.mappings));
 #endif
 #ifdef PERF
-        struct timeval st;
+        struct timeval st, et;
         gettimeofday(&st, NULL);
 #endif
         checkpoint(&fargs);
 #ifdef PERF
-        struct timeval et;
         gettimeofday(&et, NULL);
         log("checkpoint took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
 #endif

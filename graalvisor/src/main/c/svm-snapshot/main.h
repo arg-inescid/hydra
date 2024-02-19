@@ -15,8 +15,10 @@
 //#define PERF
 // If defined, enables performance optimizations.
 #define OPT
-// Defines the number of function entrypoint invocations.
+// Defines the number of function entrypoint invocations per thread.
 #define ENTRYPOINT_ITERS 1
+// Defines the number of concurrent threads to invoke the function entrypoint.
+#define ENTRYPOINT_CONC 1
 
 #define log(format, args...) do { fprintf(stdout, format, ## args); } while(0)
 #ifdef DEBUG
