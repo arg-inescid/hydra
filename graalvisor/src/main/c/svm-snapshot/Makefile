@@ -9,7 +9,23 @@
 #app = "$(shell pwd)/test5-svm-truffle-cached-js/libhello.so"
 #app = "$(shell pwd)/test5-svm-truffle-cached-py/libhello.so"
 #app = "$(shell pwd)/test6-cthreads/libhello.so"
-app = "$(shell pwd)/test7-svm-truffle-function-py/libcompression.so"
+#app = "$(shell pwd)/test7-svm-truffle-function-py/libcompression.so"
+
+benchmarks_home = /home/rbruno/git/graalserverless/benchmarks
+#app = "$(benchmarks_home)/src/java/gv-hello-world/build/libhelloworld.so"
+#app = "$(benchmarks_home)/src/java/gv-file-hashing/build/libfilehashing.so"
+# TODO - classify (process)
+#app = "$(benchmarks_home)/src/java/gv-httprequest/build/libhttprequest.so"
+# TODO - videoprocessing (process)
+
+#app = "$(benchmarks_home)/src/javascript/gv-hello-world/build/libhelloworld.so"
+#app = "$(benchmarks_home)/src/javascript/gv-dynamic-html/build/libdynamichtml.so"
+app = "$(benchmarks_home)/src/javascript/gv-thumbnail/build/libthumbnail.so"
+# TODO - uploader
+
+#app = "$(benchmarks_home)/src/python/gv-hello-world/build/libhelloworld.so"
+#app = "$(benchmarks_home)/src/python/gv-compression/build/libcompression.so"
+#app = "$(benchmarks_home)/src/python/gv-uploader/build/libuploader.so"
 
 gcommands = -x gdb-commands.txt
 

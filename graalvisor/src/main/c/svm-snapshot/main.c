@@ -71,8 +71,8 @@ int install_filter() {
         BPF_STMT(BPF_RET + BPF_K, SECCOMP_RET_KILL),
         BPF_STMT(BPF_LD + BPF_W + BPF_ABS, (offsetof(struct seccomp_data, nr))),
 
-        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_dup3,    14, 0),
-        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_dup2,    13, 0),
+        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_dup3,    13, 0),
+        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_dup2,    12, 0),
         BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_dup,     11, 0),
         BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_close,   10, 0),
         BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_creat,    9, 0),
@@ -326,11 +326,12 @@ void handle_notifications(struct function_args* fargs) {
     while (active_threads) {
 
         // Wait for a notification
-        int events = poll(fds, 1, 100);
+        int events = poll(fds, 1, 1000);
         if (events < 0) {
             err("error: failed to pool for events");
             continue;
         } else if (events == 0 && fargs->finished) {
+            // TODO - we should kill all remaining threads at this moment.
             err("warning: monitor exiting before all function threads terminate (%d active threads)!\n", active_threads);
             break;
         } else if (fds[0].revents & POLLNVAL) {
@@ -360,27 +361,27 @@ void handle_notifications(struct function_args* fargs) {
             // TODO - madvise?
             case __NR_dup:
                 resp->val = syscall(__NR_dup, args[0]);
-                handle_dup(fargs, (int) args[0], resp->val);
-                resp->error = resp->val == -1 ? errno : 0;
+                resp->error = resp->val < 0 ? -errno : 0;
                 resp->flags = 0;
+                handle_dup(fargs, (int) args[0], resp->val);
                 break;
             case __NR_open:
                 resp->val = syscall(__NR_open, args[0], args[1], args[2]);
-                handle_open(fargs, (char*)args[0], (int)args[1], (mode_t)args[2], resp->val);
-                resp->error = resp->val == -1 ? errno : 0;
+                resp->error = resp->val < 0 ? -errno : 0;
                 resp->flags = 0;
+                handle_open(fargs, (char*)args[0], (int)args[1], (mode_t)args[2], resp->val);
                 break;
             case __NR_openat:
                 resp->val = syscall(__NR_openat, args[0], args[1], args[2], args[3]);
-                handle_openat(fargs, (int) args[0], (char*)args[1], (int)args[2], (mode_t)args[3], resp->val);
-                resp->error = resp->val == -1 ? errno : 0;
+                resp->error = resp->val < 0 ? -errno : 0;
                 resp->flags = 0;
+                handle_openat(fargs, (int) args[0], (char*)args[1], (int)args[2], (mode_t)args[3], resp->val);
                 break;
             case __NR_close:
                 resp->val = syscall(__NR_close, args[0]);
-                handle_close(fargs, (int)args[0], resp->val);
-                resp->error = resp->val == -1 ? errno : 0;
+                resp->error = resp->val < 0 ? -errno : 0;
                 resp->flags = 0;
+                handle_close(fargs, (int)args[0], resp->val);
                 break;
             case __NR_exit:
                 if (active_threads > 1) {
@@ -405,21 +406,21 @@ void handle_notifications(struct function_args* fargs) {
                 break;
             case __NR_mmap:
                 resp->val = syscall(__NR_mmap, args[0], args[1], args[2], args[3], args[4], args[5]);
-                handle_mmap(fargs, (void*) args[0], (size_t) args[1], (int) args[2], (int) args[3], (int) args[4], (off_t) args[5], (void*) resp->val);
-                resp->error = resp->val >= 0 ? 0 : errno;
+                resp->error = resp->val < 0 ? -errno : 0;
                 resp->flags = 0;
+                handle_mmap(fargs, (void*) args[0], (size_t) args[1], (int) args[2], (int) args[3], (int) args[4], (off_t) args[5], (void*) resp->val);
                 break;
             case __NR_munmap:
                 resp->val = syscall(__NR_munmap, args[0], args[1]);
-                handle_munmap(fargs, (void*) args[0], (size_t) args[1], (int) resp->val);
-                resp->error = resp->val >= 0 ? 0 : errno;
+                resp->error = resp->val < 0 ? -errno: 0;
                 resp->flags = 0;
+                handle_munmap(fargs, (void*) args[0], (size_t) args[1], (int) resp->val);
                 break;
             case __NR_mprotect:
                 resp->val = syscall(__NR_mprotect, args[0], args[1], args[2]);
-                handle_mprotect(fargs, (void*) args[0], (size_t) args[1], (int) args[2], (int) resp->val);
-                resp->error = resp->val >= 0 ? 0 : errno;
+                resp->error = resp->val < 0 ? -errno : 0;
                 resp->flags = 0;
+                handle_mprotect(fargs, (void*) args[0], (size_t) args[1], (int) args[2], (int) resp->val);
                 break;
             default:
                 // TODO - in theory, we should be notified on all syscalls.

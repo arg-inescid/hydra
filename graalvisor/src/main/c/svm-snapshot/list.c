@@ -160,25 +160,26 @@ void mapping_update_size(mapping_t* mapping, void* unmapping_start, void* unmapp
     if (unmapping_start == mapping->start && unmapping_finish <= mapping_finish) {
         mapping->size -= unmapping_size;
         mapping->start = unmapping_finish;
-        dbg("tracking  %16p - %16p (clipping beg)\n", mapping->start, mapping_finish);
         if (mapping->size == 0) {
-            // TODO - remove
+            err("warning: tracking  %16p - %16p (delete not inplemented)\n", mapping->start, mapping_finish);
+        } else {
+            dbg("tracking  %16p - %16p (clipping beg)\n", mapping->start, mapping_finish);
         }
     }
     // If we are removing a block from the end.
     else if (unmapping_finish == mapping_finish && unmapping_start >= mapping->start) {
         mapping->size -= unmapping_size;
         mapping_finish = ((char*) mapping->start) + mapping->size;
-        dbg("tracking  %16p - %16p (clipping end)\n", mapping->start, mapping_finish);
-            if (mapping->size == 0) {
-            // TODO - remove
+        if (mapping->size == 0) {
+            err("warning: tracking  %16p - %16p (delete not implemented)\n", mapping->start, mapping_finish);
+        } else {
+            dbg("tracking  %16p - %16p (clipping end)\n", mapping->start, mapping_finish);
         }
     }
     // If we are removing a range that includes this mapping.
     else if (unmapping_start < mapping->start && unmapping_finish > mapping_finish) {
         mapping->size = 0;
-        dbg("tracking  %16p - %16p (deleting)\n", mapping->start, mapping_finish);
-        // TODO - remove
+        err("warning: tracking  %16p - %16p (delete not implemented)\n", mapping->start, mapping_finish);
     }
     // Unsupported unmapping range.
     else {
