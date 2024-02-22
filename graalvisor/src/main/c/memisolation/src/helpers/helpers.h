@@ -4,15 +4,17 @@
 enum Status {
     ACTIVE = 0,
     DONE = 1,
-    INACTIVE = 2
+};
+
+enum Flag {
+    NATIVE = 0,
+    MANAGED = 1
 };
 
 struct Supervisor {
-    sem_t filter;
-    sem_t perms;
-    sem_t set;
+    enum Flag execution;
     enum Status status;
-    char app[33];
+    sem_t sem;
     int fd;
 };
 

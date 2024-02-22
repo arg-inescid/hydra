@@ -15,7 +15,7 @@ function build_memisolation {
             -I"$ERIM_HOME/src/erim" \
             -I"$ERIM_HOME/src/common" \
             -DERIM_SWAP_STACKS"
-            #-DEAGER_LOAD"
+            #-DEAGER_LOAD \
             #-DSEC_DBG \
             #-DERIM_DBG \
     LIBRARIES="$ERIM_HOME/bin/common/libswscommon.a $ERIM_HOME/bin/erim/liberim.a"

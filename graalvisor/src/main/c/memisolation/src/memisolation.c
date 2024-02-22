@@ -64,6 +64,28 @@ seccomp(unsigned int operation, unsigned int flags, void *args)
     return syscall(SYS_seccomp, operation, flags, args);
 }
 
+/* MPK domains */
+static void 
+set_permissions(const char* id, int protectionFlag, int pkey)
+{
+    size_t count;
+    MemoryRegion* regions = get_regions(appMap, (char*)id, &count);
+
+    for (size_t i = 0; i < count; ++i) {
+        SEC_DBM("\t[S%d]: Changing permissions: %p, %zd.", pkey, regions[i].address, regions[i].size);
+        
+        if (pkey_mprotect(regions[i].address, regions[i].size, protectionFlag, pkey) == -1) {
+            fprintf(stderr, "pkey_mprotect error\n");
+            exit(EXIT_FAILURE);
+        }
+    }
+}
+
+void
+insert_memory_regions(char* id, const char* path) {
+    get_memory_regions(&appMap, id, path);
+}
+
 /* Lazy setting */
 void 
 insert_app_cache(int domain, const char* id)
@@ -88,185 +110,18 @@ cached_domain(const char* app) {
 }
 
 /* Supervisors */
-void
-wait_sem(sem_t *sem)
-{
-    int value;
-    if (sem_getvalue(sem, &value) == 0 && value > 0) {
-        sem_wait(sem);
-    }
-    sem_wait(sem);
-}
-
-void
-signal_sem(sem_t *sem)
-{
-    sem_post(sem);
-}
-
-void
-wait_set(int domain)
-{
-    SEC_DBM("\t[S%d]: waiting set.", domain);
-    wait_sem(&supervisors[domain].set);
-}
-
-void
-signal_set(int domain)
-{
-    SEC_DBM("\t[S%d]: signal set.", domain);
-    signal_sem(&supervisors[domain].set);
-}
-
-void
-wait_filter(int domain)
-{   
-    SEC_DBM("\t[S%d]: waiting filter.", domain);
-    wait_sem(&supervisors[domain].filter);
-}
-
-void
-signal_filter(int domain)
-{
-    SEC_DBM("\t[S%d]: signal filter.", domain);
-    signal_sem(&supervisors[domain].filter);
-}
-
-void
-wait_perms(int domain)
-{
-    SEC_DBM("\t[S%d]: waiting perms.", domain);
-    wait_sem(&supervisors[domain].perms);
-}
-
-void
-signal_perms(int domain)
-{   
-    SEC_DBM("\t[S%d]: signal perms.", domain);
-    signal_sem(&supervisors[domain].perms);
-}
-
-void
-mark_supervisor_done(int domain)
-{
-    SEC_DBM("\t[S%d]: application finished.", domain);
-    supervisors[domain].status = DONE;
-}
-
-void
-change_supervisor_fd(int domain, int fd)
-{
-    SEC_DBM("\t[S%d]: Chaging file descriptor.", domain);
-    supervisors[domain].fd = fd;
-}
-
-static void
-assign_supervisor(int domain, const char* app)
-{
-    SEC_DBM("\t[S%d]: application assigned: %s.", domain, app);
-    struct Supervisor* sp = &supervisors[domain];
-
-    // Use the size of the array, not the pointer
-    memset(sp->app, 0, sizeof(sp->app));
-    strcpy(sp->app, app);
-
-    sp->status = ACTIVE;
-    signal_perms(domain);
-	wait_set(domain);
-}
-
-/* Domain Management algorithm */
-int
-find_domain(const char* app) {
-    #ifndef EAGER_LOAD
-        int minDomain = 2;
-        int check = 0;
-
-        int domain = cached_domain(app);
-        // __sync_bool_compare_and_swap returns and stores 1 if *nthreads equals 0
-        if (domain && __sync_bool_compare_and_swap(&threadMap.buckets[domain]->nthreads, 0, 1)) {
-            assign_supervisor(domain, app);
-            return domain;
-        }
-    #endif
-
-    for (int i = 2; i < NUM_DOMAINS; ++i) {
-        int* nthreads = &threadMap.buckets[i]->nthreads;
-
-        #ifdef EAGER_LOAD
-            if (__sync_bool_compare_and_swap(nthreads, 0, 1)) {
-                assign_supervisor(i, app);
-                return i;
-            }
-        #else
-            if (__sync_bool_compare_and_swap(nthreads, 0, 0)) {
-                check = 1;
-                // The lowest value corresponds to the LRU domain
-                if (cache[i].value < cache[minDomain].value) {
-                    minDomain = i;
-                }
-            }
-        #endif
-    }
-
-    #ifdef EAGER_LOAD
-        return -1;
-    #else
-        // No Empty domains
-        if (check == 0) {
-            return -1;
-        }
-
-        // No other thread as chosen this domain till this point
-        if (!domain && __sync_bool_compare_and_swap(&threadMap.buckets[minDomain]->nthreads, 0, 1)) {
-            assign_supervisor(minDomain, app);
-            return minDomain;
-        }
-        
-        // If some thread chose the domain first
-        return find_domain(app);        
-    #endif
-}
-
-/* MPK domains */
-static void 
-set_permissions(const char* id, int protectionFlag, int pkey)
-{
-    size_t count;
-    MemoryRegion* regions = get_regions(appMap, (char*)id, &count);
-
-    for (size_t i = 0; i < count; ++i) {
-        if (pkey_mprotect(regions[i].address, regions[i].size, protectionFlag, pkey) == -1) {
-            fprintf(stderr, "pkey_mprotect error\n");
-            exit(EXIT_FAILURE);
-        }
-    }
-}
-
-void
-insert_memory_regions(char* id, const char* path) {
-    get_memory_regions(&appMap, id, path);
-}
-
-/* Seccomp */
 
 /* Installs a seccomp filter that blocks all pkey related system calls;
     the filter generates user-space notifications (SECCOMP_RET_USER_NOTIF)
-    on all other system calls.
+    on all other system calls. */
 
-    The function assigns a file descriptor to a specific domain from which 
-    the user-space notifications can be fetched. */
-
-int
-install_notify_filter(int domain)
-{    
+static int
+install_notify_filter()
+{   
     struct sock_filter filter[] = {
         X86_64_CHECK_ARCH,
 
-        /* pkey_*(2) triggers KILL signal */
-
-        BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, __NR_pkey_mprotect, 0, 1),
-        BPF_STMT(BPF_RET | BPF_K, SECCOMP_RET_KILL),
+        /* pkey_alloc(2) and pkey_free(2) trigger KILL signal */
 
         BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, __NR_pkey_alloc, 0, 1),
         BPF_STMT(BPF_RET | BPF_K, SECCOMP_RET_KILL),
@@ -274,7 +129,11 @@ install_notify_filter(int domain)
         BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, __NR_pkey_free, 0, 1),
         BPF_STMT(BPF_RET | BPF_K, SECCOMP_RET_KILL),
 
-        /* mmap(2), clone3(2) and exit(2) trigger notifications to user-space supervisor */
+        /* pkey_mprotect(2), mmap(2), clone3(2) and exit(2) 
+        trigger notifications to user-space supervisor */
+        
+        BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, __NR_pkey_mprotect, 0, 1),
+        BPF_STMT(BPF_RET | BPF_K, SECCOMP_RET_USER_NOTIF),
 
         BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, SYS_mmap, 0, 1),
         BPF_STMT(BPF_RET | BPF_K, SECCOMP_RET_USER_NOTIF),
@@ -307,9 +166,148 @@ install_notify_filter(int domain)
     if (nfd == -1)
         err(EXIT_FAILURE, "seccomp-install-notify-filter");
 
-    supervisors[domain].fd = nfd;
     return nfd;
 }
+
+void
+wait_sem(int domain)
+{
+    SEC_DBM("\t[S%d]: Wait sem.", domain);
+
+    int value;
+    sem_t* sem = &supervisors[domain].sem;
+
+    if (sem_getvalue(sem, &value) == 0 && value > 0) {
+        sem_wait(sem);
+    }
+    sem_wait(sem);
+}
+
+void
+signal_sem(int domain)
+{
+    SEC_DBM("\t[S%d]: Signal sem.", domain);
+    sem_post(&supervisors[domain].sem);
+}
+
+static void
+prep_env(const char* application, int domain)
+{
+    SEC_DBM("\t[S%d]: preparing environment.", domain);
+    struct Supervisor* sp = &supervisors[domain];
+
+    sp->status = ACTIVE;
+    sp->execution = MANAGED;
+    #ifdef EAGER_LOAD
+        set_permissions(application, PROT_READ|PROT_WRITE|PROT_EXEC, domain);
+    #else
+        // Get application in cache
+        char* cached = cache[domain].app;
+        
+        // If application in cache differs from application assigned to supervisor
+        if (strcmp(cached, application)) {
+            // 1. Remove domain permissions of previous application if any
+            if (strcmp(cached, "")) {
+                set_permissions(cached, PROT_READ|PROT_WRITE|PROT_EXEC, 1);
+            }
+            // 2. Insert new application in cache and give permissions
+            insert_app_cache(domain, application);
+            set_permissions(application, PROT_READ|PROT_WRITE|PROT_EXEC, domain);
+        }
+        // Else continue normal execution since application is the same
+    #endif
+    sp->execution = NATIVE;
+}
+
+void
+reset_env(const char* application, int domain)
+{
+    SEC_DBM("\t[S%d]: application finished.", domain);
+    struct Supervisor* sp = &supervisors[domain];
+    
+    #ifdef EAGER_LOAD
+        sp->execution = MANAGED;
+        set_permissions(application, PROT_READ|PROT_WRITE|PROT_EXEC, 1);    
+    #endif
+
+    sp->status = DONE;
+}
+
+static void
+assign_supervisor(int domain, const char* app, int* fd)
+{
+    SEC_DBM("\t[S%d]: application assigned: %s.", domain, app);
+    struct Supervisor* sp = &supervisors[domain];
+    
+    // install seccomp filter
+    if (!*fd) {
+        SEC_DBM("\t[S%d]: Installing filter.", domain);
+        *fd = install_notify_filter();
+    }
+    // even if filter is installed we have to update supervisor's file descriptor
+    // because another thread with another filter could have been used before
+    sp->fd = *fd;
+
+    // signal supervisor to start handling notifications
+	signal_sem(domain);
+
+    prep_env(app, domain);
+}
+
+/* Domain Management algorithm */
+int
+find_domain(const char* app, int* fd) {
+    #ifndef EAGER_LOAD
+        int minDomain = 2;
+        int check = 0;
+
+        int domain = cached_domain(app);
+        // __sync_bool_compare_and_swap returns and stores 1 if *nthreads equals 0
+        if (domain && __sync_bool_compare_and_swap(&threadMap.buckets[domain]->nthreads, 0, 1)) {
+            assign_supervisor(domain, app, fd);
+            return domain;
+        }
+    #endif
+
+    for (int i = 2; i < NUM_DOMAINS; ++i) {
+        int* nthreads = &threadMap.buckets[i]->nthreads;
+
+        #ifdef EAGER_LOAD
+            if (__sync_bool_compare_and_swap(nthreads, 0, 1)) {
+                assign_supervisor(i, app, fd);
+                return i;
+            }
+        #else
+            if (__sync_bool_compare_and_swap(nthreads, 0, 0)) {
+                check = 1;
+                // The lowest value corresponds to the LRU domain
+                if (cache[i].value < cache[minDomain].value) {
+                    minDomain = i;
+                }
+            }
+        #endif
+    }
+
+    #ifdef EAGER_LOAD
+        return -1;
+    #else
+        // No Empty domains
+        if (check == 0) {
+            return -1;
+        }
+
+        // No other thread as chosen this domain till this point
+        if (!domain && __sync_bool_compare_and_swap(&threadMap.buckets[minDomain]->nthreads, 0, 1)) {
+            assign_supervisor(minDomain, app, fd);
+            return minDomain;
+        }
+        
+        // If some thread chose the domain first
+        return find_domain(app, fd);        
+    #endif
+}
+
+/* Seccomp */
 
 /* Check that the notification ID provided by a SECCOMP_IOCTL_NOTIF_RECV
     operation is still valid. It will no longer be valid if the target
@@ -370,6 +368,38 @@ alloc_seccomp_notif_buffers(struct seccomp_notif **req,
 }
 
 static void
+handle_pkey_mprotect(struct seccomp_notif *req, struct seccomp_notif_resp *resp, int domain) 
+{
+    SEC_DBM("\t----pkey_mprotect syscall----");
+    struct Supervisor* sp = &supervisors[domain];
+    
+    // Native execution notification
+    if (!sp->execution) {
+        // KILL
+        resp->error = -errno;
+        SEC_DBM("\t[S%d]: Native call trying to change permissions, killing...", domain);
+        return;
+    }
+
+    int prot = pkey_mprotect((void *)req->data.args[0], req->data.args[1], req->data.args[2], req->data.args[3]);
+    if (prot == -1) {
+        /* If pkey_mprotect() failed in the supervisor, pass the error
+            back to the target */
+
+        resp->error = -errno;
+        SEC_DBM("\t[S%d]: failure! (errno = %d; %s)\n", domain, errno,
+                strerror(errno));
+    }
+    else {
+        resp->error = 0;          /* "Success" */
+        resp->val = (__s64)prot;  /* return value of pkey_mprotect() in target */
+
+        SEC_DBM("\t[S%d]: success! spoofed return = %d; spoofed val = %lld\n",
+                domain, prot, resp->val);
+    }
+}
+
+static void
 handle_mmap(struct seccomp_notif *req, struct seccomp_notif_resp *resp, int domain) 
 {
     SEC_DBM("\t----mmap syscall----");
@@ -387,7 +417,7 @@ handle_mmap(struct seccomp_notif *req, struct seccomp_notif_resp *resp, int doma
                 strerror(errno));
     }
     else {
-        if (pkey_mprotect(mapped_mem, req->data.args[1], req->data.args[2], 1) == -1) {
+        if (pkey_mprotect(mapped_mem, req->data.args[1], req->data.args[2], domain) == -1) {
             resp->error = 1;            /* random value different than 0 */
             perror("pkey_mprotect");
             return;
@@ -434,30 +464,34 @@ handle_notifications(int domain)
 
     int             retval;
     fd_set          rfds;
-    struct timeval  tv;
+    struct timespec timeout;
     struct Supervisor* sp = &supervisors[domain];
 
-    signal_set(domain);
-    wait_filter(domain);
+    wait_sem(domain);
 
-    /* Watch stdin (supervisor's fd) to see when it has input. */
-    FD_ZERO(&rfds);
-    FD_SET(sp->fd, &rfds);
+    SEC_DBM("\t[S%d]: Handling notifications...", domain);
 
-    /* Wait up to 1 millisecond. */
-    tv.tv_sec = 0.1;
-    tv.tv_usec = 0;
+    timeout.tv_sec = 0;
+    timeout.tv_nsec = 0;
+
+    sigset_t empty_mask;
+    sigemptyset(&empty_mask);
 
     /* Loop handling notifications */
     for (;;) {
+        /* Watch stdin (supervisor's fd) to see when it has input. */
+        FD_ZERO(&rfds);
+        FD_SET(sp->fd, &rfds);
+
         /* Wait for next notification, returning info in '*req' */
-
         memset(req, 0, sizes.seccomp_notif);
-
-        retval = select(1, &rfds, NULL, NULL, &tv);
+        
+        retval = pselect(sp->fd + 1, &rfds, NULL, NULL, &timeout, &empty_mask);
         if (retval == -1)
-            perror("select()");
+            perror("pselect()");
         else if (retval) {
+            SEC_DBM("\t[S%d]: Got Call.", domain);
+
             if (ioctl(sp->fd, SECCOMP_IOCTL_NOTIF_RECV, req) == -1) {
                 if (errno == EINTR)
                     continue;
@@ -465,10 +499,11 @@ handle_notifications(int domain)
             }
         }
         else if (sp->status && threadMap.buckets[domain]->nthreads == 1) {
-            sp->status = INACTIVE;
+            remove_thread(&threadMap, domain);
             break;
         }
         else {
+            // timeout expired
             continue;
         }
 
@@ -488,6 +523,9 @@ handle_notifications(int domain)
 
         // Handle specific syscalls
         switch(req->data.nr) {
+            case __NR_pkey_mprotect:
+                handle_pkey_mprotect(req, resp, domain);
+                break;
             case __NR_mmap:
                 handle_mmap(req, resp, domain);
                 break;
@@ -536,39 +574,8 @@ supervisor(void *arg)
 
     SEC_DBM("\t[S%d]: up and running...", domain);
 
-    while(1) {
-        // Waits for application to be assigned
-        wait_perms(domain);
-
-        char* application = supervisors[domain].app;
-
-        #ifdef EAGER_LOAD
-            set_permissions(application, PROT_READ|PROT_WRITE|PROT_EXEC, domain);
-        #else
-            // Get application in cache
-            char* cached = cache[domain].app;
-            
-            // If application in cache differs from application assigned to supervisor
-            if (strcmp(cached, application)) {
-                // 1. Remove domain permissions of previous application if any
-                if (strcmp(cached, "")) {
-                    set_permissions(cached, PROT_READ|PROT_WRITE|PROT_EXEC, 1);
-                }
-                // 2. Insert new application in cache and give permissions
-                insert_app_cache(domain, application);
-                set_permissions(application, PROT_READ|PROT_WRITE|PROT_EXEC, domain);
-            }
-            // Else continue normal execution since application is the same
-        #endif
-        
+    while(1) {        
         handle_notifications(domain);
-
-        #ifdef EAGER_LOAD
-            set_permissions(application, PROT_READ|PROT_WRITE|PROT_EXEC, 1);
-        #endif
-        
-        // Free domain
-        remove_thread(&threadMap, domain);
     }
 
     return NULL;

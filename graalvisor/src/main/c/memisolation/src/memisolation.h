@@ -17,25 +17,13 @@
   #define SEC_DBM(...)
 #endif
 
-/* Lazy loading */
-char* get_app_id(int domain);
-void insert_app_id(int domain, const char* id);
-
 /* Supervisors */
-void wait_set(int domain);
-void signal_set(int domain);
-void wait_filter(int domain);
-void signal_filter(int domain);
-void wait_perms(int domain);
-void signal_perms(int domain);
-void mark_supervisor_done(int domain);
-void change_supervisor_fd(int domain, int fd);
-
-/* Seccomp */
-int install_notify_filter(int domain);
+void wait_sem(int domain);
+void signal_sem(int domain);
+void reset_env(const char* application, int domain);
 
 /* Domain management */
-int find_domain(const char* id);
+int find_domain(const char* app, int* fd);
 
 void initialize_memory_isolation();
 
