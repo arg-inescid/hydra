@@ -53,16 +53,59 @@ mapping_t* list_push(mapping_t* head, void* start, size_t size) {
     }
 
     // Otherwise, find te last element.
-    while (current->next != NULL) {
+    while (current->next != NULL && current->next->start < start) {
         current = current->next;
     }
 
-    // Insert new element.
+    // Insert new element after current.
     mapping_t * new = (mapping_t *) malloc(sizeof(mapping_t));
     init_mapping(new, start, size);
+    new->next = current->next;
     current->next = new;
-    current->next->next = NULL;
     return new;
+}
+
+void list_delete(mapping_t* head, mapping_t* to_delete) {
+    // If the list is empty or the element to delete is null, do nothing.
+    if (head->start == NULL || to_delete == NULL) {
+        return;
+    }
+    // If the element to delete is the head, we copy the second element into the head and delete the second element.
+    else if (head == to_delete) {
+        // We need free the old dirty and permissions before we copy or memset.
+        free(head->dirty);
+        free(head->permissions);
+        // If head node is the only element in the list.
+        if (head->next == NULL) {
+            memset(head, 0, sizeof(mapping_t));
+        } else {
+            // Save pointer to the second element.
+            to_delete = head->next;
+            // Copy the second element into the head.
+            memcpy(head, head->next, sizeof(mapping_t));
+            // Free the second element.
+            free(to_delete);
+        }
+        return;
+    }
+    // Else, iterate the list until you find the element to delete.
+    else {
+        mapping_t* current = head;
+        // Iterate until we find the node just before the one to delete.
+        while (current != NULL) {
+            // If the element to delete is the next
+            if (current->next == to_delete) {
+                current->next = to_delete->next;
+                free(to_delete->dirty);
+                free(to_delete->permissions);
+                free(to_delete);
+                return;
+            }
+            current = current->next;
+        }
+    }
+
+    err("warning: unable to delete mapping %16p - %16p\n", to_delete->start, ((char*) to_delete->start) + to_delete->size);
 }
 
 mapping_t* list_find(mapping_t* head, void* start, size_t size) {
@@ -84,8 +127,14 @@ mapping_t* list_find(mapping_t* head, void* start, size_t size) {
         // We do not support partial overlaps. Quit with error message.
         // Note that start is part of the range but the finish address is already outside.
         else if ((start >= current->start && start < current_finish) || (finish > current->start && finish <= current_finish)) {
-            err("error: requested mapping %16p - %16p partially overlaps with existing mapping %16p - %16p\n",
-               start, finish, current->start, current_finish);
+            err("error: requested mapping %16p - %16p partially overlaps with an existing mapping %16p - %16p\n",
+                start, finish, current->start, current_finish);
+            return NULL;
+        }
+        // We do not support large mappings that include more than a single existing mapping.
+        else if (start < current->start && finish > current_finish) {
+            err("error: requested mapping %16p - %16p includes an existing mapping %16p - %16p\n",
+                start, finish, current->start, current_finish);
             return NULL;
         }
         // Continue looping.
@@ -151,39 +200,42 @@ void mapping_update_permissions(mapping_t* mapping, void* block_start, void* blo
     dbg("tracking  %16p - %16p (permissions)\n", block_start, block_finish);
 }
 
-
-void mapping_update_size(mapping_t* mapping, void* unmapping_start, void* unmapping_finish) {
+void mapping_update_size(mapping_t* head, mapping_t* mapping, void* unmapping_start, void* unmapping_finish) {
     void* mapping_finish = ((char*) mapping->start) + mapping->size;
     size_t unmapping_size = (char*) unmapping_finish - (char*) unmapping_start;
 
     // If we are removing a block from the start.
     if (unmapping_start == mapping->start && unmapping_finish <= mapping_finish) {
-        mapping->size -= unmapping_size;
-        mapping->start = unmapping_finish;
-        if (mapping->size == 0) {
-            err("warning: tracking  %16p - %16p (delete not inplemented)\n", mapping->start, mapping_finish);
+        if (unmapping_size == mapping->size) {
+            dbg("tracking  %16p - %16p (deleted)\n", mapping->start, mapping_finish);
+            list_delete(head, mapping);
         } else {
-            dbg("tracking  %16p - %16p (clipping beg)\n", mapping->start, mapping_finish);
+            mapping->size -= unmapping_size;
+            mapping->start = unmapping_finish;
+            // Note: since we re clipping the range, we also need to clip permissions and dirty metadata.
+            // Note 2: the best solution would be to realloc the arrays. We are leaking a bit of memory this way.
+            int pages_to_shift = unmapping_size / getpagesize();
+            mapping->permissions += pages_to_shift;
+            mapping->dirty += pages_to_shift;
+            dbg("tracking  %16p - %16p (clipping beg shifted %d pages)\n", mapping->start, mapping_finish, pages_to_shift);
         }
     }
     // If we are removing a block from the end.
     else if (unmapping_finish == mapping_finish && unmapping_start >= mapping->start) {
-        mapping->size -= unmapping_size;
-        mapping_finish = ((char*) mapping->start) + mapping->size;
-        if (mapping->size == 0) {
-            err("warning: tracking  %16p - %16p (delete not implemented)\n", mapping->start, mapping_finish);
+        if (unmapping_size == mapping->size) {
+            dbg("tracking  %16p - %16p (deleted)\n", mapping->start, mapping_finish);
+            list_delete(head, mapping);
         } else {
+            mapping->size -= unmapping_size;
+            mapping_finish = ((char*) mapping->start) + mapping->size;
+            // Note: since we re clipping the range, we also need to clip permissions and dirty metadata.
+            // Note 2: the best solution would be to realloc the arrays. We are leaking a bit of memory this way.
             dbg("tracking  %16p - %16p (clipping end)\n", mapping->start, mapping_finish);
         }
     }
-    // If we are removing a range that includes this mapping.
-    else if (unmapping_start < mapping->start && unmapping_finish > mapping_finish) {
-        mapping->size = 0;
-        err("warning: tracking  %16p - %16p (delete not implemented)\n", mapping->start, mapping_finish);
-    }
     // Unsupported unmapping range.
     else {
-        dbg("error: unsupported munmap: len = %lx [%16p to %16p] from [%16p to %16p]\n",
+        err("error: unsupported mapping update: len = %lx [%16p to %16p] from [%16p to %16p]\n",
             unmapping_size, unmapping_start, unmapping_finish, mapping->start, mapping_finish);
     }
 }

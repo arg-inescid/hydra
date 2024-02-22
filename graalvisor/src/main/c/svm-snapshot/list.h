@@ -24,6 +24,9 @@ mapping_t* list_push(mapping_t * head, void* start, size_t size);
 // This method will return a mapping that includes the requested range.
 mapping_t* list_find(mapping_t* head, void* start, size_t size);
 
+// Deletes one element from the list.
+void list_delete(mapping_t* head, mapping_t* to_delete);
+
 // Prints the list of mappings starting from `head`.
 void print_list(mapping_t * head);
 
@@ -37,6 +40,6 @@ void* repeated(void* mapping_start, void* mapping_finish, char* mapping_perms, v
 void mapping_update_permissions(mapping_t* mapping, void* block_start, void* block_finish, char perm);
 
 // Updates the size of a mapping (used to handle munmpap).
-void mapping_update_size(mapping_t* mapping, void* unmapping_start, void* unmapping_finish);
+void mapping_update_size(mapping_t* head, mapping_t* mapping, void* unmapping_start, void* unmapping_finish);
 
 #endif

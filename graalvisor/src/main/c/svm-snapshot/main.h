@@ -5,9 +5,18 @@
 #include "syscalls.h"
 #include "list.h"
 
-// Note - we assume that there are no other threads attached to an isolate, there are no open files, etc.
-// Note - we might need to make sure that all libraries that the isolate depends on are loaded at the same location
-// Note - we also need to make sure that the isolate is loaded back to the same location.
+/*
+ * Limitations:
+ * - after an invocation, there should be no open files or sockets, nor running threads;
+ * - we assume that isolates are independent, i.e., there are no dependencies between them;
+ * - we assume that libc (the only external dependency we allow) is always loaded in the same place;
+ *
+ * Examples of non-supported operations:
+ * - leaving a file behind when the function code does not expect that it can be left behind;
+ * - mmapping file descriptors passed through unix domain sockets
+ */
+
+// TODO - we should avoid using glibc as it may interfere with memory maps created by glibc while running the application.
 
 // If defined, enables debug prints and extra sanitization checks.
 //#define DEBUG
@@ -29,7 +38,7 @@
 #define err(format, args...) do { fprintf(stdout, format, ## args); } while(0)
 
 // Number of fds that we allow for the function to use. We may use some fds after this limit.
-#define RESERVED_FDS 1020
+#define RESERVED_FDS 768
 
 // Native Image ABI: https://github.com/oracle/graal/blob/master/substratevm/src/com.oracle.svm.core/headers/graal_isolate.preamble
 struct isolate_abi {

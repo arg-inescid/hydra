@@ -37,6 +37,15 @@ void print_mprotect(mprotect_t* sargs) {
         sargs->ret);
 }
 
+void print_madvise(madvise_t* sargs) {
+    dbg("madvise: %16p - %16p size = 0x%16lx advice = %d ret = %d\n",
+        sargs->addr,
+        ((char*) sargs->addr) + sargs->length,
+        sargs->length,
+        sargs->advice,
+        sargs->ret);
+}
+
 void print_dup(dup_t* sargs) {
     dbg("dup(%d) -> %d\n", sargs->oldfd, sargs->ret);
 }

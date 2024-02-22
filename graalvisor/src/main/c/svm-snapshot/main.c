@@ -71,6 +71,7 @@ int install_filter() {
         BPF_STMT(BPF_RET + BPF_K, SECCOMP_RET_KILL),
         BPF_STMT(BPF_LD + BPF_W + BPF_ABS, (offsetof(struct seccomp_data, nr))),
 
+        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_madvise, 14, 0),
         BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_dup3,    13, 0),
         BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_dup2,    12, 0),
         BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_dup,     11, 0),
@@ -243,7 +244,7 @@ void handle_munmap(struct function_args* fargs, void* addr, size_t length, int r
     }
 
     // Update mapping size to comply with munmap.
-    mapping_update_size(mapping, addr, ((char*) addr) + length);
+    mapping_update_size(&(fargs->mappings), mapping, addr, ((char*) addr) + length);
 }
 
 void handle_mprotect(struct function_args* fargs, void* addr, size_t length, int prot, int ret) {
@@ -263,6 +264,41 @@ void handle_mprotect(struct function_args* fargs, void* addr, size_t length, int
 
     // Update permissions.
     mapping_update_permissions(mapping, addr, ((char*) addr + length), prot);
+}
+
+void handle_madvise(struct function_args* fargs, void* addr, size_t length, int advice, int ret) {
+    madvise_t syscall_args = {.addr = addr, .length = length, .advice = advice, .ret = ret};
+    int pagesize = getpagesize();
+    print_madvise(&syscall_args);
+
+    // Note: we do not checkpoint this syscall, it can be ignored on the restore side.
+
+    if (advice != MADV_DONTNEED) {
+        err("warning, madvise advice not supported: %d\n", advice);
+    }
+
+    if ((unsigned long)addr % pagesize) {
+        err("warning, madvise start not a multiple of page boundary\n");
+     }
+
+    // When length is not a multiple of pagesize, we extend it to the next page boundary (check mmap man).
+    if (length % pagesize) {
+        size_t padding = (pagesize - (length % pagesize));
+        length = length + padding;
+    }
+
+    mapping_t* mapping = list_find(&(fargs->mappings), addr, length);
+
+    // Add mapping if it does not exist yet.
+    if (mapping == NULL) {
+        err("warning: unmapping unkown mapping %16p - %16p\n", addr, ((char*) addr) + length);
+        return;
+    }
+
+    // TODO - some of these might be stacks. The stack allocated for the function main thread.
+
+    // Update mapping size to comply with MADV_DONTNEED.
+    mapping_update_permissions(mapping, addr, ((char*) addr + length), PROT_NONE);
 }
 
 void handle_dup(struct function_args* fargs, int oldfd, int ret) {
@@ -358,7 +394,6 @@ void handle_notifications(struct function_args* fargs) {
         resp->id = req->id;
         long long unsigned int *args = req->data.args;
         switch (req->data.nr) {
-            // TODO - madvise?
             case __NR_dup:
                 resp->val = syscall(__NR_dup, args[0]);
                 resp->error = resp->val < 0 ? -errno : 0;
@@ -395,6 +430,7 @@ void handle_notifications(struct function_args* fargs) {
                 // which threads belong to which sandbox. This is how we could do it:
                 // By using this $pid the dumper walks though /proc/$pid/task/ directory collecting
                 // threads and through the /proc/$pid/task/$tid/children to gathers children recursively.
+                // TODO - check if these are different processes (different address space).
                 active_threads++;
                 err("warning: clone was invoked (%d active threads)!\n", active_threads);
                 resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
@@ -421,6 +457,12 @@ void handle_notifications(struct function_args* fargs) {
                 resp->error = resp->val < 0 ? -errno : 0;
                 resp->flags = 0;
                 handle_mprotect(fargs, (void*) args[0], (size_t) args[1], (int) args[2], (int) resp->val);
+                break;
+            case __NR_madvise:
+                resp->val = syscall(__NR_madvise, args[0], args[1], args[2]);
+                resp->error = resp->val < 0 ? -errno : 0;
+                resp->flags = 0;
+                handle_madvise(fargs, (void*) args[0], (size_t) args[1], (int) args[2], (int) resp->val);
                 break;
             default:
                 // TODO - in theory, we should be notified on all syscalls.
@@ -496,7 +538,7 @@ int main(int argc, char** argv) {
     }
 
     // Launch worker thread.
-    pthread_create(&thread, NULL, run_function, &fargs);
+    pthread_create(&thread, NULL, run_function, &fargs); // TODO - move to clone3
 
     // If in checkpoint mode, open metadata file, wait for seccomp to be ready and handle notifications.
     if (CURRENT_MODE == CHECKPOINT) {
@@ -512,7 +554,7 @@ int main(int argc, char** argv) {
     }
 
     // Join thread.
-    pthread_join(thread, NULL);
+    pthread_join(thread, NULL); // TODO - waitpid
 
     // If in checkpoint mode, checkpoint memory and isolate address.
    if (CURRENT_MODE == CHECKPOINT) {
