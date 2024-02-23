@@ -10,7 +10,9 @@
 #include "cr.h"
 #include "list.h"
 #include "syscalls.h"
-#include "main.h"
+
+// Number of fds that we allow for the function to use. We may use some fds after this limit.
+#define RESERVED_FDS 768
 
 // This variable is used to generate reserved fds. Used for:
 // - meta snapshot fd;
@@ -18,6 +20,7 @@
 // - seccomp fd.
 int next_reserved_fd = RESERVED_FDS;
 
+// Tags used in the meta snapshot fd.
 #define MEMORY_TAG  -3
 #define ABI_TAG     -2
 #define ISOLATE_TAG -1
@@ -146,27 +149,6 @@ void print_proc_maps(char* filename) {
     fclose(out);
 }
 
-int check_filepath_fd(int fd, char* path) {
-    char fdpath[512];
-    char filepath[512];
-    sprintf(fdpath, "/proc/self/fd/%d", fd);
-
-    size_t bytes = readlink(fdpath, filepath, sizeof(fdpath));
-
-    // Note: readlink does not place a terminating null byte.
-    filepath[bytes] = '\0';
-    return strcmp(path, filepath);
-}
-
-int find_fd_filepath(char* path) {
-    for (int i = 0; i < 8; i++) {
-        if (!check_filepath_fd(i, path)) {
-            return i;
-        }
-    }
-    return -1;
-}
-
 // A memory seg is a set of contiguous memory pages with the same permission.
 void checkpoint_memory_segment(void* seg_start, void* seg_finish, char seg_perm, int memsnap_fd, int metasnap_fd) {
     int tag = MEMORY_TAG;
@@ -222,8 +204,8 @@ void checkpoint_memory_mapping(void* map_start, void* map_finish, char* map_perm
     }
 }
 
-void checkpoint_memory_mappings(struct function_args* fargs, int memsnap_fd) {
-    mapping_t* current = &(fargs->mappings);
+void checkpoint_mappings(int meta_snap_fd, int mem_snap_fd, mapping_t* mappings) {
+    mapping_t* current = mappings;
 
     // If the list if empty, do nothing.
     if (current->start == NULL) {
@@ -233,28 +215,15 @@ void checkpoint_memory_mappings(struct function_args* fargs, int memsnap_fd) {
     while (current != NULL) {
         void* mapping_start = current->start;
         void* mapping_finish = ((char*) mapping_start) + current->size;
-        checkpoint_memory_mapping(mapping_start, mapping_finish, current->permissions, current->dirty, memsnap_fd, fargs->meta_snapshot_fd);
+        checkpoint_memory_mapping(mapping_start, mapping_finish, current->permissions, current->dirty, mem_snap_fd, meta_snap_fd);
         current = current->next;
     }
 }
 
-void checkpoint_memory(struct function_args* fargs) {
-    int memsnap_fd = move_to_reserved_fd(open("memory.snap",  O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR));
-    if (memsnap_fd < 0) {
-        err("error: failed to open memory.snap file\n");
-        return;
-    } else {
-        memsnap_fd = move_to_reserved_fd(memsnap_fd);
-    }
-
-    checkpoint_memory_mappings(fargs, memsnap_fd);
-    close(memsnap_fd);
-}
-
-void restore_memory(struct function_args* fargs, int mem_snapshot_fd) {
+void restore_memory(int meta_snap_fd, int mem_snapshot_fd) {
     memory_t s;
 
-    if (read(fargs->meta_snapshot_fd, &s, sizeof(memory_t)) != sizeof(memory_t)) {
+    if (read(meta_snap_fd, &s, sizeof(memory_t)) != sizeof(memory_t)) {
         perror("error: failed to deserialize memory header");
     }
 
@@ -309,66 +278,66 @@ void restore_memory(struct function_args* fargs, int mem_snapshot_fd) {
         s.pop);
 }
 
-void checkpoint_isolate(struct function_args* fargs) {
+void checkpoint_isolate(int meta_snap_fd, graal_isolate_t* isolate) {
     int tag = ISOLATE_TAG;
-    dbg("isolate: %16p\n", fargs->isolate);
-    if (write(fargs->meta_snapshot_fd, &tag, sizeof(int)) != sizeof(int)) {
+    dbg("isolate: %16p\n", isolate);
+    if (write(meta_snap_fd, &tag, sizeof(int)) != sizeof(int)) {
         perror("error: failed to serialize isolate tag");
     }
-    if (write(fargs->meta_snapshot_fd, &(fargs->isolate), sizeof(void*)) != sizeof(void*)) {
+    if (write(meta_snap_fd, &isolate, sizeof(void*)) != sizeof(void*)) {
         perror("error: failed to serialize isolate pointer");
     }
 }
 
-void restore_isolate(struct function_args* fargs) {
-    if (read(fargs->meta_snapshot_fd, &(fargs->isolate), sizeof(void*)) != sizeof(void*)) {
+void restore_isolate(int meta_snap_fd, graal_isolate_t** isolate) {
+    if (read(meta_snap_fd, isolate, sizeof(void*)) != sizeof(void*)) {
         perror("error: failed to deserialize isolate pointer");
         return;
     }
-    dbg("isolate: %16p\n", fargs->isolate);
+    dbg("isolate: %16p\n", *isolate);
 }
 
-void print_abi(struct function_args* fargs) {
-    dbg("abi.graal_create_isolate:    %16p\n", fargs->abi.graal_create_isolate);
-    dbg("abi.graal_tear_down_isolate: %16p\n", fargs->abi.graal_tear_down_isolate);
-    dbg("abi.entrypoint:              %16p\n", fargs->abi.entrypoint);
-    dbg("abi.graal_detach_thread:     %16p\n", fargs->abi.graal_detach_thread);
-    dbg("abi.graal_attach_thread:     %16p\n", fargs->abi.graal_attach_thread);
+void print_abi(isolate_abi_t* abi) {
+    dbg("abi.graal_create_isolate:    %16p\n", abi->graal_create_isolate);
+    dbg("abi.graal_tear_down_isolate: %16p\n", abi->graal_tear_down_isolate);
+    dbg("abi.entrypoint:              %16p\n", abi->entrypoint);
+    dbg("abi.graal_detach_thread:     %16p\n", abi->graal_detach_thread);
+    dbg("abi.graal_attach_thread:     %16p\n", abi->graal_attach_thread);
 }
 
-void checkpoint_abi(struct function_args* fargs) {
+void checkpoint_abi(int meta_snap_fd, isolate_abi_t* abi) {
     int tag = ABI_TAG;
-    print_abi(fargs);
-    if (write(fargs->meta_snapshot_fd, &tag, sizeof(int)) != sizeof(int)) {
+    print_abi(abi);
+    if (write(meta_snap_fd, &tag, sizeof(int)) != sizeof(int)) {
         perror("error: failed to serialize abi tag");
     }
-    if (write(fargs->meta_snapshot_fd, &(fargs->abi), sizeof(struct isolate_abi)) != sizeof(struct isolate_abi)) {
+    if (write(meta_snap_fd, abi, sizeof(struct isolate_abi)) != sizeof(struct isolate_abi)) {
         perror("error: failed to serialize function abi struct");
     }
 }
 
-void restore_abi(struct function_args* fargs) {
-    if (read(fargs->meta_snapshot_fd, &(fargs->abi), sizeof(struct isolate_abi)) != sizeof(struct isolate_abi)) {
+void restore_abi(int meta_snap_fd, isolate_abi_t* abi) {
+    if (read(meta_snap_fd, abi, sizeof(struct isolate_abi)) != sizeof(struct isolate_abi)) {
         perror("error: failed to deserialize function abi struct");
         return;
     }
-    print_abi(fargs);
+    print_abi(abi);
 }
 
-void checkpoint_syscall(struct function_args* fargs, int tag, void* syscall_args, size_t size) {
-    if (write(fargs->meta_snapshot_fd, &tag, sizeof(int)) != sizeof(int)) {
+void checkpoint_syscall(int meta_snap_fd, int tag, void* syscall_args, size_t size) {
+    if (write(meta_snap_fd, &tag, sizeof(int)) != sizeof(int)) {
         perror("error: failed to serialize syscall tag");
     }
-    if (write(fargs->meta_snapshot_fd, syscall_args, size) != size) {
+    if (write(meta_snap_fd, syscall_args, size) != size) {
         perror("error: failed to serialize syscall arguments");
     }
 }
 
-void restore_mmap(struct function_args* fargs) {
+void restore_mmap(int meta_snap_fd) {
     mmap_t s;
     void* ret;
 
-    if (read(fargs->meta_snapshot_fd, &s, sizeof(mmap_t)) != sizeof(mmap_t)) {
+    if (read(meta_snap_fd, &s, sizeof(mmap_t)) != sizeof(mmap_t)) {
         perror("error: failed to deserialize mmap arguments");
     }
 
@@ -381,11 +350,11 @@ void restore_mmap(struct function_args* fargs) {
     }
 }
 
-void restore_munmap(struct function_args* fargs) {
+void restore_munmap(int meta_snap_fd) {
     munmap_t s;
     int ret;
 
-    if (read(fargs->meta_snapshot_fd, &s, sizeof(munmap_t)) != sizeof(munmap_t)) {
+    if (read(meta_snap_fd, &s, sizeof(munmap_t)) != sizeof(munmap_t)) {
         perror("error: failed to deserialize munmap arguments");
     }
 
@@ -397,11 +366,11 @@ void restore_munmap(struct function_args* fargs) {
     }
 }
 
-void restore_mprotect(struct function_args* fargs) {
+void restore_mprotect(int meta_snap_fd) {
     mprotect_t s;
     int ret;
 
-    if (read(fargs->meta_snapshot_fd, &s, sizeof(mprotect_t)) != sizeof(mprotect_t)) {
+    if (read(meta_snap_fd, &s, sizeof(mprotect_t)) != sizeof(mprotect_t)) {
         perror("error: failed to deserialize mprotect arguments");
     }
 
@@ -413,11 +382,11 @@ void restore_mprotect(struct function_args* fargs) {
     }
 }
 
-void restore_dup(struct function_args* fargs) {
+void restore_dup(int meta_snap_fd) {
     dup_t s;
     int ret;
 
-    if (read(fargs->meta_snapshot_fd, &s, sizeof(dup_t)) != sizeof(dup_t)) {
+    if (read(meta_snap_fd, &s, sizeof(dup_t)) != sizeof(dup_t)) {
         perror("error: failed to deserialize dup arguments");
     }
 
@@ -429,15 +398,14 @@ void restore_dup(struct function_args* fargs) {
     }
 }
 
-void restore_dup2(struct function_args* fargs) {
+void restore_dup2(int meta_snap_fd) {
     dup2_t s;
     int ret;
 
-    if (read(fargs->meta_snapshot_fd, &s, sizeof(dup2_t)) != sizeof(dup2_t)) {
+    if (read(meta_snap_fd, &s, sizeof(dup2_t)) != sizeof(dup2_t)) {
         perror("error: failed to deserialize dup arguments");
     }
 
-    err("Restoring dup2\n");
     print_dup2(&s);
 
     ret = syscall(__NR_dup2, s.oldfd, s.newfd);
@@ -446,11 +414,11 @@ void restore_dup2(struct function_args* fargs) {
     }
 }
 
-void restore_open(struct function_args* fargs) {
+void restore_open(int meta_snap_fd) {
     open_t s;
     int ret;
 
-    if (read(fargs->meta_snapshot_fd, &s, sizeof(open_t)) != sizeof(open_t)) {
+    if (read(meta_snap_fd, &s, sizeof(open_t)) != sizeof(open_t)) {
         perror("error: failed to deserialize open arguments");
     }
 
@@ -466,11 +434,11 @@ void restore_open(struct function_args* fargs) {
     }
 }
 
-void restore_openat(struct function_args* fargs) {
+void restore_openat(int meta_snap_fd) {
     openat_t s;
     int ret;
 
-    if (read(fargs->meta_snapshot_fd, &s, sizeof(openat_t)) != sizeof(openat_t)) {
+    if (read(meta_snap_fd, &s, sizeof(openat_t)) != sizeof(openat_t)) {
         perror("error: failed to deserialize openat arguments");
     }
 
@@ -488,10 +456,10 @@ void restore_openat(struct function_args* fargs) {
     }
 }
 
-void restore_close(struct function_args* fargs) {
+void restore_close(int meta_snap_fd) {
     close_t s;
 
-    if (read(fargs->meta_snapshot_fd, &s, sizeof(close_t)) != sizeof(close_t)) {
+    if (read(meta_snap_fd, &s, sizeof(close_t)) != sizeof(close_t)) {
         perror("error: failed to deserialize close arguments");
     }
 
@@ -502,33 +470,32 @@ void restore_close(struct function_args* fargs) {
     syscall(__NR_close, s.fd);
 }
 
-void checkpoint(struct function_args* fargs) {
-    checkpoint_memory(fargs);
-    checkpoint_abi(fargs);
-    checkpoint_isolate(fargs);
+void checkpoint_memory(int meta_snap_fd, int mem_snap_fd, mapping_t* mappings, isolate_abi_t* abi, graal_isolate_t* isolate) {
+    checkpoint_mappings(meta_snap_fd, mem_snap_fd, mappings);
+    checkpoint_abi(meta_snap_fd, abi);
+    checkpoint_isolate(meta_snap_fd, isolate);
 }
 
-void restore(struct function_args* fargs) {
-
+void restore(char* meta_snap_path, char* mem_snap_path, isolate_abi_t* abi, graal_isolate_t** isolate){
     // Open the metadata file (syscall arguments, memory ranges, etc).
-    fargs->meta_snapshot_fd = open("metadata.snap", O_RDONLY);
-    if (fargs->meta_snapshot_fd < 0) {
+    int meta_snap_fd = open(meta_snap_path, O_RDONLY);
+    if (meta_snap_fd < 0) {
         perror("error: failed to open meta snapshot file");
     } else {
-        fargs->meta_snapshot_fd = move_to_reserved_fd(fargs->meta_snapshot_fd);
+        meta_snap_fd = move_to_reserved_fd(meta_snap_fd);
     }
 
     // Open the memory snapshot file.
-    int mem_snapshot_fd = open("memory.snap", O_RDONLY);
-    if (mem_snapshot_fd < 0) {
+    int mem_snap_fd = open(mem_snap_path, O_RDONLY);
+    if (mem_snap_fd < 0) {
         perror("error: failed to open memory snapshot file");
     } else {
-        mem_snapshot_fd = move_to_reserved_fd(mem_snapshot_fd);
+        mem_snap_fd = move_to_reserved_fd(mem_snap_fd);
     }
 
     while(1) {
         int tag;
-        size_t n = read(fargs->meta_snapshot_fd, &tag, sizeof(int));
+        size_t n = read(meta_snap_fd, &tag, sizeof(int));
 
         if (n == 0) {
             break;
@@ -539,43 +506,43 @@ void restore(struct function_args* fargs) {
         switch (tag)
         {
         case __NR_mmap:
-            restore_mmap(fargs);
+            restore_mmap(meta_snap_fd);
             break;
         case __NR_munmap:
-            restore_munmap(fargs);
+            restore_munmap(meta_snap_fd);
             break;
         case __NR_mprotect:
-            restore_mprotect(fargs);
+            restore_mprotect(meta_snap_fd);
             break;
         case __NR_dup:
-            restore_dup(fargs);
+            restore_dup(meta_snap_fd);
             break;
         case __NR_dup2:
-            restore_dup2(fargs);
+            restore_dup2(meta_snap_fd);
             break;
         case __NR_open:
-            restore_open(fargs);
+            restore_open(meta_snap_fd);
             break;
         case __NR_openat:
-            restore_openat(fargs);
+            restore_openat(meta_snap_fd);
             break;
         case __NR_close:
-            restore_close(fargs);
+            restore_close(meta_snap_fd);
             break;
         case ISOLATE_TAG:
-            restore_isolate(fargs);
+            restore_isolate(meta_snap_fd, isolate);
             break;
         case ABI_TAG:
-            restore_abi(fargs);
+            restore_abi(meta_snap_fd, abi);
             break;
         case MEMORY_TAG:
-            restore_memory(fargs, mem_snapshot_fd);
+            restore_memory(meta_snap_fd, mem_snap_fd);
             break;
         default:
             err("error: unknown tag durin restore: %d", tag);
         }
     }
 
-    close(mem_snapshot_fd);
-    close(fargs->meta_snapshot_fd);
+    close(mem_snap_fd);
+    close(meta_snap_fd);
 }

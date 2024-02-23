@@ -1,6 +1,6 @@
 #app = "$(shell pwd)/test0-clib/libhello.so"
 #app = "$(shell pwd)/test1-staticvar/libhello.so"
-app = "$(shell pwd)/test2-svm/libhello.so"
+#app = "$(shell pwd)/test2-svm/libhello.so"
 #app = "$(shell pwd)/test2-svm-jar/libhello.so"
 #app = "$(shell pwd)/test2-svm-gradle/libhello.so"
 #app = "$(shell pwd)/test3-svm-truffle-js/libhello.so"
@@ -11,7 +11,7 @@ app = "$(shell pwd)/test2-svm/libhello.so"
 #app = "$(shell pwd)/test6-cthreads/libhello.so"
 #app = "$(shell pwd)/test7-svm-truffle-function-py/libcompression.so"
 
-benchmarks_home = /home/rbruno/git/graalserverless/benchmarks
+benchmarks_home = ${ARGO_HOME}/benchmarks
 #app = "$(benchmarks_home)/src/java/gv-hello-world/build/libhelloworld.so"
 #app = "$(benchmarks_home)/src/java/gv-file-hashing/build/libfilehashing.so"
 # TODO - classify (process)
@@ -27,7 +27,7 @@ benchmarks_home = /home/rbruno/git/graalserverless/benchmarks
 #app = "$(benchmarks_home)/src/python/gv-hello-world/build/libhelloworld.so"
 #app = "$(benchmarks_home)/src/python/gv-compression/build/libcompression.so"
 #app = "$(benchmarks_home)/src/python/gv-uploader/build/libuploader.so"
-#app = "$(benchmarks_home)/src/python/gv-mst/build/libmst.so"
+app = "$(benchmarks_home)/src/python/gv-mst/build/libmst.so"
 
 #gv_python_bfs
 #gv_python_pagerank

@@ -1,5 +1,5 @@
 #include "syscalls.h"
-#include "main.h"
+#include "cr.h"
 #include <sys/mman.h>
 
 void print_mmap(mmap_t* sargs) {

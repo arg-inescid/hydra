@@ -1,28 +1,53 @@
-#include "main.h"
+// Important to load some headers such as sched.h.
+#define _GNU_SOURCE
+
+#include "syscalls.h"
 #include "list.h"
 #include "cr.h"
+
+#include <dlfcn.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <linux/audit.h>
+#include <linux/filter.h>
+#include <linux/seccomp.h>
+#include <linux/sched.h>
+#include <poll.h>
+#include <pthread.h>
+#include <sched.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <linux/sched.h>
-#include <sched.h>
-#include <dlfcn.h>
-#include <pthread.h>
-#include <sys/syscall.h>
-#include <linux/seccomp.h>
-#include <linux/filter.h>
-#include <linux/audit.h>
-#include <stddef.h>
-#include <sys/prctl.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <sys/mman.h>
-#include <sys/time.h>
-#include <errno.h>
-#include <poll.h>
-#include <fcntl.h>
-#include <sys/stat.h>
 #include <string.h>
+#include <sys/ioctl.h>
+#include <sys/mman.h>
+#include <sys/prctl.h>
+#include <sys/syscall.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/time.h>
+#include <unistd.h>
+
+struct function_args {
+    // ABI to create, invoke, destroy isolates.
+    struct isolate_abi abi;
+    // Pointer to the isolate.
+    graal_isolate_t* isolate;
+    // File descriptor used when installing seccomp.
+    int seccomp_fd;
+    // List of memory mappings being tracked in the sandbox.
+    mapping_t mappings;
+    // Path of the function library.
+    char* function_path;
+    // Function arguments.
+    void* args;
+    // Snapshot metadata file descriptor;
+    int meta_snap_fd;
+    // Snapshot memory file descriptor;
+    int mem_snap_fd;
+    // Integer used as a boolean to decide if the function has terminated.
+    int finished;
+};
 
 enum EXECUTION_MODE { NORMAL, CHECKPOINT, RESTORE };
 
@@ -199,7 +224,7 @@ void handle_mmap(struct function_args* fargs, void* addr, size_t length, int pro
     print_mmap(&syscall_args);
 
     // Checkpoint the syscall.
-    checkpoint_syscall(fargs, __NR_mmap, &syscall_args, sizeof(mmap_t));
+    checkpoint_syscall(fargs->meta_snap_fd, __NR_mmap, &syscall_args, sizeof(mmap_t));
 
     // When length is not a multiple of pagesize, we extend it to the next page boundary (check mmap man).
     if (length % pagesize) {
@@ -224,7 +249,7 @@ void handle_munmap(struct function_args* fargs, void* addr, size_t length, int r
     print_munmap(&syscall_args);
 
     // Checkpoint the syscall.
-    checkpoint_syscall(fargs, __NR_munmap, &syscall_args, sizeof(munmap_t));
+    checkpoint_syscall(fargs->meta_snap_fd, __NR_munmap, &syscall_args, sizeof(munmap_t));
 
      if ((unsigned long)addr % getpagesize()) {
         err("warning, munmap start not a multiple of page boundary\n");
@@ -253,7 +278,7 @@ void handle_mprotect(struct function_args* fargs, void* addr, size_t length, int
     print_mprotect(&syscall_args);
 
     // Checkpoint the syscall.
-    checkpoint_syscall(fargs, __NR_mprotect, &syscall_args, sizeof(mprotect_t));
+    checkpoint_syscall(fargs->meta_snap_fd, __NR_mprotect, &syscall_args, sizeof(mprotect_t));
 
     mapping_t* mapping = list_find(&(fargs->mappings), addr, length);
 
@@ -305,13 +330,13 @@ void handle_madvise(struct function_args* fargs, void* addr, size_t length, int 
 void handle_dup(struct function_args* fargs, int oldfd, int ret) {
     dup_t syscall_args = {.oldfd = oldfd, .ret = ret};
     print_dup(&syscall_args);
-    checkpoint_syscall(fargs, __NR_dup, &syscall_args, sizeof(dup_t));
+    checkpoint_syscall(fargs->meta_snap_fd, __NR_dup, &syscall_args, sizeof(dup_t));
 }
 
 void handle_dup2(struct function_args* fargs, int oldfd, int newfd, int ret) {
     dup2_t syscall_args = {.oldfd = oldfd, .newfd = newfd, .ret = ret};
     print_dup2(&syscall_args);
-    checkpoint_syscall(fargs, __NR_dup2, &syscall_args, sizeof(dup2_t));
+    checkpoint_syscall(fargs->meta_snap_fd, __NR_dup2, &syscall_args, sizeof(dup2_t));
 }
 
 void handle_open(struct function_args* fargs, char* pathname, int flags, mode_t mode, int ret) {
@@ -325,7 +350,7 @@ void handle_open(struct function_args* fargs, char* pathname, int flags, mode_t 
     }
 
     print_open(&syscall_args);
-    checkpoint_syscall(fargs, __NR_open, &syscall_args, sizeof(open_t));
+    checkpoint_syscall(fargs->meta_snap_fd, __NR_open, &syscall_args, sizeof(open_t));
 }
 
 void handle_openat(struct function_args* fargs, int dirfd, char* pathname, int flags, mode_t mode, int ret) {
@@ -339,13 +364,13 @@ void handle_openat(struct function_args* fargs, int dirfd, char* pathname, int f
     }
 
     print_openat(&syscall_args);
-    checkpoint_syscall(fargs, __NR_openat, &syscall_args, sizeof(openat_t));
+    checkpoint_syscall(fargs->meta_snap_fd, __NR_openat, &syscall_args, sizeof(openat_t));
 }
 
 void handle_close(struct function_args* fargs, int fd, int ret) {
     close_t syscall_args = {.fd = fd, .ret = ret};
     print_close(&syscall_args);
-    checkpoint_syscall(fargs, __NR_close, &syscall_args, sizeof(close_t));
+    checkpoint_syscall(fargs->meta_snap_fd, __NR_close, &syscall_args, sizeof(close_t));
 }
 
 int should_follow_clone(int flags) {
@@ -560,7 +585,7 @@ int main(int argc, char** argv) {
         struct timeval st, et;
         gettimeofday(&st, NULL);
 #endif
-        restore(&fargs);
+        restore("metadata.snap", "memory.snap", &(fargs.abi), &(fargs.isolate));
 #ifdef PERF
         gettimeofday(&et, NULL);
         log("restore took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
@@ -575,7 +600,14 @@ int main(int argc, char** argv) {
 
     // If in checkpoint mode, open metadata file, wait for seccomp to be ready and handle notifications.
     if (CURRENT_MODE == CHECKPOINT) {
-        fargs.meta_snapshot_fd = move_to_reserved_fd(open("metadata.snap",  O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR));
+        int meta_snap_fd = move_to_reserved_fd(open("metadata.snap",  O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR));
+        int mem_snap_fd = move_to_reserved_fd(open("memory.snap",  O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR));
+        if (meta_snap_fd < 0 || mem_snap_fd < 0) {
+            err("error: failed to open meta (fd = %d) or memory (fd = %d) snapshot file\n", meta_snap_fd, mem_snap_fd);
+        } else {
+            fargs.meta_snap_fd = move_to_reserved_fd(meta_snap_fd);
+            fargs.mem_snap_fd = move_to_reserved_fd(mem_snap_fd);
+        }
 
          // Wait while the thread initilizes and installs the seccomp filter.
         while (!fargs.seccomp_fd) ; // TODO - avoid active waiting
@@ -599,12 +631,13 @@ int main(int argc, char** argv) {
         struct timeval st, et;
         gettimeofday(&st, NULL);
 #endif
-        checkpoint(&fargs);
+        checkpoint_memory(fargs.meta_snap_fd, fargs.mem_snap_fd, &(fargs.mappings), &(fargs.abi), fargs.isolate);
 #ifdef PERF
         gettimeofday(&et, NULL);
         log("checkpoint took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
 #endif
-        close(fargs.meta_snapshot_fd);
+        close(fargs.meta_snap_fd);
+        close(fargs.mem_snap_fd);
    }
 
     // Flush any open streammed file.
