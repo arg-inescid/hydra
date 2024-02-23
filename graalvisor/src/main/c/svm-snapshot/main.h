@@ -1,19 +1,24 @@
 #ifndef MAIN_H
 #define MAIN_H
 
+// Important to load some headers such as sched.h.
+#define _GNU_SOURCE
 #include "graal_isolate.h"
 #include "syscalls.h"
 #include "list.h"
 
 /*
  * Limitations:
- * - after an invocation, there should be no open files or sockets, nor running threads;
+ * - after an invocation, there should be no open files or sockets, nor running threads, nor sub-processes;
  * - we assume that isolates are independent, i.e., there are no dependencies between them;
  * - we assume that libc (the only external dependency we allow) is always loaded in the same place;
+ * - we do not track forked processes (clone without CLONE_VM or CLONE_FILES);
+ * - functions should not expect to receive the same tid/pid after restore;
  *
  * Examples of non-supported operations:
  * - leaving a file behind when the function code does not expect that it can be left behind;
- * - mmapping file descriptors passed through unix domain sockets
+ * - mmapping file descriptors passed through unix domain sockets;
+ * - forked + exeve is not tracked;
  */
 
 // TODO - we should avoid using glibc as it may interfere with memory maps created by glibc while running the application.

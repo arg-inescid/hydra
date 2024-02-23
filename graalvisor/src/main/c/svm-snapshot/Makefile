@@ -1,6 +1,6 @@
 #app = "$(shell pwd)/test0-clib/libhello.so"
 #app = "$(shell pwd)/test1-staticvar/libhello.so"
-#app = "$(shell pwd)/test2-svm/libhello.so"
+app = "$(shell pwd)/test2-svm/libhello.so"
 #app = "$(shell pwd)/test2-svm-jar/libhello.so"
 #app = "$(shell pwd)/test2-svm-gradle/libhello.so"
 #app = "$(shell pwd)/test3-svm-truffle-js/libhello.so"
@@ -20,12 +20,22 @@ benchmarks_home = /home/rbruno/git/graalserverless/benchmarks
 
 #app = "$(benchmarks_home)/src/javascript/gv-hello-world/build/libhelloworld.so"
 #app = "$(benchmarks_home)/src/javascript/gv-dynamic-html/build/libdynamichtml.so"
-app = "$(benchmarks_home)/src/javascript/gv-thumbnail/build/libthumbnail.so"
-# TODO - uploader
+# Note: thumbnail calls native code and it also leaves files behind. We do not support that.
+#app = "$(benchmarks_home)/src/javascript/gv-thumbnail/build/libthumbnail.so"
+#app = "$(benchmarks_home)/src/javascript/gv-uploader/build/libuploader.so"
 
 #app = "$(benchmarks_home)/src/python/gv-hello-world/build/libhelloworld.so"
 #app = "$(benchmarks_home)/src/python/gv-compression/build/libcompression.so"
 #app = "$(benchmarks_home)/src/python/gv-uploader/build/libuploader.so"
+#app = "$(benchmarks_home)/src/python/gv-mst/build/libmst.so"
+
+#gv_python_bfs
+#gv_python_pagerank
+#gv_python_dna
+# TODO - classify (process)
+#gv_python_dynamichtml
+#gv_python_thumbnail
+#gv_python_videoprocessing (process?)
 
 gcommands = -x gdb-commands.txt
 
@@ -56,7 +66,7 @@ gdb-normal:
 	setarch -R gdb $(gcommands) --args ./main normal $(app)
 
 gdb-checkpoint:
-	setarch -R gdb $(gcommands) --args ./main checkpoint $(app)
+	setarch -R gdb $(gcommands) --args ./main checkpoint $(app) | tee gdb-checkpoint.log
 
 run-checkpoint:
 	rm -f snapshot.mem
@@ -66,7 +76,7 @@ run-checkpoint:
 strace-checkpoint:
 	rm -f snapshot.mem
 	rm -f snapshot.meta
-	setarch -R strace -f ./main checkpoint $(app) 2>&1 | tee strace-checkpoint.log
+	setarch -R strace  -f ./main checkpoint $(app) 2>&1 | tee strace-checkpoint.log
 
 run-restore:
 	setarch -R ./main restore $(app) 2>&1 | tee restore.log

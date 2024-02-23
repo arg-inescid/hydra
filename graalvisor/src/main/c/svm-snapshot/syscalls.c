@@ -50,6 +50,10 @@ void print_dup(dup_t* sargs) {
     dbg("dup(%d) -> %d\n", sargs->oldfd, sargs->ret);
 }
 
+void print_dup2(dup2_t* sargs) {
+    dbg("dup2(%d, %d) -> %d\n", sargs->oldfd, sargs->newfd, sargs->ret);
+}
+
 void print_open(open_t* sargs) {
     dbg("open(%s) -> %d\n", sargs->pathname, sargs->ret);
 }

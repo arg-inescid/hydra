@@ -429,6 +429,23 @@ void restore_dup(struct function_args* fargs) {
     }
 }
 
+void restore_dup2(struct function_args* fargs) {
+    dup2_t s;
+    int ret;
+
+    if (read(fargs->meta_snapshot_fd, &s, sizeof(dup2_t)) != sizeof(dup2_t)) {
+        perror("error: failed to deserialize dup arguments");
+    }
+
+    err("Restoring dup2\n");
+    print_dup2(&s);
+
+    ret = syscall(__NR_dup2, s.oldfd, s.newfd);
+    if (s.ret != ret) {
+        err("error: failed to replay dup2:\t original ret = %d got ret = %d\n",  s.ret, ret);
+    }
+}
+
 void restore_open(struct function_args* fargs) {
     open_t s;
     int ret;
@@ -461,7 +478,10 @@ void restore_openat(struct function_args* fargs) {
 
     ret = syscall(__NR_openat, s.dirfd, s.pathname, s.flags, s.mode);
     if (s.ret != ret) {
-        ret = move_fd(ret, s.ret);
+        // If the return does not match but was not an error, try to save it by moving the fd.
+        if (ret >= 0) {
+            ret = move_fd(ret, s.ret);
+        }
         if (s.ret != ret) {
             err("error: failed to replay openat:\t original ret = %d got ret = %d\n",  s.ret, ret);
         }
@@ -529,6 +549,9 @@ void restore(struct function_args* fargs) {
             break;
         case __NR_dup:
             restore_dup(fargs);
+            break;
+        case __NR_dup2:
+            restore_dup2(fargs);
             break;
         case __NR_open:
             restore_open(fargs);

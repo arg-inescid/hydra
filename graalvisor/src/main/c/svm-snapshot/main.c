@@ -1,6 +1,11 @@
+#include "main.h"
+#include "list.h"
+#include "cr.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <linux/sched.h>
+#include <sched.h>
 #include <dlfcn.h>
 #include <pthread.h>
 #include <sys/syscall.h>
@@ -18,10 +23,6 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <string.h>
-
-#include "main.h"
-#include "list.h"
-#include "cr.h"
 
 enum EXECUTION_MODE { NORMAL, CHECKPOINT, RESTORE };
 
@@ -307,6 +308,12 @@ void handle_dup(struct function_args* fargs, int oldfd, int ret) {
     checkpoint_syscall(fargs, __NR_dup, &syscall_args, sizeof(dup_t));
 }
 
+void handle_dup2(struct function_args* fargs, int oldfd, int newfd, int ret) {
+    dup2_t syscall_args = {.oldfd = oldfd, .newfd = newfd, .ret = ret};
+    print_dup2(&syscall_args);
+    checkpoint_syscall(fargs, __NR_dup2, &syscall_args, sizeof(dup2_t));
+}
+
 void handle_open(struct function_args* fargs, char* pathname, int flags, mode_t mode, int ret) {
     open_t syscall_args = {.flags = flags, .mode = mode, .ret = ret};
 
@@ -339,6 +346,14 @@ void handle_close(struct function_args* fargs, int fd, int ret) {
     close_t syscall_args = {.fd = fd, .ret = ret};
     print_close(&syscall_args);
     checkpoint_syscall(fargs, __NR_close, &syscall_args, sizeof(close_t));
+}
+
+int should_follow_clone(int flags) {
+    return flags & CLONE_VM && flags & CLONE_FS && flags & CLONE_FILES && flags & CLONE_SIGHAND && flags & CLONE_THREAD && flags & CLONE_SYSVSEM;
+}
+
+int should_follow_clone3(struct clone_args *cl_args, size_t size) {
+    return should_follow_clone(cl_args->flags);
 }
 
 void handle_notifications(struct function_args* fargs) {
@@ -400,6 +415,12 @@ void handle_notifications(struct function_args* fargs) {
                 resp->flags = 0;
                 handle_dup(fargs, (int) args[0], resp->val);
                 break;
+            case __NR_dup2:
+                resp->val = syscall(__NR_dup2, args[0], args[1]);
+                resp->error = resp->val < 0 ? -errno : 0;
+                resp->flags = 0;
+                handle_dup2(fargs, (int) args[0], (int) args[1], resp->val);
+                break;
             case __NR_open:
                 resp->val = syscall(__NR_open, args[0], args[1], args[2]);
                 resp->error = resp->val < 0 ? -errno : 0;
@@ -427,18 +448,29 @@ void handle_notifications(struct function_args* fargs) {
                 break;
             case __NR_clone:
                 // TODO - we will need to handle threads. To checkpoint threads, we need to know
-                // which threads belong to which sandbox. This is how we could do it:
-                // By using this $pid the dumper walks though /proc/$pid/task/ directory collecting
-                // threads and through the /proc/$pid/task/$tid/children to gathers children recursively.
-                // TODO - check if these are different processes (different address space).
-                active_threads++;
-                err("warning: clone was invoked (%d active threads)!\n", active_threads);
-                resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
+                // which threads belong to which sandbox.
+                if (should_follow_clone((int)args[0])) {
+                    active_threads++;
+                    err("warning: clone was invoked (%d active threads)!\n", active_threads);
+                    resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
+                } else {
+                    err("warning: blocking clone (new process)!\n");
+                    resp->val = -1;
+                    resp->error = -EAGAIN;
+                    resp->flags = 0;
+                }
                 break;
             case __NR_clone3:
-                active_threads++;
-                err("warning: clone3 was invoked (%d active threads)!\n", active_threads);
-                resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
+                if (should_follow_clone3((struct clone_args*) args[0], (size_t) args[1])) {
+                    active_threads++;
+                    err("warning: clone3 was invoked (%d active threads)!\n", active_threads);
+                    resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
+                } else {
+                    err("warning: blocking clone3 (new process)!\n");
+                    resp->val = -1;
+                    resp->error = -EAGAIN;
+                    resp->flags = 0;
+                }
                 break;
             case __NR_mmap:
                 resp->val = syscall(__NR_mmap, args[0], args[1], args[2], args[3], args[4], args[5]);
@@ -470,6 +502,7 @@ void handle_notifications(struct function_args* fargs) {
                 resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
                 break;
         }
+
         if (ioctl(fargs->seccomp_fd, SECCOMP_IOCTL_NOTIF_SEND, resp) == -1) {
             perror("error: failed to ioctl(SECCOMP_IOCTL_NOTIF_SEND)");
             continue;
