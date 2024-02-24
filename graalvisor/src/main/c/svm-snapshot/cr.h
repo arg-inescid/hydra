@@ -1,8 +1,8 @@
 #ifndef CR_H
 #define CR_H
 
+#include "svm-snapshot.h"
 #include "list.h"
-#include "graal_isolate.h"
 #include <sys/types.h>
 
 /*
@@ -40,15 +40,6 @@
     #define dbg(format, args...) do { } while(0)
 #endif
 #define err(format, args...) do { fprintf(stdout, format, ## args); } while(0)
-
-// Native Image ABI: https://github.com/oracle/graal/blob/master/substratevm/src/com.oracle.svm.core/headers/graal_isolate.preamble
-typedef struct {
-    int  (*graal_create_isolate)   (graal_create_isolate_params_t*, graal_isolate_t**, graal_isolatethread_t**);
-    int  (*graal_tear_down_isolate)(graal_isolatethread_t*);
-    void (*entrypoint)             (graal_isolatethread_t*);
-    int  (*graal_detach_thread)    (graal_isolatethread_t*);
-    int  (*graal_attach_thread)    (graal_isolate_t*, graal_isolatethread_t**);
-} isolate_abi_t;
 
 // Prints process memory maps to a give file.
 void print_proc_maps(char* filename);
