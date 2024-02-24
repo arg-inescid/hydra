@@ -54,89 +54,6 @@ enum EXECUTION_MODE { NORMAL, CHECKPOINT, RESTORE };
 // Wether we are checkpointing or restoreing.
 enum EXECUTION_MODE CURRENT_MODE = NORMAL;
 
-int load_isolate_abi(void* dhandle, struct isolate_abi* abi) {
-    char* derror = NULL;
-
-    abi->graal_create_isolate = (int (*)(graal_create_isolate_params_t*, graal_isolate_t**, graal_isolatethread_t**)) dlsym(dhandle, "graal_create_isolate");
-    if ((derror = dlerror()) != NULL) {
-        err("%s\n", derror);
-        return 1;
-    }
-
-    abi->graal_tear_down_isolate = (int (*)(graal_isolatethread_t*)) dlsym(dhandle, "graal_tear_down_isolate");
-    if ((derror = dlerror()) != NULL) {
-        err("%s\n", derror);
-        return 1;
-    }
-
-    abi->entrypoint = (void (*)(graal_isolatethread_t*)) dlsym(dhandle, "entrypoint");
-    if ((derror = dlerror()) != NULL) {
-        err("%s\n", derror);
-        return 1;
-    }
-
-    abi->graal_detach_thread = (int (*)(graal_isolatethread_t*)) dlsym(dhandle, "graal_detach_thread");
-    if ((derror = dlerror()) != NULL) {
-        err("%s\n", derror);
-        return 1;
-    }
-
-    abi->graal_attach_thread = (int (*)(graal_isolate_t*, graal_isolatethread_t**)) dlsym(dhandle, "graal_attach_thread");
-    if ((derror = dlerror()) != NULL) {
-        err("%s\n", derror);
-        return 1;
-    }
-
-    return 0;
-}
-
-int install_filter() {
-    struct sock_filter filter[] = {
-        BPF_STMT(BPF_LD + BPF_W + BPF_ABS, (offsetof(struct seccomp_data, arch))),
-        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, AUDIT_ARCH_X86_64, 1, 0),
-        BPF_STMT(BPF_RET + BPF_K, SECCOMP_RET_KILL),
-        BPF_STMT(BPF_LD + BPF_W + BPF_ABS, (offsetof(struct seccomp_data, nr))),
-
-        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_madvise, 14, 0),
-        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_dup3,    13, 0),
-        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_dup2,    12, 0),
-        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_dup,     11, 0),
-        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_close,   10, 0),
-        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_creat,    9, 0),
-        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_openat2,  8, 0),
-        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_openat,   7, 0),
-        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_open,     6, 0),
-        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_exit,     5, 0),
-        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_clone,    4, 0),
-        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_clone3,   3, 0),
-        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_mprotect, 2, 0),
-        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_mmap,     1, 0),
-        BPF_JUMP(BPF_JMP + BPF_JEQ + BPF_K, __NR_munmap,   0, 1),
-        BPF_STMT(BPF_RET + BPF_K, SECCOMP_RET_USER_NOTIF),
-
-        // default rule
-        BPF_STMT(BPF_RET + BPF_K, SECCOMP_RET_ALLOW),
-    };
-
-    struct sock_fprog prog = {
-        .len = (unsigned short)(sizeof(filter) / sizeof(filter[0])),
-        .filter = filter,
-    };
-
-    if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0)) {
-        perror("error: failed to prctl(NO_NEW_PRIVS)");
-        return -1;
-    }
-
-    int fd = syscall(SYS_seccomp, SECCOMP_SET_MODE_FILTER, SECCOMP_FILTER_FLAG_NEW_LISTENER, &prog);
-    if (fd < 0) {
-        perror("error: failed to seccomp(SECCOMP_SET_MODE_FILTER)");
-        return -1;
-    }
-
-    return fd;
-}
-
 void run_serial_entrypoint(struct function_args* fargs, graal_isolatethread_t *isolatethread) {
      for (int i = 0; i < ENTRYPOINT_ITERS; i++) {
 #ifdef PERF
@@ -160,13 +77,14 @@ void* run_parallel_entrypoint(void* args) {
     return NULL;
 }
 
+// TODO - we need to untangle this in two functions in cr.c.
 void* run_function(void* args) {
     struct function_args* fargs = (struct function_args*) args;
     graal_isolatethread_t *isolatethread = NULL;
 
     if (CURRENT_MODE == CHECKPOINT) {
         // Install seccomp filter.
-        fargs->seccomp_fd = install_filter();
+        fargs->seccomp_fd = install_seccomp_filter();
         if (fargs->seccomp_fd < 0) {
             err("error: failed install seccomp filter\n");
             return NULL;
@@ -177,15 +95,8 @@ void* run_function(void* args) {
     if (CURRENT_MODE == RESTORE) {
         fargs->abi.graal_attach_thread(fargs->isolate, &isolatethread);
     } else {
-        // Load function library.
-        void* dhandle = dlopen(fargs->function_path, RTLD_LAZY);
-        if (dhandle == NULL) {
-            err("error: failed to load dynamic library: %s\n", dlerror());
-            return NULL;
-        }
-
         // Initialize abi.
-        if (load_isolate_abi(dhandle, &(fargs->abi))) {
+        if (load_function(fargs->function_path, &(fargs->abi))) {
             err("error: failed to load isolate abi\n");
             return NULL;
         }
@@ -216,327 +127,6 @@ void* run_function(void* args) {
     fargs->abi.graal_detach_thread(isolatethread);
     fargs->finished = 1;
     return NULL;
-}
-
-void handle_mmap(struct function_args* fargs, void* addr, size_t length, int prot, int flags, int fd, off_t offset, void* ret) {
-    mmap_t syscall_args = {.addr = addr, .length = length, .prot = prot, .flags = flags, .fd = fd, .offset = offset, .ret = ret};
-    int pagesize = getpagesize();
-    print_mmap(&syscall_args);
-
-    // Checkpoint the syscall.
-    checkpoint_syscall(fargs->meta_snap_fd, __NR_mmap, &syscall_args, sizeof(mmap_t));
-
-    // When length is not a multiple of pagesize, we extend it to the next page boundary (check mmap man).
-    if (length % pagesize) {
-        size_t padding = (pagesize - (length % pagesize));
-        length = length + padding;
-    }
-
-    mapping_t* mapping = list_find(&(fargs->mappings), ret, length);
-
-    // Add mapping if it does not exist yet.
-    if (mapping == NULL) {
-        mapping = list_push(&(fargs->mappings), ret, length);
-    }
-
-    // Update permissions.
-    mapping_update_permissions(mapping, ret, ((char*) ret + length), (char) prot);
-}
-
-void handle_munmap(struct function_args* fargs, void* addr, size_t length, int ret) {
-    munmap_t syscall_args = {.addr = addr, .length = length, .ret = ret};
-    int pagesize = getpagesize();
-    print_munmap(&syscall_args);
-
-    // Checkpoint the syscall.
-    checkpoint_syscall(fargs->meta_snap_fd, __NR_munmap, &syscall_args, sizeof(munmap_t));
-
-     if ((unsigned long)addr % getpagesize()) {
-        err("warning, munmap start not a multiple of page boundary\n");
-     }
-
-    // When length is not a multiple of pagesize, we extend it to the next page boundary (check mmap man).
-    if (length % pagesize) {
-        size_t padding = (pagesize - (length % pagesize));
-        length = length + padding;
-    }
-
-    mapping_t* mapping = list_find(&(fargs->mappings), addr, length);
-
-    // Add mapping if it does not exist yet.
-    if (mapping == NULL) {
-        err("warning: unmapping unkown mapping %16p - %16p\n", addr, ((char*) addr) + length);
-        return;
-    }
-
-    // Update mapping size to comply with munmap.
-    mapping_update_size(&(fargs->mappings), mapping, addr, ((char*) addr) + length);
-}
-
-void handle_mprotect(struct function_args* fargs, void* addr, size_t length, int prot, int ret) {
-    mprotect_t syscall_args = {.addr = addr, .length = length, .prot = prot, .ret = ret};
-    print_mprotect(&syscall_args);
-
-    // Checkpoint the syscall.
-    checkpoint_syscall(fargs->meta_snap_fd, __NR_mprotect, &syscall_args, sizeof(mprotect_t));
-
-    mapping_t* mapping = list_find(&(fargs->mappings), addr, length);
-
-    // Add mapping if it does not exist yet.
-    if (mapping == NULL) {
-        err("warning: mprotecting unkown mapping %16p - %16p\n", addr, ((char*) addr) + length);
-        return;
-    }
-
-    // Update permissions.
-    mapping_update_permissions(mapping, addr, ((char*) addr + length), prot);
-}
-
-void handle_madvise(struct function_args* fargs, void* addr, size_t length, int advice, int ret) {
-    madvise_t syscall_args = {.addr = addr, .length = length, .advice = advice, .ret = ret};
-    int pagesize = getpagesize();
-    print_madvise(&syscall_args);
-
-    // Note: we do not checkpoint this syscall, it can be ignored on the restore side.
-
-    if (advice != MADV_DONTNEED) {
-        err("warning, madvise advice not supported: %d\n", advice);
-    }
-
-    if ((unsigned long)addr % pagesize) {
-        err("warning, madvise start not a multiple of page boundary\n");
-     }
-
-    // When length is not a multiple of pagesize, we extend it to the next page boundary (check mmap man).
-    if (length % pagesize) {
-        size_t padding = (pagesize - (length % pagesize));
-        length = length + padding;
-    }
-
-    mapping_t* mapping = list_find(&(fargs->mappings), addr, length);
-
-    // Add mapping if it does not exist yet.
-    if (mapping == NULL) {
-        err("warning: unmapping unkown mapping %16p - %16p\n", addr, ((char*) addr) + length);
-        return;
-    }
-
-    // TODO - some of these might be stacks. The stack allocated for the function main thread.
-
-    // Update mapping size to comply with MADV_DONTNEED.
-    mapping_update_permissions(mapping, addr, ((char*) addr + length), PROT_NONE);
-}
-
-void handle_dup(struct function_args* fargs, int oldfd, int ret) {
-    dup_t syscall_args = {.oldfd = oldfd, .ret = ret};
-    print_dup(&syscall_args);
-    checkpoint_syscall(fargs->meta_snap_fd, __NR_dup, &syscall_args, sizeof(dup_t));
-}
-
-void handle_dup2(struct function_args* fargs, int oldfd, int newfd, int ret) {
-    dup2_t syscall_args = {.oldfd = oldfd, .newfd = newfd, .ret = ret};
-    print_dup2(&syscall_args);
-    checkpoint_syscall(fargs->meta_snap_fd, __NR_dup2, &syscall_args, sizeof(dup2_t));
-}
-
-void handle_open(struct function_args* fargs, char* pathname, int flags, mode_t mode, int ret) {
-    open_t syscall_args = {.flags = flags, .mode = mode, .ret = ret};
-
-    // If pathname is larger than max, error out, otherwise, copy.
-    if (strlen(pathname) > MAX_PATHNAME) {
-        err("error, cannot checkpoint pathname longer than %d: %s\n", MAX_PATHNAME, pathname);
-    } else {
-        strcpy(syscall_args.pathname, pathname);
-    }
-
-    print_open(&syscall_args);
-    checkpoint_syscall(fargs->meta_snap_fd, __NR_open, &syscall_args, sizeof(open_t));
-}
-
-void handle_openat(struct function_args* fargs, int dirfd, char* pathname, int flags, mode_t mode, int ret) {
-    openat_t syscall_args = {.dirfd = dirfd, .flags = flags, .mode = mode, .ret = ret};
-
-    // If pathname is larger than max, error out, otherwise, copy.
-    if (strlen(pathname) > MAX_PATHNAME) {
-        err("error, cannot checkpoint pathname longer than %d: %s\n", MAX_PATHNAME, pathname);
-    } else {
-        strcpy(syscall_args.pathname, pathname);
-    }
-
-    print_openat(&syscall_args);
-    checkpoint_syscall(fargs->meta_snap_fd, __NR_openat, &syscall_args, sizeof(openat_t));
-}
-
-void handle_close(struct function_args* fargs, int fd, int ret) {
-    close_t syscall_args = {.fd = fd, .ret = ret};
-    print_close(&syscall_args);
-    checkpoint_syscall(fargs->meta_snap_fd, __NR_close, &syscall_args, sizeof(close_t));
-}
-
-int should_follow_clone(int flags) {
-    return flags & CLONE_VM && flags & CLONE_FS && flags & CLONE_FILES && flags & CLONE_SIGHAND && flags & CLONE_THREAD && flags & CLONE_SYSVSEM;
-}
-
-int should_follow_clone3(struct clone_args *cl_args, size_t size) {
-    return should_follow_clone(cl_args->flags);
-}
-
-void handle_notifications(struct function_args* fargs) {
-    // This number represents the number of threads that are initially running in the sandbox.
-    int active_threads = 1;
-    struct seccomp_notif_sizes sizes;
-    if (syscall(SYS_seccomp, SECCOMP_GET_NOTIF_SIZES, 0, &sizes) < 0) {
-        err("error: failed to seccomp(SECCOMP_GET_NOTIF_SIZES)");
-        return;
-    }
-
-    struct seccomp_notif *req = (struct seccomp_notif*)malloc(sizes.seccomp_notif);
-    struct seccomp_notif_resp *resp = (struct seccomp_notif_resp*)malloc(sizes.seccomp_notif_resp);
-    struct pollfd fds[1] = {
-        {
-            .fd  = fargs->seccomp_fd,
-            .events = POLLIN,
-        },
-    };
-
-    while (active_threads) {
-
-        // Wait for a notification
-        int events = poll(fds, 1, 1000);
-        if (events < 0) {
-            err("error: failed to pool for events");
-            continue;
-        } else if (events == 0 && fargs->finished) {
-            // TODO - we should kill all remaining threads at this moment.
-            err("warning: monitor exiting before all function threads terminate (%d active threads)!\n", active_threads);
-            break;
-        } else if (fds[0].revents & POLLNVAL) {
-            break;
-        } else if (events > 1) {
-            err("warning: received multiple events at once!\n");
-        }
-
-        // Receive notification
-        memset(req, 0, sizes.seccomp_notif);
-        memset(resp, 0, sizes.seccomp_notif_resp);
-        if (ioctl(fargs->seccomp_fd, SECCOMP_IOCTL_NOTIF_RECV, req) == -1) {
-            perror("error: failed to ioctl(SECCOMP_IOCTL_NOTIF_RECV)");
-            continue;
-        }
-
-        // Validate notification
-        if (ioctl(fargs->seccomp_fd, SECCOMP_IOCTL_NOTIF_ID_VALID, &req->id) == -1 ) {
-            perror("error: failed to ioctl(SECCOMP_IOCTL_NOTIF_ID_VALID)");
-            continue;
-        }
-
-        // Send response
-        resp->id = req->id;
-        long long unsigned int *args = req->data.args;
-        switch (req->data.nr) {
-            case __NR_dup:
-                resp->val = syscall(__NR_dup, args[0]);
-                resp->error = resp->val < 0 ? -errno : 0;
-                resp->flags = 0;
-                handle_dup(fargs, (int) args[0], resp->val);
-                break;
-            case __NR_dup2:
-                resp->val = syscall(__NR_dup2, args[0], args[1]);
-                resp->error = resp->val < 0 ? -errno : 0;
-                resp->flags = 0;
-                handle_dup2(fargs, (int) args[0], (int) args[1], resp->val);
-                break;
-            case __NR_open:
-                resp->val = syscall(__NR_open, args[0], args[1], args[2]);
-                resp->error = resp->val < 0 ? -errno : 0;
-                resp->flags = 0;
-                handle_open(fargs, (char*)args[0], (int)args[1], (mode_t)args[2], resp->val);
-                break;
-            case __NR_openat:
-                resp->val = syscall(__NR_openat, args[0], args[1], args[2], args[3]);
-                resp->error = resp->val < 0 ? -errno : 0;
-                resp->flags = 0;
-                handle_openat(fargs, (int) args[0], (char*)args[1], (int)args[2], (mode_t)args[3], resp->val);
-                break;
-            case __NR_close:
-                resp->val = syscall(__NR_close, args[0]);
-                resp->error = resp->val < 0 ? -errno : 0;
-                resp->flags = 0;
-                handle_close(fargs, (int)args[0], resp->val);
-                break;
-            case __NR_exit:
-                if (active_threads > 1) {
-                    err("warning: exit was invoked!\n");
-                }
-                active_threads--;
-                resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
-                break;
-            case __NR_clone:
-                // TODO - we will need to handle threads. To checkpoint threads, we need to know
-                // which threads belong to which sandbox.
-                if (should_follow_clone((int)args[0])) {
-                    active_threads++;
-                    err("warning: clone was invoked (%d active threads)!\n", active_threads);
-                    resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
-                } else {
-                    err("warning: blocking clone (new process)!\n");
-                    resp->val = -1;
-                    resp->error = -EAGAIN;
-                    resp->flags = 0;
-                }
-                break;
-            case __NR_clone3:
-                if (should_follow_clone3((struct clone_args*) args[0], (size_t) args[1])) {
-                    active_threads++;
-                    err("warning: clone3 was invoked (%d active threads)!\n", active_threads);
-                    resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
-                } else {
-                    err("warning: blocking clone3 (new process)!\n");
-                    resp->val = -1;
-                    resp->error = -EAGAIN;
-                    resp->flags = 0;
-                }
-                break;
-            case __NR_mmap:
-                resp->val = syscall(__NR_mmap, args[0], args[1], args[2], args[3], args[4], args[5]);
-                resp->error = resp->val < 0 ? -errno : 0;
-                resp->flags = 0;
-                handle_mmap(fargs, (void*) args[0], (size_t) args[1], (int) args[2], (int) args[3], (int) args[4], (off_t) args[5], (void*) resp->val);
-                break;
-            case __NR_munmap:
-                resp->val = syscall(__NR_munmap, args[0], args[1]);
-                resp->error = resp->val < 0 ? -errno: 0;
-                resp->flags = 0;
-                handle_munmap(fargs, (void*) args[0], (size_t) args[1], (int) resp->val);
-                break;
-            case __NR_mprotect:
-                resp->val = syscall(__NR_mprotect, args[0], args[1], args[2]);
-                resp->error = resp->val < 0 ? -errno : 0;
-                resp->flags = 0;
-                handle_mprotect(fargs, (void*) args[0], (size_t) args[1], (int) args[2], (int) resp->val);
-                break;
-            case __NR_madvise:
-                resp->val = syscall(__NR_madvise, args[0], args[1], args[2]);
-                resp->error = resp->val < 0 ? -errno : 0;
-                resp->flags = 0;
-                handle_madvise(fargs, (void*) args[0], (size_t) args[1], (int) args[2], (int) resp->val);
-                break;
-            default:
-                // TODO - in theory, we should be notified on all syscalls.
-                err("warning: unhandled syscall %d!\n", req->data.nr);
-                resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
-                break;
-        }
-
-        if (ioctl(fargs->seccomp_fd, SECCOMP_IOCTL_NOTIF_SEND, resp) == -1) {
-            perror("error: failed to ioctl(SECCOMP_IOCTL_NOTIF_SEND)");
-            continue;
-        }
-    }
-
-    close(fargs->seccomp_fd);
-    free(req);
-    free(resp);
 }
 
 void usage_exit() {
@@ -615,7 +205,7 @@ int main(int argc, char** argv) {
         fargs.seccomp_fd = move_to_reserved_fd(fargs.seccomp_fd);
 
         // Keep handling syscall notifications.
-        handle_notifications(&fargs);
+        handle_syscalls(fargs.seccomp_fd, &(fargs.finished), fargs.meta_snap_fd, &(fargs.mappings));
     }
 
     // Join thread.

@@ -1,8 +1,10 @@
 #ifndef SYSCALLS_H
 #define SYSCALLS_H
 
-#include <stdio.h>
+#include "list.h"
+
 #include <fcntl.h>
+#include <stdio.h>
 
 #define MAX_PATHNAME 255
 
@@ -27,5 +29,22 @@ void print_dup2(dup2_t* syscall_args);
 void print_open(open_t* syscall_args);
 void print_openat(openat_t* syscall_args);
 void print_close(close_t* syscall_args);
+
+// Functions to deal with each individual syscall.
+void handle_mmap(int meta_snap_fd, mapping_t* mappings, long long unsigned int* args, void* ret);
+void handle_munmap(int meta_snap_fd, mapping_t* mappings, long long unsigned int* args, int ret);
+void handle_mprotect(int meta_snap_fd, mapping_t* mappings, long long unsigned int* args, int ret);
+void handle_madvise(int meta_snap_fd, mapping_t* mappings, long long unsigned int* args, int ret);
+void handle_dup(int meta_snap_fd, long long unsigned int* args, int ret);
+void handle_dup2(int meta_snap_fd, long long unsigned int* args, int ret);
+void handle_open(int meta_snap_fd, long long unsigned int* args, int ret);
+void handle_openat(int meta_snap_fd, long long unsigned int* args, int ret);
+void handle_close(int meta_snap_fd, long long unsigned int* args, int ret);
+
+// Function that listens to seccomp notifications an invokes syscalls.
+void handle_syscalls(int seccomp_fd, int* finished, int meta_snap_fd, mapping_t* mappings);
+
+// Installs seccomp filter that delives notifications handled in handle_syscalls.
+int install_seccomp_filter();
 
 #endif

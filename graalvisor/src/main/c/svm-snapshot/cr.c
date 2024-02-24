@@ -1,3 +1,4 @@
+#include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -545,4 +546,48 @@ void restore(char* meta_snap_path, char* mem_snap_path, isolate_abi_t* abi, graa
 
     close(mem_snap_fd);
     close(meta_snap_fd);
+}
+
+int load_function(char* function_path, struct isolate_abi* abi) {
+    char* derror = NULL;
+
+    // Load function library.
+    void* dhandle = dlopen(function_path, RTLD_LAZY);
+    if (dhandle == NULL) {
+        err("error: failed to load dynamic library: %s\n", dlerror());
+        return 1;
+    }
+
+    // Load function abi.
+    abi->graal_create_isolate = (int (*)(graal_create_isolate_params_t*, graal_isolate_t**, graal_isolatethread_t**)) dlsym(dhandle, "graal_create_isolate");
+    if ((derror = dlerror()) != NULL) {
+        err("error: %s\n", derror);
+        return 1;
+    }
+
+    abi->graal_tear_down_isolate = (int (*)(graal_isolatethread_t*)) dlsym(dhandle, "graal_tear_down_isolate");
+    if ((derror = dlerror()) != NULL) {
+        err("error: %s\n", derror);
+        return 1;
+    }
+
+    abi->entrypoint = (void (*)(graal_isolatethread_t*)) dlsym(dhandle, "entrypoint");
+    if ((derror = dlerror()) != NULL) {
+        err("error: %s\n", derror);
+        return 1;
+    }
+
+    abi->graal_detach_thread = (int (*)(graal_isolatethread_t*)) dlsym(dhandle, "graal_detach_thread");
+    if ((derror = dlerror()) != NULL) {
+        err("error: %s\n", derror);
+        return 1;
+    }
+
+    abi->graal_attach_thread = (int (*)(graal_isolate_t*, graal_isolatethread_t**)) dlsym(dhandle, "graal_attach_thread");
+    if ((derror = dlerror()) != NULL) {
+        err("error: %s\n", derror);
+        return 1;
+    }
+
+    return 0;
 }

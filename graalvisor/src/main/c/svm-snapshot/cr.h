@@ -70,4 +70,7 @@ void restore(char* meta_snap_path, char* mem_snap_path, isolate_abi_t* abi, graa
 // Using dup (or similar syscall), moves oldfd into a reserved fd.
 // Note: this function closes the oldfd.
 int move_to_reserved_fd(int oldfd);
+
+// Load function (dlopen) and look for abi symbols (dlsym),
+int load_function(char* function_path, struct isolate_abi* abi);
 #endif
