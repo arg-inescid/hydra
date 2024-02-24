@@ -312,13 +312,13 @@ void checkpoint_abi(int meta_snap_fd, isolate_abi_t* abi) {
     if (write(meta_snap_fd, &tag, sizeof(int)) != sizeof(int)) {
         perror("error: failed to serialize abi tag");
     }
-    if (write(meta_snap_fd, abi, sizeof(struct isolate_abi)) != sizeof(struct isolate_abi)) {
+    if (write(meta_snap_fd, abi, sizeof(isolate_abi_t)) != sizeof(isolate_abi_t)) {
         perror("error: failed to serialize function abi struct");
     }
 }
 
 void restore_abi(int meta_snap_fd, isolate_abi_t* abi) {
-    if (read(meta_snap_fd, abi, sizeof(struct isolate_abi)) != sizeof(struct isolate_abi)) {
+    if (read(meta_snap_fd, abi, sizeof(isolate_abi_t)) != sizeof(isolate_abi_t)) {
         perror("error: failed to deserialize function abi struct");
         return;
     }
@@ -548,7 +548,7 @@ void restore(char* meta_snap_path, char* mem_snap_path, isolate_abi_t* abi, graa
     close(meta_snap_fd);
 }
 
-int load_function(char* function_path, struct isolate_abi* abi) {
+int load_function(char* function_path, isolate_abi_t* abi) {
     char* derror = NULL;
 
     // Load function library.

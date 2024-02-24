@@ -30,7 +30,7 @@
 
 struct function_args {
     // ABI to create, invoke, destroy isolates.
-    struct isolate_abi abi;
+    isolate_abi_t abi;
     // Pointer to the isolate.
     graal_isolate_t* isolate;
     // File descriptor used when installing seccomp.

@@ -42,15 +42,13 @@
 #define err(format, args...) do { fprintf(stdout, format, ## args); } while(0)
 
 // Native Image ABI: https://github.com/oracle/graal/blob/master/substratevm/src/com.oracle.svm.core/headers/graal_isolate.preamble
-struct isolate_abi {
+typedef struct {
     int  (*graal_create_isolate)   (graal_create_isolate_params_t*, graal_isolate_t**, graal_isolatethread_t**);
     int  (*graal_tear_down_isolate)(graal_isolatethread_t*);
     void (*entrypoint)             (graal_isolatethread_t*);
     int  (*graal_detach_thread)    (graal_isolatethread_t*);
     int  (*graal_attach_thread)    (graal_isolate_t*, graal_isolatethread_t**);
-};
-
-typedef struct isolate_abi isolate_abi_t; // TODO - typedef
+} isolate_abi_t;
 
 // Prints process memory maps to a give file.
 void print_proc_maps(char* filename);
@@ -72,5 +70,5 @@ void restore(char* meta_snap_path, char* mem_snap_path, isolate_abi_t* abi, graa
 int move_to_reserved_fd(int oldfd);
 
 // Load function (dlopen) and look for abi symbols (dlsym),
-int load_function(char* function_path, struct isolate_abi* abi);
+int load_function(char* function_path, isolate_abi_t* abi);
 #endif
