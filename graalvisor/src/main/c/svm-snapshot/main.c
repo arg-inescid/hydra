@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
         abi.graal_detach_thread(isolatethread);
     } else if (CURRENT_MODE == CHECKPOINT) {
         size_t seed = argc == 4 ? atoi(argv[3]) : 0;
-        checkpoint_svm(function_path, NULL, seed, "metadata.snap", "memory.snap");
+        checkpoint_svm(function_path, NULL, seed, "metadata.snap", "memory.snap", NULL, NULL);
     } else {
         graal_isolate_t* isolate;
         isolate_abi_t abi;

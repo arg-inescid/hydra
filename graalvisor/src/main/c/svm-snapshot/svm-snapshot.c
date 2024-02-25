@@ -126,7 +126,14 @@ void* checkpoint_worker(void* args) {
     return NULL;
 }
 
-void checkpoint_svm(const char* function_path, const char* function_args, size_t seed, const char* meta_snap_path, const char* mem_snap_path) {
+void checkpoint_svm(
+        const char* function_path,
+        const char* function_args,
+        size_t seed,
+        const char* meta_snap_path,
+        const char* mem_snap_path,
+        isolate_abi_t* abi,
+        graal_isolate_t** isolate) {
     pthread_t worker;
 
     // Create and initialize the memory mappings list head;
@@ -179,12 +186,20 @@ void checkpoint_svm(const char* function_path, const char* function_args, size_t
     log("checkpoint took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
 #endif
 
+    // Close meta and mem fds.
     close(meta_snap_fd);
     close(mem_snap_fd);
+
+    // Copy output arguments.
+    if (abi != NULL) {
+        memcpy(abi, &(wargs.abi), sizeof(isolate_abi_t));
+    }
+    if (isolate != NULL) {
+        memcpy(isolate, &(wargs.isolate), sizeof(graal_isolate_t*));
+    }
 }
 
 void restore_svm(const char* meta_snap_path, const char* mem_snap_path, isolate_abi_t* abi, graal_isolate_t** isolate) {
-        err("Meta: %s, Mem: %s\n", meta_snap_path, mem_snap_path);
 #ifdef PERF
         struct timeval st, et;
         gettimeofday(&st, NULL);
