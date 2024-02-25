@@ -11,12 +11,13 @@ enum EXECUTION_MODE { NORMAL, CHECKPOINT, RESTORE };
 enum EXECUTION_MODE CURRENT_MODE = NORMAL;
 
 void usage_exit() {
-    fprintf(stderr, "Syntax: main <normal|checkpoint|restore> <path to native image app library>\n");
+    fprintf(stderr, "Syntax: main <normal|restore> <path to native image app library>\n");
+    fprintf(stderr, "Syntax: main checkpoint <path to native image app library> [seed]\n");
     exit(1);
 }
 
 char* init_args(int argc, char** argv) {
-    if (argc != 3) {
+    if (argc < 3) {
         usage_exit();
     } else {
         switch (argv[1][0])
@@ -54,7 +55,8 @@ int main(int argc, char** argv) {
         run_entrypoint(&abi, isolate, isolatethread);
         abi.graal_detach_thread(isolatethread);
     } else if (CURRENT_MODE == CHECKPOINT) {
-        checkpoint_svm(function_path, NULL, "metadata.snap", "memory.snap");
+        size_t seed = argc == 4 ? atoi(argv[3]) : 0;
+        checkpoint_svm(function_path, NULL, seed, "metadata.snap", "memory.snap");
     } else {
         graal_isolate_t* isolate;
         isolate_abi_t abi;

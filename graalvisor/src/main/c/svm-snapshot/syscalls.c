@@ -256,7 +256,9 @@ int should_follow_clone3(struct clone_args *cl_args, size_t size) {
     return should_follow_clone(cl_args->flags);
 }
 
-void handle_syscalls(int seccomp_fd, int* finished, int meta_snap_fd, mapping_t* mappings) {
+void handle_syscalls(size_t seed, int seccomp_fd, int* finished, int meta_snap_fd, mapping_t* mappings) {
+    // Base for memory mappings. Each seed value is 16TB apart.
+    size_t mem_base = 0xA00000000000 + 0x100000000000 * seed;
     // This number represents the number of threads that are initially running in the sandbox.
     int active_threads = 1;
     struct seccomp_notif_sizes sizes;
@@ -373,6 +375,13 @@ void handle_syscalls(int seccomp_fd, int* finished, int meta_snap_fd, mapping_t*
                 }
                 break;
             case __NR_mmap:
+                if ((void*)args[0] == NULL) {
+                    // Move mmap into address.
+                    args[0] = mem_base;
+                    // Update base for next time.
+                    mem_base += args[1];
+                }
+                // TODO - should we use fixed to enforce our address hint?
                 resp->val = syscall(__NR_mmap, args[0], args[1], args[2], args[3], args[4], args[5]);
                 resp->error = resp->val < 0 ? -errno : 0;
                 resp->flags = 0;

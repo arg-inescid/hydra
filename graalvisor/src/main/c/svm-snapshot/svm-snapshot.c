@@ -126,7 +126,7 @@ void* checkpoint_worker(void* args) {
     return NULL;
 }
 
-void checkpoint_svm(const char* function_path, const char* function_args, const char* meta_snap_path, const char* mem_snap_path) {
+void checkpoint_svm(const char* function_path, const char* function_args, size_t seed, const char* meta_snap_path, const char* mem_snap_path) {
     pthread_t worker;
 
     // Create and initialize the memory mappings list head;
@@ -159,7 +159,7 @@ void checkpoint_svm(const char* function_path, const char* function_args, const 
     wargs.seccomp_fd = move_to_reserved_fd(wargs.seccomp_fd);
 
     // Keep handling syscall notifications.
-    handle_syscalls(wargs.seccomp_fd, &(wargs.finished), meta_snap_fd, &mappings);
+    handle_syscalls(seed, wargs.seccomp_fd, &(wargs.finished), meta_snap_fd, &mappings);
 
     // Join thread.
     pthread_join(worker, NULL); // TODO - waitpid

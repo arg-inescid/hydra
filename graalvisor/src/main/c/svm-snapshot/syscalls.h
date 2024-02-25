@@ -42,7 +42,7 @@ void handle_openat(int meta_snap_fd, long long unsigned int* args, int ret);
 void handle_close(int meta_snap_fd, long long unsigned int* args, int ret);
 
 // Function that listens to seccomp notifications an invokes syscalls.
-void handle_syscalls(int seccomp_fd, int* finished, int meta_snap_fd, mapping_t* mappings);
+void handle_syscalls(size_t seed, int seccomp_fd, int* finished, int meta_snap_fd, mapping_t* mappings);
 
 // Installs seccomp filter that delives notifications handled in handle_syscalls.
 int install_seccomp_filter();

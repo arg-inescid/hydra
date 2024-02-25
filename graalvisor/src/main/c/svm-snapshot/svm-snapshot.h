@@ -13,7 +13,7 @@ typedef struct {
 } isolate_abi_t;
 
 // Loads, runs and then checkpoints a substrate vm instance.
-void checkpoint_svm(const char* function_path, const char* function_args, const char* meta_snap_path, const char* mem_snap_path);
+void checkpoint_svm(const char* function_path, const char* function_args, unsigned long seed, const char* meta_snap_path, const char* mem_snap_path);
 
 // Loads a checkpointed substrate vm instance.
 void restore_svm(const char* meta_snap_path, const char* mem_snap_path, isolate_abi_t* abi, graal_isolate_t** isolate);
