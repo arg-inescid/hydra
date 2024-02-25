@@ -5,6 +5,7 @@
 #ifdef LAZY_ISOLATION
 #include "lazyisolation.h"
 #endif
+#include "svm-snapshot.h"
 #include "org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface.h"
 
 #define PIPE_READ_END  0
@@ -96,4 +97,36 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
         install_thread_filter();
     }
 #endif
+}
+
+JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_checkpointSVM(
+        JNIEnv *env, jobject thisObj, jstring func_path, jstring func_args, jstring meta_snap_path, jstring mem_snap_path) {
+    const char* func_path_str = (*env)->GetStringUTFChars(env, func_path, 0);
+    const char* func_args_str = (*env)->GetStringUTFChars(env, func_args, 0);
+    const char* meta_snap_path_str = (*env)->GetStringUTFChars(env, meta_snap_path, 0);
+    const char* mem_snap_path_str = (*env)->GetStringUTFChars(env, mem_snap_path, 0);
+    // TODO - attach, tear down.
+    // TODO - tear down isolate.
+    checkpoint_svm(func_path_str, func_args_str, meta_snap_path_str, mem_snap_path_str);
+    (*env)->ReleaseStringUTFChars(env, func_path, func_path_str);
+    (*env)->ReleaseStringUTFChars(env, func_args, func_args_str);
+    (*env)->ReleaseStringUTFChars(env, meta_snap_path, meta_snap_path_str);
+    (*env)->ReleaseStringUTFChars(env, mem_snap_path, mem_snap_path_str);
+    return (*env)->NewStringUTF(env, "BLABLE");
+}
+
+JNIEXPORT long JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_restoreSVM(
+        JNIEnv *env, jobject thisObj, jstring meta_snap_path, jstring mem_snap_path) {
+    const char* meta_snap_path_str = (*env)->GetStringUTFChars(env, meta_snap_path, 0);
+    const char* mem_snap_path_str = (*env)->GetStringUTFChars(env, mem_snap_path, 0);
+    graal_isolate_t* isolate_ptr;
+    graal_isolatethread_t* isolatethread_ptr;
+    isolate_abi_t abi_ptr;
+    restore_svm(meta_snap_path_str, mem_snap_path_str, &abi_ptr, &isolate_ptr);
+    abi_ptr.graal_attach_thread(isolate_ptr, &isolatethread_ptr);
+    run_entrypoint(&abi_ptr, isolate_ptr, isolatethread_ptr);
+    abi_ptr.graal_detach_thread(isolatethread_ptr);
+    (*env)->ReleaseStringUTFChars(env, mem_snap_path, mem_snap_path_str);
+    (*env)->ReleaseStringUTFChars(env, meta_snap_path, meta_snap_path_str);
+    return (long) isolate_ptr;
 }

@@ -477,7 +477,7 @@ void checkpoint_memory(int meta_snap_fd, int mem_snap_fd, mapping_t* mappings, i
     checkpoint_isolate(meta_snap_fd, isolate);
 }
 
-void restore(char* meta_snap_path, char* mem_snap_path, isolate_abi_t* abi, graal_isolate_t** isolate){
+void restore(const char* meta_snap_path, const char* mem_snap_path, isolate_abi_t* abi, graal_isolate_t** isolate){
     // Open the metadata file (syscall arguments, memory ranges, etc).
     int meta_snap_fd = open(meta_snap_path, O_RDONLY);
     if (meta_snap_fd < 0) {
@@ -548,7 +548,7 @@ void restore(char* meta_snap_path, char* mem_snap_path, isolate_abi_t* abi, graa
     close(meta_snap_fd);
 }
 
-int load_function(char* function_path, isolate_abi_t* abi) {
+int load_function(const char* function_path, isolate_abi_t* abi) {
     char* derror = NULL;
 
     // Load function library.

@@ -32,9 +32,9 @@ typedef struct {
     // File descriptor used when installing seccomp.
     int seccomp_fd;
     // Path of the function library.
-    char* function_path;
+    const char* function_path;
     // Function arguments.
-    void* function_args;
+    const void* function_args;
     // Integer used as a boolean to decide if the function has terminated.
     int finished;
 } checkpoint_worker_args_t;
@@ -84,7 +84,7 @@ void run_entrypoint(isolate_abi_t* abi, graal_isolate_t* isolate, graal_isolatet
     }
 }
 
-void run_svm(char* function_path, isolate_abi_t* abi, graal_isolate_t** isolate) {
+void run_svm(const char* function_path, isolate_abi_t* abi, graal_isolate_t** isolate) {
     graal_isolatethread_t *isolatethread = NULL;
 
     // Load function and initialize abi.
@@ -126,7 +126,7 @@ void* checkpoint_worker(void* args) {
     return NULL;
 }
 
-void checkpoint_svm(char* function_path, char* function_args, char* meta_snap_path, char* mem_snap_path) {
+void checkpoint_svm(const char* function_path, const char* function_args, const char* meta_snap_path, const char* mem_snap_path) {
     pthread_t worker;
 
     // Create and initialize the memory mappings list head;
@@ -183,12 +183,13 @@ void checkpoint_svm(char* function_path, char* function_args, char* meta_snap_pa
     close(mem_snap_fd);
 }
 
-void restore_svm(char* meta_snap_path, char* mem_snap_path, isolate_abi_t* abi, graal_isolate_t** isolate) {
+void restore_svm(const char* meta_snap_path, const char* mem_snap_path, isolate_abi_t* abi, graal_isolate_t** isolate) {
+        err("Meta: %s, Mem: %s\n", meta_snap_path, mem_snap_path);
 #ifdef PERF
         struct timeval st, et;
         gettimeofday(&st, NULL);
 #endif
-        restore("metadata.snap", "memory.snap", abi, isolate);
+        restore(meta_snap_path, mem_snap_path, abi, isolate);
 #ifdef PERF
         gettimeofday(&et, NULL);
         log("restore took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));

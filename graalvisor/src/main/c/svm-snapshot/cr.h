@@ -45,7 +45,7 @@
 void print_proc_maps(char* filename);
 
 // Loads, invokes, and checkpoints an svm instance.
-void checkpoint(char* function_path, char* args, char* meta_snap_path, char* mem_snap_path);
+void checkpoint(const char* function_path, const char* function_args, char* meta_snap_path, char* mem_snap_path);
 
 // Checkpoints a single syscall invocation.
 void checkpoint_syscall(int meta_snap_fd, int tag, void* syscall_args, size_t size);
@@ -54,12 +54,12 @@ void checkpoint_syscall(int meta_snap_fd, int tag, void* syscall_args, size_t si
 void checkpoint_memory(int meta_snap_fd, int mem_snap_fd, mapping_t* mappings, isolate_abi_t* abi, graal_isolate_t* isolate);
 
 // Restores a substrace vm instance.
-void restore(char* meta_snap_path, char* mem_snap_path, isolate_abi_t* abi, graal_isolate_t** isolate);
+void restore(const char* meta_snap_path, const char* mem_snap_path, isolate_abi_t* abi, graal_isolate_t** isolate);
 
 // Using dup (or similar syscall), moves oldfd into a reserved fd.
 // Note: this function closes the oldfd.
 int move_to_reserved_fd(int oldfd);
 
 // Load function (dlopen) and look for abi symbols (dlsym),
-int load_function(char* function_path, isolate_abi_t* abi);
+int load_function(const char* function_path, isolate_abi_t* abi);
 #endif
