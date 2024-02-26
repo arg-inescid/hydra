@@ -13,7 +13,7 @@ public class ContextSnapshotSandboxProvider extends SandboxProvider {
      * Note 1: the same id should be used when checkpointing and restoring.
      * Note 2: we cannot host two functions with the same svmID at the same time.
      */
-    private final int svmID = 0;
+    private final int svmID = 0; // TODO - this should be set dynamically.
     /**
      * Path to function library file.
      */
