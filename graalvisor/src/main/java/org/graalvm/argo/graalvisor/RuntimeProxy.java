@@ -8,6 +8,7 @@ import static org.graalvm.argo.graalvisor.utils.ProxyUtils.extractRequestBody;
 import static org.graalvm.argo.graalvisor.utils.ProxyUtils.writeResponse;
 
 import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,6 +30,7 @@ import org.graalvm.argo.graalvisor.function.PolyglotFunction;
 import org.graalvm.argo.graalvisor.function.TruffleFunction;
 import org.graalvm.argo.graalvisor.sandboxing.PolyContextSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.ContextSandboxProvider;
+import org.graalvm.argo.graalvisor.sandboxing.ContextSnapshotSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.IsolateSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.ProcessSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.RuntimeSandboxProvider;
@@ -189,6 +191,8 @@ public abstract class RuntimeProxy {
             if (function.getLanguage() == PolyglotLanguage.JAVA) {
                 if (sandboxName.equals("context")) {
                     return new ContextSandboxProvider(function);
+                } else if (sandboxName.equals("context-snapshot")) {
+                    return new ContextSnapshotSandboxProvider(function);
                 } else if (sandboxName.equals("isolate")) {
                     return new IsolateSandboxProvider(function);
                 } else if (sandboxName.equals("runtime")) {
@@ -241,8 +245,7 @@ public abstract class RuntimeProxy {
                     bis.transferTo(fos);
 
                     // Use class loader explicitly to load new classes from a JAR dynamically.
-                    URLClassLoader loader = new URLClassLoader(new URL[] { Paths.get(jarFileName).toUri().toURL() },
-                            this.getClass().getClassLoader());
+                    URLClassLoader loader = new URLClassLoader(new URL[] { Paths.get(jarFileName).toUri().toURL() }, this.getClass().getClassLoader());
                     Class<?> cls = Class.forName(functionEntryPoint, true, loader);
                     Method method = cls.getMethod("main", Map.class);
                     HotSpotFunction function = new HotSpotFunction(functionName, functionEntryPoint, PolyglotLanguage.JAVA.toString(), method);
@@ -279,8 +282,12 @@ public abstract class RuntimeProxy {
                 }
 
                 if (functionLanguage.equalsIgnoreCase("java")) {
-                    try (OutputStream fos = new FileOutputStream(soFileName); InputStream bis = new BufferedInputStream(t.getRequestBody(), 4096)) {
-                        bis.transferTo(fos);
+                    if (new File(soFileName).exists()) {
+                        System.out.println(String.format("Reusing %s", soFileName));
+                    } else {
+                        try (OutputStream fos = new FileOutputStream(soFileName); InputStream bis = new BufferedInputStream(t.getRequestBody(), 4096)) {
+                            bis.transferTo(fos);
+                        }
                     }
                     function = new NativeFunction(functionName, functionEntryPoint, functionLanguage, soFileName, lazyIsolation);
                 } else {

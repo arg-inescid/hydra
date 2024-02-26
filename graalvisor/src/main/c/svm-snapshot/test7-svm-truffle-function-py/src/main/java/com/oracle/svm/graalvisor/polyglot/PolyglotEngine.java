@@ -31,7 +31,7 @@ public class PolyglotEngine {
      */
     private final Engine engine = COMPILATION ? Engine.create() : null;
 
-    private Value newContext(String language, String source, String entrypoint) {
+    public Value newContext(String language, String source, String entrypoint) {
         Map<String, String> options = new HashMap<>();
         String javaHome = System.getenv("JAVA_HOME");
         Context context = null;
@@ -101,11 +101,6 @@ public class PolyglotEngine {
 
     private void releaseContext() {
         contexts.get(contextHint.get()).set(true);
-    }
-
-    public void init(String language, String source, String entrypoint) {
-        acquireContext(language, source, entrypoint);
-        releaseContext();
     }
 
     public String invoke(String language, String source, String entrypoint, String arguments) {

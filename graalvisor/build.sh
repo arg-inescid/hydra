@@ -7,32 +7,54 @@ GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
 function build_lazyisolation {
-	release=$(uname -r)
-	major_version=${release%%.*}
-	release=${release#*.}
-	minor_version=${release%%.*}
+    release=$(uname -r)
+    major_version=${release%%.*}
+    release=${release#*.}
+    minor_version=${release%%.*}
 
-	if [ $major_version -ge 5 ] && [ $minor_version -ge 10 ]; then
-        	gcc -c -I"$LAZY_DIR" -o $LIB_DIR/lazyisolation.o $LAZY_DIR/lazyisolation.c
-	    	gcc -c -I"$LAZY_DIR" -o $LIB_DIR/shared_queue.o $LAZY_DIR/shared_queue.c
-	    	gcc -c -I"$LAZY_DIR" -o $LIB_DIR/filters.o $LAZY_DIR/filters.c
-        	LINKER_OPTIONS="
-            		-H:NativeLinkerOption=-lpthread
-            		-H:NativeLinkerOption="$LIB_DIR/lazyisolation.o"
-            		-H:NativeLinkerOption="$LIB_DIR/shared_queue.o"
-	            	-H:NativeLinkerOption="$LIB_DIR/filters.o""
-            	LAZY_FLAGS="-DLAZY_ISOLATION"
-    	fi
+    if [ $major_version -ge 5 ] && [ $minor_version -ge 10 ]; then
+            gcc -c -I"$LAZY_DIR" -o $LIB_DIR/lazyisolation.o $LAZY_DIR/lazyisolation.c
+            gcc -c -I"$LAZY_DIR" -o $LIB_DIR/shared_queue.o $LAZY_DIR/shared_queue.c
+            gcc -c -I"$LAZY_DIR" -o $LIB_DIR/filters.o $LAZY_DIR/filters.c
+            LINKER_OPTIONS="
+                    -H:NativeLinkerOption=-lpthread
+                    -H:NativeLinkerOption="$LIB_DIR/lazyisolation.o"
+                    -H:NativeLinkerOption="$LIB_DIR/shared_queue.o"
+                    -H:NativeLinkerOption="$LIB_DIR/filters.o""
+                LAZY_FLAGS="-DLAZY_ISOLATION"
+        fi
+}
+
+function build_svm_snapshot {
+    gcc -c -I"$SNAP_DIR" -o $LIB_DIR/svm-snapshot.o $SNAP_DIR/svm-snapshot.c
+    gcc -c -I"$SNAP_DIR" -o $LIB_DIR/cr.o           $SNAP_DIR/cr.c
+    gcc -c -I"$SNAP_DIR" -o $LIB_DIR/syscalls.o     $SNAP_DIR/syscalls.c
+    gcc -c -I"$SNAP_DIR" -o $LIB_DIR/list.o         $SNAP_DIR/list.c
+    LINKER_OPTIONS="
+        -H:NativeLinkerOption="$LIB_DIR/svm-snapshot.o"
+        -H:NativeLinkerOption="$LIB_DIR/cr.o"
+        -H:NativeLinkerOption="$LIB_DIR/syscalls.o"
+        -H:NativeLinkerOption="$LIB_DIR/list.o""
 }
 
 function build_nsi {
-	HEADER_DIR=$DIR/build/generated/sources/headers/java/main
-	C_DIR=$DIR/src/main/c
-	LAZY_DIR=$DIR/src/main/c/lazyisolation/src
-	LIB_DIR=$DIR/build/libs
-	build_lazyisolation
-	gcc -c -I"$JAVA_HOME/include" -I"$JAVA_HOME/include/linux" -I"$HEADER_DIR" -I"$LAZY_DIR" -o $LIB_DIR/NativeSandboxInterface.o $C_DIR/NativeSandboxInterface.c $LAZY_FLAGS
-	ar rcs $LIB_DIR/libNativeSandboxInterface.a $LIB_DIR/NativeSandboxInterface.o
+    HEADER_DIR=$DIR/build/generated/sources/headers/java/main
+    C_DIR=$DIR/src/main/c
+    LAZY_DIR=$C_DIR/lazyisolation/src
+    SNAP_DIR=$C_DIR/svm-snapshot
+    LIB_DIR=$DIR/build/libs
+    #build_lazyisolation
+    build_svm_snapshot
+    gcc -c \
+        -I"$JAVA_HOME/include" \
+        -I"$JAVA_HOME/include/linux" \
+        -I"$HEADER_DIR" \
+        -I"$LAZY_DIR" \
+        -I"$SNAP_DIR" \
+        -o $LIB_DIR/NativeSandboxInterface.o \
+        $C_DIR/NativeSandboxInterface.c \
+        $LAZY_FLAGS
+    ar rcs $LIB_DIR/libNativeSandboxInterface.a $LIB_DIR/NativeSandboxInterface.o
 }
 
 function build_ni {
@@ -55,7 +77,7 @@ function build_ni {
         --initialize-at-run-time=com.oracle.svm.graalvisor.utils.JsonUtils \
         $LINKER_OPTIONS \
         -H:CLibraryPath=$LIB_DIR \
-	$JAVA_17_OPTS \
+        $JAVA_17_OPTS \
         --features=org.graalvm.argo.graalvisor.sandboxing.NativeSandboxInterfaceFeature \
         -DGraalVisorHost \
         -Dcom.oracle.svm.graalvisor.libraryPath=$DIR/build/resources/main/com.oracle.svm.graalvisor.headers \
