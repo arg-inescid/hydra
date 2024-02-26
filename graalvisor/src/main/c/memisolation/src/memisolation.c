@@ -25,7 +25,6 @@
 #include <sys/un.h>
 #include <unistd.h>
 #include "utils/appmap.h"
-#include "utils/threadmap.h"
 #include "helpers/helpers.h"
 #include "memisolation.h"
 
@@ -50,9 +49,11 @@
 /* File descriptors */
 struct Supervisor supervisors[NUM_DOMAINS];
 
-/* Maps */
+/* Application map */
 AppMap appMap;
-ThreadMap threadMap;
+
+/* Thread count per domain */
+int threadCount[NUM_DOMAINS];
 
 /* Eager/Lazy setting array */
 struct CacheApp cache[NUM_DOMAINS];
@@ -263,14 +264,14 @@ find_domain(const char* app, int* fd) {
 
         int domain = cached_domain(app);
         // __sync_bool_compare_and_swap returns and stores 1 if *nthreads equals 0
-        if (domain && __sync_bool_compare_and_swap(&threadMap.buckets[domain]->nthreads, 0, 1)) {
+        if (domain && __sync_bool_compare_and_swap(&threadCount[domain], 0, 1)) {
             assign_supervisor(domain, app, fd);
             return domain;
         }
     #endif
 
     for (int i = 2; i < NUM_DOMAINS; ++i) {
-        int* nthreads = &threadMap.buckets[i]->nthreads;
+        int* nthreads = &threadCount[i];
 
         #ifdef EAGER_LOAD
             if (__sync_bool_compare_and_swap(nthreads, 0, 1)) {
@@ -297,7 +298,7 @@ find_domain(const char* app, int* fd) {
         }
 
         // No other thread as chosen this domain till this point
-        if (!domain && __sync_bool_compare_and_swap(&threadMap.buckets[minDomain]->nthreads, 0, 1)) {
+        if (!domain && __sync_bool_compare_and_swap(&threadCount[minDomain], 0, 1)) {
             assign_supervisor(minDomain, app, fd);
             return minDomain;
         }
@@ -436,7 +437,7 @@ handle_clone3(struct seccomp_notif_resp *resp, int domain)
 {
     SEC_DBM("\t---clone3 syscall---");
 
-    insert_thread(&threadMap, domain);
+    threadCount[domain]++;
     resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
 }
 
@@ -445,7 +446,7 @@ handle_exit(struct seccomp_notif_resp *resp, int domain)
 {
     SEC_DBM("\t----exit syscall----");
 
-    remove_thread(&threadMap, domain);
+    threadCount[domain]--;
     resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
 }
 
@@ -472,7 +473,7 @@ handle_notifications(int domain)
     SEC_DBM("\t[S%d]: Handling notifications...", domain);
 
     timeout.tv_sec = 0;
-    timeout.tv_nsec = 0;
+    timeout.tv_nsec = 100000; // 100 microseconds (us)
 
     sigset_t empty_mask;
     sigemptyset(&empty_mask);
@@ -498,8 +499,8 @@ handle_notifications(int domain)
                 err(EXIT_FAILURE, "\t[S%d]: ioctl-SECCOMP_IOCTL_NOTIF_RECV", domain);
             }
         }
-        else if (sp->status && threadMap.buckets[domain]->nthreads == 1) {
-            remove_thread(&threadMap, domain);
+        else if (sp->status && threadCount[domain] == 1) {
+            threadCount[domain]--;
             break;
         }
         else {
@@ -584,18 +585,21 @@ supervisor(void *arg)
 void
 initialize_memory_isolation()
 {   
+    /* Init maps */
     init_app_map(&appMap, NUM_DOMAINS);
-    init_thread_map(&threadMap, NUM_DOMAINS);
 
-    init_cache_array(cache, NUM_DOMAINS);
+    /* Init arrays */
+    init_cache(cache, NUM_DOMAINS);
     init_supervisors(supervisors, NUM_DOMAINS);
+    init_thread_count(threadCount, NUM_DOMAINS);
 
+    /* Init ERIM */
     if(erim_init(8192, ERIM_FLAG_ISOLATE_UNTRUSTED | ERIM_FLAG_SWAP_STACK, NUM_DOMAINS)) {
         exit(EXIT_FAILURE);
     }
 
+    /* Start supervisors */
     pthread_t workers[NUM_DOMAINS];
-
     for (int i = 2; i < NUM_DOMAINS; i++) {
         int *domain = (int *)malloc(sizeof(int));
         *domain = i;

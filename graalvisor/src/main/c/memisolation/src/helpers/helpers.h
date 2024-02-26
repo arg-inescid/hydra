@@ -23,11 +23,15 @@ struct CacheApp {
     int value;
 };
 
-/* Eager/Lazy setting */
-void init_cache_array(struct CacheApp cache[], int size);
 
 /* Seccomp */
-void init_supervisors(struct Supervisor array[], int size);
+void init_supervisors(struct Supervisor supervisors[], int size);
+
+/* Thread Count */
+void init_thread_count(int threadCount[], int size);
+
+/* Eager/Lazy setting */
+void init_cache(struct CacheApp cache[], int size);
 
 /* Preload */
 char* extract_basename(const char* filePath);

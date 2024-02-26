@@ -6,18 +6,26 @@
 
 /* Auxiliary functions */
 void
-init_supervisors(struct Supervisor array[], int size)
+init_supervisors(struct Supervisor supervisors[], int size)
 {
     for (int i = 0; i < size; i++) {
-        sem_init(&array[i].sem, 0, 0);
-        array[i].status = ACTIVE;
-        array[i].execution = MANAGED;
-        array[i].fd = 0;
+        sem_init(&supervisors[i].sem, 0, 0);
+        supervisors[i].status = ACTIVE;
+        supervisors[i].execution = MANAGED;
+        supervisors[i].fd = 0;
     }
 }
 
 void
-init_cache_array(struct CacheApp cache[], int size)
+init_thread_count(int threadCount[], int size)
+{
+    for (int i = 0; i < size; i++) {
+        threadCount[i] = 0;
+    }
+}
+
+void
+init_cache(struct CacheApp cache[], int size)
 {
     for (int i = 0; i < size; i++) {
         strcpy(cache[i].app, "");
