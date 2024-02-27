@@ -25,6 +25,8 @@
 #include <unistd.h>
 
 typedef struct {
+    // Path to the function library.
+    const void* fpath;
     // ABI to create, invoke, destroy isolates.
     isolate_abi_t abi;
     // Pointer to the isolate.
@@ -32,9 +34,15 @@ typedef struct {
     // File descriptor used when installing seccomp.
     int seccomp_fd;
     // Path of the function library.
-    const char* function_path;
-    // Function arguments.
-    const void* function_args;
+    const char* fin;
+    // Return string from function invocation.
+    char* fout;
+    // Length of the output buffer.
+    size_t fout_len;
+    // Number of parallel threads handling requests.
+    int concurrency;
+    // Number of requests to perform.
+    int requests;
     // Integer used as a boolean to decide if the function has terminated.
     int finished;
 } checkpoint_worker_args_t;
@@ -44,15 +52,23 @@ typedef struct {
     isolate_abi_t* abi;
     // Pointer to the isolate.
     graal_isolate_t* isolate;
+    // Number of requests to perform.
+    int requests;
+    // Function arguments.
+    const char* fin;
+    // Return string from function invocation.
+    char* fout;
+    // Length of the output buffer.
+    size_t fout_len;
 } entrypoint_worker_args_t;
 
-void run_serial_entrypoint(isolate_abi_t* abi, graal_isolatethread_t *isolatethread) {
-     for (int i = 0; i < ENTRYPOINT_ITERS; i++) {
+void run_serial_entrypoint(isolate_abi_t* abi, graal_isolatethread_t *isolatethread, int requests, const char* fin, char* fout, size_t fout_len) {
+     for (int i = 0; i < requests; i++) {
 #ifdef PERF
         struct timeval st, et;
         gettimeofday(&st, NULL);
 #endif
-        abi->entrypoint(isolatethread);
+        abi->entrypoint(isolatethread, fin, fout, fout_len);
 #ifdef PERF
         gettimeofday(&et, NULL);
         log("entrypoint took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
@@ -64,37 +80,63 @@ void* entrypoint_worker(void* args) {
     entrypoint_worker_args_t* wargs = (entrypoint_worker_args_t*) args;
     graal_isolatethread_t *isolatethread = NULL;
     wargs->abi->graal_attach_thread(wargs->isolate, &isolatethread);
-    run_serial_entrypoint(wargs->abi, isolatethread);
+    run_serial_entrypoint(wargs->abi, isolatethread, wargs->requests, wargs->fin, wargs->fout, wargs->fout_len);
     wargs->abi->graal_detach_thread(isolatethread);
     return NULL;
 }
 
-void run_entrypoint(isolate_abi_t* abi, graal_isolate_t* isolate, graal_isolatethread_t* isolatethread) {
-    if (ENTRYPOINT_CONC == 1) {
-        run_serial_entrypoint(abi, isolatethread);
+void run_entrypoint(
+            isolate_abi_t* abi,
+            graal_isolate_t* isolate,
+            graal_isolatethread_t* isolatethread,
+            unsigned int concurrency,
+            unsigned int requests,
+            const char* fin,
+            char* fout,
+            size_t fout_len) {
+    if (concurrency == 1) {
+        run_serial_entrypoint(abi, isolatethread, requests, fin, fout, fout_len);
     } else {
-        pthread_t workers[ENTRYPOINT_CONC];
-        entrypoint_worker_args_t wargs = { .abi = abi, .isolate = isolate };
-        for (int i = 0; i < ENTRYPOINT_CONC; i++) {
+        pthread_t* workers = (pthread_t*) malloc(concurrency * sizeof(pthread_t));
+        entrypoint_worker_args_t* wargs = (entrypoint_worker_args_t*) malloc(concurrency * sizeof(entrypoint_worker_args_t));
+        for (int i = 0; i < concurrency; i++) {
+            wargs[i].abi = abi;
+            wargs[i].isolate = isolate;
+            wargs[i].requests = requests;
+            wargs[i].fin = fin;
+            // When multiple threads are launched, the output is taken from the first.
+            wargs[i].fout = i == 0 ? fout : NULL;
+            wargs[i].fout_len = i == 0 ? fout_len : 0;
             pthread_create(&(workers[i]), NULL, entrypoint_worker, &wargs);
         }
-        for (int i = 0; i < ENTRYPOINT_CONC; i++) {
+        for (int i = 0; i < concurrency; i++) {
             pthread_join(workers[i], NULL);
         }
+        free(workers);
+        free(wargs);
     }
 }
 
-void run_svm(const char* function_path, isolate_abi_t* abi, graal_isolate_t** isolate) {
+void run_svm(
+        const char* fpath,
+        unsigned int concurrency,
+        unsigned int requests,
+        const char* fin,
+        char* fout,
+        size_t fout_len,
+        isolate_abi_t* abi,
+        graal_isolate_t** isolate) {
     graal_isolatethread_t *isolatethread = NULL;
 
     // Load function and initialize abi.
-    if (load_function(function_path, abi)) {
+    if (load_function(fpath, abi)) {
         err("error: failed to load isolate abi\n");
         return;
     }
 
     // Create isolate.
     graal_create_isolate_params_t params;
+    // TODO - set to 256MB!
     memset(&params, 0, sizeof(graal_create_isolate_params_t));
     if (abi->graal_create_isolate(&params, isolate, &isolatethread) != 0) {
         err("error: failed to create isolate\n");
@@ -102,7 +144,7 @@ void run_svm(const char* function_path, isolate_abi_t* abi, graal_isolate_t** is
     }
 
     // Run user code.
-    run_entrypoint(abi, *isolate, isolatethread);
+    run_entrypoint(abi, *isolate, isolatethread, concurrency, requests, fin, fout, fout_len);
 
     // Detach thread function isolate and quit.
     abi->graal_detach_thread(isolatethread);
@@ -119,7 +161,7 @@ void* checkpoint_worker(void* args) {
     }
 
     // Prepare and run function.
-    run_svm(wargs->function_path, &(wargs->abi), &(wargs->isolate));
+    run_svm(wargs->fpath, wargs->concurrency, wargs->requests, wargs->fin, wargs->fout, wargs->fout_len, &(wargs->abi), &(wargs->isolate));
 
     // Mark execution as finished (will alert the seccomp monitor to quit).
     wargs->finished = 1;
@@ -127,11 +169,15 @@ void* checkpoint_worker(void* args) {
 }
 
 void checkpoint_svm(
-        const char* function_path,
-        const char* function_args,
-        size_t seed,
+        const char* fpath,
         const char* meta_snap_path,
         const char* mem_snap_path,
+        size_t seed,
+        unsigned int concurrency,
+        unsigned int requests,
+        const char* fin,
+        char* fout,
+        size_t fout_len,
         isolate_abi_t* abi,
         graal_isolate_t** isolate) {
     pthread_t worker;
@@ -143,8 +189,12 @@ void checkpoint_svm(
      // Create and initialize the checkpoint worker arguments struct.
     checkpoint_worker_args_t wargs;
     memset(&wargs, 0, sizeof(checkpoint_worker_args_t));
-    wargs.function_path = function_path;
-    wargs.function_args = function_args;
+     wargs.fpath = fpath;
+     wargs.fin = fin;
+     wargs.fout = fout;
+     wargs.fout_len = fout_len;
+     wargs.concurrency = concurrency;
+     wargs.requests = requests;
 
     // If in checkpoint mode, open metadata file, wait for seccomp to be ready and handle notifications.
     int meta_snap_fd = move_to_reserved_fd(open(meta_snap_path,  O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR));
@@ -199,7 +249,7 @@ void checkpoint_svm(
     }
 }
 
-void restore_svm(const char* meta_snap_path, const char* mem_snap_path, isolate_abi_t* abi, graal_isolate_t** isolate) {
+void restore_svm(const char* fpath, const char* meta_snap_path, const char* mem_snap_path, isolate_abi_t* abi, graal_isolate_t** isolate) {
 #ifdef PERF
         struct timeval st, et;
         gettimeofday(&st, NULL);

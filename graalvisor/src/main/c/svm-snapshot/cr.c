@@ -571,7 +571,7 @@ int load_function(const char* function_path, isolate_abi_t* abi) {
         return 1;
     }
 
-    abi->entrypoint = (void (*)(graal_isolatethread_t*)) dlsym(dhandle, "entrypoint");
+    abi->entrypoint = (void (*)(graal_isolatethread_t*, const char*, const char*, unsigned long)) dlsym(dhandle, "entrypoint");
     if ((derror = dlerror()) != NULL) {
         err("error: %s\n", derror);
         return 1;

@@ -5,6 +5,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// Defines the number of function entrypoint invocations per thread.
+#define ENTRYPOINT_ITERS 1
+// Defines the number of concurrent threads to invoke the function entrypoint.
+#define ENTRYPOINT_CONC 1
+// Maximum number of characters to receive from a function invocation.
+#define FOUT_LEN 256
+
 enum EXECUTION_MODE { NORMAL, CHECKPOINT, RESTORE };
 
 // Wether we are checkpointing or restoreing.
@@ -40,7 +47,9 @@ char* init_args(int argc, char** argv) {
 
 int main(int argc, char** argv) {
     // Check args and get function path.
-    char* function_path = init_args(argc, argv);
+    const char* fpath = init_args(argc, argv);
+    const char* fin = NULL;
+    char  fout[FOUT_LEN];
 
     // Disable buffering for stdout.
     setvbuf(stdout, NULL, _IONBF, 0);
@@ -50,18 +59,20 @@ int main(int argc, char** argv) {
         graal_isolate_t* isolate;
         graal_isolatethread_t *isolatethread = NULL;
         isolate_abi_t abi;
-        restore_svm("metadata.snap", "memory.snap", &abi, &isolate);
+        restore_svm(fpath, "metadata.snap", "memory.snap", &abi, &isolate);
         abi.graal_attach_thread(isolate, &isolatethread);
-        run_entrypoint(&abi, isolate, isolatethread);
+        run_entrypoint(&abi, isolate, isolatethread, ENTRYPOINT_CONC, ENTRYPOINT_ITERS, fin, fout, FOUT_LEN);
         abi.graal_detach_thread(isolatethread);
     } else if (CURRENT_MODE == CHECKPOINT) {
         size_t seed = argc == 4 ? atoi(argv[3]) : 0;
-        checkpoint_svm(function_path, NULL, seed, "metadata.snap", "memory.snap", NULL, NULL);
+        checkpoint_svm(fpath, "metadata.snap", "memory.snap", seed, ENTRYPOINT_CONC, ENTRYPOINT_ITERS, fin, fout, FOUT_LEN, NULL, NULL);
     } else {
         graal_isolate_t* isolate;
         isolate_abi_t abi;
-        run_svm(function_path, &abi, &isolate);
+        run_svm(fpath, ENTRYPOINT_CONC, ENTRYPOINT_ITERS, fin, fout, FOUT_LEN, &abi, &isolate);
     }
+
+    fprintf(stdout, "function(%s) -> %s\n", fin, fout);
 
     // Flush any open streammed file.
     fflush(NULL);
