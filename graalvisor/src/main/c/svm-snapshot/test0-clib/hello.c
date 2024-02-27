@@ -11,7 +11,7 @@ int graal_tear_down_isolate(graal_isolatethread_t* thread) {
     return 0;
 }
 
-void entrypoint(graal_isolatethread_t* thread) {
+void entrypoint(graal_isolatethread_t* thread, const char* fin, const char* fout, unsigned long fout_len) {
     printf("Hello world!\n");
 }
     

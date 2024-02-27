@@ -1,8 +1,11 @@
 package com.hello_world;
 
+import org.graalvm.word.UnsignedWord;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.Isolates;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
+import org.graalvm.nativeimage.c.type.CCharPointer;
+import org.graalvm.nativeimage.c.type.CTypeConversion;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
@@ -48,9 +51,9 @@ public class HelloWorld {
 
     /* For c-API invocations. */
     @CEntryPoint(name = "entrypoint")
-    public static void main(IsolateThread thread) {
-        HashMap<String, Object> output = new HashMap<>();
-        output = main(output);
-        System.out.println(output);
+    public static void main(IsolateThread thread, CCharPointer fin, CCharPointer fout, UnsignedWord foutLen) {
+	String input = CTypeConversion.toJavaString(fin);
+        String output = main(new HashMap<>()).toString();
+	CTypeConversion.toCString(output, fout, foutLen);
     }
 }

@@ -5,8 +5,11 @@ import java.util.Map;
 import com.oracle.svm.graalvisor.polyglot.PolyglotEngine;
 import com.oracle.svm.graalvisor.polyglot.PolyglotHostAccess;
 
+import org.graalvm.word.UnsignedWord;
+import org.graalvm.nativeimage.c.type.CCharPointer;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
+import org.graalvm.nativeimage.c.type.CTypeConversion;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -53,10 +56,11 @@ public class Compression extends PolyglotHostAccess {
 
     /* For c-API invocations. */
     @CEntryPoint(name = "entrypoint")
-    public static void main(IsolateThread thread) {
-        HashMap<String, Object> output = new HashMap<>();
-        output.put("url", "/home/rbruno/garbage"); // TODO - receive argument.
-        output = main(output);
-        System.out.println(output);
+    public static void main(IsolateThread thread, CCharPointer fin, CCharPointer fout, UnsignedWord foutLen) {
+	String input = CTypeConversion.toJavaString(fin);
+        HashMap<String, Object> args = new HashMap<>();
+        args.put("url", "/home/rbruno/garbage"); // TODO - receive argument.
+        String output = main(args).toString();
+	CTypeConversion.toCString(output, fout, foutLen);
     }
 }

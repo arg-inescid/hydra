@@ -27,7 +27,7 @@ int graal_tear_down_isolate(graal_isolatethread_t* thread) {
     pthread_join(worker, NULL);
 }
 
-void entrypoint(graal_isolatethread_t* thread) {
+void entrypoint(graal_isolatethread_t* thread, const char* fin, const char* fout, unsigned long fout_len) {
     fprintf(stderr, "Function thread with tid: %lu (pid = %d)\n", syscall(__NR_gettid), getpid());
     if (worker == 0) {
         pthread_create(&worker, NULL, run_function, NULL);

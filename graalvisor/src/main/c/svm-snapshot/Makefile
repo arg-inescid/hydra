@@ -44,17 +44,17 @@ all: *.h *.c
 	gcc -g -Wall -o main *.o
 
 tests: all
-	make -C test0-clib run | tail -n2
-	make -C test1-staticvar run | tail -n2
-	make -C test2-svm run | tail -n2
-	make -C test2-svm-jar run | tail -n2
-	make -C test2-svm-gradle run | tail -n2
-	make -C test3-svm-truffle-js run | tail -n2
-	make -C test3-svm-truffle-py run | tail -n2
-	make -C test4-svm-exception run | tail -n2
-	make -C test5-svm-truffle-cached-js run | tail -n2
-	make -C test6-cthreads run | tail -n2
-	make -C test7-svm-truffle-function-py run | tail -n2
+	make -C test0-clib run | tail -n3
+	make -C test1-staticvar run | tail -n3
+	make -C test2-svm run | tail -n3
+	make -C test2-svm-jar run | tail -n3
+	make -C test2-svm-gradle run | tail -n3
+	make -C test3-svm-truffle-js run | tail -n3
+	make -C test3-svm-truffle-py run | tail -n3
+	make -C test4-svm-exception run | tail -n3
+	make -C test5-svm-truffle-cached-js run | tail -n3
+	make -C test6-cthreads run | tail -n3
+	make -C test7-svm-truffle-function-py run | tail -n3
 
 run-normal:
 	setarch -R ./main normal $(app) 2>&1 | tee normal.log
