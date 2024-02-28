@@ -63,6 +63,7 @@ public class ContextSnapshotSandboxProvider extends SandboxProvider {
 
     @Override
     public synchronized SandboxHandle createSandbox() throws Exception {
+        // TODO - throw Exception if provider is not warmup yet.
         long isolateThread = NativeSandboxInterface.svmAttachThread(svmID);
         return new ContextSnapshotSandboxHandle(this.svmID, isolateThread);
     }
