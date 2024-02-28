@@ -8,6 +8,7 @@ import org.graalvm.argo.graalvisor.function.PolyglotFunction;
 
 public class ContextSnapshotSandboxProvider extends SandboxProvider {
 
+    private boolean warmedUp = false;
     /**
      * This number is used to identify a memory range where the svm instance will be restored.
      * Note 1: the same id should be used when checkpointing and restoring.
@@ -31,15 +32,27 @@ public class ContextSnapshotSandboxProvider extends SandboxProvider {
         this.memSnapPath =  functionPath + ".memsnap";
     }
 
-    public synchronized String warmupProvider(String jsonArguments) throws IOException {
-        if (new File(this.metaSnapPath).exists()) {
+    private static String invoke(int svmID, String jsonArguments) {
+        long isolateThread = NativeSandboxInterface.svmAttachThread(svmID);
+        String output = NativeSandboxInterface.svmEntrypoint(svmID, isolateThread, jsonArguments);
+        NativeSandboxInterface.svmDetachThread(svmID, isolateThread);
+        return output;
+    }
+
+    public synchronized String warmupProvider(int concurrency, int requests, String jsonArguments) throws IOException {
+        if (warmedUp) {
+            return invoke(svmID, jsonArguments);
+        } else if (new File(this.metaSnapPath).exists()) {
             System.out.println(String.format("Found %s, restoring svm.", this.metaSnapPath));
-            NativeSandboxInterface.svmRestore(svmID, metaSnapPath, memSnapPath);
-            long isolateThread = NativeSandboxInterface.svmAttachThread(svmID);
-            return NativeSandboxInterface.svmEntrypoint(svmID, isolateThread);
+            NativeSandboxInterface.svmRestore(svmID, functionPath, metaSnapPath, memSnapPath);
+            warmedUp = true;
+            return invoke(svmID, jsonArguments);
         } else {
-            System.out.println(String.format("No snapshot found (%s), checkpointing svm.", this.metaSnapPath));
-            return NativeSandboxInterface.svmCheckpoint(svmID, functionPath, jsonArguments, metaSnapPath, memSnapPath);
+            System.out.println(String.format("No snapshot found (%s), checkpointing svm after %d requests on %d concurrent threads.",
+                this.metaSnapPath, requests, concurrency));
+            String output = NativeSandboxInterface.svmCheckpoint(svmID, functionPath, concurrency, requests, jsonArguments, metaSnapPath, memSnapPath);
+            warmedUp = true;
+            return output;
         }
     }
 

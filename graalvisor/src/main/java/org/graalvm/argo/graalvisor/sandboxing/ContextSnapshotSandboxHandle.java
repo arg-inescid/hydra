@@ -22,7 +22,7 @@ public class ContextSnapshotSandboxHandle extends SandboxHandle {
 
     @Override
     public String invokeSandbox(String jsonArguments) throws Exception {
-        return NativeSandboxInterface.svmEntrypoint(svmid, isolateThread);
+        return NativeSandboxInterface.svmEntrypoint(svmid, isolateThread, jsonArguments);
     }
 
     @Override

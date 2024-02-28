@@ -6,7 +6,7 @@ import org.graalvm.argo.graalvisor.function.PolyglotFunction;
 
 public abstract class SandboxProvider {
 
-    private final PolyglotFunction function;
+    protected final PolyglotFunction function;
 
     public SandboxProvider(PolyglotFunction function) {
         this.function = function;
@@ -20,7 +20,7 @@ public abstract class SandboxProvider {
 
     public abstract void loadProvider() throws IOException;
 
-    public String warmupProvider(String jsonArguments) throws IOException {
+    public String warmupProvider(int concurrency, int requests, String jsonArguments) throws IOException {
         return String.format("{'Error': 'Provider %s has no support for warmup operation'}", this.getName());
     }
 

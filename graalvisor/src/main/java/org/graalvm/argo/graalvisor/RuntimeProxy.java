@@ -100,9 +100,9 @@ public abstract class RuntimeProxy {
         }
     }
 
-    protected abstract String invoke(PolyglotFunction functionName, boolean cached, boolean warmup, String arguments) throws Exception;
+    protected abstract String invoke(PolyglotFunction functionName, boolean cached, int warmupConc, int warmupReqs, String arguments) throws Exception;
 
-   private String invokeWrapper(String functionName, boolean cached, boolean warmup, String arguments) throws Exception {
+   private String invokeWrapper(String functionName, boolean cached, int warmupConc, int warmupReqs, String arguments) throws Exception {
       PolyglotFunction function = FTABLE.get(functionName);
       String res;
 
@@ -110,7 +110,7 @@ public abstract class RuntimeProxy {
       if (function == null) {
             res = String.format("{'Error': 'Function %s not registered!'}", functionName);
         } else {
-            res = invoke(function, cached, warmup, arguments);
+            res = invoke(function, cached, warmupConc, warmupReqs, arguments);
         }
       long finish = System.nanoTime();
 
@@ -141,10 +141,10 @@ public abstract class RuntimeProxy {
                     ProxyUtils.writeResponse(t, 200, "Returned from Graalvisor!");
                 } else if (async != null && async.equals("true")) {
                     ProxyUtils.writeResponse(t, 200, "Asynchronous request submitted!");
-                    String output = invokeWrapper(functionName, cached, false, arguments);
+                    String output = invokeWrapper(functionName, cached, 0, 0, arguments);
                     System.out.println(output);
                 } else {
-                    String output = invokeWrapper(functionName, cached, false, arguments);
+                    String output = invokeWrapper(functionName, cached, 0, 0, arguments);
                     ProxyUtils.writeResponse(t, 200, output);
                 }
             } catch (Exception e) {
@@ -159,11 +159,20 @@ public abstract class RuntimeProxy {
         @Override
         public void handleInternal(HttpExchange t) throws IOException {
             try {
+                // TODO - same code as in the invocation handleInternal, could be factorized.
+                String[] params = t.getRequestURI().getQuery().split("&");
+                Map<String, String> metadata = new HashMap<>();
+                for (String param : params) {
+                    String[] keyValue = param.split("=");
+                    metadata.put(keyValue[0], keyValue[1]);
+                }
+                int concurrency = metadata.get("concurrency") == null ? 1 : Integer.parseInt(metadata.get("concurrency"));
+                int requests = metadata.get("requests") == null ? 1 : Integer.parseInt(metadata.get("requests"));
                 String jsonBody = ProxyUtils.extractRequestBody(t);
                 Map<String, Object> input = jsonToMap(jsonBody);
                 String functionName = (String) input.get("name");
                 String arguments = (String) input.get("arguments");
-                String output = invokeWrapper(functionName, false, true, arguments);
+                String output = invokeWrapper(functionName, false, concurrency, requests, arguments);
                 ProxyUtils.writeResponse(t, 200, output);
             } catch (Exception e) {
                 e.printStackTrace(System.err);

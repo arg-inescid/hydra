@@ -115,9 +115,12 @@ JNIEXPORT long JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 }
 
 JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmEntrypoint(
-        JNIEnv *env, jobject thisObj, jint svmid, long isolatethread) {
-    run_entrypoint(&(abis[svmid]), isolates[svmid], (graal_isolatethread_t*) isolatethread);
-    return (*env)->NewStringUTF(env, "sandbox entrypoint should return :-)");
+        JNIEnv *env, jobject thisObj, jint svmid, long isolatethread, jstring fin) {
+    char fout[256];
+    const char* fin_str = (*env)->GetStringUTFChars(env, fin, 0);
+    run_entrypoint(&(abis[svmid]), isolates[svmid], (graal_isolatethread_t*) isolatethread, 1, 1, fin_str, fout, 256);
+    (*env)->ReleaseStringUTFChars(env, fin, fin_str);
+    return (*env)->NewStringUTF(env, fout);
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmDetachThread(
@@ -126,24 +129,40 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 }
 
 JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmCheckpoint(
-        JNIEnv *env, jobject thisObj, jint svmid, jstring func_path, jstring func_args, jstring meta_snap_path, jstring mem_snap_path) {
-    const char* func_path_str = (*env)->GetStringUTFChars(env, func_path, 0);
-    const char* func_args_str = (*env)->GetStringUTFChars(env, func_args, 0);
+        JNIEnv *env,
+        jobject thisObj,
+        jint svmid,
+        jstring fpath,
+        jint concurrency,
+        jint requests,
+        jstring fin,
+        jstring meta_snap_path,
+        jstring mem_snap_path) {
+    const char* fpath_str = (*env)->GetStringUTFChars(env, fpath, 0);
     const char* meta_snap_path_str = (*env)->GetStringUTFChars(env, meta_snap_path, 0);
     const char* mem_snap_path_str = (*env)->GetStringUTFChars(env, mem_snap_path, 0);
-    checkpoint_svm(func_path_str, func_args_str, svmid, meta_snap_path_str, mem_snap_path_str, &abis[svmid], &isolates[svmid]);
-    (*env)->ReleaseStringUTFChars(env, func_path, func_path_str);
-    (*env)->ReleaseStringUTFChars(env, func_args, func_args_str);
+    const char* fin_str = (*env)->GetStringUTFChars(env, fin, 0);
+    char fout[256];
+    checkpoint_svm(fpath_str, meta_snap_path_str, mem_snap_path_str, svmid, concurrency, requests, fin_str, fout, 256, &abis[svmid], &isolates[svmid]);
+    (*env)->ReleaseStringUTFChars(env, fpath, fpath_str);
     (*env)->ReleaseStringUTFChars(env, meta_snap_path, meta_snap_path_str);
     (*env)->ReleaseStringUTFChars(env, mem_snap_path, mem_snap_path_str);
-    return (*env)->NewStringUTF(env, "sandbox checkpoint should return :-)");
+    (*env)->ReleaseStringUTFChars(env, fin, fin_str);
+    return (*env)->NewStringUTF(env, fout);
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmRestore(
-        JNIEnv *env, jobject thisObj, jint svmid, jstring meta_snap_path, jstring mem_snap_path) {
+        JNIEnv *env,
+        jobject thisObj,
+        jint svmid,
+        jstring fpath,
+        jstring meta_snap_path,
+        jstring mem_snap_path) {
+    const char* fpath_str = (*env)->GetStringUTFChars(env, fpath, 0);
     const char* meta_snap_path_str = (*env)->GetStringUTFChars(env, meta_snap_path, 0);
     const char* mem_snap_path_str = (*env)->GetStringUTFChars(env, mem_snap_path, 0);
-    restore_svm(meta_snap_path_str, mem_snap_path_str, &abis[svmid], &isolates[svmid]);
+    restore_svm(fpath_str, meta_snap_path_str, mem_snap_path_str, &abis[svmid], &isolates[svmid]);
+    (*env)->ReleaseStringUTFChars(env, fpath, fpath_str);
     (*env)->ReleaseStringUTFChars(env, mem_snap_path, mem_snap_path_str);
     (*env)->ReleaseStringUTFChars(env, meta_snap_path, meta_snap_path_str);
 }
