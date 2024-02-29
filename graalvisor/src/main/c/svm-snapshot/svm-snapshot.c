@@ -107,7 +107,7 @@ void run_entrypoint(
             // When multiple threads are launched, the output is taken from the first.
             wargs[i].fout = i == 0 ? fout : NULL;
             wargs[i].fout_len = i == 0 ? fout_len : 0;
-            pthread_create(&(workers[i]), NULL, entrypoint_worker, &wargs);
+            pthread_create(&(workers[i]), NULL, entrypoint_worker, &(wargs[i]));
         }
         for (int i = 0; i < concurrency; i++) {
             pthread_join(workers[i], NULL);
@@ -207,7 +207,7 @@ void checkpoint_svm(
     }
 
     // Launch worker thread.
-    pthread_create(&worker, NULL, checkpoint_worker, &wargs); // TODO - move to clone3
+    pthread_create(&worker, NULL, checkpoint_worker, &wargs);
 
     // Wait while the thread initilizes and installs the seccomp filter.
     while (!wargs.seccomp_fd) ; // TODO - avoid active waiting
@@ -218,12 +218,12 @@ void checkpoint_svm(
     // Keep handling syscall notifications.
     handle_syscalls(seed, wargs.seccomp_fd, &(wargs.finished), meta_snap_fd, &mappings);
 
-    // Join thread.
-    pthread_join(worker, NULL); // TODO - waitpid
+    // Merge memory mappings.
+    list_merge(&mappings);
 
     // If in checkpoint mode, checkpoint memory.
+    check_proc_maps("before_checkpoint.log", &mappings);
 #ifdef DEBUG
-    print_proc_maps("before_checkpoint.log");
     print_list(&mappings);
 #endif
 #ifdef PERF
@@ -235,6 +235,10 @@ void checkpoint_svm(
     gettimeofday(&et, NULL);
     log("checkpoint took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
 #endif
+
+    // Join thread after checkpoint (this glibc may free memory right before we checkpoint).
+    // Glibc is tricky as it has internal state. We should avoid it at all cost.
+    pthread_join(worker, NULL);
 
     // Close meta and mem fds.
     close(meta_snap_fd);
@@ -260,6 +264,6 @@ void restore_svm(const char* fpath, const char* meta_snap_path, const char* mem_
         log("restore took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
 #endif
 #ifdef DEBUG
-        print_proc_maps("after_restore.log");
+        check_proc_maps("after_restore.log", NULL);
 #endif
 }

@@ -14,6 +14,8 @@ typedef struct mapping {
     char* permissions;
     // Array of pages to be included in the snapshot. These are pages that were at least once marked with PROT_WRITE.
     char* dirty;
+    // We double check if the mapping is valid by checking against /proc/maps.
+    char* validated;
     // Pointer to the next mapping.
     struct mapping* next;
 } mapping_t;
@@ -27,6 +29,9 @@ mapping_t* list_find(mapping_t* head, void* start, size_t size);
 // Deletes one element from the list.
 void list_delete(mapping_t* head, mapping_t* to_delete);
 
+// Merges two consecutive mappings in the list.
+void list_merge(mapping_t* head);
+
 // Prints the list of mappings starting from `head`.
 void print_list(mapping_t * head);
 
@@ -38,6 +43,9 @@ void* repeated(void* mapping_start, void* mapping_finish, char* mapping_perms, v
 
 // Update permissions (and dirty) within a mapping.
 void mapping_update_permissions(mapping_t* mapping, void* block_start, void* block_finish, char perm);
+
+// Update validated bytes within a mapping.
+void mapping_update_validated(mapping_t* mapping, void* block_start, void* block_finish);
 
 // Updates the size of a mapping (used to handle munmpap).
 void mapping_update_size(mapping_t* head, mapping_t* mapping, void* unmapping_start, void* unmapping_finish);

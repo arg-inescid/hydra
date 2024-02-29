@@ -38,8 +38,10 @@ void init_mapping(mapping_t* mapping, void* start, size_t size) {
     mapping->size = size;
     mapping->permissions = (char*) malloc(bytes_to_pages(size) * sizeof(char));
     mapping->dirty = (char*) malloc(bytes_to_pages(size) * sizeof(char));
+    mapping->validated = (char*) malloc(bytes_to_pages(size) * sizeof(char));
     memset(mapping->permissions, 0, bytes_to_pages(size));
     memset(mapping->dirty, 0, bytes_to_pages(size));
+    memset(mapping->validated, 0, bytes_to_pages(size));
     mapping->next = NULL;
 }
 
@@ -75,6 +77,7 @@ void list_delete(mapping_t* head, mapping_t* to_delete) {
         // We need free the old dirty and permissions before we copy or memset.
         free(head->dirty);
         free(head->permissions);
+        free(head->validated);
         // If head node is the only element in the list.
         if (head->next == NULL) {
             memset(head, 0, sizeof(mapping_t));
@@ -98,6 +101,7 @@ void list_delete(mapping_t* head, mapping_t* to_delete) {
                 current->next = to_delete->next;
                 free(to_delete->dirty);
                 free(to_delete->permissions);
+                free(to_delete->validated);
                 free(to_delete);
                 return;
             }
@@ -113,7 +117,7 @@ mapping_t* list_find(mapping_t* head, void* start, size_t size) {
     void* finish = ((char*) start) + size;
 
     // If the list if empty, nothing to print.
-    if (current->start == NULL) {
+    if (current == NULL || current->start == NULL) {
         return NULL;
     }
 
@@ -144,6 +148,45 @@ mapping_t* list_find(mapping_t* head, void* start, size_t size) {
     }
 
     return NULL;
+}
+
+char* array_merge(char* arr1, size_t arr1_len, char* arr2, size_t arr2_len) {
+        size_t newsize = arr1_len + arr2_len;
+        char* newarr = (char*) malloc(newsize * sizeof(char));
+        memcpy(newarr, arr1, bytes_to_pages(arr1_len));
+        memcpy(newarr + bytes_to_pages(arr1_len), arr2, bytes_to_pages(arr2_len));
+        return newarr;
+}
+
+void list_merge(mapping_t* head) {
+    mapping_t* current = head;
+
+    if (current == NULL || current->start == NULL) {
+        return;
+    }
+
+    while (current->next != NULL) {
+        void* current_finish = ((char*) current->start) + current->size;
+
+        // If the current finish matches the start of the next, merge.
+        if (current_finish == current->next->start) {
+            size_t csize = current->size;
+            size_t nsize = current->next->size;
+            char* cdirty = current->dirty;
+            char* cpermissions = current->permissions;
+            char* cvalidated = current->validated;
+            current->dirty = array_merge(current->dirty, csize, current->next->dirty, nsize);
+            current->permissions = array_merge(current->permissions, csize, current->next->permissions, nsize);
+            current->validated = array_merge(current->validated, csize, current->next->validated, nsize);
+            current->size += nsize;
+            free(cdirty);
+            free(cpermissions);
+            free(cvalidated);
+            list_delete(head, current->next);
+        } else {
+            current = current->next;
+        }
+    }
 }
 
 void print_block(void* block_start, void* block_finish, char block_perm) {
@@ -184,6 +227,15 @@ void print_list(mapping_t * head) {
     }
 }
 
+void mapping_update_validated(mapping_t* mapping, void* block_start, void* block_finish) {
+    // First page index;
+    int i = bytes_to_pages((char*) block_start - (char*) mapping->start);
+    // Last page index.
+    int j = bytes_to_pages((char*) block_finish - (char*) mapping->start);
+    // Update validated between pages i and f.
+    memset(mapping->validated + i, 1, j - i);
+}
+
 void mapping_update_permissions(mapping_t* mapping, void* block_start, void* block_finish, char block_perm) {
     // First page index;
     int i = bytes_to_pages((char*) block_start - (char*) mapping->start);
@@ -217,6 +269,7 @@ void mapping_update_size(mapping_t* head, mapping_t* mapping, void* unmapping_st
             int pages_to_shift = unmapping_size / getpagesize();
             mapping->permissions += pages_to_shift;
             mapping->dirty += pages_to_shift;
+            mapping->validated += pages_to_shift;
             dbg("tracking  %16p - %16p (clipping beg shifted %d pages)\n", mapping->start, mapping_finish, pages_to_shift);
         }
     }

@@ -52,8 +52,8 @@ public class HelloWorld {
     /* For c-API invocations. */
     @CEntryPoint(name = "entrypoint")
     public static void main(IsolateThread thread, CCharPointer fin, CCharPointer fout, UnsignedWord foutLen) {
-	String input = CTypeConversion.toJavaString(fin);
+        String input = CTypeConversion.toJavaString(fin);
         String output = main(new HashMap<>()).toString();
-	CTypeConversion.toCString(output, fout, foutLen);
+        CTypeConversion.toCString(output, fout, foutLen);
     }
 }

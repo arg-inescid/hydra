@@ -1,5 +1,6 @@
 package com.hello_world;
 
+import org.graalvm.word.UnsignedWord;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.Isolates;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
@@ -50,11 +51,9 @@ public class HelloWorld {
 
     /* For c-API invocations. */
     @CEntryPoint(name = "entrypoint")
-    public static CCharPointer main(IsolateThread thread, CCharPointer args) {
-	String input = CTypeConversion.toJavaString(args);
+    public static void main(IsolateThread thread, CCharPointer fin, CCharPointer fout, UnsignedWord foutLen) {
+        String input = CTypeConversion.toJavaString(fin);
         String output = main(new HashMap<>()).toString();
-        try (CTypeConversion.CCharPointerHolder pointerHolder = CTypeConversion.toCString(output)) {
-            return pointerHolder.get();
-	}
+        CTypeConversion.toCString(output, fout, foutLen);
     }
 }

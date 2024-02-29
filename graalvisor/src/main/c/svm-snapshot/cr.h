@@ -25,7 +25,7 @@
 // If defined, enables debug prints and extra sanitization checks.
 //#define DEBUG
 // If defined, enables performance measurements.
-//#define PERF
+#define PERF
 // If defined, enables performance optimizations.
 #define OPT
 
@@ -37,8 +37,8 @@
 #endif
 #define err(format, args...) do { fprintf(stdout, format, ## args); } while(0)
 
-// Prints process memory maps to a give file.
-void print_proc_maps(char* filename);
+// Goes through process memory maps and prints it to a file while validating our maps.
+void check_proc_maps(char* filename, mapping_t * head);
 
 // Loads, invokes, and checkpoints an svm instance.
 void checkpoint(const char* function_path, const char* function_args, char* meta_snap_path, char* mem_snap_path);

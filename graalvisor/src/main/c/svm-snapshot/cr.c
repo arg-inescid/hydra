@@ -98,7 +98,7 @@ size_t popcount(char* buffer, size_t count) {
     return result;
 }
 
-void print_proc_maps(char* filename) {
+void check_proc_maps(char* filename, mapping_t * head) {
     char buffer[512];
 
     FILE* pmaps = fopen("/proc/self/maps", "r");
@@ -114,7 +114,7 @@ void print_proc_maps(char* filename) {
     }
 
     while (fgets(buffer, sizeof(buffer), pmaps)) {
-        unsigned long start, finish, offset, inode, pop;
+        unsigned long start, finish, offset, inode;
         char r, w, x, p;
         char dev[16];
         char mpath[256];
@@ -129,6 +129,13 @@ void print_proc_maps(char* filename) {
             fprintf(out, "matched = %d on %s\n", matched, buffer);
         }
 
+        mapping_t* mapping = list_find(head, (void*)start, finish - start);
+        if (mapping != NULL && (r != '-' || w != '-' || x != '-')) {
+            mapping_update_validated(mapping, (void*)start, (void*)finish);
+        }
+
+#ifdef DEBUG
+        unsigned long pop;
         // If we can't read or if we are looking into vvar/vdso, ignore.
         if (r == '-' || !strcmp(mpath, "[vvar]") || !strcmp(mpath, "[vdso]")) {
             pop = 0;
@@ -144,6 +151,7 @@ void print_proc_maps(char* filename) {
             finish - start,
             pop,
             mpath);
+#endif
     }
 
     fclose(pmaps);
@@ -180,26 +188,67 @@ void checkpoint_memory_segment(void* seg_start, void* seg_finish, char seg_perm,
     }
 }
 
-void checkpoint_dirty_block(void* map_start, void* map_finish, void* block_start, void* block_finish, char* perms, int memsnap_fd, int metasnap_fd) {
+void checkpoint_validated_block(
+        void* map_start,
+        void* map_finish,
+        void* block_start,
+        void* block_finish,
+        char* map_validated,
+        char seg_perm,
+        int memsnap_fd,
+        int metasnap_fd) {
     void* seg_start = block_start;
 
     // Within a single dirty block we might have several memory permissions so we need to iterate these segments.
      while (seg_start < block_finish) {
-        char  seg_perm = permission(map_start, map_finish, perms, seg_start);
-        char* seg_finish = repeated(map_start, map_finish, perms, seg_start);
+        char  seg_valid = permission(map_start, map_finish, map_validated, seg_start);
+        char* seg_finish = repeated(map_start, map_finish, map_validated, seg_start);
+        if (seg_valid) {
+            checkpoint_memory_segment(seg_start, seg_finish, seg_perm, memsnap_fd, metasnap_fd);
+        } else {
+            err("warning:  %16p - %16p not validated (may have been unmapped by libc)\n", seg_start, seg_finish);
+        }
+        seg_start = seg_finish;
+    }
+}
+
+void checkpoint_dirty_block(
+        void* map_start,
+        void* map_finish,
+        void* block_start,
+        void* block_finish,
+        char* map_perms,
+        char* map_valids,
+        int memsnap_fd,
+        int metasnap_fd) {
+    void* seg_start = block_start;
+
+    // Within a single dirty block we might have several memory permissions so we need to iterate these segments.
+     while (seg_start < block_finish) {
+        char  seg_perm = permission(map_start, map_finish, map_perms, seg_start);
+        char* seg_finish = repeated(map_start, map_finish, map_perms, seg_start);
+        // TODO - need to understand why this following validation step fails (check with test7 concurrency 8).
+        //checkpoint_validated_block(map_start, map_finish, seg_start, seg_finish, map_valids, seg_perm, memsnap_fd, metasnap_fd);
         checkpoint_memory_segment(seg_start, seg_finish, seg_perm, memsnap_fd, metasnap_fd);
         seg_start = seg_finish;
     }
 }
 
-void checkpoint_memory_mapping(void* map_start, void* map_finish, char* map_perms, char* map_dirty, int memsnap_fd, int metasnap_fd) {
+void checkpoint_memory_mapping(
+        void* map_start,
+        void* map_finish,
+        char* map_perms,
+        char* map_dirty,
+        char* map_validated,
+        int memsnap_fd,
+        int metasnap_fd) {
     void* block_start = map_start;
 
     while (block_start < map_finish) {
         char  block_dirty = permission(map_start, map_finish, map_dirty, block_start);
         char* block_finish = repeated(map_start, map_finish, map_dirty, block_start);
         if (block_dirty == PROT_WRITE) {
-            checkpoint_dirty_block(map_start, map_finish, block_start, block_finish, map_perms, memsnap_fd, metasnap_fd);
+            checkpoint_dirty_block(map_start, map_finish, block_start, block_finish, map_perms, map_validated, memsnap_fd, metasnap_fd);
         }
         block_start = block_finish;
     }
@@ -216,7 +265,7 @@ void checkpoint_mappings(int meta_snap_fd, int mem_snap_fd, mapping_t* mappings)
     while (current != NULL) {
         void* mapping_start = current->start;
         void* mapping_finish = ((char*) mapping_start) + current->size;
-        checkpoint_memory_mapping(mapping_start, mapping_finish, current->permissions, current->dirty, mem_snap_fd, meta_snap_fd);
+        checkpoint_memory_mapping(mapping_start, mapping_finish, current->permissions, current->dirty, current->validated, mem_snap_fd, meta_snap_fd);
         current = current->next;
     }
 }
