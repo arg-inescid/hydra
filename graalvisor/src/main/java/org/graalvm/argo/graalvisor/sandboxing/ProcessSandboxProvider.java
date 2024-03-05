@@ -32,19 +32,15 @@ public class ProcessSandboxProvider extends SandboxProvider {
 
     @Override
     public synchronized String warmupProvider(int concurrency, int requests, String jsonArguments) throws IOException {
-         if (concurrency > 1 || requests > 1) {
+        if (concurrency > 1 || requests > 1) {
             return "Error': Warmup operation not supported with multiple threads and requests.";
-        } else if (function.getLanguage() == PolyglotLanguage.JAVA) {
-            IsolateThread isolateThread = graalvisorAPI.createIsolate();
-            String result = graalvisorAPI.invokeFunction((IsolateThread) isolateThread, getFunction().getEntryPoint(), jsonArguments);
-            graalvisorAPI.tearDownIsolate(isolateThread);
-            graalvisorAPI.close();
-            this.loadProvider();
-            return result;
-        } else {
-            return "Error': process sandbox provider only supports warmup operations for Java functions.";
         }
-
+        IsolateThread isolateThread = graalvisorAPI.createIsolate();
+        String result = graalvisorAPI.invokeFunction((IsolateThread) isolateThread, getFunction().getEntryPoint(), jsonArguments);
+        graalvisorAPI.tearDownIsolate(isolateThread);
+        graalvisorAPI.close();
+        this.loadProvider();
+        return result;
     }
 
     @Override

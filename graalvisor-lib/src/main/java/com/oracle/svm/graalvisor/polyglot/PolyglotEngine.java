@@ -1,5 +1,6 @@
 package com.oracle.svm.graalvisor.polyglot;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -19,7 +20,7 @@ public class PolyglotEngine {
     /**
      * Map of already available contexts. If the value is true, the context is available.
      */
-    private final Map<Value, AtomicBoolean> contexts = new HashMap<>();
+    private final Map<Value, AtomicBoolean> contexts = new ConcurrentHashMap<>();
 
     /**
      * Each thread has saves the context it used last. This is a way to reduce races for contexts;
@@ -94,13 +95,23 @@ public class PolyglotEngine {
         long ftime = System.currentTimeMillis();
         System.out.println(String.format("[thread %s] Creating context %s (took %d ms)",
             Thread.currentThread().getId(), value.toString(), ftime - stime));
-        contextHint.set(value);
         contexts.put(value, new AtomicBoolean(false));
+        contextHint.set(value);
         return value;
     }
 
     private void releaseContext() {
-        contexts.get(contextHint.get()).set(true);
+        Value val = contextHint.get();
+        if (val == null) {
+            return;
+        }
+
+        AtomicBoolean abool = contexts.get(val);
+        if (abool == null) {
+            return;
+        }
+
+        abool.set(true);
     }
 
     public void init(String language, String source, String entrypoint) {
@@ -116,6 +127,10 @@ public class PolyglotEngine {
         } catch (PolyglotException pe) {
             if (pe.isSyntaxError()) {
                  resultString = String.format("Error happens during parsing the polyglot function at line %s: %s", pe.getSourceLocation(), pe.getMessage());
+            } else {
+                 resultString = String.format("Error while loading function at line %s: %s", pe.getSourceLocation(), pe.getMessage());
+                System.err.println(resultString);
+                pe.printStackTrace(System.err);
             }
         } catch (Exception e) {
             resultString = String.format("Error while invoking polyglot function: %s", e.getMessage());

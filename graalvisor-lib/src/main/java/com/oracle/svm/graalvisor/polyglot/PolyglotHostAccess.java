@@ -26,9 +26,9 @@ public class PolyglotHostAccess {
     public byte[] readBytes(String path) {
         try {
             return Files.readAllBytes(new File(path).toPath());
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
-            return null;
+            return new byte[0];
         }
     }
 
@@ -49,9 +49,9 @@ public class PolyglotHostAccess {
             byte[] bytes = is.readAllBytes();
             is.close();
             return bytes;
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
-            return null;
+            return new byte[0];
         }
     }
 
@@ -67,7 +67,6 @@ public class PolyglotHostAccess {
             conn.setRequestProperty("Content-Type", "image/png");
             conn.setRequestProperty("charset", "utf-8");
             conn.setRequestProperty("Content-Length", Integer.toString(postDataLength));
-            conn.setUseCaches(false);
             try( DataOutputStream wr = new DataOutputStream( conn.getOutputStream())) {
                 wr.write(bytes);
              } catch (IOException e) {
