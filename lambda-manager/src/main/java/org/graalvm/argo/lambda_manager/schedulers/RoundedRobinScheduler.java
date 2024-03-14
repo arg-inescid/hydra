@@ -76,7 +76,7 @@ public class RoundedRobinScheduler implements Scheduler {
                     Logger.log(Level.INFO, "Obtained a new lambda from the pool.");
                     newLambda.resetTimer();
                     LambdaManager.lambdas.add(newLambda);
-                    function.updateStatus(targetMode);
+                    // function.updateStatus(targetMode);
                     obtainedLambda = true;
                 } else {
                     Logger.log(Level.FINE, String.format("[function=%s, mode=%s]: The lambda pool is currently empty, waiting.", function.getName(), targetMode));
@@ -98,12 +98,12 @@ public class RoundedRobinScheduler implements Scheduler {
             obtainedLambda = false;
         }
 
-        synchronized (function) {
-            if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT && function.getStatus() == FunctionStatus.READY && !lambda.isDecommissioned()) {
-                lambda.setDecommissioned(true);
-                Logger.log(Level.INFO, "Decommissioning (hotspot to native image) lambda " + lambda.getLambdaID());
-            }
-
+        // synchronized (function) {
+        //     if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT && function.getStatus() == FunctionStatus.READY && !lambda.isDecommissioned()) {
+        //         lambda.setDecommissioned(true);
+        //         Logger.log(Level.INFO, "Decommissioning (hotspot to native image) lambda " + lambda.getLambdaID());
+        //     }
+        
             if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT && lambda.getClosedRequestCount() > 1000 && !lambda.isDecommissioned()) {
                 lambda.setDecommissioned(true);
                 Logger.log(Level.INFO, "Decommissioning (wrapping agent) lambda " + lambda.getLambdaID());

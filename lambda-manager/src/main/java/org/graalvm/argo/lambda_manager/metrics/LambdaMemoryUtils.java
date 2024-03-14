@@ -91,4 +91,29 @@ public class LambdaMemoryUtils {
         return rssRecords;
     }
 
+    // Metrics collection for system footprint.
+    public static double collectSystemFootprint() {
+        try (InputStream stream = executeCommand("bash", "-c", "free")) {
+            return readSystemUsedMemory(stream);
+        } catch (Throwable thr) {
+            thr.printStackTrace();
+            return 0;
+        }
+    }
+
+    private static double readSystemUsedMemory(InputStream stream) throws IOException {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                // Line format:
+                //               total        used        free      shared  buff/cache   available
+                // Mem:      131664676     5704164    95283312        1340    30677200   124887432
+                if (line.contains("Mem:")) {
+                    String usedString = line.split("\\s+")[2];
+                    return kilobytesToMegabytes(Double.parseDouble(usedString));
+                }
+            }
+        }
+        return 0;
+    }
 }

@@ -32,8 +32,13 @@ public class LambdaManagerController {
                 LambdaManager.processRequest(username, functionName, arguments);
             }
         }
-        Single<String> res = LambdaManager.processRequest(username, functionName, arguments);
-        return res;
+        try {
+            MetricsProvider.addConcurrentRequest();
+            Single<String> res = LambdaManager.processRequest(username, functionName, arguments);
+            return res;
+        } finally {
+            MetricsProvider.removeConcurrentRequest();
+        }
     }
 
     @Get("/get_functions")

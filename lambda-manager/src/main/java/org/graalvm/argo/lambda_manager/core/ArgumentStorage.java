@@ -178,7 +178,7 @@ public class ArgumentStorage {
 
             ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
             metricsScraper = new MetricsScraper(managerMetricsFile, executor);
-            executor.scheduleAtFixedRate(metricsScraper, 1, 5, TimeUnit.SECONDS);
+            executor.scheduleAtFixedRate(metricsScraper, 1, 1, TimeUnit.SECONDS);
         } catch (IOException ioException) {
             ioException.printStackTrace();
         }

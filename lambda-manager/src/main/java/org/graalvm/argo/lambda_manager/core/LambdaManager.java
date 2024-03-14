@@ -28,10 +28,10 @@ public class LambdaManager {
      */
     public static final Set<Lambda> lambdas = Collections.newSetFromMap(new ConcurrentHashMap<Lambda, Boolean>());
 
-    private static String formatRequestSpentTimeMessage(Lambda lambda, Function function, long spentTime) {
+    private static String formatRequestSpentTimeMessage(Lambda lambda, Function function, long spentTime, long infrTime) {
         String username = Configuration.coder.decodeUsername(function.getName());
         String functionName = Configuration.coder.decodeFunctionName(function.getName());
-        return String.format(Messages.TIME_REQUEST, username, functionName, lambda.getExecutionMode(), lambda.getLambdaID(), spentTime);
+        return String.format(Messages.TIME_REQUEST, username, functionName, lambda.getExecutionMode(), lambda.getLambdaID(), spentTime, infrTime);
     }
 
     public static Single<String> processRequest(String username, String functionName, String arguments) {
@@ -64,7 +64,7 @@ public class LambdaManager {
                     }
                 }
 
-                MetricsProvider.reportInfrastructureTime(System.currentTimeMillis() - start);
+                long infrTime = System.currentTimeMillis() - start;
 
                 response = Configuration.client.invokeFunction(lambda, function, arguments);
 
@@ -79,11 +79,11 @@ public class LambdaManager {
                         lambda.setDecommissioned(true);
                     }
                 } else {
-                    long spentTime = System.currentTimeMillis() - start;
-                    MetricsProvider.reportRequestTime(spentTime);
-                    Logger.log(Level.FINE, formatRequestSpentTimeMessage(lambda, function, spentTime));
+                    long requestTime = System.currentTimeMillis() - start;
+                    MetricsProvider.addRequest();
+                    Logger.log(Level.FINE, formatRequestSpentTimeMessage(lambda, function, requestTime, infrTime));
                     if (Configuration.argumentStorage.isDebugMode()) {
-                        response += "; time spent in LM (seconds): " + spentTime / 1000.0;
+                        response += "; time spent in LM (seconds): " + requestTime / 1000.0;
                     }
                     break;
                 }
