@@ -15,4 +15,4 @@ cd "$ARGO_HOME/lambda-manager" || {
   exit 1
 }
 
-sudo java -Xms8g -Xmx32g -jar build/libs/lambda-manager-1.0-all.jar
+sudo java -jar build/libs/lambda-manager-1.0-all.jar

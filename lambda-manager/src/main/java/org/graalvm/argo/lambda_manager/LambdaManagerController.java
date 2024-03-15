@@ -34,8 +34,7 @@ public class LambdaManagerController {
         }
         try {
             MetricsProvider.addConcurrentRequest();
-            Single<String> res = LambdaManager.processRequest(username, functionName, arguments);
-            return res;
+            return LambdaManager.processRequest(username, functionName, arguments);
         } finally {
             MetricsProvider.removeConcurrentRequest();
         }

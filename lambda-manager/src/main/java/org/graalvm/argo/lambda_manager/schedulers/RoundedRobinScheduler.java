@@ -76,7 +76,7 @@ public class RoundedRobinScheduler implements Scheduler {
                     Logger.log(Level.INFO, "Obtained a new lambda from the pool.");
                     newLambda.resetTimer();
                     LambdaManager.lambdas.add(newLambda);
-                    // function.updateStatus(targetMode);
+                    function.updateStatus(targetMode);
                     obtainedLambda = true;
                 } else {
                     Logger.log(Level.FINE, String.format("[function=%s, mode=%s]: The lambda pool is currently empty, waiting.", function.getName(), targetMode));
