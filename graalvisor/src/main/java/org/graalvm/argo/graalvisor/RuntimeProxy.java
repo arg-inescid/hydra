@@ -283,7 +283,8 @@ public abstract class RuntimeProxy {
                 }
 
                 if (functionLanguage.equalsIgnoreCase("java")) {
-                    if (new File(soFileName).exists()) {
+                    File targetFile = new File(soFileName);
+                    if (targetFile.exists() && targetFile.isFile()) {
                         System.out.println(String.format("Reusing %s", soFileName));
                     } else {
                         try (OutputStream fos = new FileOutputStream(soFileName); InputStream bis = new BufferedInputStream(t.getRequestBody(), 4096)) {

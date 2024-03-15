@@ -48,6 +48,9 @@ public class Function {
     /** Desired sandbox for Graalvisor runtime. Can only be used with Graalvisor. */
     private final String gvSandbox;
 
+    /** Read the function code file from a lambda instead of sending the file to the lambda. Can only be used with Docker containers and Graalvisor. */
+    private final boolean canReuseCode;
+
     /** Flag stating if this function can be re-built into native image in case of fallback (only for Graalvisor). */
     private final boolean canRebuild;
 
@@ -62,7 +65,7 @@ public class Function {
      */
     private long lastAgentPID;
 
-    public Function(String name, String language, String entryPoint, String memory, String runtime, byte[] functionCode, boolean functionIsolation, boolean invocationCollocation, String gvSandbox) throws Exception {
+    public Function(String name, String language, String entryPoint, String memory, String runtime, byte[] functionCode, boolean functionIsolation, boolean invocationCollocation, String gvSandbox, boolean reuseCode) throws Exception {
         this.name = name;
         this.language = FunctionLanguage.fromString(language);
         this.entryPoint = entryPoint;
@@ -77,6 +80,7 @@ public class Function {
         this.functionIsolation = functionIsolation;
         this.invocationCollocation = invocationCollocation;
         this.gvSandbox = gvSandbox;
+        this.canReuseCode = reuseCode;
         this.window = new ColdStartSlidingWindow(Environment.AOT_OPTIMIZATION_THRESHOLD, Environment.SLIDING_WINDOW_PERIOD);
     }
 
@@ -186,6 +190,10 @@ public class Function {
 
     public boolean canRebuild() {
         return this.canRebuild;
+    }
+
+    public boolean canReuseCode() {
+        return this.canReuseCode;
     }
 
     private boolean isJar(byte[] functionCode) {

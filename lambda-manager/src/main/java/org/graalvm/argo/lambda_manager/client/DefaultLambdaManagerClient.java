@@ -53,36 +53,28 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         try (InputStream sourceFile = Files.newInputStream(function.buildFunctionSourceCodePath())) {
             String path = null;
             // Graalvisor will pick up function code from a shared directory.
-            byte[] payload = null;
+            byte[] payload = lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR && function.canReuseCode()
+                    ? new byte[0]
+                    : sourceFile.readAllBytes();
             if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZING) {
                 String sandbox = function.getGraalvisorSandbox();
                 if (sandbox != null) {
-                    path = String.format("/register?name=%s&language=%s&entryPoint=%s&sandbox=%s", getFunctionPath(function.getName(), true), function.getLanguage().toString(), function.getEntryPoint(), sandbox);
+                    path = String.format("/register?name=%s&language=%s&entryPoint=%s&sandbox=%s", getFunctionName(function, true), function.getLanguage().toString(), function.getEntryPoint(), sandbox);
                 } else {
                     final boolean binaryFunctionExecution = isBinaryFunctionExecution(lambda);
-                    path = String.format("/register?name=%s&language=%s&entryPoint=%s&isBinary=%s", getFunctionPath(function.getName(), true), function.getLanguage().toString(), function.getEntryPoint(), binaryFunctionExecution);
+                    path = String.format("/register?name=%s&language=%s&entryPoint=%s&isBinary=%s", getFunctionName(function, true), function.getLanguage().toString(), function.getEntryPoint(), binaryFunctionExecution);
                 }
             } else if (lambda.getExecutionMode().isCustom()) {
                 path = "/init";
-                payload = sourceFile.readAllBytes();
             } else if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT || lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT) {
-                path = String.format("/register?name=%s&language=%s&entryPoint=%s", getFunctionPath(function.getName(), true), function.getLanguage().toString(), function.getEntryPoint());
+                path = String.format("/register?name=%s&language=%s&entryPoint=%s", function.getName(), function.getLanguage().toString(), function.getEntryPoint());
             } else {
                 Logger.log(Level.WARNING, String.format("Unexpected lambda mode (%s) when registering function %s!", lambda.getExecutionMode(), function.getName()));
             }
-            return sendRequest(HttpRequest.POST(path, payload == null ? new byte[0] : payload), lambda);
+            return sendRequest(HttpRequest.POST(path, payload), lambda);
         } catch (IOException e) {
             Logger.log(Level.WARNING, String.format("Failed load function %s source file %s", function.getName(), function.buildFunctionSourceCodePath()));
             return Messages.ERROR_FUNCTION_UPLOAD;
-        }
-    }
-
-    private String getFunctionPath(String functionName, boolean url) {
-        if (url) {
-            // Escaping the slash character.
-            return functionName + "%2F" + functionName;
-        } else {
-            return functionName + "/" + functionName;
         }
     }
 
@@ -93,7 +85,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
 
         if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZING) {
             path ="/deregister";
-            payload = JsonUtils.convertParametersIntoJsonObject(null, null, getFunctionPath(function.getName(), false));
+            payload = JsonUtils.convertParametersIntoJsonObject(null, null, getFunctionName(function, false));
         } else if (lambda.getExecutionMode().isCustom()) {
             Logger.log(Level.WARNING, String.format("Deregistering functions (%s) is not yet supported for custom runtimes!", function.getName()));
         } else {
@@ -108,11 +100,11 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         String path ="/";
         String payload = "";
 
-        if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT || lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT) {
-            payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, getFunctionPath(function.getName(), false));
-        } else if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZING) {
-            // Both canRebuild and readily-provided GV functions go here
-            payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, getFunctionPath(function.getName(), false), Configuration.argumentStorage.isDebugMode());
+        if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZING) {
+            // Both canRebuild and readily-provided GV functions go here.
+            payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, getFunctionName(function, false), Configuration.argumentStorage.isDebugMode());
+        } else if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT || lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT) {
+            payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getName());
         } else if (lambda.getExecutionMode().isCustom()) {
             path = "/run";
             payload = "{ \"value\" : " + arguments + " }";
@@ -123,7 +115,22 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         return sendRequest(HttpRequest.POST(path, payload), lambda);
     }
 
-    private static boolean isBinaryFunctionExecution(Lambda lambda) {
-        return lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZING;
+    private static boolean isBinaryFunctionExecution(Lambda lambda){
+                return lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZING;
+            }
+
+    private String getFunctionName(Function function, boolean url) {
+        String functionName = function.getName();
+        if (function.canReuseCode()) {
+            if (url) {
+                // Escaping the slash character.
+                return functionName + "%2F" + functionName;
+            } else {
+                return functionName + "/" + functionName;
+            }
+        } else {
+            return functionName;
+        }
+
     }
 }
