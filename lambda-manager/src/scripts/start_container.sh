@@ -56,6 +56,7 @@ cd "$LAMBDA_HOME"
 
 docker run --privileged --rm --name="$LAMBDA_NAME" \
   ${TAGS[@]} \
+  --privileged \
   -p "$LAMBDA_PORT":"$PROXY_PORT" \
   -v "$ARGO_HOME"/lambda-manager/codebase:/codebase \
   --memory "$LAMBDA_MEMORY" \
