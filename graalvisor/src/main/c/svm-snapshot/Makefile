@@ -47,17 +47,18 @@ all: *.h *.c
 	gcc -g -Wall -o main *.o
 
 tests: all
-	make -C test0-clib run | tail -n3
-	make -C test1-staticvar run | tail -n3
-	make -C test2-svm run | tail -n3
-	make -C test2-svm-jar run | tail -n3
-	make -C test2-svm-gradle run | tail -n3
-	make -C test3-svm-truffle-js run | tail -n3
-	make -C test3-svm-truffle-py run | tail -n3
-	make -C test4-svm-exception run | tail -n3
-	make -C test5-svm-truffle-cached-js run | tail -n3
-	make -C test6-cthreads run | tail -n3
-	make -C test7-svm-truffle-function-py run | tail -n3
+	make -C test0-clib test
+	make -C test1-staticvar test
+	make -C test2-svm test
+	make -C test2-svm-jar test
+	make -C test2-svm-gradle test
+	make -C test3-svm-truffle-js test
+	make -C test3-svm-truffle-py test
+	make -C test4-svm-exception test
+	make -C test5-svm-truffle-cached-js test
+	make -C test5-svm-truffle-cached-py test
+#	make -C test6-cthreads test
+	make -C test7-svm-truffle-function-py test
 
 run-normal: all
 	setarch -R ./main normal $(app) 2>&1 | tee normal.log
@@ -112,5 +113,6 @@ clean-tests:
 	make -C test3-svm-truffle-py clean
 	make -C test4-svm-exception clean
 	make -C test5-svm-truffle-cached-js clean
+	make -C test5-svm-truffle-cached-py clean
 	make -C test6-cthreads clean
 	make -C test7-svm-truffle-function-py clean

@@ -16,6 +16,10 @@ typedef struct mapping {
     char* dirty;
     // We double check if the mapping is valid by checking against /proc/maps.
     char* validated;
+    // These pointers are never adjustted and can be freed.
+    char* permissions_base;
+    char* dirty_base;
+    char* validated_base;
     // Pointer to the next mapping.
     struct mapping* next;
 } mapping_t;

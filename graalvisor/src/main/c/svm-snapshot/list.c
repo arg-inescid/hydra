@@ -36,9 +36,9 @@ void* repeated(void* mapping_start, void* mapping_finish, char* mapping_perms, v
 void init_mapping(mapping_t* mapping, void* start, size_t size) {
     mapping->start = start;
     mapping->size = size;
-    mapping->permissions = (char*) malloc(bytes_to_pages(size) * sizeof(char));
-    mapping->dirty = (char*) malloc(bytes_to_pages(size) * sizeof(char));
-    mapping->validated = (char*) malloc(bytes_to_pages(size) * sizeof(char));
+    mapping->permissions_base = mapping->permissions = (char*) malloc(bytes_to_pages(size) * sizeof(char));
+    mapping->dirty_base = mapping->dirty = (char*) malloc(bytes_to_pages(size) * sizeof(char));
+    mapping->validated_base = mapping->validated = (char*) malloc(bytes_to_pages(size) * sizeof(char));
     memset(mapping->permissions, 0, bytes_to_pages(size));
     memset(mapping->dirty, 0, bytes_to_pages(size));
     memset(mapping->validated, 0, bytes_to_pages(size));
@@ -75,10 +75,10 @@ void list_delete(mapping_t* head, mapping_t* to_delete) {
     // If the element to delete is the head, we copy the second element into the head and delete the second element.
     else if (head == to_delete) {
         // We need free the old dirty and permissions before we copy or memset.
-        free(head->dirty);
-        free(head->permissions);
-        free(head->validated);
         // If head node is the only element in the list.
+        free(head->dirty_base);
+        free(head->permissions_base);
+        free(head->validated_base);
         if (head->next == NULL) {
             memset(head, 0, sizeof(mapping_t));
         } else {
@@ -99,9 +99,9 @@ void list_delete(mapping_t* head, mapping_t* to_delete) {
             // If the element to delete is the next
             if (current->next == to_delete) {
                 current->next = to_delete->next;
-                free(to_delete->dirty);
-                free(to_delete->permissions);
-                free(to_delete->validated);
+                free(to_delete->dirty_base);
+                free(to_delete->permissions_base);
+                free(to_delete->validated_base);
                 free(to_delete);
                 return;
             }
@@ -172,16 +172,18 @@ void list_merge(mapping_t* head) {
         if (current_finish == current->next->start) {
             size_t csize = current->size;
             size_t nsize = current->next->size;
-            char* cdirty = current->dirty;
-            char* cpermissions = current->permissions;
-            char* cvalidated = current->validated;
             current->dirty = array_merge(current->dirty, csize, current->next->dirty, nsize);
             current->permissions = array_merge(current->permissions, csize, current->next->permissions, nsize);
             current->validated = array_merge(current->validated, csize, current->next->validated, nsize);
             current->size += nsize;
-            free(cdirty);
-            free(cpermissions);
-            free(cvalidated);
+            // Free the old buffers.
+            free(current->dirty_base);
+            free(current->permissions_base);
+            free(current->validated_base);
+            // Initialize the new base pointers with the buffers just allocated.
+            current->dirty_base = current->dirty;
+            current->permissions_base = current->permissions;
+            current->validated_base = current->validated;
             list_delete(head, current->next);
         } else {
             current = current->next;

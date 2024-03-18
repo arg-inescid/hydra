@@ -1,4 +1,7 @@
 app = "$(shell pwd)/libhello.so"
+NC ='\033[0m'
+RED = '\033[0;31m'
+GREEN = '\033[0;32m'
 
 libhello.so: src/main/java/com/hello_world/HelloWorld.java
 	./gradlew clean shadowJar assemble
@@ -13,12 +16,16 @@ all: libhello.so
 run-checkpoint:
 	rm -f snapshot.mem
 	rm -f snapshot.meta
-	setarch -R ../main checkpoint $(app) 2>&1 | tee checkpoint.log
+	setarch -R ../main checkpoint $(app) > checkpoint.log 2>&1
 
 run-restore:
-	setarch -R ../main restore $(app) 2>&1 | tee restore.log
+	setarch -R ../main restore $(app) > restore.log 2>&1
 
 run: all run-checkpoint run-restore
+
+test: run
+	-grep --color=always -e warning -e error checkpoint.log restore.log
+	if grep -q "Log=Hello World" restore.log ; then printf ${GREEN}OK${NC}\\n; else printf ${RED}NOK${NC}\\n; fi
 
 clean:
 	rm -f *.txt *.so *.snap *.h *.debug
