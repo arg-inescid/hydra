@@ -44,37 +44,29 @@ JNIEXPORT jboolean JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSan
 #endif
 }
 
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_setupMemIsolation(JNIEnv *env, jobject thisObj, jstring functionName) {
+#ifdef EAGER_MPK
+    const char *function_name = (*env)->GetStringUTFChars(env, functionName, NULL);
+    find_domain_eager(function_name);
+    (*env)->ReleaseStringUTFChars(env, functionName, function_name);
+#endif
+}
+
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_teardownMemIsolation(JNIEnv *env, jobject thisObj, jstring functionName) {
+#ifdef EAGER_MPK
+    const char *function_name = (*env)->GetStringUTFChars(env, functionName, NULL);
+    reset_env(function_name, 1);
+    (*env)->ReleaseStringUTFChars(env, functionName, function_name);
+#endif
+}
+
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_ginit(JNIEnv *env, jobject thisObj) {
     setbuf(stdout, NULL);
 #ifdef LAZY_ISOLATION
         initialize_seccomp();
 #endif
 #ifdef MEM_ISOLATION
-        clock_t start_time, end_time;
-        double execution_time;
-
-        start_time = clock();
-
-        void *handle = dlopen("libpreload.so", RTLD_LAZY);
-        if (!handle) {
-            fprintf(stderr, "dlopen error: %s\n", dlerror());
-            return;
-        }  
-
-        void (*initialize_memory_isolation)() = (void (*)())dlsym(handle, "initialize_memory_isolation");
-        if (!initialize_memory_isolation) {
-            fprintf(stderr, "dlsym error: %s\n", dlerror());
-            dlclose(handle);
-            return;
-        }
-        
         initialize_memory_isolation();
-
-        end_time = clock();
-
-        execution_time = ((double)(end_time - start_time) / CLOCKS_PER_SEC) * 1000000.0;
-
-        fprintf(stdout, "Init Execution time: %.2f microseconds\n", execution_time);
 #endif
 }
 

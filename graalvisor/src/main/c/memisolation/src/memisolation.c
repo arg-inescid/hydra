@@ -46,6 +46,8 @@
         BPF_STMT(BPF_LD | BPF_W | BPF_ABS, \
                 (offsetof(struct seccomp_data, nr)))
 
+__thread int domain = 0;
+
 /* File descriptors */
 struct Supervisor supervisors[NUM_DOMAINS];
 
@@ -55,8 +57,8 @@ AppMap appMap;
 /* Thread count per domain */
 int threadCount[NUM_DOMAINS];
 
-/* Eager/Lazy setting array */
-struct CacheApp cache[NUM_DOMAINS];
+/* Application cache */
+char* cache[NUM_DOMAINS];
 
 /* seccomp system call */
 static int
@@ -72,9 +74,7 @@ set_permissions(const char* id, int protectionFlag, int pkey)
     size_t count;
     MemoryRegion* regions = get_regions(appMap, (char*)id, &count);
 
-    for (size_t i = 0; i < count; ++i) {
-        SEC_DBM("\t[S%d]: Changing permissions: %p, %zd.", pkey, regions[i].address, regions[i].size);
-        
+    for (size_t i = 0; i < count; ++i) {        
         if (pkey_mprotect(regions[i].address, regions[i].size, protectionFlag, pkey) == -1) {
             fprintf(stderr, "pkey_mprotect error\n");
             exit(EXIT_FAILURE);
@@ -85,29 +85,6 @@ set_permissions(const char* id, int protectionFlag, int pkey)
 void
 insert_memory_regions(char* id, const char* path) {
     get_memory_regions(&appMap, id, path);
-}
-
-/* Lazy setting */
-void 
-insert_app_cache(int domain, const char* id)
-{
-    struct CacheApp* cached = &cache[domain];
-
-    memset(cached->app, 0, sizeof(cached->app));
-    strcpy(cached->app, id);
-    cached->value++;
-}
-
-int
-cached_domain(const char* app) {
-    for (int i = 2; i < NUM_DOMAINS; i++) {
-        struct CacheApp* cached = &cache[i];
-        if (!strcmp(app, cached->app)) {
-            cached->value++;
-            return i;
-        }
-    }
-    return 0;
 }
 
 /* Supervisors */
@@ -171,7 +148,7 @@ install_notify_filter()
 }
 
 void
-wait_sem(int domain)
+wait_sem()
 {
     SEC_DBM("\t[S%d]: Wait sem.", domain);
 
@@ -185,26 +162,36 @@ wait_sem(int domain)
 }
 
 void
-signal_sem(int domain)
+signal_sem()
 {
     SEC_DBM("\t[S%d]: Signal sem.", domain);
     sem_post(&supervisors[domain].sem);
 }
 
 static void
-prep_env(const char* application, int domain)
+prep_env(const char* application)
 {
     SEC_DBM("\t[S%d]: preparing environment.", domain);
     struct Supervisor* sp = &supervisors[domain];
 
     sp->status = ACTIVE;
     sp->execution = MANAGED;
-    #ifdef EAGER_LOAD
+
+    #ifdef EAGER_MPK
         set_permissions(application, PROT_READ|PROT_WRITE|PROT_EXEC, domain);
     #else
         // Get application in cache
-        char* cached = cache[domain].app;
-        
+        char* cached = cache[domain];
+    #endif
+
+    #ifdef EAGER_PERMS
+        if (strcmp(cached, application)) {
+            strcpy(cache[domain], application);
+        } 
+        set_permissions(application, PROT_READ|PROT_WRITE|PROT_EXEC, domain);
+    #endif
+    
+    #ifdef LAZY_PERMS 
         // If application in cache differs from application assigned to supervisor
         if (strcmp(cached, application)) {
             // 1. Remove domain permissions of previous application if any
@@ -212,21 +199,28 @@ prep_env(const char* application, int domain)
                 set_permissions(cached, PROT_READ|PROT_WRITE|PROT_EXEC, 1);
             }
             // 2. Insert new application in cache and give permissions
-            insert_app_cache(domain, application);
+            strcpy(cache[domain], application);
             set_permissions(application, PROT_READ|PROT_WRITE|PROT_EXEC, domain);
         }
         // Else continue normal execution since application is the same
     #endif
+
     sp->execution = NATIVE;
 }
 
 void
-reset_env(const char* application, int domain)
+reset_env(const char* application, int isLast)
 {
+    #ifdef EAGER_MPK
+        if (!isLast) {
+            return;
+        }
+    #endif
+
     SEC_DBM("\t[S%d]: application finished.", domain);
     struct Supervisor* sp = &supervisors[domain];
     
-    #ifdef EAGER_LOAD
+    #ifndef LAZY_PERMS
         sp->execution = MANAGED;
         set_permissions(application, PROT_READ|PROT_WRITE|PROT_EXEC, 1);    
     #endif
@@ -235,7 +229,7 @@ reset_env(const char* application, int domain)
 }
 
 static void
-assign_supervisor(int domain, const char* app, int* fd)
+assign_supervisor(const char* app, int* fd)
 {
     SEC_DBM("\t[S%d]: application assigned: %s.", domain, app);
     struct Supervisor* sp = &supervisors[domain];
@@ -250,62 +244,62 @@ assign_supervisor(int domain, const char* app, int* fd)
     sp->fd = *fd;
 
     // signal supervisor to start handling notifications
-	signal_sem(domain);
+	signal_sem();
 
-    prep_env(app, domain);
+    prep_env(app);
+}
+
+/* Returns 1 (True) if app is still in cache;
+    Returns 0 (False) otherwise. */
+
+int
+is_app_cached(const char* app) {
+    return !strcmp((const char *)cache[domain], app);
 }
 
 /* Domain Management algorithm */
-int
-find_domain(const char* app, int* fd) {
-    #ifndef EAGER_LOAD
-        int minDomain = 2;
-        int check = 0;
-
-        int domain = cached_domain(app);
-        // __sync_bool_compare_and_swap returns and stores 1 if *nthreads equals 0
-        if (domain && __sync_bool_compare_and_swap(&threadCount[domain], 0, 1)) {
-            assign_supervisor(domain, app, fd);
-            return domain;
+#ifdef EAGER_MPK
+    void
+    find_domain_eager(const char* app) {
+        for (int i = 2; i < NUM_DOMAINS; ++i) {
+            if (__sync_bool_compare_and_swap(&threadCount[i], 0, 1)) {
+                domain = i;
+                return;
+            }
         }
-    #endif
-
-    for (int i = 2; i < NUM_DOMAINS; ++i) {
-        int* nthreads = &threadCount[i];
-
-        #ifdef EAGER_LOAD
-            if (__sync_bool_compare_and_swap(nthreads, 0, 1)) {
-                assign_supervisor(i, app, fd);
-                return i;
-            }
-        #else
-            if (__sync_bool_compare_and_swap(nthreads, 0, 0)) {
-                check = 1;
-                // The lowest value corresponds to the LRU domain
-                if (cache[i].value < cache[minDomain].value) {
-                    minDomain = i;
-                }
-            }
-        #endif
+        domain = -1;
     }
+#endif
 
-    #ifdef EAGER_LOAD
-        return -1;
-    #else
-        // No Empty domains
-        if (check == 0) {
-            return -1;
+void
+find_domain(const char* app, int *fd) {
+    for (int i = 2; i < NUM_DOMAINS; ++i) {
+        if (__sync_bool_compare_and_swap(&threadCount[i], 0, 1)) {
+            domain = i;
+            assign_supervisor(app, fd);
+            return;
         }
+    }
+    domain = -1;
+}
 
-        // No other thread as chosen this domain till this point
-        if (!domain && __sync_bool_compare_and_swap(&threadCount[minDomain], 0, 1)) {
-            assign_supervisor(minDomain, app, fd);
-            return minDomain;
+void
+acquire_domain(const char* app, int *fd) {
+    #ifdef EAGER_MPK
+        if (domain != -1) {
+            assign_supervisor(app, fd);
         }
-        
-        // If some thread chose the domain first
-        return find_domain(app, fd);        
+        return;
     #endif
+    /*
+    If domain is set to 0, it indicates that this is the first invocation of the application.
+    If domain is set to -1, it indicates that during the previous execution of this application, no domains were available.
+    */
+    if (domain <= 0 || !is_app_cached(app) || !__sync_bool_compare_and_swap(&threadCount[domain], 0, 1)) {
+        find_domain(app, fd);
+    } else {
+        assign_supervisor(app, fd);
+    }
 }
 
 /* Seccomp */
@@ -333,8 +327,7 @@ cookie_is_valid(int notifyFd, uint64_t id)
 static void
 alloc_seccomp_notif_buffers(struct seccomp_notif **req,
                         struct seccomp_notif_resp **resp,
-                        struct seccomp_notif_sizes *sizes,
-                        int domain)
+                        struct seccomp_notif_sizes *sizes)
 {
     size_t  resp_size;
 
@@ -369,7 +362,7 @@ alloc_seccomp_notif_buffers(struct seccomp_notif **req,
 }
 
 static void
-handle_pkey_mprotect(struct seccomp_notif *req, struct seccomp_notif_resp *resp, int domain) 
+handle_pkey_mprotect(struct seccomp_notif *req, struct seccomp_notif_resp *resp) 
 {
     SEC_DBM("\t----pkey_mprotect syscall----");
     struct Supervisor* sp = &supervisors[domain];
@@ -401,7 +394,7 @@ handle_pkey_mprotect(struct seccomp_notif *req, struct seccomp_notif_resp *resp,
 }
 
 static void
-handle_mmap(struct seccomp_notif *req, struct seccomp_notif_resp *resp, int domain) 
+handle_mmap(struct seccomp_notif *req, struct seccomp_notif_resp *resp) 
 {
     SEC_DBM("\t----mmap syscall----");
 
@@ -433,7 +426,7 @@ handle_mmap(struct seccomp_notif *req, struct seccomp_notif_resp *resp, int doma
 }
 
 static void 
-handle_clone3(struct seccomp_notif_resp *resp, int domain)
+handle_clone3(struct seccomp_notif_resp *resp)
 {
     SEC_DBM("\t---clone3 syscall---");
 
@@ -442,7 +435,7 @@ handle_clone3(struct seccomp_notif_resp *resp, int domain)
 }
 
 static void 
-handle_exit(struct seccomp_notif_resp *resp, int domain)
+handle_exit(struct seccomp_notif_resp *resp)
 {
     SEC_DBM("\t----exit syscall----");
 
@@ -455,20 +448,20 @@ handle_exit(struct seccomp_notif_resp *resp, int domain)
     descriptor, 'notifyFd'. */
 
 static void
-handle_notifications(int domain)
+handle_notifications()
 {
     struct seccomp_notif        *req;
     struct seccomp_notif_resp   *resp;
     struct seccomp_notif_sizes  sizes;
 
-    alloc_seccomp_notif_buffers(&req, &resp, &sizes, domain);
+    alloc_seccomp_notif_buffers(&req, &resp, &sizes);
 
     int             retval;
     fd_set          rfds;
     struct timespec timeout;
     struct Supervisor* sp = &supervisors[domain];
 
-    wait_sem(domain);
+    wait_sem();
 
     SEC_DBM("\t[S%d]: Handling notifications...", domain);
 
@@ -525,16 +518,16 @@ handle_notifications(int domain)
         // Handle specific syscalls
         switch(req->data.nr) {
             case __NR_pkey_mprotect:
-                handle_pkey_mprotect(req, resp, domain);
+                handle_pkey_mprotect(req, resp);
                 break;
             case __NR_mmap:
-                handle_mmap(req, resp, domain);
+                handle_mmap(req, resp);
                 break;
             case __NR_clone3:
-                handle_clone3(resp, domain);
+                handle_clone3(resp);
                 break;
             case __NR_exit:
-                handle_exit(resp, domain);
+                handle_exit(resp);
                 break;
             default:
                 break;
@@ -571,12 +564,12 @@ static void *
 supervisor(void *arg)
 {   
     int* pDomain = (int*)arg;
-    int domain = *pDomain;
+    domain = *pDomain;
 
     SEC_DBM("\t[S%d]: up and running...", domain);
 
     while(1) {        
-        handle_notifications(domain);
+        handle_notifications();
     }
 
     return NULL;
@@ -585,6 +578,16 @@ supervisor(void *arg)
 void
 initialize_memory_isolation()
 {   
+    #ifdef EAGER_MPK
+        SEC_DBM("Executing in Eager MPK mode");
+    #endif
+    #ifdef EAGER_PERMS
+        SEC_DBM("Executing in Eager permissions mode");
+    #endif
+    #ifdef LAZY_PERMS
+        SEC_DBM("Executing in Lazy permissions mode (default)");
+    #endif
+
     /* Init maps */
     init_app_map(&appMap, NUM_DOMAINS);
 
@@ -601,8 +604,8 @@ initialize_memory_isolation()
     /* Start supervisors */
     pthread_t workers[NUM_DOMAINS];
     for (int i = 2; i < NUM_DOMAINS; i++) {
-        int *domain = (int *)malloc(sizeof(int));
-        *domain = i;
-        pthread_create(&workers[i], NULL, supervisor, domain);
+        int *pDomain = (int *)malloc(sizeof(int));
+        *pDomain = i;
+        pthread_create(&workers[i], NULL, supervisor, pDomain);
     }
 }

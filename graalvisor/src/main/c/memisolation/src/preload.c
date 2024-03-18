@@ -8,6 +8,19 @@
 
 static void * ( * real_dlopen)(const char * , int) = NULL;
 
+/*
+ * Debug prints
+ */
+#ifdef PRL_DBG
+  #define PRL_DBM(...)				\
+    do {					\
+      fprintf(stderr, __VA_ARGS__);		\
+      fprintf(stderr, "\n");			\
+    } while(0)
+#else // disable debug
+  #define PRL_DBM(...)
+#endif
+
 char*
 extract_id(const char* filePath)
 {
@@ -24,6 +37,8 @@ dlopen(const char * input, int flag)
     if (real_dlopen == NULL) {
         real_dlopen = (void *(*) (const char *, int)) dlsym(RTLD_NEXT, "dlopen");
     }
+
+    PRL_DBM("[PRELOAD]: Opening library: %s", input);
 
     if (strstr(input, "/tmp/apps") != NULL) {
         char* argo_home = getenv("ARGO_HOME");
@@ -46,5 +61,6 @@ dlopen(const char * input, int flag)
 static void 
 __attribute__((constructor)) init(void)
 {
+    PRL_DBM("[PRELOAD] Initializing...");
     real_dlopen = (void *(*) (const char *, int)) dlsym(RTLD_NEXT, "dlopen");
 }

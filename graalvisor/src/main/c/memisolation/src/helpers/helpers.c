@@ -25,11 +25,10 @@ init_thread_count(int threadCount[], int size)
 }
 
 void
-init_cache(struct CacheApp cache[], int size)
+init_cache(char* cache[], int size)
 {
     for (int i = 0; i < size; i++) {
-        strcpy(cache[i].app, "");
-        cache[i].value = 1;
+        cache[i] = strdup("");
     }
 }
 

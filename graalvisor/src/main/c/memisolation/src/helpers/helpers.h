@@ -18,11 +18,6 @@ struct Supervisor {
     int fd;
 };
 
-struct CacheApp {
-    char app[33];
-    int value;
-};
-
 
 /* Seccomp */
 void init_supervisors(struct Supervisor supervisors[], int size);
@@ -31,7 +26,7 @@ void init_supervisors(struct Supervisor supervisors[], int size);
 void init_thread_count(int threadCount[], int size);
 
 /* Eager/Lazy setting */
-void init_cache(struct CacheApp cache[], int size);
+void init_cache(char* cache[], int size);
 
 /* Preload */
 char* extract_basename(const char* filePath);

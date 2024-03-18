@@ -11,24 +11,37 @@ function build_memisolation {
 	major_version=${release%%.*}
 	release=${release#*.}
 	minor_version=${release%%.*}
+    
+    # Uncomment to run in Eager MPK mode
+    EXTRA_OPTIONS=-DEAGER_MPK
+
+    JNI_INCLUDE="-I$DEF_JAVA_HOME/include -I$DEF_JAVA_HOME/include/linux"
+    ERIM_LIBS="$ERIM_HOME/bin/common/libswscommon.a $ERIM_HOME/bin/erim/liberim.a"
 	CFLAGS="-Wall -g -fno-inline -fPIC -shared \
             -I"$ERIM_HOME/src/erim" \
             -I"$ERIM_HOME/src/common" \
+            -DSEC_DBG \
+            -DJNI_DBG \
+            -DPRL_DBG \
+            $EXTRA_OPTIONS \
             -DERIM_SWAP_STACKS"
-            #-DEAGER_LOAD \
-            #-DSEC_DBG \
+            #-DEAGER_PERMS \
             #-DERIM_DBG \
-    LIBRARIES="$ERIM_HOME/bin/common/libswscommon.a $ERIM_HOME/bin/erim/liberim.a"
 
 	if [ $major_version -ge 5 ] && [ $minor_version -ge 10 ]; then
 	    	gcc -c -I"$MEM_DIR" $CFLAGS -o $LIB_DIR/appmap.o $MEM_DIR/utils/appmap.c
 	    	gcc -c -I"$MEM_DIR" $CFLAGS -o $LIB_DIR/helpers.o $MEM_DIR/helpers/helpers.c
         	gcc -c -I"$MEM_DIR" $CFLAGS -o $LIB_DIR/memisolation.o $MEM_DIR/memisolation.c
-            gcc -c -I"$MEM_DIR" $CFLAGS -o $LIB_DIR/preload.o $PRELOAD_DIR/preload.c
-            gcc $CFLAGS -o $LIB_DIR/libtest.so $LIB_DIR/preload.o $LIB_DIR/helpers.o $LIB_DIR/appmap.o $LIB_DIR/memisolation.o 
-            gcc $CFLAGS -o $LIB_DIR/libpreload.so $LIB_DIR/appmap.o $LIB_DIR/helpers.o $LIB_DIR/memisolation.o -lm $LIBRARIES
+            gcc $CFLAGS -o $LIB_DIR/libmemiso.so $LIB_DIR/appmap.o $LIB_DIR/helpers.o $LIB_DIR/memisolation.o -lm $ERIM_LIBS
             
-            MEM_FLAGS="-DMEM_ISOLATION"
+            # LD_PRELOAD library
+            gcc -I"$MEM_DIR" $CFLAGS -o $LIB_DIR/libpreload.so $MEM_DIR/preload.c -L$LIB_DIR -lmemiso
+            
+            # JNI Wrapper library
+            gcc -I"$MEM_DIR" $JNI_INCLUDE $CFLAGS -o $LIB_DIR/libjniwrapper.so $MEM_DIR/JNIWrapper.c -L$LIB_DIR -lmemiso -lm $ERIM_LIBS
+
+            LINKER_OPTIONS_MEM_ISO="-H:NativeLinkerOption=$LIB_DIR/libmemiso.so"
+            MEM_FLAGS="-DMEM_ISOLATION $EXTRA_OPTIONS"
     fi
 }
 
@@ -42,7 +55,7 @@ function build_lazyisolation {
         	gcc -c -I"$LAZY_DIR" -o $LIB_DIR/lazyisolation.o $LAZY_DIR/lazyisolation.c
 	    	gcc -c -I"$LAZY_DIR" -o $LIB_DIR/shared_queue.o $LAZY_DIR/shared_queue.c
 	    	gcc -c -I"$LAZY_DIR" -o $LIB_DIR/filters.o $LAZY_DIR/filters.c
-        	LINKER_OPTIONS="
+        	LINKER_OPTIONS_LAZY_ISO="
             		-H:NativeLinkerOption=-lpthread
             		-H:NativeLinkerOption="$LIB_DIR/lazyisolation.o"
             		-H:NativeLinkerOption="$LIB_DIR/shared_queue.o"
@@ -56,7 +69,6 @@ function build_nsi {
 	C_DIR=$DIR/src/main/c
 	LAZY_DIR=$DIR/src/main/c/lazyisolation/src
     MEM_DIR=$DIR/src/main/c/memisolation/src
-    PRELOAD_DIR=$DIR/src/main/c/ldpreload
 	LIB_DIR=$DIR/build/libs
 	build_lazyisolation
     build_memisolation
@@ -81,7 +93,8 @@ function build_ni {
         --no-fallback \
         --enable-url-protocols=http \
         --initialize-at-run-time=com.oracle.svm.graalvisor.utils.JsonUtils \
-        $LINKER_OPTIONS \
+        $LINKER_OPTIONS_LAZY_ISO \
+        $LINKER_OPTIONS_MEM_ISO \
         -H:CLibraryPath=$LIB_DIR \
 	$JAVA_17_OPTS \
         --features=org.graalvm.argo.graalvisor.sandboxing.NativeSandboxInterfaceFeature \

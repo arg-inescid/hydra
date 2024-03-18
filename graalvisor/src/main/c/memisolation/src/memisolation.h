@@ -4,6 +4,10 @@
 #define _GNU_SOURCE
 #include <dlfcn.h>
 
+#if !defined(EAGER_PERMS) && !defined(EAGER_MPK)
+  #define LAZY_PERMS
+#endif
+
 /*
  * Debug prints
  */
@@ -17,16 +21,24 @@
   #define SEC_DBM(...)
 #endif
 
+extern __thread int domain;
+
 /* Supervisors */
-void wait_sem(int domain);
-void signal_sem(int domain);
-void reset_env(const char* application, int domain);
+void wait_sem();
+void signal_sem();
+void reset_env(const char* application, int isLast);
 
 /* Domain management */
-int find_domain(const char* app, int* fd);
+void acquire_domain(const char* app, int* fd);
 
+#ifdef EAGER_MPK
+  void find_domain_eager(const char* app);
+#endif
+
+/* Initalizer */
 void initialize_memory_isolation();
 
+/* Auxiliary */
 void insert_memory_regions(char* id, const char* path);
 
 #endif
