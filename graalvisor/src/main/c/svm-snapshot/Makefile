@@ -32,7 +32,7 @@ benchmarks_home = ${ARGO_HOME}/benchmarks
 #app = "$(benchmarks_home)/src/python/gv-mst/build/libmst.so"
 #app = "$(benchmarks_home)/src/python/gv-pagerank/build/libpr.so"
 #app = "$(benchmarks_home)/src/python/gv-bfs/build/libbfs.so"
-app = "$(benchmarks_home)/src/python/gv-dna/build/libdna.so"
+#app = "$(benchmarks_home)/src/python/gv-dna/build/libdna.so"
 #app = "$(benchmarks_home)/src/python/gv-dynamic-html/build/libdynamichtml.so"
 # Note: fails on restore w/ segfault.
 #app = "$(benchmarks_home)/src/python/gv-thumbnail/build/libthumbnail.so"
