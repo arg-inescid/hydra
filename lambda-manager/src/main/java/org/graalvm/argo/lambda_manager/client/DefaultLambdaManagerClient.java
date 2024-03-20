@@ -52,10 +52,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         // TODO: optimization: read chunks of file and send it in parts.
         try (InputStream sourceFile = Files.newInputStream(function.buildFunctionSourceCodePath())) {
             String path = null;
-            // Graalvisor will pick up function code from a shared directory.
-            byte[] payload = lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR && function.canReuseCode()
-                    ? new byte[0]
-                    : sourceFile.readAllBytes();
+            byte[] payload = canReuseCode(lambda) ? new byte[0] : sourceFile.readAllBytes();
             if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZING) {
                 String sandbox = function.getGraalvisorSandbox();
                 if (sandbox != null) {
@@ -119,9 +116,18 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
                 return lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZING;
             }
 
+    private boolean canReuseCode(Lambda lambda) {
+        return lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR && Configuration.argumentStorage.getLambdaType().isContainer();
+    }
+
+    /**
+     * Should only be used for Graalvisor mode.
+     * Graalvisor on Docker can copy function code from the filesystem
+     * directly instead of reading it through POST requests.
+     */
     private String getFunctionName(Function function, boolean url) {
         String functionName = function.getName();
-        if (function.canReuseCode()) {
+        if (Configuration.argumentStorage.getLambdaType().isContainer()) {
             if (url) {
                 // Escaping the slash character.
                 return functionName + "%2F" + functionName;
