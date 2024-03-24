@@ -30,7 +30,7 @@ then
     echo "> wget https://github.com/firecracker-microvm/firecracker/releases/download/v1.1.0/firecracker-v1.1.0-x86_64.tgz"
     echo "> tar -vzxf firecracker-v1.1.0-x86_64.tgz"
     echo "> mv release-v1.1.0-x86_64 /opt/firecracker-v1.1.0-x86_64"
-    echo "> ls -s /opt/firecracker-v1.1.0-x86_64/firecracker-v1.1.0-x86_64 /opt/firecracker-v1.1.0-x86_64/firecracker"
+    echo "> ln -s /opt/firecracker-v1.1.0-x86_64/firecracker-v1.1.0-x86_64 /opt/firecracker-v1.1.0-x86_64/firecracker"
     echo "> export PATH=\$PATH:/opt/firecracker-v1.1.0-x86_64"
     echo "> rm firecracker-v1.1.0-x86_64.tgz"
 fi
