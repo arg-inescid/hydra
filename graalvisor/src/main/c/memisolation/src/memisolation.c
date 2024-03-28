@@ -298,6 +298,7 @@ acquire_domain(const char* app, int *fd) {
     if (domain <= 0 || !is_app_cached(app) || !__sync_bool_compare_and_swap(&threadCount[domain], 0, 1)) {
         find_domain(app, fd);
     } else {
+        SEC_DBM("\t[S%d]: App is cached", domain);
         assign_supervisor(app, fd);
     }
 }
@@ -466,7 +467,7 @@ handle_notifications()
     SEC_DBM("\t[S%d]: Handling notifications...", domain);
 
     timeout.tv_sec = 0;
-    timeout.tv_nsec = 100000; // 100 microseconds (us)
+    timeout.tv_nsec = 0;
 
     sigset_t empty_mask;
     sigemptyset(&empty_mask);

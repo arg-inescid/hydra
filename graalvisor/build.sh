@@ -13,19 +13,19 @@ function build_memisolation {
 	minor_version=${release%%.*}
     
     # Uncomment to run in Eager MPK mode
-    EXTRA_OPTIONS=-DEAGER_MPK
+    #EXTRA_OPTIONS=-DEAGER_MPK
 
     JNI_INCLUDE="-I$DEF_JAVA_HOME/include -I$DEF_JAVA_HOME/include/linux"
     ERIM_LIBS="$ERIM_HOME/bin/common/libswscommon.a $ERIM_HOME/bin/erim/liberim.a"
 	CFLAGS="-Wall -g -fno-inline -fPIC -shared \
             -I"$ERIM_HOME/src/erim" \
             -I"$ERIM_HOME/src/common" \
+            $EXTRA_OPTIONS \
             -DSEC_DBG \
             -DJNI_DBG \
-            -DPRL_DBG \
-            $EXTRA_OPTIONS \
             -DERIM_SWAP_STACKS"
             #-DEAGER_PERMS \
+            #-DPRL_DBG \
             #-DERIM_DBG \
 
 	if [ $major_version -ge 5 ] && [ $minor_version -ge 10 ]; then
