@@ -8,6 +8,7 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include "cr.h"
 #include "list.h"
 #include "syscalls.h"
@@ -527,6 +528,10 @@ void checkpoint_memory(int meta_snap_fd, int mem_snap_fd, mapping_t* mappings, i
 }
 
 void restore(const char* meta_snap_path, const char* mem_snap_path, isolate_abi_t* abi, graal_isolate_t** isolate){
+#ifdef PERF_DEBUG
+        struct timeval st, et;
+        gettimeofday(&st, NULL);
+#endif
     // Open the metadata file (syscall arguments, memory ranges, etc).
     int meta_snap_fd = open(meta_snap_path, O_RDONLY);
     if (meta_snap_fd < 0) {
@@ -542,9 +547,18 @@ void restore(const char* meta_snap_path, const char* mem_snap_path, isolate_abi_
     } else {
         mem_snap_fd = move_to_reserved_fd(mem_snap_fd);
     }
+#ifdef PERF_DEBUG
+        gettimeofday(&et, NULL);
+        log("Opening meta and mem snap files took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
+#endif
 
     while(1) {
         int tag;
+
+#ifdef PERF_DEBUG
+        struct timeval st, et;
+        gettimeofday(&st, NULL);
+#endif
         size_t n = read(meta_snap_fd, &tag, sizeof(int));
 
         if (n == 0) {
@@ -591,6 +605,11 @@ void restore(const char* meta_snap_path, const char* mem_snap_path, isolate_abi_
         default:
             err("error: unknown tag durin restore: %d", tag);
         }
+
+#ifdef PERF_DEBUG
+        gettimeofday(&et, NULL);
+        log("Restoring %d took %lu us\n", tag, ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
+#endif
     }
 
     close(mem_snap_fd);

@@ -28,7 +28,7 @@ public class ContextSnapshotSandboxProvider extends SandboxProvider {
     public ContextSnapshotSandboxProvider(PolyglotFunction function) {
         super(function);
         this.functionPath = ((NativeFunction) getFunction()).getPath();
-        this.metaSnapPath = functionPath + ".metasnap";
+        this.metaSnapPath = functionPath + ".metasnap"; // TODO - needs to be configurable.
         this.memSnapPath =  functionPath + ".memsnap";
     }
 

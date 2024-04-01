@@ -43,6 +43,12 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     setbuf(stdout, NULL);
     memset(isolates, 0, sizeof(graal_isolate_t*) * MAX_SVM_ID);
     memset(abis, 0, sizeof(isolate_abi_t) * MAX_SVM_ID);
+    // Note: for some reason that we should track down, the first call to dup2 takes 10s of ms.
+    // We do it now to avoid further latency later.
+    int dummy = dup2(0, 1023);
+    if (dummy >= 0) {
+        close(dummy);
+    }
 #ifdef LAZY_ISOLATION
         initialize_seccomp();
 #endif

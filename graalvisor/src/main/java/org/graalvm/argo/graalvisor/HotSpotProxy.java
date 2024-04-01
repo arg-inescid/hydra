@@ -30,8 +30,8 @@ import com.oracle.svm.graalvisor.polyglot.PolyglotLanguage;
  */
 public class HotSpotProxy extends RuntimeProxy {
 
-    public HotSpotProxy(int port) throws Exception {
-        super(port);
+    public HotSpotProxy(int port, String appDir) throws Exception {
+        super(port, appDir);
         server.createContext("/agentconfig", new RetrieveAgentConfigHandler());
         server.setExecutor(Executors.newSingleThreadExecutor());
     }

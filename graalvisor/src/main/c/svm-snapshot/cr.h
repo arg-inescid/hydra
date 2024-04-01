@@ -26,6 +26,8 @@
 //#define DEBUG
 // If defined, enables performance measurements.
 #define PERF
+// If defined, enables fine-grained performance measurements.
+//#define PERF_DEBUG
 // If defined, enables performance optimizations.
 #define OPT
 

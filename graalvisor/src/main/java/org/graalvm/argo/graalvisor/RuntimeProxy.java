@@ -1,6 +1,5 @@
 package org.graalvm.argo.graalvisor;
 
-import static org.graalvm.argo.graalvisor.Main.APP_DIR;
 import static com.oracle.svm.graalvisor.utils.JsonUtils.json;
 import static com.oracle.svm.graalvisor.utils.JsonUtils.jsonToMap;
 import static org.graalvm.argo.graalvisor.utils.ProxyUtils.errorResponse;
@@ -79,14 +78,19 @@ public abstract class RuntimeProxy {
      * Simple Http server. It uses a cached thread pool for managing threads.
      */
     protected static HttpServer server;
+    /**
+     * Location where function code will be placed.
+     */
+    private static String appDir;
 
-    public RuntimeProxy(int port) throws IOException {
+    public RuntimeProxy(int port, String appDir) throws IOException {
         server = HttpServer.create(new InetSocketAddress(port), -1);
         server.createContext("/", new InvocationHandler());
         server.createContext("/warmup", new WarmupHandler());
         server.createContext("/register", new RegisterHandler());
         server.createContext("/deregister", new DeregisterHandler());
         server.setExecutor(Executors.newCachedThreadPool());
+        RuntimeProxy.appDir = appDir;
     }
 
     static {
@@ -227,7 +231,7 @@ public abstract class RuntimeProxy {
                 metaData.put(keyValue[0], keyValue[1]);
             }
             String functionName = metaData.get("name");
-            String codeFileName = APP_DIR + functionName;
+            String codeFileName = appDir + "/" + functionName;
             String functionEntryPoint = metaData.get("entryPoint");
             String functionLanguage = metaData.get("language");
             String sandboxName = metaData.get("sandbox");

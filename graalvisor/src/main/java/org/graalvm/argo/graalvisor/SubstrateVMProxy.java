@@ -147,8 +147,8 @@ public class SubstrateVMProxy extends RuntimeProxy {
      */
     private static ConcurrentMap<String, FunctionPipeline> queues = new ConcurrentHashMap<>();
 
-    public SubstrateVMProxy(int port) throws IOException {
-        super(port);
+    public SubstrateVMProxy(int port, String appDir) throws IOException {
+        super(port, appDir);
     }
 
     private static FunctionPipeline getFunctionPipeline(PolyglotFunction function) {
