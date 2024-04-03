@@ -1,37 +1,16 @@
 ## Setting up Graalvisor
 
-Assuming you have cloned this repository, you should create the following environment variable:
+After you clone this repository, simply call the `setup.sh` script that resides in the top directory of the repository:
 
-`export ARGO_HOME=<path to cloned repository>`
+`bash setup.sh`
 
-We will also need a GraalVM distribution, which can be easily set up with the following steps:
+This script will ask you a number of questions which you can answer "no" or "n", in which case nothing will be done.
 
-```
-# Download tar.gz with GraalVM. This version has been tested to work with Graalvisor.
-wget https://download.oracle.com/graalvm/17/archive/graalvm-jdk-17.0.7_linux-x64_bin.tar.gz
-# Untar it.
-tar -vzxf graalvm-jdk-17.0.7_linux-x64_bin.tar.gz
-# Delete the tarbal, we don't need it anymore.
-rm graalvm-jdk-17.0.7_linux-x64_bin.tar.gz
-# Move extracted JVM into $ARGO_HOME/resources
-mv graalvm-jdk-17.0.7+8.1 $ARGO_HOME/resources
-# Set up an environment variable that will be used later.
-export JAVA_HOME=$ARGO_HOME/resources/graalvm-jdk-17.0.7+8.1
-```
+You will need a GraalVM distribution to compile Graalvisor so when asked to install GraalVM, you should answer "yes" or "y". 
 
-At this point, we can proceed with building Graalvisor. To do so, call the following script:
-
-`$ARGO_HOME/setup.sh`
-
-This script will ask you a number of questions. If you answer "no" or "n", nothing will be done. To compile Graalvisor you can do the following:
+Then, to compile Graalvisor you can do the following:
 
 ```
-ARGO_HOME = /home/rbruno/git/graalserverless
-JAVA_HOME = /home/rbruno/software/graalvm-jdk-17.0.7+8.1
-JAVA_VERSION = 17.0.7
-GRAALVM_VERSION = 23.0.0
-Build lambda manager? (y or Y, everything else as no)? n
-Build builder container image? (y or Y, everything else as no)? n
 Build graalvisor? (y or Y, everything else as no)? y
 Native JavaScript support (y or Y, everything else as no)? n
 Native Python support (y or Y, everything else as no)? n
