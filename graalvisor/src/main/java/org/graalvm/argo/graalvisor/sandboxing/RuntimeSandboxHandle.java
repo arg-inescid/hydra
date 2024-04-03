@@ -22,7 +22,7 @@ public class RuntimeSandboxHandle extends SandboxHandle {
         this.graalvisorAPI = new GraalVisorAPI(function.getPath());
         this.isolateThread = graalvisorAPI.createIsolate();
         this.rsProvider = rsProvider;
-        NativeSandboxInterface.createNativeRuntimeSandbox(((NativeFunction) rsProvider.getFunction()).hasLazyIsolation());
+        NativeSandboxInterface.createNativeRuntimeSandbox();
     }
 
     @Override
