@@ -6,7 +6,9 @@
 #ifdef LAZY_ISOLATION
 #include "lazyisolation.h"
 #endif
+#ifdef SVM_SNAPSHOT
 #include "svm-snapshot.h"
+#endif
 #include "org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface.h"
 
 #define PIPE_READ_END  0
@@ -31,14 +33,6 @@ void reset_parent_signal_handlers() {
     signal(SIGINT, SIG_DFL);
 }
 
-JNIEXPORT jboolean JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_isLazyIsolationSupported(JNIEnv *env, jobject thisObj) {
-#ifdef LAZY_ISOLATION
-    return 1;
-#else
-    return 0;
-#endif
-}
-
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_ginit(JNIEnv *env, jobject thisObj) {
     setbuf(stdout, NULL);
     memset(isolates, 0, sizeof(graal_isolate_t*) * MAX_SVM_ID);
@@ -54,7 +48,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 #endif
 }
 
-JNIEXPORT int JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createNativeProcessSandbox(JNIEnv *env, jobject thisObj, jintArray childPipeFD, jintArray parentPipeFD, jboolean lazyIsolation) {
+JNIEXPORT int JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createNativeProcessSandbox(JNIEnv *env, jobject thisObj, jintArray childPipeFD, jintArray parentPipeFD) {
     int parentRead, parentWrite, childRead, childWrite;
 
     // Preparing child pipe (where the child writes and the parent reads).
@@ -78,38 +72,29 @@ JNIEXPORT int JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxI
         close_parent_fds(childWrite, parentRead);
         reset_parent_signal_handlers();
 #ifdef LAZY_ISOLATION
-        if (lazyIsolation) {
-            install_proc_filter(childPipeFDptr);
-        }
+        install_proc_filter(childPipeFDptr);
 #endif
     } else {
         // Close the unnecessary pipe ends.
         close(childPipeFDptr[PIPE_WRITE_END]);
-        if (!lazyIsolation) {
-            close(parentPipeFDptr[PIPE_READ_END]);
-        }
 #ifdef LAZY_ISOLATION
-        if (lazyIsolation) {
-            attach(pid, childPipeFDptr, parentPipeFDptr);
-        }
+        attach(pid, childPipeFDptr, parentPipeFDptr);
+#else
+        close(parentPipeFDptr[PIPE_READ_END]);
 #endif
     }
     return pid;
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createNativeIsolateSandbox(JNIEnv *env, jobject thisObj, jboolean lazyIsolation) {
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createNativeIsolateSandbox(JNIEnv *env, jobject thisObj) {
 #ifdef LAZY_ISOLATION
-    if (lazyIsolation) {
-        install_thread_filter();
-    }
+    install_thread_filter();
 #endif
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createNativeRuntimeSandbox(JNIEnv *env, jobject thisObj, jboolean lazyIsolation) {
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createNativeRuntimeSandbox(JNIEnv *env, jobject thisObj) {
 #ifdef LAZY_ISOLATION
-    if (lazyIsolation) {
-        install_thread_filter();
-    }
+    install_thread_filter();
 #endif
 }
 

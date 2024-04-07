@@ -13,16 +13,17 @@ function build_lazyisolation {
     minor_version=${release%%.*}
 
     if [ $major_version -ge 5 ] && [ $minor_version -ge 10 ]; then
-            gcc -c -I"$LAZY_DIR" -o $LIB_DIR/lazyisolation.o $LAZY_DIR/lazyisolation.c
-            gcc -c -I"$LAZY_DIR" -o $LIB_DIR/shared_queue.o $LAZY_DIR/shared_queue.c
-            gcc -c -I"$LAZY_DIR" -o $LIB_DIR/filters.o $LAZY_DIR/filters.c
-            LINKER_OPTIONS="
-                    -H:NativeLinkerOption=-lpthread
-                    -H:NativeLinkerOption="$LIB_DIR/lazyisolation.o"
-                    -H:NativeLinkerOption="$LIB_DIR/shared_queue.o"
-                    -H:NativeLinkerOption="$LIB_DIR/filters.o""
-                LAZY_FLAGS="-DLAZY_ISOLATION"
-        fi
+        gcc -c -I"$LAZY_DIR" -o $LIB_DIR/lazyisolation.o $LAZY_DIR/lazyisolation.c
+        gcc -c -I"$LAZY_DIR" -o $LIB_DIR/shared_queue.o $LAZY_DIR/shared_queue.c
+        gcc -c -I"$LAZY_DIR" -o $LIB_DIR/filters.o $LAZY_DIR/filters.c
+        LINKER_OPTIONS="
+            $LINKER_OPTIONS
+            -H:NativeLinkerOption=-lpthread
+            -H:NativeLinkerOption="$LIB_DIR/lazyisolation.o"
+            -H:NativeLinkerOption="$LIB_DIR/shared_queue.o"
+            -H:NativeLinkerOption="$LIB_DIR/filters.o""
+        NSI_FLAGS="$NSI_FLAGS -DLAZY_ISOLATION"
+    fi
 }
 
 function build_svm_snapshot {
@@ -31,10 +32,12 @@ function build_svm_snapshot {
     gcc -c -I"$SNAP_DIR" -o $LIB_DIR/syscalls.o     $SNAP_DIR/syscalls.c
     gcc -c -I"$SNAP_DIR" -o $LIB_DIR/list.o         $SNAP_DIR/list.c
     LINKER_OPTIONS="
+        $LINKER_OPTIONS
         -H:NativeLinkerOption="$LIB_DIR/svm-snapshot.o"
         -H:NativeLinkerOption="$LIB_DIR/cr.o"
         -H:NativeLinkerOption="$LIB_DIR/syscalls.o"
         -H:NativeLinkerOption="$LIB_DIR/list.o""
+    NSI_FLAGS="$NSI_FLAGS -DSVM_SNAPSHOT"
 }
 
 function build_nsi {
@@ -43,6 +46,7 @@ function build_nsi {
     LAZY_DIR=$C_DIR/lazyisolation/src
     SNAP_DIR=$C_DIR/svm-snapshot
     LIB_DIR=$DIR/build/libs
+    # Comment/Uncomment to disable/enable lazy isolation.
     #build_lazyisolation
     build_svm_snapshot
     gcc -c \
@@ -53,7 +57,7 @@ function build_nsi {
         -I"$SNAP_DIR" \
         -o $LIB_DIR/NativeSandboxInterface.o \
         $C_DIR/NativeSandboxInterface.c \
-        $LAZY_FLAGS
+        $NSI_FLAGS
     ar rcs $LIB_DIR/libNativeSandboxInterface.a $LIB_DIR/NativeSandboxInterface.o
 }
 
