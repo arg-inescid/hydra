@@ -6,7 +6,7 @@ function build_vm_image {
     IMAGE=$1
     cd "$DIR"/"$IMAGE"
     bash build_vm_image.sh "$IMAGE".img
-    rm "$DIR"/"$IMAGE"/base.ext4 "$DIR"/"$IMAGE"/init "$DIR"/"$IMAGE"/init.o
+    rm "$DIR"/"$IMAGE"/base.ext4 "$DIR"/"$IMAGE"/init "$DIR"/"$IMAGE"/init.o "$DIR"/"$IMAGE"/random.o &> /dev/null
     cd "$DIR"
 }
 
@@ -53,4 +53,18 @@ echo    # move to a new line
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
     build_vm_image java-openwhisk
+fi
+
+read -p "Python OpenWhisk VM (y or Y, everything else as no)? " -n 1 -r
+echo    # move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    build_vm_image python-openwhisk
+fi
+
+read -p "JavaScript OpenWhisk VM (y or Y, everything else as no)? " -n 1 -r
+echo    # move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    build_vm_image javascript-openwhisk
 fi

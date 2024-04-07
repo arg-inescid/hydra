@@ -30,4 +30,8 @@ public abstract class MemoryPool {
     	return maxMemory;
     }
 
+    public long getFreeMemory() {
+        return freeMemory;
+    }
+
 }

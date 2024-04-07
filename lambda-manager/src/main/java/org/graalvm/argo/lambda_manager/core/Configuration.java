@@ -17,7 +17,7 @@ public class Configuration {
     /**
      * Number of times a request will be re-sent to a particular Lambda upon an error.
      */
-    public static final int FAULT_TOLERANCE = 300;
+    public static final int FAULT_TOLERANCE = 10;
 
     public static Scheduler scheduler;
     public static Coder coder;

@@ -7,6 +7,7 @@ import org.graalvm.argo.graalvisor.function.PolyglotFunction;
 import org.graalvm.nativeimage.IsolateThread;
 
 import com.oracle.svm.graalvisor.api.GraalVisorAPI;
+import com.oracle.svm.graalvisor.polyglot.PolyglotLanguage;
 
 public class ProcessSandboxProvider extends SandboxProvider {
 
@@ -30,7 +31,10 @@ public class ProcessSandboxProvider extends SandboxProvider {
     }
 
     @Override
-    public synchronized String warmupProvider(String jsonArguments) throws IOException {
+    public synchronized String warmupProvider(int concurrency, int requests, String jsonArguments) throws IOException {
+        if (concurrency > 1 || requests > 1) {
+            return "Error': Warmup operation not supported with multiple threads and requests.";
+        }
         IsolateThread isolateThread = graalvisorAPI.createIsolate();
         String result = graalvisorAPI.invokeFunction((IsolateThread) isolateThread, getFunction().getEntryPoint(), jsonArguments);
         graalvisorAPI.tearDownIsolate(isolateThread);

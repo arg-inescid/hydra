@@ -12,13 +12,17 @@ import java.io.Serializable;
                 "hotspotWithAgent",
                 "hotspot",
                 "graalvisor",
-                "custom"
+                "customJava",
+                "customJavaScript",
+                "customPython"
 })
 public class LambdaManagerPool implements Serializable {
     @JsonProperty("hotspotWithAgent") private int hotspotWithAgent;
     @JsonProperty("hotspot") private int hotspot;
     @JsonProperty("graalvisor") private int graalvisor;
-    @JsonProperty("custom") private int custom;
+    @JsonProperty("customJava") private int customJava;
+    @JsonProperty("customJavaScript") private int customJavaScript;
+    @JsonProperty("customPython") private int customPython;
     private final static long serialVersionUID = -620888442421704577L;
 
     /**
@@ -34,12 +38,14 @@ public class LambdaManagerPool implements Serializable {
      * @param graalvisor - Maximum number of Graalvisor lambdas in the pool.
      * @param custom - Maximum number of custom (OpenWhisk) lambdas in the pool.
      */
-    public LambdaManagerPool(int hotspotWithAgent, int hotspot, int graalvisor, int custom) {
+    public LambdaManagerPool(int hotspotWithAgent, int hotspot, int graalvisor, int customJava, int customJavaScript, int customPython) {
         super();
         this.hotspotWithAgent = hotspotWithAgent;
         this.hotspot = hotspot;
         this.graalvisor = graalvisor;
-        this.custom = custom;
+        this.customJava = customJava;
+        this.customJavaScript = customJavaScript;
+        this.customPython = customPython;
     }
 
     @JsonProperty("hotspotWithAgent")
@@ -72,14 +78,34 @@ public class LambdaManagerPool implements Serializable {
         this.graalvisor = graalvisor;
     }
 
-    @JsonProperty("custom")
-    public int getCustom() {
-        return custom;
+    @JsonProperty("customJava")
+    public int getCustomJava() {
+        return customJava;
     }
 
-    @JsonProperty("custom")
-    public void setCustom(int custom) {
-        this.custom = custom;
+    @JsonProperty("customJava")
+    public void setCustomJava(int customJava) {
+        this.customJava = customJava;
+    }
+
+    @JsonProperty("customJavaScript")
+    public int getCustomJavaScript() {
+        return customJavaScript;
+    }
+
+    @JsonProperty("customJavaScript")
+    public void setCustomJavaScript(int customJavaScript) {
+        this.customJavaScript = customJavaScript;
+    }
+
+    @JsonProperty("customPython")
+    public int getCustomPython() {
+        return customPython;
+    }
+
+    @JsonProperty("customPython")
+    public void setCustomPython(int customPython) {
+        this.customPython = customPython;
     }
 
 }

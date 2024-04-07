@@ -15,8 +15,14 @@ import org.graalvm.argo.graalvisor.sandboxing.ProcessSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.RuntimeSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.SandboxProvider;
 import org.graalvm.argo.graalvisor.utils.ProxyUtils;
+import static com.oracle.svm.graalvisor.utils.JsonUtils.json;
+import static com.oracle.svm.graalvisor.utils.JsonUtils.jsonToMap;
+import static org.graalvm.argo.graalvisor.utils.ProxyUtils.errorResponse;
+import static org.graalvm.argo.graalvisor.utils.ProxyUtils.extractRequestBody;
+import static org.graalvm.argo.graalvisor.utils.ProxyUtils.writeResponse;
 
 import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,6 +44,7 @@ import org.graalvm.argo.graalvisor.function.PolyglotFunction;
 import org.graalvm.argo.graalvisor.function.TruffleFunction;
 import org.graalvm.argo.graalvisor.sandboxing.PolyContextSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.ContextSandboxProvider;
+import org.graalvm.argo.graalvisor.sandboxing.ContextSnapshotSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.IsolateSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.ProcessSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.RuntimeSandboxProvider;
@@ -92,14 +99,19 @@ public abstract class RuntimeProxy {
      * Simple Http server. It uses a cached thread pool for managing threads.
      */
     protected static HttpServer server;
+    /**
+     * Location where function code will be placed.
+     */
+    private static String appDir;
 
-    public RuntimeProxy(int port) throws IOException {
+    public RuntimeProxy(int port, String appDir) throws IOException {
         server = HttpServer.create(new InetSocketAddress(port), -1);
         server.createContext("/", new InvocationHandler());
         server.createContext("/warmup", new WarmupHandler());
         server.createContext("/register", new RegisterHandler());
         server.createContext("/deregister", new DeregisterHandler());
         server.setExecutor(Executors.newCachedThreadPool());
+        RuntimeProxy.appDir = appDir;
     }
 
     static {
@@ -113,9 +125,9 @@ public abstract class RuntimeProxy {
         }
     }
 
-    protected abstract String invoke(PolyglotFunction functionName, boolean cached, boolean warmup, String arguments) throws Exception;
+    protected abstract String invoke(PolyglotFunction functionName, boolean cached, int warmupConc, int warmupReqs, String arguments) throws Exception;
 
-   private String invokeWrapper(String functionName, boolean cached, boolean warmup, String arguments) throws Exception {
+   private String invokeWrapper(String functionName, boolean cached, int warmupConc, int warmupReqs, String arguments) throws Exception {
       PolyglotFunction function = FTABLE.get(functionName);
       String res;
 
@@ -123,7 +135,7 @@ public abstract class RuntimeProxy {
       if (function == null) {
             res = String.format("{'Error': 'Function %s not registered!'}", functionName);
         } else {
-            res = invoke(function, cached, warmup, arguments);
+            res = invoke(function, cached, warmupConc, warmupReqs, arguments);
         }
       long finish = System.nanoTime();
 
@@ -154,10 +166,10 @@ public abstract class RuntimeProxy {
                     ProxyUtils.writeResponse(t, 200, "Returned from Graalvisor!");
                 } else if (async != null && async.equals("true")) {
                     ProxyUtils.writeResponse(t, 200, "Asynchronous request submitted!");
-                    String output = invokeWrapper(functionName, cached, false, arguments);
+                    String output = invokeWrapper(functionName, cached, 0, 0, arguments);
                     System.out.println(output);
                 } else {
-                    String output = invokeWrapper(functionName, cached, false, arguments);
+                    String output = invokeWrapper(functionName, cached, 0, 0, arguments);
                     ProxyUtils.writeResponse(t, 200, output);
                 }
             } catch (Exception e) {
@@ -172,11 +184,20 @@ public abstract class RuntimeProxy {
         @Override
         public void handleInternal(HttpExchange t) throws IOException {
             try {
+                // TODO - same code as in the invocation handleInternal, could be factorized.
+                String[] params = t.getRequestURI().getQuery().split("&");
+                Map<String, String> metadata = new HashMap<>();
+                for (String param : params) {
+                    String[] keyValue = param.split("=");
+                    metadata.put(keyValue[0], keyValue[1]);
+                }
+                int concurrency = metadata.get("concurrency") == null ? 1 : Integer.parseInt(metadata.get("concurrency"));
+                int requests = metadata.get("requests") == null ? 1 : Integer.parseInt(metadata.get("requests"));
                 String jsonBody = ProxyUtils.extractRequestBody(t);
                 Map<String, Object> input = jsonToMap(jsonBody);
                 String functionName = (String) input.get("name");
                 String arguments = (String) input.get("arguments");
-                String output = invokeWrapper(functionName, false, true, arguments);
+                String output = invokeWrapper(functionName, false, concurrency, requests, arguments);
                 ProxyUtils.writeResponse(t, 200, output);
             } catch (Exception e) {
                 e.printStackTrace(System.err);
@@ -204,6 +225,8 @@ public abstract class RuntimeProxy {
             if (function.getLanguage() == PolyglotLanguage.JAVA) {
                 if (sandboxName.equals("context")) {
                     return new ContextSandboxProvider(function);
+                } else if (sandboxName.equals("context-snapshot")) {
+                    return new ContextSnapshotSandboxProvider(function);
                 } else if (sandboxName.equals("isolate")) {
                     return new IsolateSandboxProvider(function);
                 } else if (sandboxName.equals("runtime")) {
@@ -229,14 +252,13 @@ public abstract class RuntimeProxy {
                 metaData.put(keyValue[0], keyValue[1]);
             }
             String functionName = metaData.get("name");
-            String codeFileName = APP_DIR + functionName;
+            String codeFileName = appDir + "/" + functionName;
             String functionEntryPoint = metaData.get("entryPoint");
             String functionLanguage = metaData.get("language");
             String sandboxName = metaData.get("sandbox");
-            boolean lazyIsolation = metaData.containsKey("lazyisolation") && metaData.get("lazyisolation").equals("true");
 
             if (System.getProperty("java.vm.name").equals("Substrate VM") || !functionLanguage.equalsIgnoreCase("java")) {
-                handlePolyglotRegistration(t, functionName, codeFileName, functionEntryPoint, functionLanguage, sandboxName, lazyIsolation);
+                handlePolyglotRegistration(t, functionName, codeFileName, functionEntryPoint, functionLanguage, sandboxName);
             } else {
                 handleHotSpotRegistration(t, functionName, codeFileName, functionEntryPoint);
             }
@@ -256,8 +278,7 @@ public abstract class RuntimeProxy {
                     bis.transferTo(fos);
 
                     // Use class loader explicitly to load new classes from a JAR dynamically.
-                    URLClassLoader loader = new URLClassLoader(new URL[] { Paths.get(jarFileName).toUri().toURL() },
-                            this.getClass().getClassLoader());
+                    URLClassLoader loader = new URLClassLoader(new URL[] { Paths.get(jarFileName).toUri().toURL() }, this.getClass().getClassLoader());
                     Class<?> cls = Class.forName(functionEntryPoint, true, loader);
                     Method method = cls.getMethod("main", Map.class);
                     HotSpotFunction function = new HotSpotFunction(functionName, functionEntryPoint, PolyglotLanguage.JAVA.toString(), method);
@@ -272,7 +293,7 @@ public abstract class RuntimeProxy {
             writeResponse(t, 200, String.format("Function %s registered!", functionName));
         }
 
-        private void handlePolyglotRegistration(HttpExchange t, String functionName, String soFileName, String functionEntryPoint, String functionLanguage, String sandboxName, boolean lazyIsolation) throws IOException {
+        private void handlePolyglotRegistration(HttpExchange t, String functionName, String soFileName, String functionEntryPoint, String functionLanguage, String sandboxName) throws IOException {
             long start = System.currentTimeMillis();
             PolyglotFunction function = null;
             SandboxProvider sprovider = null;
@@ -282,22 +303,15 @@ public abstract class RuntimeProxy {
                     return;
                 }
 
-                if (lazyIsolation) {
-                    if (!Main.LAZY_ISOLATION_ENABLED) {
-                        System.out.println("Warning: Function " + functionName + ": lazy isolation is disabled.");
-                        lazyIsolation = false;
-                    }
-                    else if (!Main.LAZY_ISOLATION_SUPPORTED) {
-                        System.out.println("Warning: Function " + functionName + ": graalvisor was compiled without lazy isolation support.");
-                        lazyIsolation = false;
-                    }
-                }
-
                 if (functionLanguage.equalsIgnoreCase("java")) {
-                    try (OutputStream fos = new FileOutputStream(soFileName); InputStream bis = new BufferedInputStream(t.getRequestBody(), 4096)) {
-                        bis.transferTo(fos);
+                    if (new File(soFileName).exists()) {
+                        System.out.println(String.format("Reusing %s", soFileName));
+                    } else {
+                        try (OutputStream fos = new FileOutputStream(soFileName); InputStream bis = new BufferedInputStream(t.getRequestBody(), 4096)) {
+                            bis.transferTo(fos);
+                        }
                     }
-                    function = new NativeFunction(functionName, functionEntryPoint, functionLanguage, soFileName, lazyIsolation);
+                    function = new NativeFunction(functionName, functionEntryPoint, functionLanguage, soFileName);
                 } else {
                     try (InputStream bis = new BufferedInputStream(t.getRequestBody(), 4096)) {
                         String sourceCode = new String(bis.readAllBytes(), StandardCharsets.UTF_8);

@@ -17,7 +17,7 @@ int main(int argc, char** argv, char** envp) {
 
     char *newargv[] = { "/jvm/bin/java",
                             "-Djava.library.path=/jvm/lib",
-                            "-agentlib:native-image-agent=config-merge-dir=config,caller-filter-file=caller-filter-config.json,config-write-initial-delay-secs=20,config-write-period-secs=300",
+                            "-agentlib:native-image-agent=config-merge-dir=config,caller-filter-file=caller-filter-config.json,config-write-initial-delay-secs=90,config-write-period-secs=60",
                             "-cp", "graalvisor-1.0-all.jar",
                             "org.graalvm.argo.graalvisor.Main", NULL };
     char *newenvp[] = { "JAVA_HOME=/jvm", NULL };

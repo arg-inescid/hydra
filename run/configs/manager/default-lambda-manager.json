@@ -16,6 +16,8 @@
     "hotspotWithAgent": 0,
     "hotspot": 0,
     "graalvisor": 5,
-    "custom": 0
+    "customJava": 0,
+    "customJavaScript": 0,
+    "customPython": 0
   }
 }

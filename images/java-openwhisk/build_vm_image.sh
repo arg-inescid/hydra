@@ -13,8 +13,8 @@ if [ "$#" -ne 1 ]; then
 fi
 
 # Build out init program.
-gcc -c $DIR/init.c -o $DIR/init.o
-gcc -o $DIR/init $DIR/init.o
+docker run -v $DIR/..:/images --rm -it openwhisk/java8action:latest bash -c "apt update && apt install -y gcc && /images/java-openwhisk/build_init.sh"
+sudo chown -R $(id -u -n):$(id -g -n) $DIR/init $DIR/*.o
 
 # Prepare directory used to setup the filesystem.
 rm -rf $DISK &> /dev/null

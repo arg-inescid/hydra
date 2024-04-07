@@ -33,11 +33,13 @@ public class LambdaPool {
     /**
      * Concurrent queue where the lambdas are pooled from.
      */
-    private final Map<LambdaExecutionMode, ConcurrentLinkedQueue<Lambda>> lambdaPool = Map.ofEntries(
+    public final Map<LambdaExecutionMode, ConcurrentLinkedQueue<Lambda>> lambdaPool = Map.ofEntries(
             Map.entry(LambdaExecutionMode.HOTSPOT_W_AGENT, new ConcurrentLinkedQueue<>()),
             Map.entry(LambdaExecutionMode.HOTSPOT, new ConcurrentLinkedQueue<>()),
             Map.entry(LambdaExecutionMode.GRAALVISOR, new ConcurrentLinkedQueue<>()),
-            Map.entry(LambdaExecutionMode.CUSTOM, new ConcurrentLinkedQueue<>()));
+            Map.entry(LambdaExecutionMode.CUSTOM_JAVA, new ConcurrentLinkedQueue<>()),
+            Map.entry(LambdaExecutionMode.CUSTOM_JAVASCRIPT, new ConcurrentLinkedQueue<>()),
+            Map.entry(LambdaExecutionMode.CUSTOM_PYTHON, new ConcurrentLinkedQueue<>()));
 
     public LambdaPool(LambdaType lambdaType, int maxTaps) {
         this.lambdaType = lambdaType;
@@ -52,6 +54,7 @@ public class LambdaPool {
             NetworkConfigurationUtils.prepareContainerConnectionPool(connectionPool, targetSize, beanContext);
         }
         LambdaPoolUtils.prepareLambdaPool(lambdaPool, poolConfiguration);
+        LambdaPoolUtils.startLambdaReclaimingDaemon(lambdaPool, poolConfiguration);
     }
 
     public LambdaConnection nextLambdaConnection() {

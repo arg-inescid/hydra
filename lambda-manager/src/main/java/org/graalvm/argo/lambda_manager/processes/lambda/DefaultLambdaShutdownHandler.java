@@ -3,7 +3,6 @@ package org.graalvm.argo.lambda_manager.processes.lambda;
 import org.graalvm.argo.lambda_manager.core.Configuration;
 import org.graalvm.argo.lambda_manager.core.Lambda;
 import org.graalvm.argo.lambda_manager.core.LambdaManager;
-import org.graalvm.argo.lambda_manager.schedulers.RoundedRobinScheduler;
 import org.graalvm.argo.lambda_manager.utils.Messages;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 import java.util.TimerTask;
@@ -27,11 +26,6 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
         // Reset the auto-shutdown timer.
         if (lambda.getTimer() != null) {
             lambda.getTimer().cancel();
-        }
-
-        // TODO - we need to rethink this...
-        if (lambda.isDecommissioned()) {
-            RoundedRobinScheduler.hasDecommissionedLambdas = false;
         }
 
         // Reset request counts.

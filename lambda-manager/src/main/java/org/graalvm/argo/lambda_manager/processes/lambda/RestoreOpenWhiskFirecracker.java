@@ -12,7 +12,7 @@ public class RestoreOpenWhiskFirecracker extends RestoreFirecracker {
 
     @Override
     protected List<String> makeCommand() {
-        return prepareCommand("java-openwhisk");
+        return prepareCommand(lambda.getExecutionMode().getOpenWhiskVMImage());
     }
 
 }

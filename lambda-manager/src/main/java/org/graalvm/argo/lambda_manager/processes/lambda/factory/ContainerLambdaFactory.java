@@ -5,6 +5,7 @@ import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalvisorContainer
 import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotContainer;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotWithAgentContainer;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartLambda;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartOpenWhiskContainer;
 
 public class ContainerLambdaFactory extends AbstractLambdaFactory {
 
@@ -25,7 +26,7 @@ public class ContainerLambdaFactory extends AbstractLambdaFactory {
 
     @Override
     public StartLambda createOpenWhisk(Lambda lambda) {
-        throw new IllegalStateException("OpenWhisk is not yet supported in container mode.");
+        return new StartOpenWhiskContainer(lambda);
     }
 
 }

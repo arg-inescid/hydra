@@ -11,7 +11,7 @@ docker image rm argo-hotspot-agent:latest
 
 GRAALVISOR_JAR_FILENAME="$(basename -- $GRAALVISOR_JAR)"
 GRAALVISOR_ENTRYPOINT="org.graalvm.argo.graalvisor.Main"
-AGENT_OPTIONS="-agentlib:native-image-agent=config-merge-dir=config,caller-filter-file=caller-filter-config.json,config-write-initial-delay-secs=20,config-write-period-secs=300"
+AGENT_OPTIONS="-agentlib:native-image-agent=config-merge-dir=config,caller-filter-file=caller-filter-config.json,config-write-initial-delay-secs=90,config-write-period-secs=60"
 ENTRYPOINT_COMMAND="/jvm/bin/java -Djava.library.path=/jvm/lib $AGENT_OPTIONS -cp $GRAALVISOR_JAR_FILENAME $GRAALVISOR_ENTRYPOINT"
 
 docker build \

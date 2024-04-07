@@ -15,6 +15,7 @@ public class StartupHook implements ApplicationEventListener<ApplicationStartupE
         purgeDirectory(new File(Environment.CODEBASE), false);
         purgeDirectory(new File(Environment.LAMBDA_LOGS), false);
         purgeDirectory(new File(Environment.MANAGER_LOGS), false);
+        purgeDirectory(new File(Environment.MANAGER_METRICS), false);
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")

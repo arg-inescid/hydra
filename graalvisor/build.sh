@@ -7,53 +7,77 @@ GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
 function build_lazyisolation {
-	release=$(uname -r)
-	major_version=${release%%.*}
-	release=${release#*.}
-	minor_version=${release%%.*}
+    release=$(uname -r)
+    major_version=${release%%.*}
+    release=${release#*.}
+    minor_version=${release%%.*}
 
-	if [ $major_version -ge 5 ] && [ $minor_version -ge 10 ]; then
-        	gcc -c -I"$LAZY_DIR" -o $LIB_DIR/lazyisolation.o $LAZY_DIR/lazyisolation.c
-	    	gcc -c -I"$LAZY_DIR" -o $LIB_DIR/shared_queue.o $LAZY_DIR/shared_queue.c
-	    	gcc -c -I"$LAZY_DIR" -o $LIB_DIR/filters.o $LAZY_DIR/filters.c
-        	LINKER_OPTIONS="
-            		-H:NativeLinkerOption=-lpthread
-            		-H:NativeLinkerOption="$LIB_DIR/lazyisolation.o"
-            		-H:NativeLinkerOption="$LIB_DIR/shared_queue.o"
-	            	-H:NativeLinkerOption="$LIB_DIR/filters.o""
-            	LAZY_FLAGS="-DLAZY_ISOLATION"
-    	fi
+    if [ $major_version -ge 5 ] && [ $minor_version -ge 10 ]; then
+        gcc -c -I"$LAZY_DIR" -o $LIB_DIR/lazyisolation.o $LAZY_DIR/lazyisolation.c
+        gcc -c -I"$LAZY_DIR" -o $LIB_DIR/shared_queue.o $LAZY_DIR/shared_queue.c
+        gcc -c -I"$LAZY_DIR" -o $LIB_DIR/filters.o $LAZY_DIR/filters.c
+        LINKER_OPTIONS="
+            $LINKER_OPTIONS
+            -H:NativeLinkerOption=-lpthread
+            -H:NativeLinkerOption="$LIB_DIR/lazyisolation.o"
+            -H:NativeLinkerOption="$LIB_DIR/shared_queue.o"
+            -H:NativeLinkerOption="$LIB_DIR/filters.o""
+        NSI_FLAGS="$NSI_FLAGS -DLAZY_ISOLATION"
+    fi
+}
+
+function build_svm_snapshot {
+    gcc -c -I"$SNAP_DIR" -o $LIB_DIR/svm-snapshot.o $SNAP_DIR/svm-snapshot.c
+    gcc -c -I"$SNAP_DIR" -o $LIB_DIR/cr.o           $SNAP_DIR/cr.c
+    gcc -c -I"$SNAP_DIR" -o $LIB_DIR/syscalls.o     $SNAP_DIR/syscalls.c
+    gcc -c -I"$SNAP_DIR" -o $LIB_DIR/list.o         $SNAP_DIR/list.c
+    LINKER_OPTIONS="
+        $LINKER_OPTIONS
+        -H:NativeLinkerOption="$LIB_DIR/svm-snapshot.o"
+        -H:NativeLinkerOption="$LIB_DIR/cr.o"
+        -H:NativeLinkerOption="$LIB_DIR/syscalls.o"
+        -H:NativeLinkerOption="$LIB_DIR/list.o""
+    NSI_FLAGS="$NSI_FLAGS -DSVM_SNAPSHOT"
 }
 
 function build_network_isolation {
-	gcc -c -I"NETWORK_ISOLATION_DIR" -o $LIB_DIR/network-isolation.o $NETWORK_ISOLATION_DIR/network-isolation.c
-	if [ -n ${LINKER_OPTIONS+x} ]; then
-    LINKER_OPTIONS+="
-        -H:NativeLinkerOption="$LIB_DIR/network-isolation.o""
-  else
+    gcc -c -I"NETWORK_ISOLATION_DIR" -o $LIB_DIR/network-isolation.o $NETWORK_ISOLATION_DIR/network-isolation.c
     LINKER_OPTIONS="
+        $LINKER_OPTIONS
         -H:NativeLinkerOption="$LIB_DIR/network-isolation.o""
-	fi
 }
 
 function build_nsi {
-	HEADER_DIR=$DIR/build/generated/sources/headers/java/main
-	C_DIR=$DIR/src/main/c
-	LAZY_DIR=$DIR/src/main/c/lazyisolation/src
-	NETWORK_ISOLATION_DIR=$DIR/src/main/c/network-isolation/src
-	LIB_DIR=$DIR/build/libs
-	build_lazyisolation
-	build_network_isolation
-	gcc -c -I"$JAVA_HOME/include" -I"$JAVA_HOME/include/linux" -I"$HEADER_DIR" -I"$LAZY_DIR" -I"$NETWORK_ISOLATION_DIR" -o $LIB_DIR/NativeSandboxInterface.o $C_DIR/NativeSandboxInterface.c $LAZY_FLAGS
-	ar rcs $LIB_DIR/libNativeSandboxInterface.a $LIB_DIR/NativeSandboxInterface.o
+    HEADER_DIR=$DIR/build/generated/sources/headers/java/main
+    C_DIR=$DIR/src/main/c
+    LAZY_DIR=$C_DIR/lazyisolation/src
+    NET_DIR=$C_DIR/network-isolation/src
+    SNAP_DIR=$C_DIR/svm-snapshot
+    LIB_DIR=$DIR/build/libs
+    # Comment/Uncomment to disable/enable lazy isolation.
+    #build_lazyisolation
+    build_network_isolation
+    build_svm_snapshot
+    gcc -c \
+        -I"$JAVA_HOME/include" \
+        -I"$JAVA_HOME/include/linux" \
+        -I"$HEADER_DIR" \
+        -I"$LAZY_DIR" \
+        -I"$NET_DIR" \
+        -I"$SNAP_DIR" \
+        -o $LIB_DIR/NativeSandboxInterface.o \
+        $C_DIR/NativeSandboxInterface.c \
+        $NSI_FLAGS
+    ar rcs $LIB_DIR/libNativeSandboxInterface.a $LIB_DIR/NativeSandboxInterface.o
 }
 
 function build_ni {
     mkdir -p $GRAALVISOR_HOME &> /dev/null
     cd $GRAALVISOR_HOME
     if [[ $JAVA_VERSION == *"17"* ]]; then
+        JAVA_17_OPTS="$JAVA_17_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.os=ALL-UNNAMED"
         JAVA_17_OPTS="$JAVA_17_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.posix=ALL-UNNAMED"
-	JAVA_17_OPTS="$JAVA_17_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.posix.headers=ALL-UNNAMED"
+        JAVA_17_OPTS="$JAVA_17_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.posix.headers=ALL-UNNAMED"
         JAVA_17_OPTS="$JAVA_17_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.c=ALL-UNNAMED"
         JAVA_17_OPTS="$JAVA_17_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.c.function=ALL-UNNAMED"
         JAVA_17_OPTS="$JAVA_17_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.jdk=ALL-UNNAMED"
@@ -67,7 +91,7 @@ function build_ni {
         --initialize-at-run-time=com.oracle.svm.graalvisor.utils.JsonUtils \
         $LINKER_OPTIONS \
         -H:CLibraryPath=$LIB_DIR \
-	$JAVA_17_OPTS \
+        $JAVA_17_OPTS \
         --features=org.graalvm.argo.graalvisor.sandboxing.NativeSandboxInterfaceFeature \
         -DGraalVisorHost \
         -Dcom.oracle.svm.graalvisor.libraryPath=$DIR/build/resources/main/com.oracle.svm.graalvisor.headers \
@@ -107,7 +131,7 @@ then  # Build native image inside Docker container.
     sudo chown -R $(id -u -n):$(id -g -n) $ARGO_HOME/graalvisor-lib/build
 else  # Build native image locally (inside container or directly on host).
     LANGS=""
-    read -p "Javascript support (y or Y, everything else as no)? " -n 1 -r
+    read -p "Native Javascript support (y or Y, everything else as no)? " -n 1 -r
     echo    # move to a new line
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
@@ -115,7 +139,7 @@ else  # Build native image locally (inside container or directly on host).
         echo "JavaScript support added!"
     fi
 
-    read -p "Python support (y or Y, everything else as no)? " -n 1 -r
+    read -p "Native Python support (y or Y, everything else as no)? " -n 1 -r
     echo    # move to a new line
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
