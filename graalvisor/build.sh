@@ -17,6 +17,7 @@ function build_lazyisolation {
         gcc -c -I"$LAZY_DIR" -o $LIB_DIR/shared_queue.o $LAZY_DIR/shared_queue.c
         gcc -c -I"$LAZY_DIR" -o $LIB_DIR/filters.o $LAZY_DIR/filters.c
         LINKER_OPTIONS="
+            $LINKER_OPTIONS
             -H:NativeLinkerOption=-lpthread
             -H:NativeLinkerOption="$LIB_DIR/lazyisolation.o"
             -H:NativeLinkerOption="$LIB_DIR/shared_queue.o"
@@ -31,6 +32,7 @@ function build_svm_snapshot {
     gcc -c -I"$SNAP_DIR" -o $LIB_DIR/syscalls.o     $SNAP_DIR/syscalls.c
     gcc -c -I"$SNAP_DIR" -o $LIB_DIR/list.o         $SNAP_DIR/list.c
     LINKER_OPTIONS="
+        $LINKER_OPTIONS
         -H:NativeLinkerOption="$LIB_DIR/svm-snapshot.o"
         -H:NativeLinkerOption="$LIB_DIR/cr.o"
         -H:NativeLinkerOption="$LIB_DIR/syscalls.o"
@@ -45,8 +47,7 @@ function build_nsi {
     SNAP_DIR=$C_DIR/svm-snapshot
     LIB_DIR=$DIR/build/libs
     # Comment/Uncomment to disable/enable lazy isolation.
-    build_lazyisolation
-    # Comment/Uncomment to disable/enable svm snapshotting support.
+    #build_lazyisolation
     build_svm_snapshot
     gcc -c \
         -I"$JAVA_HOME/include" \
