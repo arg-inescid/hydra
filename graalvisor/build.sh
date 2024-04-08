@@ -41,7 +41,7 @@ function build_svm_snapshot {
 }
 
 function build_network_isolation {
-    gcc -c -I"NETWORK_ISOLATION_DIR" -o $LIB_DIR/network-isolation.o $NETWORK_ISOLATION_DIR/network-isolation.c
+    gcc -c -I"NET_DIR" -o $LIB_DIR/network-isolation.o $NET_DIR/network-isolation.c
     LINKER_OPTIONS="
         $LINKER_OPTIONS
         -H:NativeLinkerOption="$LIB_DIR/network-isolation.o""

@@ -58,7 +58,6 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import static com.oracle.svm.graalvisor.utils.JsonUtils.json;
 import static com.oracle.svm.graalvisor.utils.JsonUtils.jsonToMap;
-import static org.graalvm.argo.graalvisor.Main.APP_DIR;
 import static org.graalvm.argo.graalvisor.utils.ProxyUtils.errorResponse;
 import static org.graalvm.argo.graalvisor.utils.ProxyUtils.extractRequestBody;
 import static org.graalvm.argo.graalvisor.utils.ProxyUtils.writeResponse;
