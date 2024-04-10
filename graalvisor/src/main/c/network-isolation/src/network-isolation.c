@@ -23,11 +23,11 @@ static const char SANDBOX_ENABLE_VETH[] = "ip netns exec %s ip link set %s up";
 static const char ENTRYPOINT_ENABLE_VETH[] = "ip link set %s up";
 static const char SANDBOX_DISABLE_VETH[] = "ip netns exec %s ip link set %s down";
 static const char ENTRYPOINT_DISABLE_VETH[] = "ip link set %s down";
-static const char SET_NETWORK_GATEWAY[] = "ip netns exec %s route add default gw %s %s";
+static const char SET_NETWORK_GATEWAY[] = "ip netns exec %s ip route add default via %s dev %s";
 static const char MASQUERADE[] = "iptables -t nat -A POSTROUTING -s %s/24 -o %s -j MASQUERADE";
 static const char FORWARD_RULES_1[] = "iptables -A FORWARD -i %s -o %s -j ACCEPT";
 static const char FORWARD_RULES_2[] = "iptables -A FORWARD -o %s -i %s -j ACCEPT";
-static const char GET_INTERNET_INTERFACE[] = "ip -o route | grep default | awk '{print $5}'";
+static const char GET_INTERNET_INTERFACE[] = "ip route get 8.8.8.8 | grep -Po '(?<=(dev ))(\\S+)'";
 
 int switchToDefaultNetworkNamespace() {
     struct timeval tbegin, tend;

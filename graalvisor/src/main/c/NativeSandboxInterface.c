@@ -6,11 +6,13 @@
 #ifdef LAZY_ISOLATION
 #include "lazyisolation.h"
 #endif
+#ifdef NET_ISOLATION
+#include "network-isolation.h"
+#endif
 #ifdef SVM_SNAPSHOT
 #include "svm-snapshot.h"
 #endif
 #include "org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface.h"
-#include "network-isolation.h"
 
 #define PIPE_READ_END  0
 #define PIPE_WRITE_END 1
@@ -99,6 +101,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 #endif
 }
 
+// TODO - delete all these methods? We should use this directly from create sandbox.
 JNIEXPORT jint JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_switchToDefaultNetworkNamespace(JNIEnv *env, jobject thisObj) {
     return switchToDefaultNetworkNamespace();
 }

@@ -1,20 +1,5 @@
 package org.graalvm.argo.graalvisor;
 
-import com.oracle.svm.graalvisor.polyglot.PolyglotEngine;
-import com.oracle.svm.graalvisor.polyglot.PolyglotLanguage;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
-import org.graalvm.argo.graalvisor.function.NativeFunction;
-import org.graalvm.argo.graalvisor.function.PolyglotFunction;
-import org.graalvm.argo.graalvisor.function.TruffleFunction;
-import org.graalvm.argo.graalvisor.sandboxing.ContextSandboxProvider;
-import org.graalvm.argo.graalvisor.sandboxing.IsolateSandboxProvider;
-import org.graalvm.argo.graalvisor.sandboxing.PolyContextSandboxProvider;
-import org.graalvm.argo.graalvisor.sandboxing.ProcessSandboxProvider;
-import org.graalvm.argo.graalvisor.sandboxing.RuntimeSandboxProvider;
-import org.graalvm.argo.graalvisor.sandboxing.SandboxProvider;
-import org.graalvm.argo.graalvisor.utils.ProxyUtils;
 import static com.oracle.svm.graalvisor.utils.JsonUtils.json;
 import static com.oracle.svm.graalvisor.utils.JsonUtils.jsonToMap;
 import static org.graalvm.argo.graalvisor.utils.ProxyUtils.errorResponse;
@@ -56,11 +41,6 @@ import com.oracle.svm.graalvisor.polyglot.PolyglotEngine;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
-import static com.oracle.svm.graalvisor.utils.JsonUtils.json;
-import static com.oracle.svm.graalvisor.utils.JsonUtils.jsonToMap;
-import static org.graalvm.argo.graalvisor.utils.ProxyUtils.errorResponse;
-import static org.graalvm.argo.graalvisor.utils.ProxyUtils.extractRequestBody;
-import static org.graalvm.argo.graalvisor.utils.ProxyUtils.writeResponse;
 
 /**
  * The runtime proxy exposes a simple webserver that receives three types of requests:
@@ -323,6 +303,7 @@ public abstract class RuntimeProxy {
                     writeResponse(t, 200, String.format("Failed to register fuction: unknown sandbox %s!", sandboxName));
                     return;
                 }
+
                 function.setSandboxProvider(sprovider);
                 sprovider.loadProvider();
                 FTABLE.put(functionName, function);

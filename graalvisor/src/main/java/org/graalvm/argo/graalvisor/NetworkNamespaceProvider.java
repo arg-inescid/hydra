@@ -2,85 +2,57 @@ package org.graalvm.argo.graalvisor;
 
 import org.graalvm.argo.graalvisor.sandboxing.NativeSandboxInterface;
 
-import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class NetworkNamespaceProvider {
 
-	private final Queue<NetworkNamespace> availableNetworkNamespaces;
-	private final AtomicInteger count;
+	private static final AtomicInteger count = new AtomicInteger(0);
 
-	public NetworkNamespaceProvider() {
-		this.availableNetworkNamespaces = new ArrayBlockingQueue<>(Integer.MAX_VALUE);
-		this.count = new AtomicInteger(0);
+	private static String genNetName(int id) {
+		return String.format("netns_%s", id);
 	}
 
-	public void createNetworkNamespace() {
+	public static String createNetworkNamespace() {
 		long start, finish;
 		start = System.nanoTime();
-		final NetworkNamespace networkNamespace = new NetworkNamespace(count.incrementAndGet());
-		NativeSandboxInterface.createNetworkNamespace(
-			networkNamespace.getName(),
-			networkNamespace.getId() % 256,
-			networkNamespace.getId() / 256);
-		availableNetworkNamespaces.add(networkNamespace);
+		int id = count.incrementAndGet();
+		String netName = genNetName(id);
+		NativeSandboxInterface.createNetworkNamespace(netName, id % 256, id / 256);
 		finish = System.nanoTime();
-		System.out.println(String.format(
-			"[thread %s] New network namespace %s in %s us",
-			Thread.currentThread().getId(),
-			networkNamespace.getName(),
-			(finish - start)/1000));
+		System.out.println(String.format("[thread %s] New network namespace %s in %s us",
+			Thread.currentThread().getId(), netName, (finish - start)/1000));
+		return netName;
 	}
 
-	public void deleteNetworkNamespace(final NetworkNamespace networkNamespace) {
+	public static void deleteNetworkNamespace(String netName) {
 		long start, finish;
 		start = System.nanoTime();
-		NativeSandboxInterface.deleteNetworkNamespace(networkNamespace.getName());
+		NativeSandboxInterface.deleteNetworkNamespace(netName);
 		count.decrementAndGet();
 		finish = System.nanoTime();
 		System.out.println(String.format(
 			"[thread %s] Deleted network namespace %s in %s us",
-			Thread.currentThread().getId(),
-			networkNamespace.getName(),
-			(finish - start) / 1000));
+			Thread.currentThread().getId(), netName, (finish - start) / 1000));
 	}
 
-	public NetworkNamespace getAvailableNetworkNamespace() {
-		NetworkNamespace networkNamespace;
-		do {
-			networkNamespace = availableNetworkNamespaces.poll();
-		} while (networkNamespace == null);
-		return networkNamespace;
-	}
+	public static void switchToNetworkNamespace(String netName) {
+        long start = System.nanoTime();
+        NativeSandboxInterface.switchNetworkNamespace(netName);
+        long end = System.nanoTime();
+        System.out.println("SWITCH NAMESPACE: " + Long.valueOf(end - start).toString());
+    }
 
-	public void freeNetworkNamespace(final NetworkNamespace networkNamespace) {
-		long start, finish;
-		start = System.nanoTime();
-		NativeSandboxInterface.disableVeths(networkNamespace.getName());
-		NativeSandboxInterface.enableVeths(networkNamespace.getName(), networkNamespace.getThirdByte(), networkNamespace.getFourthByte());
-		availableNetworkNamespaces.add(networkNamespace);
-		finish = System.nanoTime();
-		System.out.println(String.format(
-			"[thread %s] Freed network namespace %s in %s us",
-			Thread.currentThread().getId(),
-			networkNamespace.getName(),
-			(finish - start) / 1000));
-	}
+    public static void switchToDefaultNetworkNamespace() {
+        long start = System.nanoTime();
+        NativeSandboxInterface.switchToDefaultNetworkNamespace();
+        long end = System.nanoTime();
+        System.out.println("SWITCH NAMESPACE: " + Long.valueOf(end - start).toString());
+    }
 
-	public Queue<NetworkNamespace> getAvailableNetworkNamespaces() {
-		return availableNetworkNamespaces;
-	}
-
-	public AtomicInteger getNetworkNamespacesCount() {
-		return count;
-	}
-
-	public void deleteAllNetworkNamespaces() {
-		// TODO: shutdown hook is not working in native image
-		availableNetworkNamespaces
-			.forEach(this::deleteNetworkNamespace);
+	public static void cleanupNetworkNamespaces() {
+		for (int i = 1; i <= count.get(); i++) {
+			System.out.println(String.format("Deleting namespace %d", i));
+			deleteNetworkNamespace(genNetName(i));
+		}
 	}
 }

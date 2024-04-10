@@ -45,6 +45,7 @@ function build_network_isolation {
     LINKER_OPTIONS="
         $LINKER_OPTIONS
         -H:NativeLinkerOption="$LIB_DIR/network-isolation.o""
+    NSI_FLAGS="$NSI_FLAGS -DNET_ISOLATION"
 }
 
 function build_nsi {
@@ -87,6 +88,7 @@ function build_ni {
     fi
     $JAVA_HOME/bin/native-image \
         --no-fallback \
+	--install-exit-handlers \
         --enable-url-protocols=http \
         --initialize-at-run-time=com.oracle.svm.graalvisor.utils.JsonUtils \
         $LINKER_OPTIONS \
