@@ -101,48 +101,34 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 #endif
 }
 
-// TODO - delete all these methods? We should use this directly from create sandbox.
-JNIEXPORT jint JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_switchToDefaultNetworkNamespace(JNIEnv *env, jobject thisObj) {
-    return switchToDefaultNetworkNamespace();
-}
-
-JNIEXPORT jint JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_switchNetworkNamespace(JNIEnv *env, jobject thisObj, jstring jName) {
-    const char *ns_name = (*env)->GetStringUTFChars(env, jName, 0);
-    int ret = switchNetworkNamespace(ns_name);
-    (*env)->ReleaseStringUTFChars(env, jName, ns_name);
-    return ret;
-}
-
 JNIEXPORT jint JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createNetworkNamespace(JNIEnv *env, jobject thisObj, jstring jName, jint jThirdByte, jint jSecondByte) {
     const char *ns_name = (*env)->GetStringUTFChars(env, jName, 0);
     int thirdByte = (int) jThirdByte;
     int secondByte = (int) jSecondByte;
-    int ret = createNetworkNamespace(ns_name, thirdByte, secondByte);
+    if (createNetworkNamespace(ns_name, thirdByte, secondByte) < 0) {
+        (*env)->ReleaseStringUTFChars(env, jName, ns_name);
+        return -1;
+    }
+    if (switchNetworkNamespace(ns_name) < 0) {
+        (*env)->ReleaseStringUTFChars(env, jName, ns_name);
+        return -1;
+    }
     (*env)->ReleaseStringUTFChars(env, jName, ns_name);
-    return ret;
+    return 0;
 }
 
 JNIEXPORT jint JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_deleteNetworkNamespace(JNIEnv *env, jobject thisObj, jstring jName) {
     const char *ns_name = (*env)->GetStringUTFChars(env, jName, 0);
-    int ret = deleteNetworkNamespace(ns_name);
+    if (switchToDefaultNetworkNamespace() < 0) {
+        (*env)->ReleaseStringUTFChars(env, jName, ns_name);
+        return -1;
+    }
+    if (deleteNetworkNamespace(ns_name) < 0) {
+        (*env)->ReleaseStringUTFChars(env, jName, ns_name);
+        return -1;
+    }
     (*env)->ReleaseStringUTFChars(env, jName, ns_name);
-    return ret;
-}
-
-JNIEXPORT jint JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_enableVeths(JNIEnv *env, jobject thisObj, jstring jName, jint jThirdByte, jint jSecondByte) {
-    const char *ns_name = (*env)->GetStringUTFChars(env, jName, 0);
-    int thirdByte = (int) jThirdByte;
-    int secondByte = (int) jSecondByte;
-    int ret = enableVeths(ns_name, thirdByte, secondByte);
-    (*env)->ReleaseStringUTFChars(env, jName, ns_name);
-    return ret;
-}
-
-JNIEXPORT jint JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_disableVeths(JNIEnv *env, jobject thisObj, jstring jName) {
-    const char *ns_name = (*env)->GetStringUTFChars(env, jName, 0);
-    int ret = disableVeths(ns_name);
-    (*env)->ReleaseStringUTFChars(env, jName, ns_name);
-    return ret;
+    return 0;
 }
 
 JNIEXPORT long JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmAttachThread(

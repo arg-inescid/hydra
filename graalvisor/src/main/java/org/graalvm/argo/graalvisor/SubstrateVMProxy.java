@@ -167,20 +167,15 @@ public class SubstrateVMProxy extends RuntimeProxy {
         long start = System.nanoTime();
         SandboxHandle worker = function.getSandboxProvider().createSandbox();
         worker.ns = NetworkNamespaceProvider.createNetworkNamespace();
-        NetworkNamespaceProvider.switchToNetworkNamespace(worker.ns);
         long finish = System.nanoTime();
         System.out.println(String.format("[thread %s] New %s sandbox %s in %s us", Thread.currentThread().getId(), function.getSandboxProvider().getName(), worker, (finish - start)/1000));
         return worker;
     }
 
     private static void destroySandbox(PolyglotFunction function, SandboxHandle shandle) throws Exception {
-        long start = System.nanoTime();
         System.out.println(String.format("[thread %s] Destroying %s sandbox %s", Thread.currentThread().getId(), function.getSandboxProvider().getName(), shandle));
-        NetworkNamespaceProvider.switchToDefaultNetworkNamespace();
         NetworkNamespaceProvider.deleteNetworkNamespace(shandle.ns);
         function.getSandboxProvider().destroySandbox(shandle);
-        long finish = System.nanoTime();
-        System.out.println(String.format("Destroyed in %s", finish - start));
     }
 
     @Override

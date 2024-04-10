@@ -351,7 +351,6 @@ int createNetworkNamespace(const char *name, int thirdByte, int secondByte) {
     if (getForwardNetworkInterfaceName(forwardInterfaceName) == -1) {
         return -1;
     }
-    printf("Using interface: %s\n", forwardInterfaceName);
     if (masquerade(entrypointIp, forwardInterfaceName) == -1) {
         return -1;
     }

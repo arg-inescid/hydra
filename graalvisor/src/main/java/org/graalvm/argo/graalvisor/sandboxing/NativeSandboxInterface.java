@@ -11,20 +11,12 @@ public class NativeSandboxInterface {
     public static native void createNativeRuntimeSandbox();
 
     // TODO - createContextSandbox and createContextSnapshotSandbox.
-
-    public static native void createNativeRuntimeSandbox(boolean lazyIsolation);
+    // TODO - we should be able to enable isolation only if a particular environment variable is on.
+    // The main reason for this is that vms and containers already provide isolation and we don't know the backend at compile time.
 
     public static native int createNetworkNamespace(String jName, int jThirdByte, int jSecondByte);
 
     public static native int deleteNetworkNamespace(String jName);
-
-    public static native int switchNetworkNamespace(String jName);
-
-    public static native int switchToDefaultNetworkNamespace();
-
-    public static native int enableVeths(String jName, int jThirdByte, int jSecondByte);
-
-    public static native int disableVeths(String jName);
 
     // Methods to access svm-snapshot module (see svm-snapshot.h).
     public static native long svmAttachThread(int svmid);

@@ -14,44 +14,32 @@ public class NetworkNamespaceProvider {
 
 	public static String createNetworkNamespace() {
 		long start, finish;
-		start = System.nanoTime();
 		int id = count.incrementAndGet();
 		String netName = genNetName(id);
+
+		start = System.nanoTime();
 		NativeSandboxInterface.createNetworkNamespace(netName, id % 256, id / 256);
-		finish = System.nanoTime();
-		System.out.println(String.format("[thread %s] New network namespace %s in %s us",
+        finish = System.nanoTime();
+
+		System.out.println(String.format("[thread %s] Created net ns %s in %s us",
 			Thread.currentThread().getId(), netName, (finish - start)/1000));
 		return netName;
 	}
 
 	public static void deleteNetworkNamespace(String netName) {
 		long start, finish;
+
 		start = System.nanoTime();
 		NativeSandboxInterface.deleteNetworkNamespace(netName);
-		count.decrementAndGet();
+		count.decrementAndGet(); // TODO - this is not correct. We may decrement and reuse ids!
 		finish = System.nanoTime();
-		System.out.println(String.format(
-			"[thread %s] Deleted network namespace %s in %s us",
+
+		System.out.println(String.format("[thread %s] Deleted net ns %s in %s us",
 			Thread.currentThread().getId(), netName, (finish - start) / 1000));
 	}
 
-	public static void switchToNetworkNamespace(String netName) {
-        long start = System.nanoTime();
-        NativeSandboxInterface.switchNetworkNamespace(netName);
-        long end = System.nanoTime();
-        System.out.println("SWITCH NAMESPACE: " + Long.valueOf(end - start).toString());
-    }
-
-    public static void switchToDefaultNetworkNamespace() {
-        long start = System.nanoTime();
-        NativeSandboxInterface.switchToDefaultNetworkNamespace();
-        long end = System.nanoTime();
-        System.out.println("SWITCH NAMESPACE: " + Long.valueOf(end - start).toString());
-    }
-
 	public static void cleanupNetworkNamespaces() {
 		for (int i = 1; i <= count.get(); i++) {
-			System.out.println(String.format("Deleting namespace %d", i));
 			deleteNetworkNamespace(genNetName(i));
 		}
 	}
