@@ -63,7 +63,18 @@ public class GraalVisorImpl {
             }
 
             /* Prepare isolate parameters. */
-            String[] args = {"-XX:+PrintGC", "-XX:+VerboseGC", "-XX:+PrintGCSummary", "-XX:+PrintHeapShape", "-XX:MinHeapSize=33554432", "-XX:MaxHeapSize=268435456"};
+            // String[] args = {"-XX:+PrintGC", "-XX:+VerboseGC", "-XX:+PrintGCSummary", "-XX:+PrintHeapShape", "-XX:MinHeapSize=33554432", "-XX:MaxHeapSize=268435456"};
+            
+            // String[] args = {"-XX:+PrintGC", "-XX:+VerboseGC","-XX:MinHeapSize=524288000", "-XX:MaxHeapSize=524288000"};
+            
+            // String[] args = {"-XX:+PrintGC", "-XX:MinHeapSize=33554432", "-XX:MaxHeapSize=268435456", "-Xlog:gc:file=gc.log"};
+            
+            //String[] args = {"-XX:+PrintGC", "-XX:+VerboseGC", "-XX:MinHeapSize=26843545600", "-XX:MaxHeapSize=26843545600"};
+            
+            // Acho que este é o mais fixe
+            String[] args = {"-XX:+PrintGC", "-XX:+VerboseGC", "-XX:MinHeapSize=1868435456 ", "-XX:MaxHeapSize=1868435456"};
+            
+            
             int argc = args.length;
             createIsolateParametersStructHost.setArgc(argc);
             createIsolateParametersStructHost.setArgv(WordFactory.nullPointer());

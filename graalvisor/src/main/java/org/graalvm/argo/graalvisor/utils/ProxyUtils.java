@@ -8,6 +8,13 @@ import com.sun.net.httpserver.HttpExchange;
 
 public class ProxyUtils {
 
+    /**
+     * Each thread has it onw buffer top avoid the GC;
+     */
+    private static final ThreadLocal<byte[]> contextBuffer = ThreadLocal.withInitial(() -> new byte[1024]);
+
+
+
     public static void writeResponse(HttpExchange t, int code, String response) throws IOException {
         byte[] bytes = response.getBytes(StandardCharsets.UTF_8);
         t.sendResponseHeaders(code, bytes.length);
@@ -22,10 +29,9 @@ public class ProxyUtils {
 
     public static String extractRequestBody(HttpExchange t) {
         ByteArrayOutputStream result = new ByteArrayOutputStream();
-        byte[] buffer = new byte[1024];
         try {
-            for (int length; (length = t.getRequestBody().read(buffer)) != -1;) {
-                result.write(buffer, 0, length);
+            for (int length; (length = t.getRequestBody().read(contextBuffer.get())) != -1;) {
+                result.write(contextBuffer.get(), 0, length);
             }
             return result.toString(StandardCharsets.UTF_8);
         } catch (IOException e) {

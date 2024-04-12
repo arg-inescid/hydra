@@ -76,6 +76,7 @@ function build_ni {
         JAVA_17_OPTS="$JAVA_17_OPTS --add-opens=java.base/java.io=ALL-UNNAMED"
     fi
     $JAVA_HOME/bin/native-image \
+        --gc=G1 \
         --no-fallback \
         --enable-url-protocols=http \
         --initialize-at-run-time=com.oracle.svm.graalvisor.utils.JsonUtils \

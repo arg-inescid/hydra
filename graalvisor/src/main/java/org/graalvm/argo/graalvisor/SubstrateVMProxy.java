@@ -108,7 +108,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
 
         public FunctionPipeline(PolyglotFunction function) {
             this.function = function;
-            this.queue = new ArrayBlockingQueue<>(64);
+            this.queue = new ArrayBlockingQueue<>(2048);
         }
 
         public String invokeInCachedSandbox(String input) {
