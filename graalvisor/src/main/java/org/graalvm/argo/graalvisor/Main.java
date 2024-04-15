@@ -31,12 +31,11 @@ public abstract class Main {
         int port = Integer.parseInt(lambda_port);
 
         if (System.getProperty("java.vm.name").equals("Substrate VM")) {
-            // Initialize our native sandbox interface.
-            NativeSandboxInterface.ginit();
+            NativeSandboxInterface.initialize();
             Runtime.getRuntime().addShutdownHook(new Thread() {
                 public void run() {
-                    System.out.println("Shutdown handler being invoked!");
                     NetworkNamespaceProvider.cleanupNetworkNamespaces();
+                    NativeSandboxInterface.teardown();
                 }
             });
            new SubstrateVMProxy(port, app_dir).start();

@@ -1,6 +1,15 @@
 #include "network-isolation.h"
 
+#define _GNU_SOURCE
+#include <errno.h>
+#include <fcntl.h>
+#include <limits.h>
+#include <sched.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include <sys/time.h>
+#include <unistd.h>
 
 #define NETNS_RUN_DIR "/var/run/netns"
 #define NETNS_FILE_FORMAT "/var/run/netns/%s"
@@ -29,6 +38,15 @@ static const char FORWARD_RULES_1[] = "iptables -A FORWARD -i %s -o %s -j ACCEPT
 static const char FORWARD_RULES_2[] = "iptables -A FORWARD -o %s -i %s -j ACCEPT";
 static const char GET_INTERNET_INTERFACE[] = "ip route get 8.8.8.8 | grep -Po '(?<=(dev ))(\\S+)'";
 
+void initialize_network_isolation() {
+    // TODO - prepare array that defines which network namespaces are available.
+}
+
+void teardown_network_isolation() {
+    // TODO - delete all remaining network namespaces.
+}
+
+// TODO - cleanup unused time measurements.
 int switchToDefaultNetworkNamespace() {
     struct timeval tbegin, tend;
     gettimeofday(&tbegin, NULL);
@@ -360,18 +378,23 @@ int createNetworkNamespace(const char *name, int thirdByte, int secondByte) {
     if (forwardRules2(forwardInterfaceName, entrypointVethName) == -1) {
         return -1;
     }
+    if (switchNetworkNamespace(name) == -1) {
+        return -1;
+    }
     return 0;
 }
 
 int deleteNetworkNamespace(const char *name) {
     char entrypointVethName[1024];
-    snprintf(entrypointVethName, sizeof(entrypointVethName), ENTRYPOINT_VETH_FORMAT, name);
+    char command[256];
 
+    if (switchToDefaultNetworkNamespace() < 0) {
+        return -1;
+    }
+
+    snprintf(entrypointVethName, sizeof(entrypointVethName), ENTRYPOINT_VETH_FORMAT, name);
     deleteVeth(entrypointVethName);
 
-    struct timeval tbegin, tend;
-    gettimeofday(&tbegin, NULL);
-    char command[256];
     if (sprintf(command, DELETE_NETWORK_NAMESPACE, name) < 0) {
         fprintf(stderr, "Error formatting delete_network_namespace command\n");
         return -1;
@@ -380,8 +403,6 @@ int deleteNetworkNamespace(const char *name) {
         fprintf(stderr, "Error while running delete_network_namespace command\n");
         return -1;
     }
-    gettimeofday(&tend, NULL);
-    //printf("delete_netns %ld\n", (tend.tv_sec * 1000000 + tend.tv_usec) - (tbegin.tv_sec * 1000000 + tbegin.tv_usec));
     return 0;
 }
 

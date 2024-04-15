@@ -2,7 +2,9 @@ package org.graalvm.argo.graalvisor.sandboxing;
 
 public class NativeSandboxInterface {
 
-    public static native void ginit();
+    public static native void initialize();
+
+    public static native void teardown();
 
     public static native int createNativeProcessSandbox(int[] childPipe, int[] parentPipe);
 

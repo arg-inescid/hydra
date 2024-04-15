@@ -1,13 +1,9 @@
-#define _GNU_SOURCE
-#include <sched.h>
+#ifndef __NETWORKISOLATION_H__
+#define __NETWORKISOLATION_H__
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <limits.h>
+void initialize_network_isolation();
+
+void teardown_network_isolation();
 
 int switchToDefaultNetworkNamespace();
 
@@ -17,6 +13,4 @@ int createNetworkNamespace(const char *name, int thirdByte, int secondByte);
 
 int deleteNetworkNamespace(const char *name);
 
-int enableVeths(const char *ns_name, int thirdByte, int secondByte);
-
-int disableVeths(const char *ns_name);
+#endif
