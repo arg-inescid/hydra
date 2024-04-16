@@ -16,9 +16,9 @@ public class NativeSandboxInterface {
     // TODO - we should be able to enable isolation only if a particular environment variable is on.
     // The main reason for this is that vms and containers already provide isolation and we don't know the backend at compile time.
 
-    public static native int createNetworkNamespace(String jName, int jThirdByte, int jSecondByte);
+    public static native int createNetworkNamespace();
 
-    public static native int deleteNetworkNamespace(String jName);
+    public static native int deleteNetworkNamespace();
 
     // Methods to access svm-snapshot module (see svm-snapshot.h).
     public static native long svmAttachThread(int svmid);

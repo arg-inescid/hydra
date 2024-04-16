@@ -5,12 +5,8 @@ void initialize_network_isolation();
 
 void teardown_network_isolation();
 
-int switchToDefaultNetworkNamespace();
+int create_network_namespace();
 
-int switchNetworkNamespace(const char *name);
-
-int createNetworkNamespace(const char *name, int thirdByte, int secondByte);
-
-int deleteNetworkNamespace(const char *name);
+int delete_network_namespace();
 
 #endif

@@ -34,7 +34,7 @@ public abstract class Main {
             NativeSandboxInterface.initialize();
             Runtime.getRuntime().addShutdownHook(new Thread() {
                 public void run() {
-                    NetworkNamespaceProvider.cleanupNetworkNamespaces();
+                    // TODO - we should make sure that are no active requests
                     NativeSandboxInterface.teardown();
                 }
             });

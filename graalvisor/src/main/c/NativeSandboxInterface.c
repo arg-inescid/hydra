@@ -117,20 +117,14 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 }
 
 // TODO - check macro and environment variable.
-JNIEXPORT jint JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createNetworkNamespace(JNIEnv *env, jobject thisObj, jstring jName, jint jThirdByte, jint jSecondByte) {
-    const char *ns_name = (*env)->GetStringUTFChars(env, jName, 0);
-    int thirdByte = (int) jThirdByte;
-    int secondByte = (int) jSecondByte;
-    int ret = createNetworkNamespace(ns_name, thirdByte, secondByte);
-    (*env)->ReleaseStringUTFChars(env, jName, ns_name);
+JNIEXPORT jint JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createNetworkNamespace(JNIEnv *env, jobject thisObj) {
+    int ret = create_network_namespace();
     return ret < 0 ? -1 : 0;
 }
 
 // TODO - check macro and environment variable.
-JNIEXPORT jint JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_deleteNetworkNamespace(JNIEnv *env, jobject thisObj, jstring jName) {
-    const char *ns_name = (*env)->GetStringUTFChars(env, jName, 0);
-    int ret = deleteNetworkNamespace(ns_name);
-    (*env)->ReleaseStringUTFChars(env, jName, ns_name);
+JNIEXPORT jint JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_deleteNetworkNamespace(JNIEnv *env, jobject thisObj) {
+    int ret = delete_network_namespace();
     return ret < 0 ? -1 : 0;
 }
 

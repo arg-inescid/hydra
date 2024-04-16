@@ -21,6 +21,10 @@
 #define ENTRYPOINT_IP_FORMAT "10.%d.%d.1"
 #define SANDBOX_IP_FORMAT "10.%d.%d.2/24"
 
+#define MAX_NAMESPACES 65536
+#define SECOND_BYTE(id) (id%256)
+#define THIRD_BYTE(id)  (id/256)
+
 static const char CREATE_NETWORK_NAMESPACE[] = "ip netns add %s";
 static const char DELETE_NETWORK_NAMESPACE[] = "ip netns delete %s";
 static const char DELETE_VETH[] = "ip link delete %s";
@@ -38,12 +42,49 @@ static const char FORWARD_RULES_1[] = "iptables -A FORWARD -i %s -o %s -j ACCEPT
 static const char FORWARD_RULES_2[] = "iptables -A FORWARD -o %s -i %s -j ACCEPT";
 static const char GET_INTERNET_INTERFACE[] = "ip route get 8.8.8.8 | grep -Po '(?<=(dev ))(\\S+)'";
 
+// The index of the array represents the id of the namespace. Each cell in the
+// array is filled with the thread id that owns the sandbox.
+static pid_t available_namespaces[MAX_NAMESPACES];
+
 void initialize_network_isolation() {
-    // TODO - prepare array that defines which network namespaces are available.
+    memset(available_namespaces, 0, sizeof(pid_t) * MAX_NAMESPACES);
 }
 
-void teardown_network_isolation() {
-    // TODO - delete all remaining network namespaces.
+int acquire_network_namespace() {
+    pid_t tid = gettid();
+    int zero = 0;
+    for (int i = 0; i < MAX_NAMESPACES; i++) {
+        if (available_namespaces[i] == 0) {
+            fprintf(stderr, "acquire_network_namespace[%d] = %d\n", i, available_namespaces[i]);
+            if(__atomic_compare_exchange(&available_namespaces[i], &zero, &tid, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)) {
+                fprintf(stderr, "acquire_network_namespace[%d] = %d\n", i, available_namespaces[i]);
+                return i;
+            }
+        }
+    }
+    return -1;
+}
+
+int get_network_namespace() {
+    pid_t tid = gettid();
+    fprintf(stderr, "get_network_namespace tid = %d\n", tid);
+    for (int i = 0; i < MAX_NAMESPACES; i++) {
+        if (available_namespaces[i] == tid) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+void release_network_namespace() {
+    pid_t tid = gettid();
+    int zero = 0;
+    for (int i = 0; i < MAX_NAMESPACES; i++) {
+        if (available_namespaces[i] == tid) {
+            __atomic_store(&available_namespaces[i], &zero, __ATOMIC_SEQ_CST);
+            break;
+        }
+    }
 }
 
 // TODO - cleanup unused time measurements.
@@ -325,18 +366,20 @@ int getForwardNetworkInterfaceName(char *buffer) {
     return 0;
 }
 
-int createNetworkNamespace(const char *name, int thirdByte, int secondByte) {
-    struct timeval tbegin, tend;
-    gettimeofday(&tbegin, NULL);
+int create_network_namespace() {
     char entrypointVethName[1024], sandboxVethName[1024], sandboxIp[19], entrypointIp[19], defaultGateway[16];
-    snprintf(entrypointVethName, sizeof(entrypointVethName), ENTRYPOINT_VETH_FORMAT, name);
-    snprintf(sandboxVethName, sizeof(sandboxVethName), SANDBOX_VETH_FORMAT, name);
-    snprintf(sandboxIp, sizeof(sandboxIp), SANDBOX_IP_FORMAT, secondByte, thirdByte);
-    snprintf(entrypointIp, sizeof(entrypointIp), ENTRYPOINT_IP_FORMAT, secondByte, thirdByte);
-    snprintf(defaultGateway, sizeof(defaultGateway), ENTRYPOINT_IP_FORMAT, secondByte, thirdByte);
-
     char command[256];
-    if (sprintf(command, CREATE_NETWORK_NAMESPACE, name) < 0) {
+    char netns_name[256];
+    int netns_id = acquire_network_namespace();
+
+    snprintf(netns_name, sizeof(netns_name), "netns_%d", netns_id);
+    snprintf(entrypointVethName, sizeof(entrypointVethName), ENTRYPOINT_VETH_FORMAT, netns_name);
+    snprintf(sandboxVethName, sizeof(sandboxVethName), SANDBOX_VETH_FORMAT, netns_name);
+    snprintf(sandboxIp, sizeof(sandboxIp), SANDBOX_IP_FORMAT, SECOND_BYTE(netns_id), THIRD_BYTE(netns_id));
+    snprintf(entrypointIp, sizeof(entrypointIp), ENTRYPOINT_IP_FORMAT, SECOND_BYTE(netns_id), THIRD_BYTE(netns_id));
+    snprintf(defaultGateway, sizeof(defaultGateway), ENTRYPOINT_IP_FORMAT, SECOND_BYTE(netns_id), THIRD_BYTE(netns_id));
+
+    if (sprintf(command, CREATE_NETWORK_NAMESPACE, netns_name) < 0) {
         fprintf(stderr, "Error formatting create_network_namespace command\n");
         return -1;
     }
@@ -344,25 +387,22 @@ int createNetworkNamespace(const char *name, int thirdByte, int secondByte) {
         fprintf(stderr, "Error while running create_network_namespace command\n");
         return -1;
     }
-    gettimeofday(&tend, NULL);
-    //printf("create_netns %ld\n", (tend.tv_sec * 1000000 + tend.tv_usec) - (tbegin.tv_sec * 1000000 + tbegin.tv_usec));
-
     if (createVeth(entrypointVethName, sandboxVethName) == -1) {
         return -1;
     }
-    if (linkVeth(sandboxVethName, name) == -1) {
+    if (linkVeth(sandboxVethName, netns_name) == -1) {
         return -1;
     }
     if (addAddressToEntrypointNamespace(entrypointIp, entrypointVethName) == -1) {
         return -1;
     }
-    if (addAddressToContainerNamespace(name, sandboxIp, sandboxVethName) == -1) {
+    if (addAddressToContainerNamespace(netns_name, sandboxIp, sandboxVethName) == -1) {
         return -1;
     }
     if (entrypointEnableVeth(entrypointVethName) == -1) {
         return -1;
     }
-    if (sandboxEnableVeth(name, sandboxVethName, defaultGateway) == -1) {
+    if (sandboxEnableVeth(netns_name, sandboxVethName, defaultGateway) == -1) {
         return -1;
     }
     char forwardInterfaceName[100];
@@ -378,13 +418,13 @@ int createNetworkNamespace(const char *name, int thirdByte, int secondByte) {
     if (forwardRules2(forwardInterfaceName, entrypointVethName) == -1) {
         return -1;
     }
-    if (switchNetworkNamespace(name) == -1) {
+    if (switchNetworkNamespace(netns_name) == -1) {
         return -1;
     }
     return 0;
 }
 
-int deleteNetworkNamespace(const char *name) {
+int delete_network_namespace_internal(const char* netns_name) {
     char entrypointVethName[1024];
     char command[256];
 
@@ -392,10 +432,10 @@ int deleteNetworkNamespace(const char *name) {
         return -1;
     }
 
-    snprintf(entrypointVethName, sizeof(entrypointVethName), ENTRYPOINT_VETH_FORMAT, name);
+    snprintf(entrypointVethName, sizeof(entrypointVethName), ENTRYPOINT_VETH_FORMAT, netns_name);
     deleteVeth(entrypointVethName);
 
-    if (sprintf(command, DELETE_NETWORK_NAMESPACE, name) < 0) {
+    if (sprintf(command, DELETE_NETWORK_NAMESPACE, netns_name) < 0) {
         fprintf(stderr, "Error formatting delete_network_namespace command\n");
         return -1;
     }
@@ -403,7 +443,15 @@ int deleteNetworkNamespace(const char *name) {
         fprintf(stderr, "Error while running delete_network_namespace command\n");
         return -1;
     }
+
+    release_network_namespace();
     return 0;
+}
+
+int delete_network_namespace() {
+    char netns_name[256];
+    snprintf(netns_name, sizeof(netns_name), "netns_%d", get_network_namespace());
+    delete_network_namespace_internal(netns_name);
 }
 
 int enableVeths(const char *ns_name, int thirdByte, int secondByte) {
@@ -433,4 +481,14 @@ int disableVeths(const char *ns_name) {
     return 0;
 }
 
-
+// Note: we assume that when the teardown is called, there are no more threads
+// trying to setup namespaces.
+void teardown_network_isolation() {
+    char netns_name[256];
+    for (int i = 0; i < MAX_NAMESPACES; i++) {
+        if (available_namespaces[i] != 0) {
+            sprintf(netns_name, "netns_%d", i);
+            delete_network_namespace_internal(netns_name);
+        }
+    }
+}
