@@ -87,6 +87,7 @@ JNIEXPORT int JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxI
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createNativeIsolateSandbox(JNIEnv *env, jobject thisObj) {
+// fazer a minha cena  setpriority(2)
 #ifdef LAZY_ISOLATION
     install_thread_filter();
 #endif
