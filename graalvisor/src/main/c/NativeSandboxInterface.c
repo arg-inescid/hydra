@@ -1,26 +1,38 @@
 #include <jni.h>
 #include <unistd.h>
 #include <signal.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #ifdef LAZY_ISOLATION
 #include "lazyisolation.h"
 #endif
-#ifdef NET_ISOLATION
 #include "network-isolation.h"
-#endif
-#ifdef SVM_SNAPSHOT
 #include "svm-snapshot.h"
-#endif
 #include "org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface.h"
 
 #define PIPE_READ_END  0
 #define PIPE_WRITE_END 1
 
+#define TRUE  1
+#define FALSE 0
+
 // Isolate and abi pointer array. These should be indexed using an svmid.
 #define MAX_SVM_ID 16
 graal_isolate_t* isolates[MAX_SVM_ID];
 isolate_abi_t abis[MAX_SVM_ID];
+
+int network_isolation_enabled() {
+    const char* env_var = getenv("network_isolation");
+
+    if(env_var != NULL && !strcmp("on", env_var)) {
+        fprintf(stderr, "network isolation on!\n");
+        return TRUE;
+    } else {
+        fprintf(stderr, "network isolation off!\n");
+        return FALSE;
+    }
+}
 
 void close_parent_fds(int childWrite, int parentRead) {
     // TODO - we should try to get a sense for the used file descriptors.
@@ -50,16 +62,15 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     // TODO - if environment variable.
     initialize_seccomp();
 #endif
-#ifdef NET_ISOLATION
-    // TODO - if environment variable.
-    initialize_network_isolation();
-#endif
+    if (network_isolation_enabled()) {
+        initialize_network_isolation();
+    }
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_teardown(JNIEnv *env, jobject thisObj) {
-#ifdef NET_ISOLATION
-    teardown_network_isolation();
-#endif
+    if (network_isolation_enabled()) {
+        teardown_network_isolation();
+    }
 }
 
 JNIEXPORT int JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createNativeProcessSandbox(JNIEnv *env, jobject thisObj, jintArray childPipeFD, jintArray parentPipeFD) {
@@ -78,6 +89,12 @@ JNIEXPORT int JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxI
     parentRead = parentPipeFDptr[PIPE_READ_END];
     parentWrite = parentPipeFDptr[PIPE_WRITE_END];
     (*env)->ReleaseIntArrayElements(env, parentPipeFD, parentPipeFDptr, 0);
+
+    // The parent thread will be inserted in the net namespace. The child process
+    // will inherit the parent (thread) namespace.
+    if (network_isolation_enabled()) {
+        create_network_namespace();
+    }
 
     // Forking.
     int pid = fork();
@@ -107,6 +124,9 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     // TODO - if environment variable.
     install_thread_filter();
 #endif
+    if (network_isolation_enabled()) {
+        create_network_namespace();
+    }
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createNativeRuntimeSandbox(JNIEnv *env, jobject thisObj) {
@@ -114,18 +134,28 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     // TODO - if environment variable.
     install_thread_filter();
 #endif
+    if (network_isolation_enabled()) {
+        create_network_namespace();
+    }
 }
 
-// TODO - check macro and environment variable.
-JNIEXPORT jint JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createNetworkNamespace(JNIEnv *env, jobject thisObj) {
-    int ret = create_network_namespace();
-    return ret < 0 ? -1 : 0;
+
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_teardownNativeProcessSandbox(JNIEnv *env, jobject thisObj) {
+    if (network_isolation_enabled()) {
+        delete_network_namespace();
+    }
 }
 
-// TODO - check macro and environment variable.
-JNIEXPORT jint JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_deleteNetworkNamespace(JNIEnv *env, jobject thisObj) {
-    int ret = delete_network_namespace();
-    return ret < 0 ? -1 : 0;
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_teardownNativeIsolateSandbox(JNIEnv *env, jobject thisObj) {
+    if (network_isolation_enabled()) {
+        delete_network_namespace();
+    }
+}
+
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_teardownNativeRuntimeSandbox(JNIEnv *env, jobject thisObj) {
+    if (network_isolation_enabled()) {
+        delete_network_namespace();
+    }
 }
 
 JNIEXPORT long JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmAttachThread(

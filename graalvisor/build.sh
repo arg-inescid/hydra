@@ -37,7 +37,6 @@ function build_svm_snapshot {
         -H:NativeLinkerOption="$LIB_DIR/cr.o"
         -H:NativeLinkerOption="$LIB_DIR/syscalls.o"
         -H:NativeLinkerOption="$LIB_DIR/list.o""
-    NSI_FLAGS="$NSI_FLAGS -DSVM_SNAPSHOT"
 }
 
 function build_network_isolation {
@@ -45,7 +44,6 @@ function build_network_isolation {
     LINKER_OPTIONS="
         $LINKER_OPTIONS
         -H:NativeLinkerOption="$LIB_DIR/network-isolation.o""
-    NSI_FLAGS="$NSI_FLAGS -DNET_ISOLATION"
 }
 
 function build_nsi {
