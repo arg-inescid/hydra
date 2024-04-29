@@ -59,7 +59,6 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
         close(dummy);
     }
 #ifdef LAZY_ISOLATION
-    // TODO - if environment variable.
     initialize_seccomp();
 #endif
     if (network_isolation_enabled()) {
@@ -103,14 +102,12 @@ JNIEXPORT int JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxI
         close_parent_fds(childWrite, parentRead);
         reset_parent_signal_handlers();
 #ifdef LAZY_ISOLATION
-        // TODO - if environment variable.
         install_proc_filter(childPipeFDptr);
 #endif
     } else {
         // Close the unnecessary pipe ends.
         close(childPipeFDptr[PIPE_WRITE_END]);
 #ifdef LAZY_ISOLATION
-        // TODO - if environment variable.
         attach(pid, childPipeFDptr, parentPipeFDptr);
 #else
         close(parentPipeFDptr[PIPE_READ_END]);
@@ -121,7 +118,6 @@ JNIEXPORT int JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxI
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createNativeIsolateSandbox(JNIEnv *env, jobject thisObj) {
 #ifdef LAZY_ISOLATION
-    // TODO - if environment variable.
     install_thread_filter();
 #endif
     if (network_isolation_enabled()) {
@@ -131,7 +127,6 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createNativeRuntimeSandbox(JNIEnv *env, jobject thisObj) {
 #ifdef LAZY_ISOLATION
-    // TODO - if environment variable.
     install_thread_filter();
 #endif
     if (network_isolation_enabled()) {
