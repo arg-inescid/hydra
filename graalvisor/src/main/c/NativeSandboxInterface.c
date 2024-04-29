@@ -26,10 +26,8 @@ int network_isolation_enabled() {
     const char* env_var = getenv("network_isolation");
 
     if(env_var != NULL && !strcmp("on", env_var)) {
-        fprintf(stderr, "network isolation on!\n");
         return TRUE;
     } else {
-        fprintf(stderr, "network isolation off!\n");
         return FALSE;
     }
 }

@@ -32,13 +32,14 @@ public abstract class Main {
 
         if (System.getProperty("java.vm.name").equals("Substrate VM")) {
             NativeSandboxInterface.initialize();
+            SubstrateVMProxy server = new SubstrateVMProxy(port, app_dir);
             Runtime.getRuntime().addShutdownHook(new Thread() {
                 public void run() {
-                    // TODO - we should make sure that are no active requests
+                    server.stop();
                     NativeSandboxInterface.teardown();
                 }
             });
-           new SubstrateVMProxy(port, app_dir).start();
+           server.start();
         } else {
            new HotSpotProxy(port, app_dir).start();
         }
