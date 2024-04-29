@@ -1,23 +1,36 @@
 #include <jni.h>
 #include <unistd.h>
 #include <signal.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #ifdef LAZY_ISOLATION
 #include "lazyisolation.h"
 #endif
-#ifdef SVM_SNAPSHOT
+#include "network-isolation.h"
 #include "svm-snapshot.h"
-#endif
 #include "org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface.h"
 
 #define PIPE_READ_END  0
 #define PIPE_WRITE_END 1
 
+#define TRUE  1
+#define FALSE 0
+
 // Isolate and abi pointer array. These should be indexed using an svmid.
 #define MAX_SVM_ID 16
 graal_isolate_t* isolates[MAX_SVM_ID];
 isolate_abi_t abis[MAX_SVM_ID];
+
+int network_isolation_enabled() {
+    const char* env_var = getenv("network_isolation");
+
+    if(env_var != NULL && !strcmp("on", env_var)) {
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
 
 void close_parent_fds(int childWrite, int parentRead) {
     // TODO - we should try to get a sense for the used file descriptors.
@@ -33,7 +46,7 @@ void reset_parent_signal_handlers() {
     signal(SIGINT, SIG_DFL);
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_ginit(JNIEnv *env, jobject thisObj) {
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_initialize(JNIEnv *env, jobject thisObj) {
     setbuf(stdout, NULL);
     memset(isolates, 0, sizeof(graal_isolate_t*) * MAX_SVM_ID);
     memset(abis, 0, sizeof(isolate_abi_t) * MAX_SVM_ID);
@@ -44,8 +57,17 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
         close(dummy);
     }
 #ifdef LAZY_ISOLATION
-        initialize_seccomp();
+    initialize_seccomp();
 #endif
+    if (network_isolation_enabled()) {
+        initialize_network_isolation();
+    }
+}
+
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_teardown(JNIEnv *env, jobject thisObj) {
+    if (network_isolation_enabled()) {
+        teardown_network_isolation();
+    }
 }
 
 JNIEXPORT int JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createNativeProcessSandbox(JNIEnv *env, jobject thisObj, jintArray childPipeFD, jintArray parentPipeFD) {
@@ -64,6 +86,12 @@ JNIEXPORT int JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxI
     parentRead = parentPipeFDptr[PIPE_READ_END];
     parentWrite = parentPipeFDptr[PIPE_WRITE_END];
     (*env)->ReleaseIntArrayElements(env, parentPipeFD, parentPipeFDptr, 0);
+
+    // The parent thread will be inserted in the net namespace. The child process
+    // will inherit the parent (thread) namespace.
+    if (network_isolation_enabled()) {
+        create_network_namespace();
+    }
 
     // Forking.
     int pid = fork();
@@ -90,12 +118,37 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 #ifdef LAZY_ISOLATION
     install_thread_filter();
 #endif
+    if (network_isolation_enabled()) {
+        create_network_namespace();
+    }
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createNativeRuntimeSandbox(JNIEnv *env, jobject thisObj) {
 #ifdef LAZY_ISOLATION
     install_thread_filter();
 #endif
+    if (network_isolation_enabled()) {
+        create_network_namespace();
+    }
+}
+
+
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_teardownNativeProcessSandbox(JNIEnv *env, jobject thisObj) {
+    if (network_isolation_enabled()) {
+        delete_network_namespace();
+    }
+}
+
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_teardownNativeIsolateSandbox(JNIEnv *env, jobject thisObj) {
+    if (network_isolation_enabled()) {
+        delete_network_namespace();
+    }
+}
+
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_teardownNativeRuntimeSandbox(JNIEnv *env, jobject thisObj) {
+    if (network_isolation_enabled()) {
+        delete_network_namespace();
+    }
 }
 
 JNIEXPORT long JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmAttachThread(

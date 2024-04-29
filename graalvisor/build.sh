@@ -37,23 +37,32 @@ function build_svm_snapshot {
         -H:NativeLinkerOption="$LIB_DIR/cr.o"
         -H:NativeLinkerOption="$LIB_DIR/syscalls.o"
         -H:NativeLinkerOption="$LIB_DIR/list.o""
-    NSI_FLAGS="$NSI_FLAGS -DSVM_SNAPSHOT"
+}
+
+function build_network_isolation {
+    gcc -c -I"NET_DIR" -o $LIB_DIR/network-isolation.o $NET_DIR/network-isolation.c
+    LINKER_OPTIONS="
+        $LINKER_OPTIONS
+        -H:NativeLinkerOption="$LIB_DIR/network-isolation.o""
 }
 
 function build_nsi {
     HEADER_DIR=$DIR/build/generated/sources/headers/java/main
     C_DIR=$DIR/src/main/c
     LAZY_DIR=$C_DIR/lazyisolation/src
+    NET_DIR=$C_DIR/network-isolation/src
     SNAP_DIR=$C_DIR/svm-snapshot
     LIB_DIR=$DIR/build/libs
     # Comment/Uncomment to disable/enable lazy isolation.
     #build_lazyisolation
+    build_network_isolation
     build_svm_snapshot
     gcc -c \
         -I"$JAVA_HOME/include" \
         -I"$JAVA_HOME/include/linux" \
         -I"$HEADER_DIR" \
         -I"$LAZY_DIR" \
+        -I"$NET_DIR" \
         -I"$SNAP_DIR" \
         -o $LIB_DIR/NativeSandboxInterface.o \
         $C_DIR/NativeSandboxInterface.c \
@@ -77,6 +86,7 @@ function build_ni {
     fi
     $JAVA_HOME/bin/native-image \
         --no-fallback \
+	--install-exit-handlers \
         --enable-url-protocols=http \
         --initialize-at-run-time=com.oracle.svm.graalvisor.utils.JsonUtils \
         $LINKER_OPTIONS \

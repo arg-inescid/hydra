@@ -31,9 +31,15 @@ public abstract class Main {
         int port = Integer.parseInt(lambda_port);
 
         if (System.getProperty("java.vm.name").equals("Substrate VM")) {
-            // Initialize our native sandbox interface.
-            NativeSandboxInterface.ginit();
-           new SubstrateVMProxy(port, app_dir).start();
+            NativeSandboxInterface.initialize();
+            SubstrateVMProxy server = new SubstrateVMProxy(port, app_dir);
+            Runtime.getRuntime().addShutdownHook(new Thread() {
+                public void run() {
+                    server.stop();
+                    NativeSandboxInterface.teardown();
+                }
+            });
+           server.start();
         } else {
            new HotSpotProxy(port, app_dir).start();
         }
