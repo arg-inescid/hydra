@@ -47,6 +47,7 @@
                 (offsetof(struct seccomp_data, nr)))
 
 __thread int domain = 0;
+__thread void* prev_sbrk = NULL;
 
 /* File descriptors */
 struct Supervisor supervisors[NUM_DOMAINS];
@@ -69,13 +70,13 @@ seccomp(unsigned int operation, unsigned int flags, void *args)
 
 /* MPK domains */
 static void 
-set_permissions(const char* id, int protectionFlag, int pkey)
+set_permissions(const char* id, int pkey)
 {
     size_t count;
     MemoryRegion* regions = get_regions(appMap, (char*)id, &count);
 
     for (size_t i = 0; i < count; ++i) {        
-        if (pkey_mprotect(regions[i].address, regions[i].size, protectionFlag, pkey) == -1) {
+        if (pkey_mprotect(regions[i].address, regions[i].size, regions[i].flags, pkey) == -1) {
             fprintf(stderr, "pkey_mprotect error\n");
             exit(EXIT_FAILURE);
         }
@@ -113,7 +114,13 @@ install_notify_filter()
         BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, __NR_pkey_mprotect, 0, 1),
         BPF_STMT(BPF_RET | BPF_K, SECCOMP_RET_USER_NOTIF),
 
-        BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, SYS_mmap, 0, 1),
+        BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, __NR_brk, 0, 1),
+        BPF_STMT(BPF_RET | BPF_K, SECCOMP_RET_USER_NOTIF),
+
+         BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, SYS_mmap, 0, 1),
+         BPF_STMT(BPF_RET | BPF_K, SECCOMP_RET_USER_NOTIF),
+
+        BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, SYS_munmap, 0, 1),
         BPF_STMT(BPF_RET | BPF_K, SECCOMP_RET_USER_NOTIF),
 
         BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, SYS_clone3, 0, 1),
@@ -178,7 +185,7 @@ prep_env(const char* application)
     sp->execution = MANAGED;
 
     #ifdef EAGER_MPK
-        set_permissions(application, PROT_READ|PROT_WRITE|PROT_EXEC, domain);
+        set_permissions(application, domain);
     #else
         // Get application in cache
         char* cached = cache[domain];
@@ -188,7 +195,7 @@ prep_env(const char* application)
         if (strcmp(cached, application)) {
             strcpy(cache[domain], application);
         } 
-        set_permissions(application, PROT_READ|PROT_WRITE|PROT_EXEC, domain);
+        set_permissions(application, domain);
     #endif
     
     #ifdef LAZY_PERMS 
@@ -196,11 +203,11 @@ prep_env(const char* application)
         if (strcmp(cached, application)) {
             // 1. Remove domain permissions of previous application if any
             if (strcmp(cached, "")) {
-                set_permissions(cached, PROT_READ|PROT_WRITE|PROT_EXEC, 1);
+                set_permissions(cached, 1);
             }
             // 2. Insert new application in cache and give permissions
             strcpy(cache[domain], application);
-            set_permissions(application, PROT_READ|PROT_WRITE|PROT_EXEC, domain);
+            set_permissions(application, domain);
         }
         // Else continue normal execution since application is the same
     #endif
@@ -222,7 +229,7 @@ reset_env(const char* application, int isLast)
     
     #ifndef LAZY_PERMS
         sp->execution = MANAGED;
-        set_permissions(application, PROT_READ|PROT_WRITE|PROT_EXEC, 1);    
+        set_permissions(application, 1);    
     #endif
 
     sp->status = DONE;
@@ -242,6 +249,8 @@ assign_supervisor(const char* app, int* fd)
     // even if filter is installed we have to update supervisor's file descriptor
     // because another thread with another filter could have been used before
     sp->fd = *fd;
+
+    strcpy(sp->app, app);
 
     // signal supervisor to start handling notifications
 	signal_sem();
@@ -395,6 +404,42 @@ handle_pkey_mprotect(struct seccomp_notif *req, struct seccomp_notif_resp *resp)
 }
 
 static void
+handle_brk(struct seccomp_notif *req, struct seccomp_notif_resp *resp)
+{
+    SEC_DBM("\t----brk syscall----");
+    void *__addr = (void *)req->data.args[0];
+    SEC_DBM("\t[S%d]: __addr -> %p", domain, __addr);
+
+    // Real call
+    int brk_resp = brk(__addr);
+
+    if (__addr == NULL) {
+        // Get brk() resulting pointer
+        prev_sbrk = sbrk(0);
+        SEC_DBM("\t[S%d]: null addr -> %p", domain, prev_sbrk);
+    }
+    else {
+        void *addr = sbrk(0);
+        SEC_DBM("\t[S%d]: new addr -> %p", domain, addr);
+
+        size_t size = (size_t)((unsigned long)addr - (unsigned long)prev_sbrk);
+        SEC_DBM("\t[S%d]: size -> %ld", domain, size);
+
+        if (pkey_mprotect(prev_sbrk, size, PROT_READ|PROT_WRITE|PROT_EXEC, domain) == -1) {
+            resp->error = 1;            /* random value different than 0 */
+            perror("pkey_mprotect");
+            return;
+        }
+    }
+
+    resp->error = 0;                /* "Success" */
+    resp->val = (__s64)brk_resp;    /* return value of brk() in target */
+
+    SEC_DBM("\t[S%d]: success! spoofed return = %d; spoofed val = %lld\n",
+            domain, brk_resp, resp->val);
+}
+
+static void
 handle_mmap(struct seccomp_notif *req, struct seccomp_notif_resp *resp) 
 {
     SEC_DBM("\t----mmap syscall----");
@@ -418,12 +463,28 @@ handle_mmap(struct seccomp_notif *req, struct seccomp_notif_resp *resp)
             return;
         }
 
+        /* assign allocated memory to application */
+        MemoryRegion memReg;
+        memReg.address = mapped_mem;
+        memReg.size = req->data.args[1];
+        memReg.flags = req->data.args[2];
+        insert_app(&appMap, supervisors[domain].app, memReg);
+
         resp->error = 0;                /* "Success" */
         resp->val = (__s64)mapped_mem;  /* return value of mmap() in target */
 
         SEC_DBM("\t[S%d]: success! spoofed return = %p; spoofed val = %lld\n",
                 domain, mapped_mem, resp->val);
     }
+}
+
+static void
+handle_munmap(struct seccomp_notif *req, struct seccomp_notif_resp *resp)
+{
+    SEC_DBM("\t----munmmap syscall----");
+
+    remove_app(&appMap, supervisors[domain].app, (void *)req->data.args[0]);
+    resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
 }
 
 static void 
@@ -521,8 +582,14 @@ handle_notifications()
             case __NR_pkey_mprotect:
                 handle_pkey_mprotect(req, resp);
                 break;
-            case __NR_mmap:
-                handle_mmap(req, resp);
+            case __NR_brk:
+                handle_brk(req, resp);
+                break;
+             case __NR_mmap:
+                 handle_mmap(req, resp);
+                 break;
+            case __NR_munmap:
+                handle_munmap(req, resp);
                 break;
             case __NR_clone3:
                 handle_clone3(resp);

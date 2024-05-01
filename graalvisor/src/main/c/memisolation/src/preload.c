@@ -51,6 +51,7 @@ dlopen(const char * input, int flag)
         char native_path[256];
         sprintf(native_path, "%s/lib%s-jni.so", jni_dir, id);
         
+        PRL_DBM("[PRELOAD]: Opening JNI library: %s", native_path);
         real_dlopen(native_path, RTLD_NOW | RTLD_DEEPBIND | RTLD_GLOBAL);
         insert_memory_regions(id, native_path);
     }

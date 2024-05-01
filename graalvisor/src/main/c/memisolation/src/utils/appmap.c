@@ -91,3 +91,31 @@ get_regions(AppMap map, char* id, size_t* count)
 
     return values;
 }
+
+void
+remove_app(AppMap* map, char* id, void* address)
+{
+    unsigned long index = hash_string((const char*)id, map->size);
+
+    pthread_mutex_lock(&(map->mutex));
+
+    AppNode* currentNode = map->buckets[index];
+    AppNode* prevNode = NULL;
+
+    while (currentNode != NULL) {
+        if (!strcmp(currentNode->id, id) && currentNode->memReg.address == address) {
+            if (prevNode == NULL) {
+                map->buckets[index] = currentNode->next;
+            } else {
+                prevNode->next = currentNode->next;
+            }
+            free(currentNode);
+            pthread_mutex_unlock(&(map->mutex));
+            return;
+        }
+        prevNode = currentNode;
+        currentNode = currentNode->next;
+    }
+
+    pthread_mutex_unlock(&(map->mutex));
+}

@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+#include <sys/mman.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -13,6 +15,7 @@ init_supervisors(struct Supervisor supervisors[], int size)
         supervisors[i].status = ACTIVE;
         supervisors[i].execution = MANAGED;
         supervisors[i].fd = 0;
+        strcpy(supervisors[i].app, "");
     }
 }
 
@@ -62,11 +65,20 @@ get_memory_regions(AppMap* map, char* id, const char* path)
             continue;
         }
 
-        unsigned long startAddress, endAddress;
-        sscanf(line, "%lx-%lx", &startAddress, &endAddress);
+        unsigned long start, finish;
+        char r, w, x;
 
-        memReg.address = (void*)startAddress;
-        memReg.size = endAddress - startAddress;
+        sscanf(line, "%lx-%lx %c%c%c",
+            &start, &finish, &r, &w, &x);
+
+        int prot_flags = 0;
+        if (r == 'r') prot_flags |= PROT_READ;
+        if (w == 'w') prot_flags |= PROT_WRITE;
+        if (x == 'x') prot_flags |= PROT_EXEC;
+
+        memReg.address = (void*)start;
+        memReg.size = finish - start;
+        memReg.flags = prot_flags;
 
         insert_app(map, id, memReg);
     }
