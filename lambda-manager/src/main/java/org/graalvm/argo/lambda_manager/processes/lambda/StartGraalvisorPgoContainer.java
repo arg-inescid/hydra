@@ -14,20 +14,10 @@ public class StartGraalvisorPgoContainer extends StartContainer {
         super(lambda);
     }
 
-    @Override
     protected List<String> makeCommand() {
-        return List.of(
-                "/usr/bin/time",
-                "--append",
-                format("--output=%s", memoryFilename()),
-                "-v",
-                "bash",
-                "src/scripts/start_graalvisor_container.sh",
-                valueOf(pid),
-                lambda.getLambdaName(),
-                TIMESTAMP_TAG + currentTimeMillis(),
-                PORT_TAG + lambda.getConnection().port,
-                "LD_LIBRARY_PATH=/lib:/lib64:/tmp/apps:/usr/local/lib"
-        );
+        List<String> command = prepareCommand("graalvisor:latest");
+        command.add(TIMESTAMP_TAG + System.currentTimeMillis());
+        command.add("LD_LIBRARY_PATH=/lib:/lib64:/tmp/apps:/usr/local/lib");
+        return command;
     }
 }

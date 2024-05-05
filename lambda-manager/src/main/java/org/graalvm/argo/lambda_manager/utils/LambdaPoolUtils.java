@@ -51,6 +51,8 @@ public class LambdaPoolUtils {
         startLambdasPerMode(lambdaPool, LambdaExecutionMode.CUSTOM_JAVA, poolConfiguration.getCustomJava(), executor);
         startLambdasPerMode(lambdaPool, LambdaExecutionMode.CUSTOM_JAVASCRIPT, poolConfiguration.getCustomJavaScript(), executor);
         startLambdasPerMode(lambdaPool, LambdaExecutionMode.CUSTOM_PYTHON, poolConfiguration.getCustomPython(), executor);
+        startLambdasPerMode(lambdaPool, LambdaExecutionMode.GRAALVISOR_PGO, poolConfiguration.getGraalvisorPgo(), executor);
+        startLambdasPerMode(lambdaPool, LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED, poolConfiguration.getGraalvisorPgoOptimized(), executor);
         executor.shutdown();
         try {
             if (!executor.awaitTermination(600, TimeUnit.SECONDS)) {
@@ -139,6 +141,8 @@ public class LambdaPoolUtils {
         lambdaPool.get(LambdaExecutionMode.CUSTOM_JAVA).clear();
         lambdaPool.get(LambdaExecutionMode.CUSTOM_JAVASCRIPT).clear();
         lambdaPool.get(LambdaExecutionMode.CUSTOM_PYTHON).clear();
+        lambdaPool.get(LambdaExecutionMode.GRAALVISOR_PGO).clear();
+        lambdaPool.get(LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED).clear();
         executor.shutdown();
         try {
             if (!executor.awaitTermination(600, TimeUnit.SECONDS)) {
@@ -233,6 +237,8 @@ public class LambdaPoolUtils {
             this.maxLambdas.put(LambdaExecutionMode.CUSTOM_JAVA, poolConfiguration.getCustomJava());
             this.maxLambdas.put(LambdaExecutionMode.CUSTOM_JAVASCRIPT, poolConfiguration.getCustomJavaScript());
             this.maxLambdas.put(LambdaExecutionMode.CUSTOM_PYTHON, poolConfiguration.getCustomPython());
+            this.maxLambdas.put(LambdaExecutionMode.GRAALVISOR_PGO, poolConfiguration.getGraalvisorPgo());
+            this.maxLambdas.put(LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED, poolConfiguration.getGraalvisorPgoOptimized());
             this.lambdaPool = lambdaPool;
         }
 

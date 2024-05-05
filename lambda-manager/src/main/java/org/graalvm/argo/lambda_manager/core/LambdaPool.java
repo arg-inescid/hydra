@@ -39,7 +39,9 @@ public class LambdaPool {
             Map.entry(LambdaExecutionMode.GRAALVISOR, new ConcurrentLinkedQueue<>()),
             Map.entry(LambdaExecutionMode.CUSTOM_JAVA, new ConcurrentLinkedQueue<>()),
             Map.entry(LambdaExecutionMode.CUSTOM_JAVASCRIPT, new ConcurrentLinkedQueue<>()),
-            Map.entry(LambdaExecutionMode.CUSTOM_PYTHON, new ConcurrentLinkedQueue<>()));
+            Map.entry(LambdaExecutionMode.CUSTOM_PYTHON, new ConcurrentLinkedQueue<>()),
+            Map.entry(LambdaExecutionMode.GRAALVISOR_PGO, new ConcurrentLinkedQueue<>()),
+            Map.entry(LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED, new ConcurrentLinkedQueue<>()));
 
     public LambdaPool(LambdaType lambdaType, int maxTaps) {
         this.lambdaType = lambdaType;

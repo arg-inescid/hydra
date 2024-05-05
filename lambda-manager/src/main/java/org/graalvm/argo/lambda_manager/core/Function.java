@@ -192,11 +192,11 @@ public class Function {
         if (functionCode == null || JAR_FILE_SIGNATURE.length > functionCode.length) {
             return false;
         }
-        for (int i = 0; i < JAR_FILE_SIGNATURE.length; ++i) {
-            if (functionCode[i] != JAR_FILE_SIGNATURE[i]) {
-                return false;
-            }
-        }
+//        for (int i = 0; i < JAR_FILE_SIGNATURE.length; ++i) {
+//            if (functionCode[i] != JAR_FILE_SIGNATURE[i]) {
+//                return false;
+//            }
+//        }
         return true;
     }
 

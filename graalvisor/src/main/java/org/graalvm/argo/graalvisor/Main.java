@@ -34,7 +34,7 @@ public abstract class Main {
         }
 
         if (MINIO_URL == null) {
-            MINIO_URL = "http://localhost:9000";
+            MINIO_URL = "http://172.18.0.1:9000";
         }
 
         if (MINIO_USER == null) {

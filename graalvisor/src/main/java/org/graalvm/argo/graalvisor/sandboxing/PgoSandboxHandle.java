@@ -23,6 +23,7 @@ import static org.graalvm.argo.graalvisor.Main.MINIO_URL;
 import static org.graalvm.argo.graalvisor.Main.MINIO_USER;
 
 public class PgoSandboxHandle extends SandboxHandle {
+    public static final String DEFAULT_IPROF_FILE_NAME = "/default.iprof";
     private final PgoSandboxProvider pgoProvider;
 
     public PgoSandboxHandle(PgoSandboxProvider pgoProvider) {
@@ -73,18 +74,19 @@ public class PgoSandboxHandle extends SandboxHandle {
 
             process.waitFor();
 
-            final Path source = Path.of(newAppPath + "/default.iprof");
+            final Path source = getProfilePath(newAppPath);
+//            final Path source = Path.of("/default.iprof");
 
-            if (Files.exists(source)) {
-                final File pgoPath = new File(newAppPath + "/pgo-profiles");
+            //TODO using a new Thread to launch the minion upload
+            new Thread(() -> {
+                try {
+                    sendIprofToMinIo(function, source, newAppPath);
+                } catch (IOException | InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }).start();
 
-                pgoPath.mkdir();
-
-                final Path newDir = Path.of(pgoPath.getPath());
-                final String pgoFileName = "pgo-" + currentTimeMillis() + ".iprof";
-                Files.move(source, newDir.resolve(pgoFileName));
-                copyIprofToMinio(pgoPath, function, pgoFileName);
-            }
+//            sendIprofToMinIo(function, source, newAppPath);
 
             System.out.println("exit: " + process.exitValue());
 
@@ -92,6 +94,28 @@ public class PgoSandboxHandle extends SandboxHandle {
             throw new RuntimeException(e);
         }
         return response.toString();
+    }
+
+    private void sendIprofToMinIo(String function, Path source, String newAppPath) throws IOException, InterruptedException {
+        if (Files.exists(source)) {
+            final File pgoPath = new File(newAppPath + "/pgo-profiles");
+            pgoPath.mkdir();
+
+            final Path newDir = Path.of(pgoPath.getPath());
+            final String pgoFileName = "pgo-" + currentTimeMillis() + ".iprof";
+            Files.move(source, newDir.resolve(pgoFileName));
+            copyIprofToMinio(pgoPath, function, pgoFileName);
+        }
+    }
+
+    private Path getProfilePath(String newAppPath) {
+        if (Files.exists(Path.of(newAppPath + DEFAULT_IPROF_FILE_NAME))) {
+            return Path.of(newAppPath + DEFAULT_IPROF_FILE_NAME);
+        }
+        if (Files.exists(Path.of(DEFAULT_IPROF_FILE_NAME))) {
+            return Path.of(DEFAULT_IPROF_FILE_NAME);
+        }
+        return null;
     }
 
     private void copyIprofToMinio(File pgoPath, String functionName, String pgoFileName) throws IOException, InterruptedException {
@@ -129,7 +153,7 @@ public class PgoSandboxHandle extends SandboxHandle {
     }
 
     private static void makeFunctionExecutable(Path newDir, Path source) throws IOException {
-        HashSet<PosixFilePermission> permissions = new HashSet<>(asList(GROUP_EXECUTE, OWNER_EXECUTE, OTHERS_EXECUTE));
+        HashSet<PosixFilePermission> permissions = new HashSet<>(asList(GROUP_EXECUTE,GROUP_READ, GROUP_READ, OWNER_EXECUTE, OWNER_WRITE, OTHERS_EXECUTE, OTHERS_WRITE));
         final File file = new File(newDir.toString() + "/" + source.getFileName());
         Files.setPosixFilePermissions(file.toPath(), permissions);
     }

@@ -14,7 +14,10 @@ import java.io.Serializable;
                 "graalvisor",
                 "customJava",
                 "customJavaScript",
-                "customPython"
+                "customPython",
+                "graalvisorPgo",
+                "graalvisorPgoOptimizing",
+                "graalvisorPgoOptimized"
 })
 public class LambdaManagerPool implements Serializable {
     @JsonProperty("hotspotWithAgent") private int hotspotWithAgent;
@@ -23,6 +26,9 @@ public class LambdaManagerPool implements Serializable {
     @JsonProperty("customJava") private int customJava;
     @JsonProperty("customJavaScript") private int customJavaScript;
     @JsonProperty("customPython") private int customPython;
+    @JsonProperty("graalvisorPgo") private int graalvisorPgo;
+    @JsonProperty("graalvisorPgoOptimizing") private int graalvisorPgoOptimizing;
+    @JsonProperty("graalvisorPgoOptimized") private int graalvisorPgoOptimized;
     private final static long serialVersionUID = -620888442421704577L;
 
     /**
@@ -38,14 +44,16 @@ public class LambdaManagerPool implements Serializable {
      * @param graalvisor - Maximum number of Graalvisor lambdas in the pool.
      * @param custom - Maximum number of custom (OpenWhisk) lambdas in the pool.
      */
-    public LambdaManagerPool(int hotspotWithAgent, int hotspot, int graalvisor, int customJava, int customJavaScript, int customPython) {
-        super();
+    public LambdaManagerPool(int hotspotWithAgent, int hotspot, int graalvisor, int customJava, int customJavaScript, int customPython, int graalvisorPgo, int graalvisorPgoOptimizing, int graalvisorPgoOptimized) {
         this.hotspotWithAgent = hotspotWithAgent;
         this.hotspot = hotspot;
         this.graalvisor = graalvisor;
         this.customJava = customJava;
         this.customJavaScript = customJavaScript;
         this.customPython = customPython;
+        this.graalvisorPgo = graalvisorPgo;
+        this.graalvisorPgoOptimizing = graalvisorPgoOptimizing;
+        this.graalvisorPgoOptimized = graalvisorPgoOptimized;
     }
 
     @JsonProperty("hotspotWithAgent")
@@ -108,4 +116,33 @@ public class LambdaManagerPool implements Serializable {
         this.customPython = customPython;
     }
 
+    @JsonProperty("graalvisorPgo")
+    public int getGraalvisorPgo() {
+        return graalvisorPgo;
+    }
+
+    @JsonProperty("graalvisorPgo")
+    public void setGraalvisorPgo(int graalvisorPgo) {
+        this.graalvisorPgo = graalvisorPgo;
+    }
+
+    @JsonProperty("graalvisorPgoOptimizing")
+    public int getGraalvisorPgoOptimizing() {
+        return graalvisorPgoOptimizing;
+    }
+
+    @JsonProperty("graalvisorPgoOptimizing")
+    public void setGraalvisorPgoOptimizing(int graalvisorPgoOptimizing) {
+        this.graalvisorPgoOptimizing = graalvisorPgoOptimizing;
+    }
+
+    @JsonProperty("graalvisorPgoOptimized")
+    public int getGraalvisorPgoOptimized() {
+        return graalvisorPgoOptimized;
+    }
+
+    @JsonProperty("graalvisorPgoOptimized")
+    public void setGraalvisorPgoOptimized(int graalvisorPgoOptimized) {
+        this.graalvisorPgoOptimized = graalvisorPgoOptimized;
+    }
 }
