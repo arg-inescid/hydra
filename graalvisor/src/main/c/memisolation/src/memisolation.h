@@ -41,4 +41,7 @@ void initialize_memory_isolation();
 /* Auxiliary */
 void insert_memory_regions(char* id, const char* path);
 
+/* Process Isolation */
+void process_setup(const char *fifo_path);
+
 #endif

@@ -25,6 +25,16 @@ pthread_cond_t queue_not_empty_cond = PTHREAD_COND_INITIALIZER;
 pthread_t threads[NUM_THREADS];
 int counter = 0;
 
+/**
+ * @brief This function is responseible for executing the native function.
+ * It invokes dlopen to access the function and uses dlsym to execute it
+ *
+ * The string parameter denotes the payload that daemon process sends to the
+ * one of the processes in the process pool
+ *
+ * @param string1 Name of the .so file
+ * @param string2 Name of the function to execute
+ */
 void executeFunction(char *string1, char *string2)
 {
   printf("String 1: %s\n", string1);
@@ -55,24 +65,34 @@ void executeFunction(char *string1, char *string2)
     */
 }
 
+/**
+ * @brief This function ensures that the all the processes in the process pool
+ * are setup before they can be used to execute native code. Setup also serves 
+ * as a function that places the processes in the pool in a dormant state (Waiting on IO).
+ *
+ * @param fifo_path Path of the named pipe to read input from
+ */
 void process_setup(const char *fifo_path)
 {
   int fd;
   char buffer[BUFFER_SIZE];
-struct timespec start, end;
+  struct timespec start, end;
 
-    // Get the start time
+  // Get the start time
   fd = open(fifo_path, O_RDONLY);
-  if (fd == -1) {
+  if (fd == -1)
+  {
     perror("open");
     exit(EXIT_FAILURE);
   }
 
-    if (clock_gettime(CLOCK_REALTIME, &start) == -1) {
-        perror("clock_gettime");
-    }
+  // if (clock_gettime(CLOCK_REALTIME, &start) == -1)
+  // {
+  //   perror("clock_gettime");
+  // }
   ssize_t bytes_read = read(fd, buffer, BUFFER_SIZE);
-  if (bytes_read == -1) {
+  if (bytes_read == -1)
+  {
     perror("read");
     exit(EXIT_FAILURE);
   }
@@ -80,36 +100,42 @@ struct timespec start, end;
   buffer[bytes_read] = '\0';
   char *token;
   token = strtok(buffer, ",");
-  if (token != NULL) {
+  if (token != NULL)
+  {
     char *string1 = strdup(token);
     token = strtok(NULL, ",");
-    if (token != NULL) {
+    if (token != NULL)
+    {
       char *string2 = strdup(token);
       executeFunction(string1, string2);
       free(string2);
     }
     free(string1);
   }
-    if (clock_gettime(CLOCK_REALTIME, &end) == -1) {
-        perror("clock_gettime");
-    }
+  // if (clock_gettime(CLOCK_REALTIME, &end) == -1)
+  // {
+  //   perror("clock_gettime");
+  // }
 
-        long long int start_ns = (long long int)start.tv_sec * 1000000000LL + start.tv_nsec;
-    long long int end_ns = (long long int)end.tv_sec * 1000000000LL + end.tv_nsec;
-    long long int elapsed_ns = end_ns - start_ns;
+  // long long int start_ns = (long long int)start.tv_sec * 1000000000LL + start.tv_nsec;
+  // long long int end_ns = (long long int)end.tv_sec * 1000000000LL + end.tv_nsec;
+  // long long int elapsed_ns = end_ns - start_ns;
 
-    printf("Start time in nanoseconds: %lld\n", start_ns);
-    printf("End time in nanoseconds: %lld\n", end_ns);
-    printf("Elapsed time in nanoseconds: %lld\n", elapsed_ns);
-
+  // printf("Start time in nanoseconds: %lld\n", start_ns);
+  // printf("End time in nanoseconds: %lld\n", end_ns);
+  // printf("Elapsed time in nanoseconds: %lld\n", elapsed_ns);
 }
-
 
 void signal_handler(int sig)
 {
   printf("Signal Received");
 }
 
+/**
+ * @brief Ctrl-c signal handler to clean up threads before exiting. 
+ * 
+ * @param signal 
+ */
 void ctrl_c_handler(int signal)
 {
   printf("Ctrl+C received. Terminating threads...\n");
@@ -121,6 +147,10 @@ void ctrl_c_handler(int signal)
   exit(EXIT_SUCCESS);
 }
 
+/**
+ * @brief Create a process pool containing NUM_PROCESS.
+ * 
+ */
 void create_process_pool()
 {
   int i;
@@ -137,7 +167,8 @@ void create_process_pool()
     {
       char fifo_path[50];
       snprintf(fifo_path, sizeof(fifo_path), "/tmp/fifo_%d", getpid());
-      if (mkfifo(fifo_path, 0666) == -1) {
+      if (mkfifo(fifo_path, 0666) == -1)
+      {
         perror("mkfifo");
         exit(EXIT_FAILURE);
       }
@@ -152,6 +183,22 @@ void create_process_pool()
   }
 }
 
+
+/**
+ * @brief Zombie handler function.
+ * 
+ * This function is responsible for handling zombie processes. It continuously
+ * monitors the status of child processes using `waitpid` with `WNOHANG` option
+ * to reap any terminated child processes without blocking. It cleans up
+ * resources associated with terminated processes, such as FIFOs (named pipes),
+ * and restarts the corresponding child processes if necessary.
+ * 
+ * This function is also responsible to ensure that the processes in the process 
+ * pool have been replenished with new processes as old processes cannot be reused. 
+ * 
+ * @param arg 
+ * @return void* Always returns NULL.
+ */
 void *zombie_handler(void *arg)
 {
   while (1)
@@ -193,7 +240,8 @@ void *zombie_handler(void *arg)
 #endif
         char fifo_path[50];
         snprintf(fifo_path, sizeof(fifo_path), "/tmp/fifo_%d", getpid());
-        if (mkfifo(fifo_path, 0666) == -1) {
+        if (mkfifo(fifo_path, 0666) == -1)
+        {
           perror("mkfifo");
           exit(EXIT_FAILURE);
         }
@@ -207,7 +255,6 @@ void *zombie_handler(void *arg)
     }
     sleep(2);
   }
-  // No return statement needed, since the return type is void
 }
 
 /**
@@ -240,6 +287,13 @@ void tokenize_string(char *str)
   }
 }
 
+/**
+ * @brief The process_assignment function checks for tasks on the assignment queue
+ * and uses signals to assign it to a specific process. 
+ * 
+ * @param arg 
+ * @return void* 
+ */
 void *process_assignment(void *arg)
 {
   while (1)
