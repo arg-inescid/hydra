@@ -1,6 +1,8 @@
 #include "../utils/appmap.h"
 #include <semaphore.h>
 
+#define NUM_PROCESSES 20
+
 enum Status {
     ACTIVE = 0,
     DONE = 1,
@@ -24,9 +26,6 @@ void init_supervisors(struct Supervisor supervisors[], int size);
 
 /* Thread Count */
 void init_thread_count(int threadCount[], int size);
-
-/* Lazy Process Isolation */
-void init_process_pool(int procIDs[]);
 
 /* Eager/Lazy setting */
 void init_cache(char* cache[], int size);

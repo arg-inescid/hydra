@@ -28,29 +28,6 @@ init_thread_count(int threadCount[], int size)
 }
 
 void
-init_process_pool(int procIDs[])
-{
-  for (int i = 0; i < NUM_PROCESSES; ++i) {
-    pid_t pid = fork();
-    if (pid == -1) {
-      perror("Error with fork");
-      exit(EXIT_FAILURE);
-    } else if (pid == 0) {
-      char fifo_path[30];
-      snprintf(fifo_path, sizeof(fifo_path), "/tmp/fifo_%d", getpid());
-      if (mkfifo(fifo_path, 0666) == -1) {
-        perror("mkfifo");
-        exit(EXIT_FAILURE);
-      }
-      process_setup(fifo_path);
-      exit(EXIT_SUCCESS);
-    } else {
-      procIDs[i] = pid;
-    }
-  }
-}
-
-void
 init_cache(char* cache[], int size)
 {
   for (int i = 0; i < size; i++) {

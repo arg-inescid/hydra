@@ -40,7 +40,7 @@ dlopen(const char * input, int flag)
 
     PRL_DBM("[PRELOAD]: Opening library: %s", input);
 
-    if (strstr(input, "/tmp/apps") != NULL) {
+    if (strstr(input, "/tmp/app/skondlap") != NULL) {
         char* argo_home = getenv("ARGO_HOME");
         char* graal_libs_dir = "graalvisor/build/libs";
         char jni_dir[128];
