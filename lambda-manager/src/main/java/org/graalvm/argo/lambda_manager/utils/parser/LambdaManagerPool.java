@@ -16,7 +16,6 @@ import java.io.Serializable;
                 "customJavaScript",
                 "customPython",
                 "graalvisorPgo",
-                "graalvisorPgoOptimizing",
                 "graalvisorPgoOptimized"
 })
 public class LambdaManagerPool implements Serializable {
@@ -27,7 +26,6 @@ public class LambdaManagerPool implements Serializable {
     @JsonProperty("customJavaScript") private int customJavaScript;
     @JsonProperty("customPython") private int customPython;
     @JsonProperty("graalvisorPgo") private int graalvisorPgo;
-    @JsonProperty("graalvisorPgoOptimizing") private int graalvisorPgoOptimizing;
     @JsonProperty("graalvisorPgoOptimized") private int graalvisorPgoOptimized;
     private final static long serialVersionUID = -620888442421704577L;
 
@@ -44,7 +42,7 @@ public class LambdaManagerPool implements Serializable {
      * @param graalvisor - Maximum number of Graalvisor lambdas in the pool.
      * @param custom - Maximum number of custom (OpenWhisk) lambdas in the pool.
      */
-    public LambdaManagerPool(int hotspotWithAgent, int hotspot, int graalvisor, int customJava, int customJavaScript, int customPython, int graalvisorPgo, int graalvisorPgoOptimizing, int graalvisorPgoOptimized) {
+    public LambdaManagerPool(int hotspotWithAgent, int hotspot, int graalvisor, int customJava, int customJavaScript, int customPython, int graalvisorPgo, int graalvisorPgoOptimized) {
         this.hotspotWithAgent = hotspotWithAgent;
         this.hotspot = hotspot;
         this.graalvisor = graalvisor;
@@ -52,7 +50,6 @@ public class LambdaManagerPool implements Serializable {
         this.customJavaScript = customJavaScript;
         this.customPython = customPython;
         this.graalvisorPgo = graalvisorPgo;
-        this.graalvisorPgoOptimizing = graalvisorPgoOptimizing;
         this.graalvisorPgoOptimized = graalvisorPgoOptimized;
     }
 
@@ -124,16 +121,6 @@ public class LambdaManagerPool implements Serializable {
     @JsonProperty("graalvisorPgo")
     public void setGraalvisorPgo(int graalvisorPgo) {
         this.graalvisorPgo = graalvisorPgo;
-    }
-
-    @JsonProperty("graalvisorPgoOptimizing")
-    public int getGraalvisorPgoOptimizing() {
-        return graalvisorPgoOptimizing;
-    }
-
-    @JsonProperty("graalvisorPgoOptimizing")
-    public void setGraalvisorPgoOptimizing(int graalvisorPgoOptimizing) {
-        this.graalvisorPgoOptimizing = graalvisorPgoOptimizing;
     }
 
     @JsonProperty("graalvisorPgoOptimized")
