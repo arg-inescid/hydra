@@ -568,9 +568,9 @@ handle_notifications()
 			SEC_DBM("\t[S%d]: Got Call.", domain);
 
 			if (ioctl(sp->fd, SECCOMP_IOCTL_NOTIF_RECV, req) == -1) {
-			if (errno == EINTR)
-				continue;
-			err(EXIT_FAILURE, "\t[S%d]: ioctl-SECCOMP_IOCTL_NOTIF_RECV", domain);
+				if (errno == EINTR)
+					continue;
+				err(EXIT_FAILURE, "\t[S%d]: ioctl-SECCOMP_IOCTL_NOTIF_RECV", domain);
 			}
 		}
 		else if (sp->status && threadCount[domain] == 1) {
@@ -603,9 +603,9 @@ handle_notifications()
 			case __NR_brk:
 				handle_brk(req, resp);
 				break;
-				case __NR_mmap:
-					handle_mmap(req, resp);
-					break;
+			case __NR_mmap:
+				handle_mmap(req, resp);
+				break;
 			case __NR_munmap:
 				handle_munmap(req, resp);
 				break;
@@ -627,11 +627,11 @@ handle_notifications()
 
 		if (ioctl(sp->fd, SECCOMP_IOCTL_NOTIF_SEND, resp) == -1) {
 			if (errno == ENOENT)
-			SEC_DBM("\t[S%d]: response failed with ENOENT; "
-				"perhaps target process's syscall was "
-				"interrupted by a signal?\n", domain);
+				SEC_DBM("\t[S%d]: response failed with ENOENT; "
+					"perhaps target process's syscall was "
+					"interrupted by a signal?\n", domain);
 			else
-			perror("ioctl-SECCOMP_IOCTL_NOTIF_SEND");
+				perror("ioctl-SECCOMP_IOCTL_NOTIF_SEND");
 		}
 		SEC_DBM("\t--------------------\n");
     }
