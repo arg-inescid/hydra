@@ -184,21 +184,15 @@ prep_env(const char* application)
     sp->status = ACTIVE;
     sp->execution = MANAGED;
 
-    #ifdef EAGER_MPK
-        set_permissions(application, domain);
-    #else
-        // Get application in cache
-        char* cached = cache[domain];
-    #endif
+    // Get application in cache
+    char* cached = cache[domain];
 
     #ifdef EAGER_PERMS
         if (strcmp(cached, application)) {
             strcpy(cache[domain], application);
         } 
         set_permissions(application, domain);
-    #endif
-    
-    #ifdef LAZY_PERMS 
+    #else 
         // If application in cache differs from application assigned to supervisor
         if (strcmp(cached, application)) {
             // 1. Remove domain permissions of previous application if any
@@ -227,7 +221,7 @@ reset_env(const char* application, int isLast)
     SEC_DBM("\t[S%d]: application finished.", domain);
     struct Supervisor* sp = &supervisors[domain];
     
-    #ifndef LAZY_PERMS
+    #ifdef EAGER_PERMS
         sp->execution = MANAGED;
         set_permissions(application, 1);    
     #endif
@@ -266,17 +260,36 @@ is_app_cached(const char* app) {
     return !strcmp((const char *)cache[domain], app);
 }
 
+/* TODO: If app is executing, assign domain to -1 */
+int
+is_app_executing(const char* app) {
+    for (int i = 2; i < NUM_DOMAINS; i++) {
+        if (!strcmp((const char *)cache[i], app) && __sync_bool_compare_and_swap(&threadCount[i], 1, 1)) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 /* Domain Management algorithm */
 #ifdef EAGER_MPK
     void
     find_domain_eager(const char* app) {
-        for (int i = 2; i < NUM_DOMAINS; ++i) {
-            if (__sync_bool_compare_and_swap(&threadCount[i], 0, 1)) {
-                domain = i;
-                return;
+        while (1) {
+            if (domain == 0 || !is_app_cached(app) || !__sync_bool_compare_and_swap(&threadCount[domain], 0, 1)) {
+                for (int i = 2; i < NUM_DOMAINS; ++i) {
+                    if (__sync_bool_compare_and_swap(&threadCount[i], 0, 1)) {
+                        domain = i;
+                        return;
+                    }
+                }
+                // If no empty domains found, wait briefly
+                sleep(0.1);
+            } else {
+                SEC_DBM("\t[S%d]: App is cached", domain);
+                break;
             }
         }
-        domain = -1;
     }
 #endif
 
@@ -295,11 +308,10 @@ find_domain(const char* app, int *fd) {
 void
 acquire_domain(const char* app, int *fd) {
     #ifdef EAGER_MPK
-        if (domain != -1) {
-            assign_supervisor(app, fd);
-        }
+        assign_supervisor(app, fd);
         return;
     #endif
+
     /*
     If domain is set to 0, it indicates that this is the first invocation of the application.
     If domain is set to -1, it indicates that during the previous execution of this application, no domains were available.
@@ -665,7 +677,7 @@ initialize_memory_isolation()
     init_thread_count(threadCount, NUM_DOMAINS);
 
     /* Init ERIM */
-    if(erim_init(8192, ERIM_FLAG_ISOLATE_UNTRUSTED | ERIM_FLAG_SWAP_STACK, NUM_DOMAINS)) {
+    if(erim_init(65536, ERIM_FLAG_ISOLATE_UNTRUSTED | ERIM_FLAG_SWAP_STACK, NUM_DOMAINS)) {
         exit(EXIT_FAILURE);
     }
 
