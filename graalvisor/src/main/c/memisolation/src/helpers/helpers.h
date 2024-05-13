@@ -18,6 +18,7 @@ struct Supervisor {
     enum Status status;
     sem_t sem;
     int fd;
+    char app[256];
 };
 
 

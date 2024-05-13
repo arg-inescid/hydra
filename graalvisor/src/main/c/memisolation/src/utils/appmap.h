@@ -7,6 +7,7 @@
 typedef struct {
     void* address;
     size_t size;
+    int flags;
 } MemoryRegion;
 
 typedef struct AppNode {
@@ -23,6 +24,7 @@ typedef struct AppMap {
 
 void init_app_map(AppMap* map, size_t size);
 void insert_app(AppMap* map, char* id, MemoryRegion memReg);
+void remove_app(AppMap* map, char* id, void* address);
 unsigned long hash_str(const char *str);
 AppNode* create_app_node(char* id, MemoryRegion memReg);
 MemoryRegion* get_regions(AppMap map, char* id, size_t* count);
