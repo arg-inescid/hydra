@@ -1,6 +1,8 @@
 #include "../utils/appmap.h"
 #include <semaphore.h>
 
+#define NUM_PROCESSES 20
+
 enum Status {
     ACTIVE = 0,
     DONE = 1,

@@ -3,7 +3,8 @@
 
 #define _GNU_SOURCE
 #include <dlfcn.h>
-
+#include <stdatomic.h>
+#include <unistd.h>
 #if !defined(EAGER_PERMS) && !defined(EAGER_MPK)
   #define LAZY_PERMS
 #endif
@@ -21,8 +22,10 @@
   #define SEC_DBM(...)
 #endif
 
+#define NUM_PROCESSES 20
 extern __thread int domain;
-
+extern pid_t procIDs[NUM_PROCESSES];
+extern atomic_int shared_variable;
 /* Supervisors */
 void wait_sem();
 void signal_sem();
