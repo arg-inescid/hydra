@@ -8,6 +8,7 @@ import java.util.logging.Level;
 
 import org.graalvm.argo.lambda_manager.core.Configuration;
 import org.graalvm.argo.lambda_manager.core.Function;
+import org.graalvm.argo.lambda_manager.core.FunctionLanguage;
 import org.graalvm.argo.lambda_manager.core.Lambda;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.utils.JsonUtils;
@@ -94,7 +95,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
 
     @Override
     public String invokeFunction(Lambda lambda, Function function, String arguments) {
-        String path ="/";
+        String path = function.getLanguage() == FunctionLanguage.JAVA ?  "/" : "/warmup?concurrency=1&requests=1";
         String payload = "";
 
         if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZING) {
