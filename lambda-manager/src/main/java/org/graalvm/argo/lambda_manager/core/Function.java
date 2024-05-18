@@ -200,6 +200,10 @@ public class Function {
         return true;
     }
 
+    public boolean snapshotSandbox() {
+        return "context-snapshot".equals(gvSandbox);
+    }
+
     /**
      * Update status when creating a new lambda for this function.
      */
