@@ -22,9 +22,9 @@ public class LocalFunctionStorage extends InMemoryFunctionStorage {
 
             // Attempt to copy the snapshot files if sandbox snapshotting enabled.
             if (function.snapshotSandbox()) {
-                String commonPath = codePath.substring(codePath.lastIndexOf("."));
-                Path memsnapSrc = Paths.get(commonPath + "memsnap");
-                Path metasnapSrc = Paths.get(commonPath + "metasnap");
+                String commonPath = codePath.substring(0, codePath.lastIndexOf("."));
+                Path memsnapSrc = Paths.get(commonPath + ".memsnap");
+                Path metasnapSrc = Paths.get(commonPath + ".metasnap");
 
                 if (Files.exists(memsnapSrc) && Files.exists(metasnapSrc)) {
                     Path memsnapDst = dst.resolveSibling(dst.getFileName() + ".memsnap");
