@@ -14,7 +14,7 @@ public class ContextSnapshotSandboxProvider extends SandboxProvider {
      * Note 1: the same id should be used when checkpointing and restoring.
      * Note 2: we cannot host two functions with the same svmID at the same time.
      */
-    private final int svmID = 0; // TODO - this should be set dynamically.
+    private int svmID = 0;
     /**
      * Path to function library file.
      */
@@ -32,7 +32,12 @@ public class ContextSnapshotSandboxProvider extends SandboxProvider {
         this.memSnapPath =  functionPath + ".memsnap";
     }
 
-    private static String invoke(int svmID, String jsonArguments) {
+    public void setSVMID(int svmID) {
+        System.out.println(String.format("Setting svmID %d in %s", svmID, functionPath));
+        this.svmID = svmID;
+    }
+
+    public String invoke(String jsonArguments) {
         long isolateThread = NativeSandboxInterface.svmAttachThread(svmID);
         String output = NativeSandboxInterface.svmEntrypoint(svmID, isolateThread, jsonArguments);
         NativeSandboxInterface.svmDetachThread(svmID, isolateThread);
@@ -41,12 +46,12 @@ public class ContextSnapshotSandboxProvider extends SandboxProvider {
 
     public synchronized String warmupProvider(int concurrency, int requests, String jsonArguments) throws IOException {
         if (warmedUp) {
-            return invoke(svmID, jsonArguments);
+            return invoke(jsonArguments);
         } else if (new File(this.metaSnapPath).exists()) {
             System.out.println(String.format("Found %s, restoring svm.", this.metaSnapPath));
             NativeSandboxInterface.svmRestore(svmID, functionPath, metaSnapPath, memSnapPath);
             warmedUp = true;
-            return invoke(svmID, jsonArguments);
+            return invoke(jsonArguments);
         } else {
             System.out.println(String.format("No snapshot found (%s), checkpointing svm after %d requests on %d concurrent threads.",
                 this.metaSnapPath, requests, concurrency));
@@ -65,7 +70,7 @@ public class ContextSnapshotSandboxProvider extends SandboxProvider {
     public synchronized SandboxHandle createSandbox() throws Exception {
         // TODO - throw Exception if provider is not warmup yet.
         long isolateThread = NativeSandboxInterface.svmAttachThread(svmID);
-        return new ContextSnapshotSandboxHandle(this.svmID, isolateThread);
+        return new ContextSnapshotSandboxHandle(this, isolateThread);
     }
 
     @Override

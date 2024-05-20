@@ -239,9 +239,10 @@ public abstract class RuntimeProxy {
             String functionEntryPoint = metaData.get("entryPoint");
             String functionLanguage = metaData.get("language");
             String sandboxName = metaData.get("sandbox");
+            int svmID = Integer.parseInt(metaData.getOrDefault("svmid", "0"));
 
             if (System.getProperty("java.vm.name").equals("Substrate VM") || !functionLanguage.equalsIgnoreCase("java")) {
-                handlePolyglotRegistration(t, functionName, codeFileName, functionEntryPoint, functionLanguage, sandboxName);
+                handlePolyglotRegistration(t, functionName, codeFileName, functionEntryPoint, functionLanguage, sandboxName, svmID);
             } else {
                 handleHotSpotRegistration(t, functionName, codeFileName, functionEntryPoint);
             }
@@ -276,7 +277,7 @@ public abstract class RuntimeProxy {
             writeResponse(t, 200, String.format("Function %s registered!", functionName));
         }
 
-        private void handlePolyglotRegistration(HttpExchange t, String functionName, String soFileName, String functionEntryPoint, String functionLanguage, String sandboxName) throws IOException {
+        private void handlePolyglotRegistration(HttpExchange t, String functionName, String soFileName, String functionEntryPoint, String functionLanguage, String sandboxName, int svmID) throws IOException {
             long start = System.currentTimeMillis();
             PolyglotFunction function = null;
             SandboxProvider sprovider = null;
@@ -306,6 +307,8 @@ public abstract class RuntimeProxy {
                 if (sprovider == null) {
                     writeResponse(t, 200, String.format("Failed to register fuction: unknown sandbox %s!", sandboxName));
                     return;
+                } else if (sprovider instanceof ContextSnapshotSandboxProvider) {
+                    ((ContextSnapshotSandboxProvider) sprovider).setSVMID(svmID);
                 }
 
                 function.setSandboxProvider(sprovider);
