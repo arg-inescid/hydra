@@ -54,12 +54,13 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
             String path = null;
             byte[] payload = canReuseCode(lambda) ? new byte[0] : sourceFile.readAllBytes();
             if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZING) {
+                String svmId = function.snapshotSandbox() ? String.format("&svmid=%d", function.getName().hashCode()) : "";
                 String sandbox = function.getGraalvisorSandbox();
                 if (sandbox != null) {
-                    path = String.format("/register?name=%s&language=%s&entryPoint=%s&sandbox=%s", getFunctionName(function, true), function.getLanguage().toString(), function.getEntryPoint(), sandbox);
+                    path = String.format("/register?name=%s&language=%s&entryPoint=%s&sandbox=%s%s", getFunctionName(function, true), function.getLanguage().toString(), function.getEntryPoint(), sandbox, svmId);
                 } else {
                     final boolean binaryFunctionExecution = isBinaryFunctionExecution(lambda);
-                    path = String.format("/register?name=%s&language=%s&entryPoint=%s&isBinary=%s", getFunctionName(function, true), function.getLanguage().toString(), function.getEntryPoint(), binaryFunctionExecution);
+                    path = String.format("/register?name=%s&language=%s&entryPoint=%s&isBinary=%s%s", getFunctionName(function, true), function.getLanguage().toString(), function.getEntryPoint(), binaryFunctionExecution, svmId);
                 }
             } else if (lambda.getExecutionMode().isCustom()) {
                 path = "/init";
