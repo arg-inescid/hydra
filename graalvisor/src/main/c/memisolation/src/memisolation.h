@@ -5,9 +5,6 @@
 #include <dlfcn.h>
 #include <stdatomic.h>
 #include <unistd.h>
-#if !defined(EAGER_PERMS) && !defined(EAGER_MPK)
-  #define LAZY_PERMS
-#endif
 
 /*
  * Debug prints
@@ -33,10 +30,7 @@ void reset_env(const char* application, int isLast);
 
 /* Domain management */
 void acquire_domain(const char* app, int* fd);
-
-#ifdef EAGER_MPK
-  void find_domain_eager(const char* app);
-#endif
+void find_domain_eager(const char* app);
 
 /* Initalizer */
 void initialize_memory_isolation();

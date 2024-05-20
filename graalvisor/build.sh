@@ -12,19 +12,14 @@ function build_memisolation {
 	release=${release#*.}
 	minor_version=${release%%.*}
     
-    # Uncomment to run in Eager MPK mode
-    #EXTRA_OPTIONS=-DEAGER_MPK
-
     JNI_INCLUDE="-I$DEF_JAVA_HOME/include -I$DEF_JAVA_HOME/include/linux"
     ERIM_LIBS="$ERIM_HOME/bin/common/libswscommon.a $ERIM_HOME/bin/erim/liberim.a"
 	CFLAGS="-Wall -g -fno-inline -fPIC -shared \
             -I"$ERIM_HOME/src/erim" \
             -I"$ERIM_HOME/src/common" \
-            $EXTRA_OPTIONS \
-            -DSEC_DBG \
-            -DJNI_DBG \
             -DERIM_SWAP_STACKS"
-            #-DEAGER_PERMS \
+            #-DSEC_DBG \
+            #-DJNI_DBG \
             #-DPRL_DBG \
             #-DERIM_DBG \
 
@@ -41,7 +36,7 @@ function build_memisolation {
             gcc -I"$MEM_DIR" $JNI_INCLUDE $CFLAGS -o $LIB_DIR/libjniwrapper.so $MEM_DIR/JNIWrapper.c -L$LIB_DIR -lmemiso -lm $ERIM_LIBS
 
             LINKER_OPTIONS_MEM_ISO="-H:NativeLinkerOption=$LIB_DIR/libmemiso.so"
-            MEM_FLAGS="-DMEM_ISOLATION $EXTRA_OPTIONS"
+            MEM_FLAGS="-DMEM_ISOLATION"
     fi
 }
 

@@ -53,6 +53,9 @@ __thread void* prev_sbrk = NULL;
 
 atomic_int shared_variable = ATOMIC_VAR_INIT(0);
 
+static int eager_mpk = 0;
+static int eager_perms = 0;
+
 /* File descriptors */
 struct Supervisor supervisors[NUM_DOMAINS];
 
@@ -69,7 +72,7 @@ int threadCount[NUM_DOMAINS];
 char* cache[NUM_DOMAINS];
 
 /* seccomp system call */
-    static int
+static int
 seccomp(unsigned int operation, unsigned int flags, void *args)
 {
     return syscall(SYS_seccomp, operation, flags, args);
@@ -194,12 +197,13 @@ prep_env(const char* application)
     // Get application in cache
     char* cached = cache[domain];
 
-    #ifdef EAGER_PERMS
+    if (eager_perms) {
         if (strcmp(cached, application)) {
             strcpy(cache[domain], application);
         } 
         set_permissions(application, domain);
-    #else 
+	}
+    else {
         // If application in cache differs from application assigned to supervisor
         if (strcmp(cached, application)) {
             // 1. Remove domain permissions of previous application if any
@@ -211,7 +215,7 @@ prep_env(const char* application)
             set_permissions(application, domain);
         }
         // Else continue normal execution since application is the same
-    #endif
+	}
 
     sp->execution = NATIVE;
 }
@@ -219,19 +223,17 @@ prep_env(const char* application)
 void
 reset_env(const char* application, int isLast)
 {
-#ifdef EAGER_MPK
-    if (!isLast) {
-	return;
+    if (eager_mpk && !isLast) {
+		return;
     }
-#endif
 
     SEC_DBM("\t[S%d]: application finished.", domain);
     struct Supervisor* sp = &supervisors[domain];
     
-    #ifdef EAGER_PERMS
+    if (eager_perms) {
         sp->execution = MANAGED;
         set_permissions(application, 1);    
-    #endif
+	}
 
     sp->status = DONE;
 }
@@ -279,7 +281,6 @@ is_app_executing(const char* app) {
 }
 
 /* Domain Management algorithm */
-#ifdef EAGER_MPK
 void
 find_domain_eager(const char* app) {
 	while (1) {
@@ -298,7 +299,6 @@ find_domain_eager(const char* app) {
 		}
 	}
 }
-#endif
 
 void
 find_domain(const char* app, int *fd) {
@@ -314,10 +314,10 @@ find_domain(const char* app, int *fd) {
 
 void
 acquire_domain(const char* app, int *fd) {
-    #ifdef EAGER_MPK
+    if (eager_mpk) {
         assign_supervisor(app, fd);
         return;
-    #endif
+	}
 
     /*
        If domain is set to 0, it indicates that this is the first invocation of the application.
@@ -823,15 +823,29 @@ zombie_handler(void *arg)
 void
 initialize_memory_isolation()
 {   
-#ifdef EAGER_MPK
-    SEC_DBM("Executing in Eager MPK mode");
-#endif
-#ifdef EAGER_PERMS
-    SEC_DBM("Executing in Eager permissions mode");
-#endif
-#ifdef LAZY_PERMS
-    SEC_DBM("Executing in Lazy permissions mode (default)");
-#endif
+	char* mpk_env = getenv("EAGER_MPK");
+	if (mpk_env != NULL) {
+		eager_mpk = atoi(mpk_env);
+	}
+	char* perms_env = getenv("EAGER_PERMS");
+	if (perms_env != NULL) {
+		eager_perms = atoi(perms_env);
+	}
+
+	if (eager_perms && eager_mpk) {
+		fprintf(stderr, "Only one or neither mode should be selected!\n");
+		exit(EXIT_FAILURE);
+	}
+	if (eager_perms) {
+    	fprintf(stderr, "Executing in Eager permissions mode.\n");
+	}
+	else if (eager_mpk) {
+    	fprintf(stderr, "Executing in Eager MPK mode.\n");
+	}
+	else {
+    	fprintf(stderr, "Executing in Lazy permissions mode (default).\n");
+	}
+
     /* Init maps */
     init_app_map(&appMap, NUM_DOMAINS);
 
