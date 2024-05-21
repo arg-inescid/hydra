@@ -4,9 +4,9 @@ import org.graalvm.argo.graalvisor.function.PolyglotFunction;
 
 import java.io.IOException;
 
-public class PgoSandboxProvider extends SandboxProvider {
+public class ExecutableSandboxProvider extends SandboxProvider {
 
-    public PgoSandboxProvider(PolyglotFunction function) {
+    public ExecutableSandboxProvider(PolyglotFunction function) {
         super(function);
     }
 
@@ -22,7 +22,7 @@ public class PgoSandboxProvider extends SandboxProvider {
 
     @Override
     public SandboxHandle createSandbox() throws Exception {
-        return new PgoSandboxHandle(this);
+        return new ExecutableSandboxHandle(this);
     }
 
     @Override

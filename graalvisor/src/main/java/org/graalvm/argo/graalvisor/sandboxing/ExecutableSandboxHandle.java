@@ -13,8 +13,15 @@ import java.util.HashSet;
 
 import static java.lang.Runtime.getRuntime;
 import static java.lang.System.currentTimeMillis;
-import static java.lang.System.getenv;
-import static java.nio.file.attribute.PosixFilePermission.*;
+import static java.nio.file.attribute.PosixFilePermission.GROUP_EXECUTE;
+import static java.nio.file.attribute.PosixFilePermission.GROUP_READ;
+import static java.nio.file.attribute.PosixFilePermission.GROUP_WRITE;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
+import static java.nio.file.attribute.PosixFilePermission.OTHERS_EXECUTE;
+import static java.nio.file.attribute.PosixFilePermission.OTHERS_WRITE;
+import static java.nio.file.attribute.PosixFilePermission.OTHERS_READ;
 import static java.util.Arrays.asList;
 import static org.graalvm.argo.graalvisor.Main.APP_DIR;
 import static org.graalvm.argo.graalvisor.Main.MINIO_PASSWORD;
@@ -22,11 +29,11 @@ import static org.graalvm.argo.graalvisor.Main.MINIO_SERVER;
 import static org.graalvm.argo.graalvisor.Main.MINIO_URL;
 import static org.graalvm.argo.graalvisor.Main.MINIO_USER;
 
-public class PgoSandboxHandle extends SandboxHandle {
+public class ExecutableSandboxHandle extends SandboxHandle {
     public static final String DEFAULT_IPROF_FILE_NAME = "/default.iprof";
-    private final PgoSandboxProvider pgoProvider;
+    private final ExecutableSandboxProvider pgoProvider;
 
-    public PgoSandboxHandle(PgoSandboxProvider pgoProvider) {
+    public ExecutableSandboxHandle(ExecutableSandboxProvider pgoProvider) {
         this.pgoProvider = pgoProvider;
     }
 
@@ -153,7 +160,7 @@ public class PgoSandboxHandle extends SandboxHandle {
     }
 
     private static void makeFunctionExecutable(Path newDir, Path source) throws IOException {
-        HashSet<PosixFilePermission> permissions = new HashSet<>(asList(GROUP_EXECUTE,GROUP_READ, GROUP_READ, OWNER_EXECUTE, OWNER_WRITE, OTHERS_EXECUTE, OTHERS_WRITE));
+        HashSet<PosixFilePermission> permissions = new HashSet<>(asList(GROUP_EXECUTE,GROUP_READ, GROUP_WRITE, OWNER_EXECUTE, OWNER_READ, OWNER_WRITE, OTHERS_EXECUTE, OTHERS_WRITE, OTHERS_READ));
         final File file = new File(newDir.toString() + "/" + source.getFileName());
         Files.setPosixFilePermissions(file.toPath(), permissions);
     }

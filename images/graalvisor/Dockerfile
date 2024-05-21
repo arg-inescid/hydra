@@ -4,7 +4,7 @@ ADD disk/ /
 RUN apt update && \
     apt install -y wget
 
-# Detect the processor architecture
+# Detect the processor architecture and download the Minio client
 RUN ARCH=$(dpkg --print-architecture); \
     if [ "$ARCH" = "amd64" ]; then \
         wget https://dl.min.io/client/mc/release/linux-amd64/mc; \

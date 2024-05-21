@@ -31,7 +31,7 @@ import org.graalvm.argo.graalvisor.sandboxing.PolyContextSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.ContextSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.ContextSnapshotSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.IsolateSandboxProvider;
-import org.graalvm.argo.graalvisor.sandboxing.PgoSandboxProvider;
+import org.graalvm.argo.graalvisor.sandboxing.ExecutableSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.ProcessSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.RuntimeSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.SandboxProvider;
@@ -193,8 +193,8 @@ public abstract class RuntimeProxy {
     private static class RegisterHandler implements ProxyHttpHandler {
 
         private SandboxProvider getDefaultSandboxProvider(PolyglotFunction function) {
-            if (function.isBinary()) {
-                return new PgoSandboxProvider(function);
+            if (function.isExecutable()) {
+                return new ExecutableSandboxProvider(function);
             } else if (function.getLanguage() == PolyglotLanguage.JAVA) {
                 return new IsolateSandboxProvider(function);
             } else {
@@ -220,7 +220,7 @@ public abstract class RuntimeProxy {
                 } else if (sandboxName.equals("process")) {
                     return new ProcessSandboxProvider(function);
                 } else if (sandboxName.equals("pgo")) {
-                    return new PgoSandboxProvider(function);
+                    return new ExecutableSandboxProvider(function);
                 }
             } else {
                 if (sandboxName.equals("context")) {
