@@ -56,51 +56,52 @@ public class ExecutableSandboxHandle extends SandboxHandle {
                 Files.move(source, newDir.resolve(source.getFileName()));
                 makeFunctionExecutable(newDir, source);
             }
-
-
-            final String[] envs = {};
-            final String command = "." + newAppPath + "/" + function + " " + parameter;
-            Process process = runtime.exec(command, envs);
-
-            BufferedReader br = new BufferedReader(
-                    new InputStreamReader(process.getInputStream()));
-
-            BufferedReader stdError = new BufferedReader(new
-                    InputStreamReader(process.getErrorStream()));
-
-            String line;
-            while ((line = br.readLine()) != null) {
-                System.out.println("line: " + line);
-                response.append(line);
-            }
-
-            System.out.println("Standard error:");
-            while ((line = stdError.readLine()) != null) {
-                System.out.println(line);
-            }
-
-            process.waitFor();
-
+            executeFunction(function, parameter, newAppPath, runtime, response);
             final Path source = getProfilePath(newAppPath);
 //            final Path source = Path.of("/default.iprof");
-
-            //TODO using a new Thread to launch the minion upload
-            new Thread(() -> {
-                try {
-                    sendIprofToMinIo(function, source, newAppPath);
-                } catch (IOException | InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }).start();
-
+            sendProfileFile(function, source, newAppPath);
 //            sendIprofToMinIo(function, source, newAppPath);
-
-            System.out.println("exit: " + process.exitValue());
-
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
         return response.toString();
+    }
+
+    private static void executeFunction(final String function, final String parameter, final String newAppPath, final Runtime runtime, final StringBuilder response) throws IOException, InterruptedException {
+        final String[] envs = {};
+        final String command = "." + newAppPath + "/" + function + " " + parameter;
+        Process process = runtime.exec(command, envs);
+
+        BufferedReader br = new BufferedReader(
+                new InputStreamReader(process.getInputStream()));
+
+        BufferedReader stdError = new BufferedReader(new
+                InputStreamReader(process.getErrorStream()));
+
+        String line;
+        while ((line = br.readLine()) != null) {
+            System.out.println("line: " + line);
+            response.append(line);
+        }
+
+        System.out.println("Standard error:");
+        while ((line = stdError.readLine()) != null) {
+            System.out.println(line);
+        }
+
+        process.waitFor();
+
+        System.out.println("exit: " + process.exitValue());
+    }
+
+    private void sendProfileFile(final String function, final Path source, final String newAppPath) {
+        new Thread(() -> {
+            try {
+                sendIprofToMinIo(function, source, newAppPath);
+            } catch (IOException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }).start();
     }
 
     private void sendIprofToMinIo(String function, Path source, String newAppPath) throws IOException, InterruptedException {
