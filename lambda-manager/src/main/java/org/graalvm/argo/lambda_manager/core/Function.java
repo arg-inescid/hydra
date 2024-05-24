@@ -223,6 +223,7 @@ public class Function {
                     new BuildNativeImagePgo(this).build().start();
                     Logger.log(Level.INFO, "Starting new native image with PGO enabled " + name);
                 }
+                break;
             case GRAALVISOR_PGO:
                 MinioUtils minioUtils = new MinioUtils();
                 if (status == FunctionStatus.PGO_PROFILING_DONE && minioUtils.containsAnyProfile(name)) {

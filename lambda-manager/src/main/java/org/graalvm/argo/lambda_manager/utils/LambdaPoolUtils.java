@@ -108,7 +108,6 @@ public class LambdaPoolUtils {
                 return Configuration.argumentStorage.getLambdaFactory().createHotspot(lambda);
             case GRAALVISOR:
                 return Configuration.argumentStorage.getLambdaFactory().createGraalvisor(lambda);
-            // TODO: create entries in factory.
             case GRAALVISOR_PGO:
                 return Configuration.argumentStorage.getLambdaFactory().createGraalvisorPgo(lambda);
             case GRAALVISOR_PGO_OPTIMIZED:

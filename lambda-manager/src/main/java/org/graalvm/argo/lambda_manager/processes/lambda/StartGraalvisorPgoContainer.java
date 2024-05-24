@@ -4,10 +4,6 @@ import org.graalvm.argo.lambda_manager.core.Lambda;
 
 import java.util.List;
 
-import static java.lang.String.format;
-import static java.lang.String.valueOf;
-import static java.lang.System.currentTimeMillis;
-
 public class StartGraalvisorPgoContainer extends StartContainer {
 
     public StartGraalvisorPgoContainer(Lambda lambda) {
