@@ -245,10 +245,10 @@ public abstract class RuntimeProxy {
             String functionLanguage = metaData.get("language");
             String sandboxName = metaData.get("sandbox");
             int svmID = Integer.parseInt(metaData.getOrDefault("svmid", "0"));
-            final boolean isBinary = Boolean.parseBoolean(metaData.get("isBinary"));
+            final boolean isExecutable = Boolean.parseBoolean(metaData.get("isBinary"));
 
             if (System.getProperty("java.vm.name").equals("Substrate VM") || !functionLanguage.equalsIgnoreCase("java")) {
-                handlePolyglotRegistration(t, functionName, codeFileName, functionEntryPoint, functionLanguage, sandboxName, svmID, isBinary);
+                handlePolyglotRegistration(t, functionName, codeFileName, functionEntryPoint, functionLanguage, sandboxName, svmID, isExecutable);
             } else {
                 handleHotSpotRegistration(t, functionName, codeFileName, functionEntryPoint);
             }
@@ -283,7 +283,7 @@ public abstract class RuntimeProxy {
             writeResponse(t, 200, String.format("Function %s registered!", functionName));
         }
 
-        private void handlePolyglotRegistration(HttpExchange t, String functionName, String soFileName, String functionEntryPoint, String functionLanguage, String sandboxName, int svmID, boolean isBinary) throws IOException {
+        private void handlePolyglotRegistration(HttpExchange t, String functionName, String soFileName, String functionEntryPoint, String functionLanguage, String sandboxName, int svmID, boolean isExecutable) throws IOException {
             long start = System.currentTimeMillis();
             PolyglotFunction function = null;
             SandboxProvider sprovider = null;
@@ -301,7 +301,7 @@ public abstract class RuntimeProxy {
                             bis.transferTo(fos);
                         }
                     }
-                    function = new NativeFunction(functionName, functionEntryPoint, functionLanguage, soFileName, isBinary);
+                    function = new NativeFunction(functionName, functionEntryPoint, functionLanguage, soFileName, isExecutable);
                 } else {
                     try (InputStream bis = new BufferedInputStream(t.getRequestBody(), 4096)) {
                         String sourceCode = new String(bis.readAllBytes(), StandardCharsets.UTF_8);
