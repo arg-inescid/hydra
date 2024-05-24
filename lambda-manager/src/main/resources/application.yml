@@ -13,3 +13,8 @@ micronaut:
       enabled: true
     cors:
       enabled: true
+  minio-url: http://172.18.0.1
+  minio-port: 9000
+  minio-server: minio-storage
+  minio-user: ROOTNAME
+  minio-password: CHANGEME123

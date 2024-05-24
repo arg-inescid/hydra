@@ -29,4 +29,14 @@ public class FirecrackerCtrLambdaFactory extends AbstractLambdaFactory {
         return new StartOpenWhiskFirecrackerCtr(lambda);
     }
 
+    @Override
+    public StartLambda createGraalvisorPgo(Lambda lambda) {
+        throw new IllegalStateException("Graalvisor PGO is not yet supported in Firecracker-containerd mode.");
+    }
+
+    @Override
+    public StartLambda createGraalvisorPgoOptimized(Lambda lambda) {
+        throw new IllegalStateException("Graalvisor PGO Optimized is not yet supported in Firecracker-containerd mode.");
+    }
+
 }

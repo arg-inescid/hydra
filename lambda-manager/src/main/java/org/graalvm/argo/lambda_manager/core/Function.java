@@ -3,7 +3,10 @@ package org.graalvm.argo.lambda_manager.core;
 import org.graalvm.argo.lambda_manager.optimizers.ColdStartSlidingWindow;
 import org.graalvm.argo.lambda_manager.optimizers.FunctionStatus;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
+import org.graalvm.argo.lambda_manager.processes.lambda.BuildNativeImagePgo;
+import org.graalvm.argo.lambda_manager.processes.lambda.BuildNativeImagePgoOptimized;
 import org.graalvm.argo.lambda_manager.processes.lambda.BuildSO;
+import org.graalvm.argo.lambda_manager.utils.MinioUtils;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 
 import java.nio.file.Path;
@@ -113,9 +116,14 @@ public class Function {
         if (canRebuild && getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
             // The function was uploaded for GV target and its .so is built
             return Paths.get(Environment.CODEBASE, name, "build_so", "lib" + name + ".so");
-        } else {
-            return Paths.get(Environment.CODEBASE, name, name);
+        } else if (canRebuild && getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO) {
+            return Paths.get(Environment.CODEBASE, name, "pgo-enable", name );
+        } else if (canRebuild && getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZING) {
+            return Paths.get(Environment.CODEBASE, name, "pgo-enable-optimizing", name );
+        } else if (canRebuild && getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED) {
+            return Paths.get(Environment.CODEBASE, name, "pgo-optimized", name );
         }
+        return Paths.get(Environment.CODEBASE, name, name);
     }
 
     public String getRuntime() {
@@ -144,6 +152,14 @@ public class Function {
                             throw new IllegalStateException("Unexpected language: " + getLanguage());
                     }
                 }
+            case PGO_BUILDING:
+                return LambdaExecutionMode.GRAALVISOR;
+            case PGO_READY:
+            case PGO_OPTIMIZED_BUILDING:
+            case PGO_PROFILING_DONE:
+                return LambdaExecutionMode.GRAALVISOR_PGO;
+            case PGO_OPTIMIZED_READY:
+                return LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED;
             default:
                 throw new IllegalStateException("Unexpected value: " + getStatus());
         }
@@ -176,11 +192,11 @@ public class Function {
         if (functionCode == null || JAR_FILE_SIGNATURE.length > functionCode.length) {
             return false;
         }
-        for (int i = 0; i < JAR_FILE_SIGNATURE.length; ++i) {
-            if (functionCode[i] != JAR_FILE_SIGNATURE[i]) {
-                return false;
-            }
-        }
+//        for (int i = 0; i < JAR_FILE_SIGNATURE.length; ++i) {
+//            if (functionCode[i] != JAR_FILE_SIGNATURE[i]) {
+//                return false;
+//            }
+//        }
         return true;
     }
 
@@ -199,6 +215,22 @@ public class Function {
                     status = FunctionStatus.CONFIGURING_OR_BUILDING;
                     new BuildSO(this).build().start();
                     Logger.log(Level.INFO, "Starting new .so build for function " + name);
+                }
+                break;
+            case GRAALVISOR:
+                if (status == FunctionStatus.READY) {
+                    status = FunctionStatus.PGO_BUILDING;
+                    new BuildNativeImagePgo(this).build().start();
+                    Logger.log(Level.INFO, "Starting new native image with PGO enabled " + name);
+                }
+                break;
+            case GRAALVISOR_PGO:
+                MinioUtils minioUtils = new MinioUtils();
+                if (status == FunctionStatus.PGO_PROFILING_DONE && minioUtils.containsAnyProfile(name)) {
+                    minioUtils.downloadProfiles(name);
+                    status = FunctionStatus.PGO_OPTIMIZED_BUILDING;
+                    new BuildNativeImagePgoOptimized(this).build().start();
+                    Logger.log(Level.INFO, "Starting new native image with PGO optimized " + name);
                 }
                 break;
             default:

@@ -11,6 +11,10 @@ public abstract class AbstractLambdaFactory {
 
     public abstract StartLambda createGraalvisor(Lambda lambda);
 
+    public abstract StartLambda createGraalvisorPgo(Lambda lambda);
+
+    public abstract StartLambda createGraalvisorPgoOptimized(Lambda lambda);
+
     public abstract StartLambda createOpenWhisk(Lambda lambda);
 
 }

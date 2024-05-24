@@ -13,7 +13,13 @@ public enum LambdaExecutionMode {
     // OpenWhisk VM (single function).
     CUSTOM_JAVA,
     CUSTOM_JAVASCRIPT,
-    CUSTOM_PYTHON;
+    CUSTOM_PYTHON,
+    // With profile-guided optimizations enabled.
+    GRAALVISOR_PGO,
+    // Optimizing with the iprof files.
+    GRAALVISOR_PGO_OPTIMIZING,
+    // Optimized with PGO.
+    GRAALVISOR_PGO_OPTIMIZED;
 
     public boolean isCustom() {
         return this == LambdaExecutionMode.CUSTOM_JAVA || this == LambdaExecutionMode.CUSTOM_JAVASCRIPT || this == LambdaExecutionMode.CUSTOM_PYTHON;

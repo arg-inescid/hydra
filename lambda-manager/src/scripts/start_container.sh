@@ -53,7 +53,7 @@ fi
 
 cd "$LAMBDA_HOME"
 
-docker run --rm --name="$LAMBDA_NAME" \
+docker run --privileged --rm --name="$LAMBDA_NAME" \
   ${TAGS[@]} \
   -p "$LAMBDA_PORT":"$PROXY_PORT" \
   --memory "$LAMBDA_MEMORY" \

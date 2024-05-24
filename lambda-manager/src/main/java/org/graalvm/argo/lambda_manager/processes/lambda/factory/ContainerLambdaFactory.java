@@ -2,6 +2,8 @@ package org.graalvm.argo.lambda_manager.processes.lambda.factory;
 
 import org.graalvm.argo.lambda_manager.core.Lambda;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalvisorContainer;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalvisorPgoContainer;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalvisorPgoOptimizedContainer;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotContainer;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotWithAgentContainer;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartLambda;
@@ -27,6 +29,16 @@ public class ContainerLambdaFactory extends AbstractLambdaFactory {
     @Override
     public StartLambda createOpenWhisk(Lambda lambda) {
         return new StartOpenWhiskContainer(lambda);
+    }
+
+    @Override
+    public StartLambda createGraalvisorPgo(Lambda lambda) {
+        return new StartGraalvisorPgoContainer(lambda);
+    }
+
+    @Override
+    public StartLambda createGraalvisorPgoOptimized(Lambda lambda) {
+        return new StartGraalvisorPgoOptimizedContainer(lambda);
     }
 
 }

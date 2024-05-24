@@ -139,6 +139,8 @@ public class Lambda {
         this.registeredFunctions.putIfAbsent(function.getName(), function);
     }
 
+    // TODO: check for all places (including this method) where we should add new modes
+    // to configure "collocatability" and other things.
     public boolean canRegisterInLambda(Function function) {
         if (username == null) {
             return true;
