@@ -40,7 +40,7 @@ if [ ! -f "$PROXY_JAR" ]; then
   exit 1
 fi
 
-path="$PGO_FILES"/"$FUNCTION_NAME"/pgo-files
+path="$CODEBASE_HOME"/"$FUNCTION_NAME"/pgo-files
 
 files=$(ls $path)
 

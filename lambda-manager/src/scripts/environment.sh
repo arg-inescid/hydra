@@ -19,4 +19,3 @@ export PROXY_JAR=$PROXY_HOME/build/libs/graalvisor-1.0-all.jar
 export CODEBASE_HOME=$MANAGER_HOME/codebase
 export GRAALVISOR_HOME=$PROXY_HOME/build/native-image
 export CRUNTIME_HOME=$MANAGER_HOME/src/scripts/cruntime
-export PGO_FILES=$CODEBASE_HOME
