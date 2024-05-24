@@ -23,6 +23,7 @@
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <sys/un.h>
 #include "utils/appmap.h"
 #include "helpers/helpers.h"
@@ -49,7 +50,6 @@
 		    (offsetof(struct seccomp_data, nr)))
 
 __thread int domain = 0;
-__thread void* prev_sbrk = NULL;
 
 atomic_int shared_variable = ATOMIC_VAR_INIT(0);
 
@@ -72,15 +72,13 @@ int threadCount[NUM_DOMAINS];
 char* cache[NUM_DOMAINS];
 
 /* seccomp system call */
-static int
-seccomp(unsigned int operation, unsigned int flags, void *args)
+static int seccomp(unsigned int operation, unsigned int flags, void *args)
 {
     return syscall(SYS_seccomp, operation, flags, args);
 }
 
 /* MPK domains */
-static void 
-set_permissions(const char* id, int pkey)
+static void set_permissions(const char* id, int pkey)
 {
     size_t count;
     MemoryRegion* regions = get_regions(appMap, (char*)id, &count);
@@ -93,8 +91,7 @@ set_permissions(const char* id, int pkey)
     }
 }
 
-void
-insert_memory_regions(char* id, const char* path) {
+void insert_memory_regions(char* id, const char* path) {
     get_memory_regions(&appMap, id, path);
 }
 
@@ -104,8 +101,7 @@ insert_memory_regions(char* id, const char* path) {
    the filter generates user-space notifications (SECCOMP_RET_USER_NOTIF)
    on all other system calls. */
 
-static int
-install_notify_filter()
+static int install_notify_filter()
 {   
     struct sock_filter filter[] = {
 		X86_64_CHECK_ARCH,
@@ -164,8 +160,7 @@ install_notify_filter()
     return nfd;
 }
 
-void
-wait_sem()
+void wait_sem()
 {
     SEC_DBM("\t[S%d]: Wait sem.", domain);
 
@@ -178,15 +173,13 @@ wait_sem()
     sem_wait(sem);
 }
 
-void
-signal_sem()
+void signal_sem()
 {
     SEC_DBM("\t[S%d]: Signal sem.", domain);
     sem_post(&supervisors[domain].sem);
 }
 
-static void
-prep_env(const char* application)
+static void prep_env(const char* application)
 {
     SEC_DBM("\t[S%d]: preparing environment.", domain);
     struct Supervisor* sp = &supervisors[domain];
@@ -220,8 +213,7 @@ prep_env(const char* application)
     sp->execution = NATIVE;
 }
 
-void
-reset_env(const char* application, int isLast)
+void reset_env(const char* application, int isLast)
 {
     if (eager_mpk && !isLast) {
 		return;
@@ -238,8 +230,7 @@ reset_env(const char* application, int isLast)
     sp->status = DONE;
 }
 
-static void
-assign_supervisor(const char* app, int* fd)
+static void assign_supervisor(const char* app, int* fd)
 {
     SEC_DBM("\t[S%d]: application assigned: %s.", domain, app);
     struct Supervisor* sp = &supervisors[domain];
@@ -264,14 +255,12 @@ assign_supervisor(const char* app, int* fd)
 /* Returns 1 (True) if app is still in cache;
    Returns 0 (False) otherwise. */
 
-int
-is_app_cached(const char* app) {
+int is_app_cached(const char* app) {
     return !strcmp((const char *)cache[domain], app);
 }
 
 /* TODO: If app is executing, assign domain to -1 */
-int
-is_app_executing(const char* app) {
+int is_app_executing(const char* app) {
     for (int i = 2; i < NUM_DOMAINS; i++) {
         if (!strcmp((const char *)cache[i], app) && __sync_bool_compare_and_swap(&threadCount[i], 1, 1)) {
             return 1;
@@ -281,8 +270,7 @@ is_app_executing(const char* app) {
 }
 
 /* Domain Management algorithm */
-void
-find_domain_eager(const char* app) {
+void find_domain_eager(const char* app) {
 	while (1) {
 		if (domain == 0 || !is_app_cached(app) || !__sync_bool_compare_and_swap(&threadCount[domain], 0, 1)) {
 			for (int i = 2; i < NUM_DOMAINS; ++i) {
@@ -300,8 +288,7 @@ find_domain_eager(const char* app) {
 	}
 }
 
-void
-find_domain(const char* app, int *fd) {
+void find_domain(const char* app, int *fd) {
     for (int i = 2; i < NUM_DOMAINS; ++i) {
 		if (__sync_bool_compare_and_swap(&threadCount[i], 0, 1)) {
 			domain = i;
@@ -310,10 +297,10 @@ find_domain(const char* app, int *fd) {
 		}
     }
     domain = -1;
+	fprintf(stderr, "No domain available, proceeding with LPI\n");
 }
 
-void
-acquire_domain(const char* app, int *fd) {
+void acquire_domain(const char* app, int *fd) {
     if (eager_mpk) {
         assign_supervisor(app, fd);
         return;
@@ -343,8 +330,7 @@ acquire_domain(const char* app, int *fd) {
    conditions where the PID that is returned by SECCOMP_IOCTL_NOTIF_RECV
    terminates and is reused by another process. */
 
-static bool
-cookie_is_valid(int notifyFd, uint64_t id)
+static bool cookie_is_valid(int notifyFd, uint64_t id)
 {
     return ioctl(notifyFd, SECCOMP_IOCTL_NOTIF_ID_VALID, &id) == 0;
 }
@@ -353,8 +339,7 @@ cookie_is_valid(int notifyFd, uint64_t id)
    response structures. It is the caller's responsibility to free the
    buffers returned via 'req' and 'resp'. */
 
-static void
-alloc_seccomp_notif_buffers(struct seccomp_notif **req,
+static void alloc_seccomp_notif_buffers(struct seccomp_notif **req,
 	struct seccomp_notif_resp **resp,
 	struct seccomp_notif_sizes *sizes)
 {
@@ -390,8 +375,7 @@ alloc_seccomp_notif_buffers(struct seccomp_notif **req,
 
 }
 
-static void
-handle_pkey_mprotect(struct seccomp_notif *req, struct seccomp_notif_resp *resp) 
+static void handle_pkey_mprotect(struct seccomp_notif *req, struct seccomp_notif_resp *resp) 
 {
     SEC_DBM("\t----pkey_mprotect syscall----");
     struct Supervisor* sp = &supervisors[domain];
@@ -422,44 +406,7 @@ handle_pkey_mprotect(struct seccomp_notif *req, struct seccomp_notif_resp *resp)
     }
 }
 
-static void
-handle_brk(struct seccomp_notif *req, struct seccomp_notif_resp *resp)
-{
-    SEC_DBM("\t----brk syscall----");
-    void *__addr = (void *)req->data.args[0];
-    SEC_DBM("\t[S%d]: __addr -> %p", domain, __addr);
-
-    // Real call
-    int brk_resp = brk(__addr);
-
-    if (__addr == NULL) {
-        // Get brk() resulting pointer
-        prev_sbrk = sbrk(0);
-        SEC_DBM("\t[S%d]: null addr -> %p", domain, prev_sbrk);
-    }
-    else {
-        void *addr = sbrk(0);
-        SEC_DBM("\t[S%d]: new addr -> %p", domain, addr);
-
-        size_t size = (size_t)((unsigned long)addr - (unsigned long)prev_sbrk);
-        SEC_DBM("\t[S%d]: size -> %ld", domain, size);
-
-        if (pkey_mprotect(prev_sbrk, size, PROT_READ|PROT_WRITE|PROT_EXEC, domain) == -1) {
-            resp->error = 1;            /* random value different than 0 */
-            perror("pkey_mprotect");
-            return;
-        }
-    }
-
-    resp->error = 0;                /* "Success" */
-    resp->val = (__s64)brk_resp;    /* return value of brk() in target */
-
-    SEC_DBM("\t[S%d]: success! spoofed return = %d; spoofed val = %lld\n",
-            domain, brk_resp, resp->val);
-}
-
-static void
-handle_mmap(struct seccomp_notif *req, struct seccomp_notif_resp *resp) 
+static void handle_mmap(struct seccomp_notif *req, struct seccomp_notif_resp *resp) 
 {
     SEC_DBM("\t----mmap syscall----");
 
@@ -497,8 +444,7 @@ handle_mmap(struct seccomp_notif *req, struct seccomp_notif_resp *resp)
     }
 }
 
-static void
-handle_munmap(struct seccomp_notif *req, struct seccomp_notif_resp *resp)
+static void handle_munmap(struct seccomp_notif *req, struct seccomp_notif_resp *resp)
 {
     SEC_DBM("\t----munmmap syscall----");
 
@@ -506,8 +452,7 @@ handle_munmap(struct seccomp_notif *req, struct seccomp_notif_resp *resp)
     resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
 }
 
-static void 
-handle_clone3(struct seccomp_notif_resp *resp)
+static void handle_clone3(struct seccomp_notif_resp *resp)
 {
     SEC_DBM("\t---clone3 syscall---");
 
@@ -515,8 +460,7 @@ handle_clone3(struct seccomp_notif_resp *resp)
     resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
 }
 
-static void 
-handle_exit(struct seccomp_notif_resp *resp)
+static void handle_exit(struct seccomp_notif_resp *resp)
 {
     SEC_DBM("\t----exit syscall----");
 
@@ -528,8 +472,7 @@ handle_exit(struct seccomp_notif_resp *resp)
 /* Handle notifications that arrive via the SECCOMP_RET_USER_NOTIF file
    descriptor, 'notifyFd'. */
 
-static void
-handle_notifications()
+static void handle_notifications()
 {
     struct seccomp_notif        *req;
     struct seccomp_notif_resp   *resp;
@@ -574,6 +517,7 @@ handle_notifications()
 			}
 		}
 		else if (sp->status && threadCount[domain] == 1) {
+			
 			threadCount[domain]--;
 			break;
 		}
@@ -599,9 +543,6 @@ handle_notifications()
 		switch(req->data.nr) {
 			case __NR_pkey_mprotect:
 				handle_pkey_mprotect(req, resp);
-				break;
-			case __NR_brk:
-				handle_brk(req, resp);
 				break;
 			case __NR_mmap:
 				handle_mmap(req, resp);
@@ -646,8 +587,7 @@ handle_notifications()
    (1) obtains the notification file descriptor
    (2) handles notifications that arrive on that file descriptor. */
 
-static void *
-supervisor(void *arg)
+static void * supervisor(void *arg)
 {   
     int* pDomain = (int*)arg;
     domain = *pDomain;
@@ -662,8 +602,7 @@ supervisor(void *arg)
 }
 
 
-void
-execute_function(char *library, char* method)
+void execute_function(char *library, char* method)
 {
     char* home = getenv("ARGO_HOME");
 	if (home != NULL) {
@@ -706,8 +645,7 @@ execute_function(char *library, char* method)
 
 }
 
-void
-process_setup(const char *fifo_path) {
+void process_setup(const char *fifo_path) {
     int fd;
     char buffer[BUFFER_SIZE];
     char *library = NULL;
@@ -749,8 +687,7 @@ process_setup(const char *fifo_path) {
     free(method);
 }
 
-void
-init_process_pool()
+void init_process_pool()
 {
     int i = 0;
     pid_t pid;
@@ -779,8 +716,7 @@ init_process_pool()
     }
 }
 
-void *
-zombie_handler(void *arg)
+void * zombie_handler(void *arg)
 {
     while (1) {
 		pid_t pid;
@@ -820,8 +756,48 @@ zombie_handler(void *arg)
     }
 }
 
-void
-initialize_memory_isolation()
+void *log_domains(void *arg) {
+    long long milliseconds_since_epoch;
+    int non_zero_count;
+    char *output_file;
+
+    if (eager_mpk) {
+        output_file = "/tmp/faastlane/domains.csv";
+    } else {
+        output_file = "/tmp/faastion/domains.csv";
+    }
+
+    FILE *file = fopen(output_file, "a");
+    if (file == NULL) {
+        perror("Failed to open file");
+        exit(EXIT_FAILURE);
+    }
+
+    while (1) {
+        non_zero_count = 0;
+
+        for (int i = 2; i < NUM_DOMAINS; i++) {
+            if (threadCount[i] != 0) {
+                non_zero_count++;
+            }
+        }
+		
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        milliseconds_since_epoch = (long long)(tv.tv_sec) * 1000 + (long long)(tv.tv_usec) / 1000;
+
+        fprintf(file, "%d,%lld\n", non_zero_count, milliseconds_since_epoch);
+        fflush(file);
+
+        // Wait for 1 millisecond
+        usleep(1000);
+    }
+
+    fclose(file);
+    return NULL;
+}
+
+void initialize_memory_isolation()
 {   
 	char* mpk_env = getenv("EAGER_MPK");
 	if (mpk_env != NULL) {
@@ -874,4 +850,7 @@ initialize_memory_isolation()
 		*pDomain = i;
 		pthread_create(&workers[i], NULL, supervisor, pDomain);
     }
+
+	pthread_t thread_id;
+    pthread_create(&thread_id, NULL, log_domains, NULL);
 }
