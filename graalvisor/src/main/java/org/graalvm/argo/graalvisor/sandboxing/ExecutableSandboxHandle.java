@@ -23,7 +23,6 @@ import static java.nio.file.attribute.PosixFilePermission.OTHERS_EXECUTE;
 import static java.nio.file.attribute.PosixFilePermission.OTHERS_WRITE;
 import static java.nio.file.attribute.PosixFilePermission.OTHERS_READ;
 import static java.util.Arrays.asList;
-import static org.graalvm.argo.graalvisor.Main.APP_DIR;
 import static org.graalvm.argo.graalvisor.Main.MINIO_PASSWORD;
 import static org.graalvm.argo.graalvisor.Main.MINIO_SERVER;
 import static org.graalvm.argo.graalvisor.Main.MINIO_URL;
@@ -46,12 +45,12 @@ public class ExecutableSandboxHandle extends SandboxHandle {
     private String executeCommand(String function, String parameter) {
         StringBuilder response = new StringBuilder();
         try {
-            final String newAppPath = APP_DIR + function + "-app";
+            final String newAppPath = pgoProvider.getAppDir() + function + "-app";
             final Runtime runtime = getRuntime();
             final File functionPath = new File(newAppPath);
 
             if (functionPath.mkdir()) {
-                final Path source = Path.of(APP_DIR + function);
+                final Path source = Path.of(pgoProvider.getAppDir() + function);
                 final Path newDir = Path.of(newAppPath);
                 Files.move(source, newDir.resolve(source.getFileName()));
                 makeFunctionExecutable(newDir, source);

@@ -194,7 +194,7 @@ public abstract class RuntimeProxy {
 
         private SandboxProvider getDefaultSandboxProvider(PolyglotFunction function) {
             if (function.isExecutable()) {
-                return new ExecutableSandboxProvider(function);
+                return new ExecutableSandboxProvider(function, appDir);
             } else if (function.getLanguage() == PolyglotLanguage.JAVA) {
                 return new IsolateSandboxProvider(function);
             } else {
@@ -220,7 +220,7 @@ public abstract class RuntimeProxy {
                 } else if (sandboxName.equals("process")) {
                     return new ProcessSandboxProvider(function);
                 } else if (sandboxName.equals("pgo")) {
-                    return new ExecutableSandboxProvider(function);
+                    return new ExecutableSandboxProvider(function, appDir);
                 }
             } else {
                 if (sandboxName.equals("context")) {

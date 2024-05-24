@@ -5,12 +5,6 @@ import java.io.File;
 import org.graalvm.argo.graalvisor.sandboxing.NativeSandboxInterface;
 
 public abstract class Main {
-
-    /**
-     * Location where function code will be placed.
-     */
-    public static String APP_DIR = System.getenv("app_dir");
-
     public static String MINIO_URL = System.getenv("minio-url");
     public static String MINIO_SERVER = "minio-storage";
     public static String MINIO_USER = System.getenv("minio-user");

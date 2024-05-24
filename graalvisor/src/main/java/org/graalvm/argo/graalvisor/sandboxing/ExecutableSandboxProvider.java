@@ -5,9 +5,14 @@ import org.graalvm.argo.graalvisor.function.PolyglotFunction;
 import java.io.IOException;
 
 public class ExecutableSandboxProvider extends SandboxProvider {
-
-    public ExecutableSandboxProvider(PolyglotFunction function) {
+    private final String appDir;
+    public ExecutableSandboxProvider(PolyglotFunction function, final String appDir) {
         super(function);
+        this.appDir = appDir;
+    }
+
+    public String getAppDir() {
+        return appDir;
     }
 
     @Override
