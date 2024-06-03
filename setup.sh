@@ -27,6 +27,29 @@ function install_firecracker {
     echo "Added firecracker to path in $ARGO_HOME/env.sh"
 }
 
+function install_musl {
+    wget https://more.musl.cc/10/x86_64-linux-musl/x86_64-linux-musl-native.tgz
+    wget https://zlib.net/current/zlib.tar.gz
+    tar -vzxf x86_64-linux-musl-native.tgz
+    tar -vzxf zlib.tar.gz
+    mv x86_64-linux-musl-native $ARGO_HOME/resources/x86_64-linux-musl-native
+    mv zlib-1.3.1 $ARGO_HOME/resources/
+    rm x86_64-linux-musl-native.tgz
+    rm zlib.tar.gz
+
+    export PATH=$ARGO_HOME/resources/x86_64-linux-musl-native/bin:$PATH
+    echo "export PATH=\$ARGO_HOME/resources/x86_64-linux-musl-native/bin:\$PATH" >> $ARGO_HOME/env.sh
+    echo "set -gx PATH \$ARGO_HOME/resources/x86_64-linux-musl-native/bin \$PATH" >> $ARGO_HOME/env.fish
+    echo "Added musl to path in $ARGO_HOME/env.sh"
+
+    CC=$ARGO_HOME/resources/x86_64-linux-musl-native/bin/gcc
+    cd $ARGO_HOME/resources/zlib-1.3.1
+    ./configure --prefix=$ARGO_HOME/resources/x86_64-linux-musl-native --static
+    make
+    make install
+    cd - &> /dev/null
+}
+
 export ARGO_HOME=$(DIR)
 if [ ! -f $ARGO_HOME/env.sh ]; then
     export WORK_DIR=$ARGO_HOME/tmp
@@ -72,6 +95,17 @@ then
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
         install_firecracker
+    fi
+fi
+
+if ! command -v x86_64-linux-musl-gcc &> /dev/null
+then
+    echo "WARNING: musl could not be found!"
+    read -p "Install musl in $ARGO_HOME/resources? (y or Y, everything else as no)? " -n 1 -r
+    echo    # move to a new line
+    if [[ $REPLY =~ ^[Yy]$ ]]
+    then
+        install_musl
     fi
 fi
 
