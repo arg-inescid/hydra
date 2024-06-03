@@ -52,6 +52,7 @@
 __thread int domain = 0;
 
 atomic_int shared_variable = ATOMIC_VAR_INIT(0);
+atomic_int counter = ATOMIC_VAR_INIT(0);
 
 static int eager_mpk = 0;
 static int eager_perms = 0;
@@ -221,7 +222,11 @@ void reset_env(const char* application, int isLast)
 
     SEC_DBM("\t[S%d]: application finished.", domain);
     struct Supervisor* sp = &supervisors[domain];
-    
+
+	if (eager_mpk && sp->status) {
+		atomic_fetch_sub(&counter, 1);
+		threadCount[domain] = 0;
+	}
     if (eager_perms) {
         sp->execution = MANAGED;
         set_permissions(application, 1);    
@@ -275,6 +280,7 @@ void find_domain_eager(const char* app) {
 		if (domain == 0 || !is_app_cached(app) || !__sync_bool_compare_and_swap(&threadCount[domain], 0, 1)) {
 			for (int i = 2; i < NUM_DOMAINS; ++i) {
 				if (__sync_bool_compare_and_swap(&threadCount[i], 0, 1)) {
+					atomic_fetch_add(&counter, 1);
 					domain = i;
 					return;
 				}
@@ -283,6 +289,7 @@ void find_domain_eager(const char* app) {
 			sleep(0.1);
 		} else {
 			SEC_DBM("\t[S%d]: App is cached", domain);
+			atomic_fetch_add(&counter, 1);
 			return;
 		}
 	}
@@ -292,6 +299,7 @@ void find_domain(const char* app, int *fd) {
     for (int i = 2; i < NUM_DOMAINS; ++i) {
 		if (__sync_bool_compare_and_swap(&threadCount[i], 0, 1)) {
 			domain = i;
+			atomic_fetch_add(&counter, 1);
 			assign_supervisor(app, fd);
 			return;
 		}
@@ -314,6 +322,7 @@ void acquire_domain(const char* app, int *fd) {
 		find_domain(app, fd);
     } else {
 		SEC_DBM("\t[S%d]: App is cached", domain);
+		atomic_fetch_add(&counter, 1);
 		assign_supervisor(app, fd);
     }
 }
@@ -485,6 +494,8 @@ static void handle_notifications()
     struct timespec timeout;
     struct Supervisor* sp = &supervisors[domain];
 
+	atomic_fetch_sub(&counter, 1);
+	threadCount[domain] = 0;
     wait_sem();
 
     SEC_DBM("\t[S%d]: Handling notifications...", domain);
@@ -516,9 +527,7 @@ static void handle_notifications()
 				err(EXIT_FAILURE, "\t[S%d]: ioctl-SECCOMP_IOCTL_NOTIF_RECV", domain);
 			}
 		}
-		else if (sp->status && threadCount[domain] == 1) {
-			
-			threadCount[domain]--;
+		else if (sp->status && threadCount[domain] == 1) {			
 			break;
 		}
 		else {
@@ -757,7 +766,7 @@ void * zombie_handler(void *arg)
 }
 
 void *log_domains(void *arg) {
-    long long milliseconds_since_epoch;
+    long long microseconds_since_epoch;
     int non_zero_count;
     char *output_file;
 
@@ -774,23 +783,17 @@ void *log_domains(void *arg) {
     }
 
     while (1) {
-        non_zero_count = 0;
+        non_zero_count = atomic_load(&counter);
 
-        for (int i = 2; i < NUM_DOMAINS; i++) {
-            if (threadCount[i] != 0) {
-                non_zero_count++;
-            }
-        }
-		
         struct timeval tv;
         gettimeofday(&tv, NULL);
-        milliseconds_since_epoch = (long long)(tv.tv_sec) * 1000 + (long long)(tv.tv_usec) / 1000;
+		microseconds_since_epoch = (long long)(tv.tv_sec) * 1000000LL + (long long)(tv.tv_usec);
 
-        fprintf(file, "%d,%lld\n", non_zero_count, milliseconds_since_epoch);
+        fprintf(file, "%d,%lld\n", non_zero_count, microseconds_since_epoch);
         fflush(file);
 
-        // Wait for 1 millisecond
-        usleep(1000);
+        // Wait for 100 us
+        usleep(100);
     }
 
     fclose(file);
