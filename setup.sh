@@ -98,14 +98,19 @@ then
     fi
 fi
 
-if ! command -v x86_64-linux-musl-gcc &> /dev/null
+read -p "Using musl libc? (y or Y, everything else as no)? " -n 1 -r
+echo    # move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    echo "WARNING: musl could not be found!"
-    read -p "Install musl in $ARGO_HOME/resources? (y or Y, everything else as no)? " -n 1 -r
-    echo    # move to a new line
-    if [[ $REPLY =~ ^[Yy]$ ]]
+    if ! command -v x86_64-linux-musl-gcc &> /dev/null
     then
-        install_musl
+        echo "WARNING: musl could not be found!"
+        read -p "Install musl in $ARGO_HOME/resources? (y or Y, everything else as no)? " -n 1 -r
+        echo    # move to a new line
+        if [[ $REPLY =~ ^[Yy]$ ]]
+        then
+            install_musl
+        fi
     fi
 fi
 
@@ -116,7 +121,7 @@ then
     GRAALVISOR_BUILD_MODE="local"
 fi
 
-if [ ! -f $ARGO_HOME/benchmarks/.git ];
+if [ ! -d $ARGO_HOME/benchmarks/.git ];
 then
     echo "Cloning benchmarks git module..."
     git pull --recurse-submodules
