@@ -121,7 +121,7 @@ then
     GRAALVISOR_BUILD_MODE="local"
 fi
 
-if [ ! -d $ARGO_HOME/benchmarks/.git ];
+if [ ! -e $ARGO_HOME/benchmarks/.git ];
 then
     echo "Cloning benchmarks git module..."
     git pull --recurse-submodules
