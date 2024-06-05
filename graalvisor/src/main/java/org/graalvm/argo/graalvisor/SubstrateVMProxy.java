@@ -1,8 +1,8 @@
 package org.graalvm.argo.graalvisor;
 
 import java.io.IOException;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -84,7 +84,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
     
                         // Check if we have been polling for 60 seconds
                         if (System.currentTimeMillis() - startTime > TimeUnit.SECONDS.toMillis(60)) {
-                            throw new Exception("Queue was empty for 60 seconds");
+                            break;
                         }
                     }
                 }
