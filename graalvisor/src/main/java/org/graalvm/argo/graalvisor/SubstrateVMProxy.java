@@ -68,7 +68,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
         public void runInternal() throws Exception {
             SandboxHandle shandle = prepareSandbox(pipeline.getFunction());
             Request req = null;
-            int number_of_attempts = 0;
+            int numberAttempts = 0;
 
             try {
                 while (true) {
@@ -76,14 +76,14 @@ public class SubstrateVMProxy extends RuntimeProxy {
     
                     if (req != null) {
                         processRequest(shandle, req);
-                        // Reset the start time since we successfully processed a request
-                        startTime = System.currentTimeMillis();
+                        // Reset the counter since we successfully processed a request
+                        numberAttempts = 0;
                     } else {
                         // Sleep for 1 millisecond before trying again
                         Thread.sleep(1);
     
                         // Check if we have been polling for more than 60,000 times. Due to the 1 millisecond sleep, this is similar to a 60-second timeout
-                        if (number_of_attempts++ > 60000) {
+                        if (numberAttempts++ > 60000) {
                             break;
                         }
                     }
