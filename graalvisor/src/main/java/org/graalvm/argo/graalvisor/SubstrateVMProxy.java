@@ -1,9 +1,8 @@
 package org.graalvm.argo.graalvisor;
 
 import java.io.IOException;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -69,10 +68,25 @@ public class SubstrateVMProxy extends RuntimeProxy {
         public void runInternal() throws Exception {
             SandboxHandle shandle = prepareSandbox(pipeline.getFunction());
             Request req = null;
+            int numberAttempts = 0;
 
             try {
-                while ((req = pipeline.queue.poll(60, TimeUnit.SECONDS)) != null) {
-                    processRequest(shandle, req);
+                while (true) {
+                    req = pipeline.queue.poll();
+    
+                    if (req != null) {
+                        processRequest(shandle, req);
+                        // Reset the counter since we successfully processed a request
+                        numberAttempts = 0;
+                    } else {
+                        // Sleep for 1 millisecond before trying again
+                        Thread.sleep(1);
+    
+                        // Check if we have been polling for more than 60,000 times. Due to the 1 millisecond sleep, this is similar to a 60-second timeout
+                        if (numberAttempts++ > 60000) {
+                            break;
+                        }
+                    }
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -100,7 +114,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
 
         private final PolyglotFunction function;
 
-        private final BlockingQueue<Request> queue;
+        private final ConcurrentLinkedQueue<Request> queue;
 
         private final AtomicInteger workers = new AtomicInteger(0);
 
@@ -108,7 +122,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
 
         public FunctionPipeline(PolyglotFunction function) {
             this.function = function;
-            this.queue = new ArrayBlockingQueue<>(64);
+            this.queue = new ConcurrentLinkedQueue<>();
         }
 
         public String invokeInCachedSandbox(String input) {
