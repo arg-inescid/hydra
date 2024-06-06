@@ -20,9 +20,10 @@
 #endif
 
 #define NUM_PROCESSES 20
+
 extern __thread int domain;
-extern pid_t procIDs[NUM_PROCESSES];
-extern atomic_int shared_variable;
+extern volatile atomic_int procIDs[NUM_PROCESSES];
+
 /* Supervisors */
 void wait_sem();
 void signal_sem();

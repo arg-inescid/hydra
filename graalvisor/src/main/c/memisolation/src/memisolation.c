@@ -64,7 +64,7 @@ struct Supervisor supervisors[NUM_DOMAINS];
 AppMap appMap;
 
 /* Process IDs */
-pid_t procIDs[NUM_PROCESSES];
+volatile atomic_int procIDs[NUM_PROCESSES];
 
 /* Thread count per domain */
 int threadCount[NUM_DOMAINS];
@@ -611,158 +611,155 @@ static void * supervisor(void *arg)
 }
 
 
-void execute_function(char *library, char* method)
+void process_setup(const char *fifo_path, const char *ret_path)
 {
-    char* home = getenv("ARGO_HOME");
-	if (home != NULL) {
-		// Concatenate the strings
-		char tmp_dir[strlen(home) + strlen("/graalvisor/build/libs/") + strlen(library) + 1]; // +1 for null terminator
-		strcpy(tmp_dir, home);
-		strcat(tmp_dir, "/graalvisor/build/libs/");
-		strcat(tmp_dir, library);
-		
-		
-		// Open the shared object file
-		void *handle = dlopen(tmp_dir, RTLD_LAZY);
-		if (!handle) {
-			fprintf(stderr, "%s\n", dlerror());
-			exit(EXIT_FAILURE);
-		}
+	int fd, fd2;
+	char buffer[BUFFER_SIZE];
 
-		// Get the address of the method
-		void (*native_method)();
-		native_method = dlsym(handle, method);
-		if (!native_method) {
-			fprintf(stderr, "%s\n", dlerror());
-			dlclose(handle);
-			exit(EXIT_FAILURE);
-		}
-
-		// Call the native method
-		(*native_method)();
-
-		// Close the shared object file
-		dlclose(handle);
-    }
-	else {
-		fprintf(stderr, "Environment variable HOME is not set\n");
-		exit(EXIT_FAILURE);
-    }
-
-    SEC_DBM("Library: %s\n", library);
-    SEC_DBM("Method: %s\n", method);
-
-}
-
-void process_setup(const char *fifo_path) {
-    int fd;
-    char buffer[BUFFER_SIZE];
-    char *library = NULL;
-    char *method = NULL;
-
-    fd = open(fifo_path, O_RDONLY);
-    if (fd == -1) {
+	fd = open(fifo_path, O_RDONLY);
+	if (fd == -1)
+	{
 		perror("Error opening Fifo");
 		exit(EXIT_FAILURE);
-    }
+	}
 
-    ssize_t bytes_read = read(fd, buffer, BUFFER_SIZE);
-    if (bytes_read == -1) {
+	ssize_t bytes_read = read(fd, buffer, BUFFER_SIZE);
+	if (bytes_read == -1)
+	{
 		perror("Error reading from Fifo");
 		exit(EXIT_FAILURE);
-    }
-    close(fd);
+	}
+	close(fd);
 
-    buffer[bytes_read] = '\0';
-    char *token = strtok(buffer, ",");
-    if (token != NULL) {
-		library = strdup(token);
-		token = strtok(NULL, ",");
-		
-		if (token != NULL) {
-			method = strdup(token);
-		}
-		else {
-			perror("No method found");
-			exit(EXIT_FAILURE);
-		}
-    }
-	else {
-		perror("No library found");
+	buffer[bytes_read] = '\0';
+	fd2 = open(ret_path, O_WRONLY);
+	if (fd2 == -1)
+	{
+		perror("Error opening Fifo");
 		exit(EXIT_FAILURE);
-    }
-    execute_function(library, method);
-    free(library);
-    free(method);
+	}
+
+	dup2(fd2, STDOUT_FILENO);
+	close(fd2);
+	char *argv[] = {buffer, NULL};
+	execv(argv[0], argv);
+
+	perror("execv");
+	exit(EXIT_FAILURE);
 }
+
 
 void init_process_pool()
 {
-    int i = 0;
-    pid_t pid;
-    for(i = 0; i< NUM_PROCESSES; ++i){
+	int i = 0;
+	pid_t pid;
+	for (i = 0; i < NUM_PROCESSES; ++i)
+	{
 		pid = fork();
+		if (pid == 0)
+		{
+			char fifo_path[40], ret_path[40];
+			snprintf(fifo_path, sizeof(fifo_path), "/tmp/fifo/fifo_%d", getpid());
+			snprintf(ret_path, sizeof(ret_path), "/tmp/ret/ret_%d", getpid());
 
-		if(pid == -1) {
-			perror("Error with fork");
-			exit(EXIT_FAILURE);
-		}
-		else if(pid == 0) {
-			char fifo_path[40];
-			snprintf(fifo_path, sizeof(fifo_path),"/tmp/fifo/fifo_%d", getpid());
-			
-			if(mkfifo(fifo_path,0666) == -1) {
-				perror("mkfifo");
+			int fifo_status = mkfifo(fifo_path, 0666);
+			int ret_status = mkfifo(ret_path, 0666);
+
+			if (fifo_status == -1 || ret_status == -1)
+			{
+				perror("Error creating fifo");
 				exit(EXIT_FAILURE);
 			}
-			process_setup(fifo_path);
 
+			process_setup(fifo_path, ret_path);
 			exit(EXIT_SUCCESS);
 		}
-		else {
+		else
+		{
 			procIDs[i] = pid;
 		}
-    }
+	}
 }
 
-void * zombie_handler(void *arg)
+
+void *zombie_handler(void *arg)
 {
-    while (1) {
+	while (1)
+	{
 		pid_t pid;
 		int status;
-		while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
+		while ((pid = waitpid(-1, &status, WNOHANG)) > 0)
+		{
 			SEC_DBM("Reaped zombie process with PID %d\n", pid);
-			int i;
-			for (i = 0; i < NUM_PROCESSES; ++i) {
-				if (procIDs[i] == pid) {
-					break;
-				}
+			char fifo_name[50], ret_name[50];
+
+			snprintf(fifo_name, sizeof(fifo_name), "/tmp/fifo/fifo_%d", pid);
+			snprintf(ret_name, sizeof(ret_name), "/tmp/ret/ret_%d", pid);
+
+			// int unlink_fifo = unlink(fifo_name);
+			// int unlink_ret = unlink(ret_name);
+
+			// if (unlink_fifo == -1 || unlink_ret == -1)
+			// {
+			// 	perror("Error deleting FIFO");
+			// 	exit(EXIT_FAILURE);
+			// }
+
+			int pipefd[2];
+			if (pipe(pipefd) == -1)
+			{
+				perror("pipe failed");
+				exit(EXIT_FAILURE);
 			}
 
 			pid_t new_pid = fork();
-			if (new_pid == -1) {
-				perror("Error with fork");
-				exit(EXIT_FAILURE);
-			}
-			else if (new_pid == 0) {
+			if (new_pid == 0)
+			{
+				close(pipefd[0]);
 				SEC_DBM("Child process with PID %d started\n", getpid());
-				char fifo_path[50];
-				
+				char fifo_path[50], ret_path[40];
 				snprintf(fifo_path, sizeof(fifo_path), "/tmp/fifo/fifo_%d", getpid());
-				if (mkfifo(fifo_path, 0666) == -1) {
-					perror("mkfifo");
+				snprintf(ret_path, sizeof(ret_path), "/tmp/ret/ret_%d", getpid());
+
+				int fifo_status = mkfifo(fifo_path, 0666);
+				int ret_status = mkfifo(ret_path, 0666);
+
+				if (fifo_status == -1 || ret_status == -1)
+				{
+					perror("Error creating ret_path");
 					exit(EXIT_FAILURE);
 				}
-				
-				process_setup(fifo_path);
+
+				ssize_t bytes_written = write(pipefd[1], "ok", 2);
+
+				if (bytes_written == -1)
+				{
+					perror("Error writing to Fifo");
+					exit(EXIT_FAILURE);
+				}
+
+				process_setup(fifo_path, ret_path);
+				close(pipefd[1]);
 				exit(EXIT_SUCCESS);
 			}
-			else {
-				procIDs[i] = new_pid;
-				atomic_fetch_sub(&shared_variable, 1);
+			else
+			{
+				char buffer[3];
+				close(pipefd[1]);
+
+				read(pipefd[0], buffer, sizeof(buffer));
+				close(pipefd[0]);
+
+				atomic_int expected;
+				for (int i = 0; i < NUM_PROCESSES; i++)
+				{
+					expected = 0;
+					int ret_val = __atomic_compare_exchange_n(&procIDs[i], &expected, new_pid, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+					if (ret_val != 0) break;
+				}
 			}
 		}
-    }
+	}
 }
 
 void *log_domains(void *arg) {
