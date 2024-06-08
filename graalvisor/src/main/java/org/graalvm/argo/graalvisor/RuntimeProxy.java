@@ -115,6 +115,7 @@ public abstract class RuntimeProxy {
       Map<String, Object> output = new HashMap<>();
         output.put("result", res);
         output.put("process time (us)", (finish - start) / 1000);
+        output.put("function", functionName);
         return json.asString(output);
    }
 

@@ -773,14 +773,14 @@ void *log_domains(void *arg) {
         output_file = "/tmp/faastion/domains.csv";
     }
 
-    FILE *file = fopen(output_file, "a");
+    FILE *file = fopen(output_file, "w");
     if (file == NULL) {
         perror("Failed to open file");
         exit(EXIT_FAILURE);
     }
 
     while (1) {
-        non_zero_count = atomic_load(&counter);
+        non_zero_count = atomic_load(&counter) + 14;
 
         struct timeval tv;
         gettimeofday(&tv, NULL);
