@@ -19,6 +19,8 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
+// Note: not defined in musl libc.
+#define SECCOMP_USER_NOTIF_FLAG_CONTINUE (1UL << 0)
 
 void print_mmap(mmap_t* sargs) {
     dbg("mmap:     %16p - %16p size = 0x%16lx prot = %s%s%s%s flags = %8d fd = %2d offset = %8ld ret = %16p\n",

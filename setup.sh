@@ -9,10 +9,6 @@ function install_graalvm {
     tar -vzxf graalvm-jdk-17.0.7_linux-x64_bin.tar.gz
     mv graalvm-jdk-17.0.7+8.1 $ARGO_HOME/resources
     rm graalvm-jdk-17.0.7_linux-x64_bin.tar.gz
-    export JAVA_HOME=$ARGO_HOME/resources/graalvm-jdk-17.0.7+8.1
-    echo "export JAVA_HOME=\$ARGO_HOME/resources/graalvm-jdk-17.0.7+8.1" >> $ARGO_HOME/env.sh
-    echo "set -gx JAVA_HOME \$ARGO_HOME/resources/graalvm-jdk-17.0.7+8.1" >> $ARGO_HOME/env.fish
-    echo "Added JAVA_HOME in $ARGO_HOME/env.sh"
 }
 
 function install_firecracker {
@@ -21,20 +17,29 @@ function install_firecracker {
     mv release-v1.1.0-x86_64 $ARGO_HOME/resources/firecracker-v1.1.0-x86_64
     ln -s $ARGO_HOME/resources/firecracker-v1.1.0-x86_64/firecracker-v1.1.0-x86_64 $ARGO_HOME/resources/firecracker-v1.1.0-x86_64/firecracker
     rm firecracker-v1.1.0-x86_64.tgz
-    export PATH=$ARGO_HOME/resources/firecracker-v1.1.0-x86_64:$PATH
-    echo "export PATH=\$ARGO_HOME/resources/firecracker-v1.1.0-x86_64:\$PATH" >> $ARGO_HOME/env.sh
-    echo "set -gx PATH \$ARGO_HOME/resources/firecracker-v1.1.0-x86_64 \$PATH" >> $ARGO_HOME/env.fish
-    echo "Added firecracker to path in $ARGO_HOME/env.sh"
 }
 
 function install_musl {
-    wget https://more.musl.cc/10/x86_64-linux-musl/x86_64-linux-musl-native.tgz
+    # Option 1: Download a musl build.
+    function download_musl {
+        wget https://more.musl.cc/10/x86_64-linux-musl/x86_64-linux-musl-native.tgz
+        tar -vzxf x86_64-linux-musl-native.tgz
+        mv x86_64-linux-musl-native $ARGO_HOME/resources/x86_64-linux-musl-native
+        rm x86_64-linux-musl-native.tgz
+    }
+
+    # Option 2: Use a local musl build.
+    function clone_musl {
+        cp -r /home/rbruno/git/faastion/musl-cross-make/output $ARGO_HOME/resources/x86_64-linux-musl-native
+    }
+
+    download_musl
+    #clone_musl
+
     wget https://zlib.net/current/zlib.tar.gz
-    tar -vzxf x86_64-linux-musl-native.tgz
     tar -vzxf zlib.tar.gz
-    mv x86_64-linux-musl-native $ARGO_HOME/resources/x86_64-linux-musl-native
+    rm -rf $ARGO_HOME/resources/zlib-1.3.1 &> /dev/null
     mv zlib-1.3.1 $ARGO_HOME/resources/
-    rm x86_64-linux-musl-native.tgz
     rm zlib.tar.gz
 
     export PATH=$ARGO_HOME/resources/x86_64-linux-musl-native/bin:$PATH
@@ -42,7 +47,7 @@ function install_musl {
     echo "set -gx PATH \$ARGO_HOME/resources/x86_64-linux-musl-native/bin \$PATH" >> $ARGO_HOME/env.fish
     echo "Added musl to path in $ARGO_HOME/env.sh"
 
-    CC=$ARGO_HOME/resources/x86_64-linux-musl-native/bin/gcc
+    CC=$ARGO_HOME/resources/x86_64-linux-musl-native/bin/x86_64-linux-musl-cc
     cd $ARGO_HOME/resources/zlib-1.3.1
     ./configure --prefix=$ARGO_HOME/resources/x86_64-linux-musl-native --static
     make
@@ -51,66 +56,40 @@ function install_musl {
 }
 
 export ARGO_HOME=$(DIR)
-if [ ! -f $ARGO_HOME/env.sh ]; then
-    export WORK_DIR=$ARGO_HOME/tmp
-    echo "export ARGO_HOME=$ARGO_HOME"     >> $ARGO_HOME/env.sh
-    echo "export WORK_DIR=\$ARGO_HOME/tmp"  >> $ARGO_HOME/env.sh
-    echo "set -gx ARGO_HOME $ARGO_HOME"    >> $ARGO_HOME/env.fish
-    echo "set -gx WORK_DIR \$ARGO_HOME/tmp" >> $ARGO_HOME/env.fish
-    echo "Added ARGO_HOME to $ARGO_HOME/env.sh"
-    echo "Added WORK_DIR to $ARGO_HOME/env.sh"
-else
-    source $ARGO_HOME/env.sh
+export WORK_DIR=$ARGO_HOME/tmp
+export JAVA_HOME=$ARGO_HOME/resources/graalvm-jdk-17.0.7+8.1
+
+# Preparing environment.
+mv $ARGO_HOME/env.sh   $ARGO_HOME/env.sh.back   &> /dev/null
+mv $ARGO_HOME/env.fish $ARGO_HOME/env.fish.back &> /dev/null
+echo "export  ARGO_HOME=$ARGO_HOME"     >> $ARGO_HOME/env.sh
+echo "set -gx ARGO_HOME $ARGO_HOME"     >> $ARGO_HOME/env.fish
+echo "export  WORK_DIR=\$ARGO_HOME/tmp"  >> $ARGO_HOME/env.sh
+echo "set -gx WORK_DIR \$ARGO_HOME/tmp"  >> $ARGO_HOME/env.fish
+echo "export  PATH=\$ARGO_HOME/resources/firecracker-v1.1.0-x86_64:\$PATH"   >> $ARGO_HOME/env.sh
+echo "set -gx PATH \$ARGO_HOME/resources/firecracker-v1.1.0-x86_64 \$PATH"   >> $ARGO_HOME/env.fish
+echo "export  JAVA_HOME=\$ARGO_HOME/resources/graalvm-jdk-17.0.7+8.1"        >> $ARGO_HOME/env.sh
+echo "set -gx JAVA_HOME \$ARGO_HOME/resources/graalvm-jdk-17.0.7+8.1 \$PATH" >> $ARGO_HOME/env.fish
+
+if [ ! -f $JAVA_HOME/bin/java ];
+then
+    echo "JVM not found. Installing..."
+    install_graalvm
 fi
 
-if [ -z "${JAVA_HOME}" ]; then
-    echo "JAVA_HOME is not defined!"
-    read -p "Install GraalVM in $ARGO_HOME/resources? (y or Y, everything else as no)? " -n 1 -r
+if [ ! -f $ARGO_HOME/resources/firecracker-v1.1.0-x86_64/firecracker ];
+then
+    echo "Firecracker not found. Installing..."
+    install_firecracker
+fi
+
+if [ ! -e $ARGO_HOME/resources/x86_64-linux-musl-native/ ];
+then
+    read -p "Musl not found. Installing musl in $ARGO_HOME/resources? (y or Y, everything else as no)? " -n 1 -r
     echo    # move to a new line
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
-        install_graalvm
-    fi
-fi
-
-if ! grep -q GRAALVM_VERSION $JAVA_HOME/release; then
-    echo "Error: JAVA_HOME does not point to a GraalVM distrubution: $JAVA_HOME"
-    exit 1
-else
-    eval $(echo "export $(cat $JAVA_HOME/release | grep JAVA_VERSION=)")
-    eval $(echo "export $(cat $JAVA_HOME/release | grep GRAALVM_VERSION=)")
-fi
-
-echo "ARGO_HOME = $ARGO_HOME"
-echo "JAVA_HOME = $JAVA_HOME"
-echo "WORK_DIR = $WORK_DIR"
-echo "JAVA_VERSION = $JAVA_VERSION"
-echo "GRAALVM_VERSION = $GRAALVM_VERSION"
-
-if ! command -v firecracker &> /dev/null
-then
-    echo "WARNING: firecracker could not be found!"
-    read -p "Install Firecracker microVM in $ARGO_HOME/resources? (y or Y, everything else as no)? " -n 1 -r
-    echo    # move to a new line
-    if [[ $REPLY =~ ^[Yy]$ ]]
-    then
-        install_firecracker
-    fi
-fi
-
-read -p "Using musl libc? (y or Y, everything else as no)? " -n 1 -r
-echo    # move to a new line
-if [[ $REPLY =~ ^[Yy]$ ]]
-then
-    if ! command -v x86_64-linux-musl-gcc &> /dev/null
-    then
-        echo "WARNING: musl could not be found!"
-        read -p "Install musl in $ARGO_HOME/resources? (y or Y, everything else as no)? " -n 1 -r
-        echo    # move to a new line
-        if [[ $REPLY =~ ^[Yy]$ ]]
-        then
-            install_musl
-        fi
+        install_musl
     fi
 fi
 
