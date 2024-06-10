@@ -51,7 +51,6 @@
 
 __thread int domain = 0;
 
-atomic_int shared_variable = ATOMIC_VAR_INIT(0);
 atomic_int counter = ATOMIC_VAR_INIT(0);
 
 static int eager_mpk = 0;
@@ -286,7 +285,8 @@ void find_domain_eager(const char* app) {
 				}
 			}
 			// If no empty domains found, wait briefly
-			sleep(0.1);
+			fprintf(stderr, "Domains exhausted, waiting 1 ms\n");
+			usleep(1000);
 		} else {
 			SEC_DBM("\t[S%d]: App is cached", domain);
 			atomic_fetch_add(&counter, 1);
