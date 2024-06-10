@@ -20,21 +20,35 @@ function install_firecracker {
 }
 
 function install_musl {
-    # Option 1: Download a musl build.
-    function download_musl {
+    # Option 1: Download a musl toolchain.
+    function dist_musl {
         wget https://more.musl.cc/10/x86_64-linux-musl/x86_64-linux-musl-native.tgz
         tar -vzxf x86_64-linux-musl-native.tgz
         mv x86_64-linux-musl-native $ARGO_HOME/resources/x86_64-linux-musl-native
         rm x86_64-linux-musl-native.tgz
     }
 
-    # Option 2: Use a local musl build.
-    function clone_musl {
-        cp -r /home/rbruno/git/faastion/musl-cross-make/output $ARGO_HOME/resources/x86_64-linux-musl-native
+    # Option 2: Use a local musl toolchain build.
+    function custom_musl {
+	# Step 1: clone the toolchain build project and change directory.
+	git clone https://git.zv.io/toolchains/musl-cross-make.git $ARGO_HOME/resources/musl-cross-make
+        cd $ARGO_HOME/resources/musl-cross-make
+	# Step 2: download all the sources.
+        make TARGET=x86_64-linux-musl sources
+	# Step 3: replace musl sources with MY_MUSL.
+	rm -r sources/musl-1.2.3
+        cp -r $MY_MUSL sources/musl-1.2.3
+        tar -vzcf sources/musl-1.2.3.tar.gz -C sources musl-1.2.3
+	# Step 4: build. Use -j if you have a large number of cores.
+        make -j52 TARGET=x86_64-linux-musl clean install | tee ~/make.log
+        cd -
+        ln -s $ARGO_HOME/resources/musl-cross-make/output $ARGO_HOME/resources/x86_64-linux-musl-native
     }
 
-    download_musl
-    #clone_musl
+    # TODO - use this as a way to pick between a custom or normal distro.
+    MY_MUSL=/home/rbruno/git/faastion/musl
+    #dist_musl
+    custom_musl
 
     wget https://zlib.net/current/zlib.tar.gz
     tar -vzxf zlib.tar.gz
@@ -42,14 +56,9 @@ function install_musl {
     mv zlib-1.3.1 $ARGO_HOME/resources/
     rm zlib.tar.gz
 
-    export PATH=$ARGO_HOME/resources/x86_64-linux-musl-native/bin:$PATH
-    echo "export PATH=\$ARGO_HOME/resources/x86_64-linux-musl-native/bin:\$PATH" >> $ARGO_HOME/env.sh
-    echo "set -gx PATH \$ARGO_HOME/resources/x86_64-linux-musl-native/bin \$PATH" >> $ARGO_HOME/env.fish
-    echo "Added musl to path in $ARGO_HOME/env.sh"
-
     CC=$ARGO_HOME/resources/x86_64-linux-musl-native/bin/x86_64-linux-musl-cc
     cd $ARGO_HOME/resources/zlib-1.3.1
-    ./configure --prefix=$ARGO_HOME/resources/x86_64-linux-musl-native --static
+    ./configure --prefix=$ARGO_HOME/resources/x86_64-linux-musl-native/x86_64-linux-musl --static
     make
     make install
     cd - &> /dev/null
@@ -69,7 +78,7 @@ echo "set -gx WORK_DIR \$ARGO_HOME/tmp"  >> $ARGO_HOME/env.fish
 echo "export  PATH=\$ARGO_HOME/resources/firecracker-v1.1.0-x86_64:\$PATH"   >> $ARGO_HOME/env.sh
 echo "set -gx PATH \$ARGO_HOME/resources/firecracker-v1.1.0-x86_64 \$PATH"   >> $ARGO_HOME/env.fish
 echo "export  JAVA_HOME=\$ARGO_HOME/resources/graalvm-jdk-17.0.7+8.1"        >> $ARGO_HOME/env.sh
-echo "set -gx JAVA_HOME \$ARGO_HOME/resources/graalvm-jdk-17.0.7+8.1 \$PATH" >> $ARGO_HOME/env.fish
+echo "set -gx JAVA_HOME \$ARGO_HOME/resources/graalvm-jdk-17.0.7+8.1"        >> $ARGO_HOME/env.fish
 
 if [ ! -f $JAVA_HOME/bin/java ];
 then

@@ -53,6 +53,7 @@ function build_nsi {
     NET_DIR=$C_DIR/network-isolation/src
     SNAP_DIR=$C_DIR/svm-snapshot
     LIB_DIR=$DIR/build/libs
+    # TODO - make these optional
     # Comment/Uncomment to disable/enable lazy isolation.
     #build_lazyisolation
     build_network_isolation
@@ -85,6 +86,7 @@ function build_ni {
         JAVA_17_OPTS="$JAVA_17_OPTS --add-opens=java.base/java.io=ALL-UNNAMED"
     fi
     $JAVA_HOME/bin/native-image \
+        $LIBC_OPTION \
         --no-fallback \
 	--install-exit-handlers \
         --enable-url-protocols=http \
@@ -130,6 +132,13 @@ then  # Build native image inside Docker container.
     sudo chown -R $(id -u -n):$(id -g -n) $ARGO_HOME/graalvisor/build
     sudo chown -R $(id -u -n):$(id -g -n) $ARGO_HOME/graalvisor-lib/build
 else  # Build native image locally (inside container or directly on host).
+    read -p "Use musl libc? (y or Y, everything else as no)? " -n 1 -r
+    echo    # move to a new line
+    if [[ $REPLY =~ ^[Yy]$ ]]
+    then
+        export PATH=$ARGO_HOME/resources/x86_64-linux-musl-native/bin:$PATH
+        LIBC_OPTION="--libc=musl"
+    fi
     LANGS=""
     read -p "Native Javascript support (y or Y, everything else as no)? " -n 1 -r
     echo    # move to a new line
