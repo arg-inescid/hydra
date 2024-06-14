@@ -5,6 +5,7 @@
 #include <dlfcn.h>
 #include <stdatomic.h>
 #include <unistd.h>
+#include <pthread.h>
 
 /*
  * Debug prints
@@ -37,6 +38,6 @@ void find_domain_eager(const char* app);
 void initialize_memory_isolation();
 
 /* Auxiliary */
-void insert_memory_regions(char* id, const char* path);
+void insert_memory_regions(char* id, const char* path, pthread_mutex_t mutex);
 
 #endif

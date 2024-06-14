@@ -60,7 +60,7 @@ static int eager_perms = 0;
 struct Supervisor supervisors[NUM_DOMAINS];
 
 /* Application map */
-AppMap appMap;
+AppNode* apps = NULL;
 
 /* Process IDs */
 volatile atomic_int procIDs[NUM_PROCESSES];
@@ -80,19 +80,18 @@ static int seccomp(unsigned int operation, unsigned int flags, void *args)
 /* MPK domains */
 static void set_permissions(const char* id, int pkey)
 {
-    size_t count;
-    MemoryRegion* regions = get_regions(appMap, (char*)id, &count);
-
-    for (size_t i = 0; i < count; ++i) {        
-        if (pkey_mprotect(regions[i].address, regions[i].size, regions[i].flags, pkey) == -1) {
+    MRNode* current = get_regions(apps, id);
+    while (current) {
+		if (pkey_mprotect(current->region.address, current->region.size, current->region.flags, pkey) == -1) {
             fprintf(stderr, "pkey_mprotect error\n");
             exit(EXIT_FAILURE);
         }
+		current = current->next;
     }
 }
 
-void insert_memory_regions(char* id, const char* path) {
-    get_memory_regions(&appMap, id, path);
+void insert_memory_regions(char* id, const char* path, pthread_mutex_t mutex) {
+    get_memory_regions(apps, id, path, mutex);
 }
 
 /* Supervisors */
@@ -117,10 +116,7 @@ static int install_notify_filter()
 		/* pkey_mprotect(2), mmap(2), clone3(2) and exit(2) 
 		trigger notifications to user-space supervisor */
 
-		BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, __NR_brk, 0, 1),
-		BPF_STMT(BPF_RET | BPF_K, SECCOMP_RET_USER_NOTIF),
-
-		BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, SYS_mmap, 0, 1),
+		BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, __NR_pkey_mprotect, 0, 1),
 		BPF_STMT(BPF_RET | BPF_K, SECCOMP_RET_USER_NOTIF),
 
 		BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, SYS_munmap, 0, 1),
@@ -164,13 +160,14 @@ void wait_sem()
 {
     SEC_DBM("\t[S%d]: Wait sem.", domain);
 
-    int value;
-    sem_t* sem = &supervisors[domain].sem;
+    // int value;
+    // sem_t* sem = &supervisors[domain].sem;
 
-    if (sem_getvalue(sem, &value) == 0 && value > 0) {
-		sem_wait(sem);
-    }
-    sem_wait(sem);
+    // if (sem_getvalue(sem, &value) == 0 && value > 0) {
+	// 	sem_wait(sem);
+    // }
+    // sem_wait(sem);
+    sem_wait(&supervisors[domain].sem);
 }
 
 void signal_sem()
@@ -439,11 +436,10 @@ static void handle_mmap(struct seccomp_notif *req, struct seccomp_notif_resp *re
 		}
 
 		/* assign allocated memory to application */
-		MemoryRegion memReg;
-		memReg.address = mapped_mem;
-		memReg.size = req->data.args[1];
-		memReg.flags = req->data.args[2];
-		insert_app(&appMap, supervisors[domain].app, memReg);
+		void* address = mapped_mem;
+		size_t size = req->data.args[1];
+		int flags = req->data.args[2];
+		insert_MRNode(apps, supervisors[domain].app, address, size, flags);
 
 		resp->error = 0;                /* "Success" */
 		resp->val = (__s64)mapped_mem;  /* return value of mmap() in target */
@@ -457,7 +453,7 @@ static void handle_munmap(struct seccomp_notif *req, struct seccomp_notif_resp *
 {
     SEC_DBM("\t----munmmap syscall----");
 
-    remove_app(&appMap, supervisors[domain].app, (void *)req->data.args[0]);
+    remove_MRNode(apps, supervisors[domain].app, (void *)req->data.args[0]);
     resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
 }
 
@@ -822,14 +818,11 @@ void initialize_memory_isolation()
     	fprintf(stderr, "Executing in Lazy permissions mode (default).\n");
 	}
 
-    /* Init maps */
-    init_app_map(&appMap, NUM_DOMAINS);
-
     /* Init arrays */
     init_cache(cache, NUM_DOMAINS);
     init_supervisors(supervisors, NUM_DOMAINS);
     init_thread_count(threadCount, NUM_DOMAINS);
-
+	
     pthread_t tid;
     if (pthread_create(&tid, NULL, zombie_handler, NULL) != 0) {
 		perror("pthread_create");

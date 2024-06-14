@@ -10,23 +10,28 @@ typedef struct {
     int flags;
 } MemoryRegion;
 
+typedef struct MRNode {
+    MemoryRegion region;
+    struct MRNode* next;
+} MRNode;
+
 typedef struct AppNode {
     char id[256];
-    MemoryRegion memReg;
     struct AppNode* next;
+    struct MRNode* regions;
 } AppNode;
 
-typedef struct AppMap {
-    pthread_mutex_t mutex;
-    AppNode** buckets;
-    size_t size;
-} AppMap;
+MRNode* create_MRNode(void* address, size_t size, int flags);
+void append_MRNode(MRNode* head, void* address, size_t size, int flags);
+void print_regions(MRNode* head);
+void free_regions(MRNode* head);
 
-void init_app_map(AppMap* map, size_t size);
-void insert_app(AppMap* map, char* id, MemoryRegion memReg);
-void remove_app(AppMap* map, char* id, void* address);
-unsigned long hash_str(const char *str);
-AppNode* create_app_node(char* id, MemoryRegion memReg);
-MemoryRegion* get_regions(AppMap map, char* id, size_t* count);
+AppNode* create_AppNode(const char* id, MRNode* regions);
+void append_AppNode(AppNode* head, const char* id, MRNode* regions, pthread_mutex_t mutex);
+void print_list(AppNode* head);
+void free_list(AppNode* head);
+MRNode* get_regions(AppNode* head, const char* id);
+int remove_MRNode(AppNode* head, const char* id, void* address);
+int insert_MRNode(AppNode* head, const char* id, void* address, size_t size, int flags);
 
 #endif

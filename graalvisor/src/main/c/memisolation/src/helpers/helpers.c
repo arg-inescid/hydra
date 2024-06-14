@@ -49,7 +49,7 @@ extract_basename(const char* filePath)
 }
 
 void
-get_memory_regions(AppMap* map, char* id, const char* path)
+get_memory_regions(AppNode* apps, char* id, const char* path, pthread_mutex_t mutex)
 {
 	const char* libraryName = extract_basename(path);
 
@@ -60,12 +60,12 @@ get_memory_regions(AppMap* map, char* id, const char* path)
 	}
 
 	char line[256];
-	MemoryRegion memReg;
 
+	MRNode* regions = NULL;
 	while (fgets(line, sizeof(line), mapsFile)) {
 
 		if (strstr(line, libraryName) == NULL) {
-		continue;
+			continue;
 		}
 
         unsigned long start, finish;
@@ -79,12 +79,13 @@ get_memory_regions(AppMap* map, char* id, const char* path)
         if (w == 'w') prot_flags |= PROT_WRITE;
         if (x == 'x') prot_flags |= PROT_EXEC;
 
-        memReg.address = (void*)start;
-        memReg.size = finish - start;
-        memReg.flags = prot_flags;
+        void* address = (void*)start;
+        size_t size = finish - start;
+        int flags = prot_flags;
 
-        insert_app(map, id, memReg);
+		append_MRNode(regions, address, size, flags);
     }
-	
+	append_AppNode(apps, (const char*) id, regions, mutex);
+
     fclose(mapsFile);
 }

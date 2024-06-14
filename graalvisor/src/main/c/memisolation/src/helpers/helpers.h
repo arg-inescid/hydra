@@ -1,5 +1,6 @@
 #include "../utils/appmap.h"
 #include <semaphore.h>
+#include <pthread.h>
 
 #define NUM_PROCESSES 20
 
@@ -33,4 +34,4 @@ void init_cache(char* cache[], int size);
 
 /* Preload */
 char* extract_basename(const char* filePath);
-void get_memory_regions(AppMap* map, char* id, const char* path);
+void get_memory_regions(AppNode* apps, char* id, const char* path, pthread_mutex_t mutex);

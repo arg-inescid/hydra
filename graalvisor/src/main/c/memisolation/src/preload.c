@@ -1,12 +1,14 @@
 #define _GNU_SOURCE
+#include <memisolation.h>
 #include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <memisolation.h>
+#include <pthread.h>
 #include <time.h>
 
 static void * ( * real_dlopen)(const char * , int) = NULL;
+pthread_mutex_t mutex;
 
 /*
  * Debug prints
@@ -53,7 +55,7 @@ dlopen(const char * input, int flag)
         
         PRL_DBM("[PRELOAD]: Opening JNI library: %s", native_path);
         real_dlopen(native_path, RTLD_NOW | RTLD_DEEPBIND | RTLD_GLOBAL);
-        insert_memory_regions(id, native_path);
+        insert_memory_regions(id, native_path, mutex);
     }
 
     return real_dlopen(input, flag);
@@ -64,4 +66,10 @@ __attribute__((constructor)) init(void)
 {
     PRL_DBM("[PRELOAD] Initializing...");
     real_dlopen = (void *(*) (const char *, int)) dlsym(RTLD_NEXT, "dlopen");
+
+	/* Init apps lock */
+	if (pthread_mutex_init(&mutex, NULL) != 0) {
+        perror("Failed to initialize mutex");
+        exit(EXIT_FAILURE);
+    }
 }
