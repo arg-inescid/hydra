@@ -30,25 +30,29 @@ function install_musl {
 
     # Option 2: Use a local musl toolchain build.
     function custom_musl {
-	# Step 1: clone the toolchain build project and change directory.
-	git clone https://git.zv.io/toolchains/musl-cross-make.git $ARGO_HOME/resources/musl-cross-make
+        # Step 1: clone the toolchain build project and change directory.
+        git clone https://git.zv.io/toolchains/musl-cross-make.git $ARGO_HOME/resources/musl-cross-make
         cd $ARGO_HOME/resources/musl-cross-make
-	# Step 2: download all the sources.
+        # Step 2: download all the sources.
         make TARGET=x86_64-linux-musl sources
-	# Step 3: replace musl sources with MY_MUSL.
-	rm -r sources/musl-1.2.3
-        cp -r $MY_MUSL sources/musl-1.2.3
+        # Step 3: replace musl sources with MUSL_HOME.
+        rm -r sources/musl-1.2.3
+        cp -r $MUSL_HOME sources/musl-1.2.3
         tar -vzcf sources/musl-1.2.3.tar.gz -C sources musl-1.2.3
-	# Step 4: build. Use -j if you have a large number of cores.
+        # Step 4: build. Use -j if you have a large number of cores.
         make -j52 TARGET=x86_64-linux-musl clean install | tee ~/make.log
         cd -
         ln -s $ARGO_HOME/resources/musl-cross-make/output $ARGO_HOME/resources/x86_64-linux-musl-native
     }
 
-    # TODO - use this as a way to pick between a custom or normal distro.
-    MY_MUSL=/home/rbruno/git/faastion/musl
-    #dist_musl
-    custom_musl
+    if [ -z "$MUSL_HOME" ]
+    then
+        echo "Using musl distribution."
+        dist_musl
+    else
+        echo "Using custom musl distribution ($MUSL_HOME)."
+        custom_musl
+    fi
 
     wget https://zlib.net/current/zlib.tar.gz
     tar -vzxf zlib.tar.gz
@@ -94,7 +98,7 @@ fi
 
 if [ ! -e $ARGO_HOME/resources/x86_64-linux-musl-native/ ];
 then
-    read -p "Musl not found. Installing musl in $ARGO_HOME/resources? (y or Y, everything else as no)? " -n 1 -r
+    read -p "Musl not found. Install musl in $ARGO_HOME/resources? (y or Y, everything else as no)? " -n 1 -r
     echo    # move to a new line
     if [[ $REPLY =~ ^[Yy]$ ]]
     then
