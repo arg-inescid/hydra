@@ -156,26 +156,6 @@ static int install_notify_filter()
     return nfd;
 }
 
-void wait_sem()
-{
-    SEC_DBM("\t[S%d]: Wait sem.", domain);
-
-    // int value;
-    // sem_t* sem = &supervisors[domain].sem;
-
-    // if (sem_getvalue(sem, &value) == 0 && value > 0) {
-	// 	sem_wait(sem);
-    // }
-    // sem_wait(sem);
-    sem_wait(&supervisors[domain].sem);
-}
-
-void signal_sem()
-{
-    SEC_DBM("\t[S%d]: Signal sem.", domain);
-    sem_post(&supervisors[domain].sem);
-}
-
 static void prep_env(const char* application)
 {
     SEC_DBM("\t[S%d]: preparing environment.", domain);
@@ -246,9 +226,6 @@ static void assign_supervisor(const char* app, int* fd)
     sp->fd = *fd;
 
     strcpy(sp->app, app);
-
-    // signal supervisor to start handling notifications
-    signal_sem();
 
     prep_env(app);
 }
@@ -489,8 +466,9 @@ static void handle_notifications()
     struct Supervisor* sp = &supervisors[domain];
 
 	atomic_fetch_sub(&counter, 1);
+	supervisors[domain].fd = 0;
 	threadCount[domain] = 0;
-    wait_sem();
+	while (!supervisors[domain].fd); 
 
     SEC_DBM("\t[S%d]: Handling notifications...", domain);
 

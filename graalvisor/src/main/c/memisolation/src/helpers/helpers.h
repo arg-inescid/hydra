@@ -17,7 +17,6 @@ enum Flag {
 struct Supervisor {
     enum Flag execution;
     enum Status status;
-    sem_t sem;
     int fd;
     char app[256];
 };

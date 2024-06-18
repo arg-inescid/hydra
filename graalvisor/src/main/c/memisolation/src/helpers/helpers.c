@@ -14,7 +14,7 @@ void
 init_supervisors(struct Supervisor supervisors[], int size)
 {
 	for (int i = 0; i < size; i++) {
-		sem_init(&supervisors[i].sem, 0, 0);
+		// sem_init(&supervisors[i].sem, 0, 0);
 		supervisors[i].status = ACTIVE;
 		supervisors[i].execution = MANAGED;
 		supervisors[i].fd = 0;
