@@ -5,6 +5,7 @@
 #include <dlfcn.h>
 #include <stdatomic.h>
 #include <unistd.h>
+#include <poll.h>
 #include <pthread.h>
 
 /*

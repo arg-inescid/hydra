@@ -486,8 +486,6 @@ static void handle_notifications()
     alloc_seccomp_notif_buffers(&req, &resp, &sizes);
 
     int             retval;
-    fd_set          rfds;
-    struct timespec timeout;
     struct Supervisor* sp = &supervisors[domain];
 
 	atomic_fetch_sub(&counter, 1);
@@ -496,22 +494,19 @@ static void handle_notifications()
 
     SEC_DBM("\t[S%d]: Handling notifications...", domain);
 
-    timeout.tv_sec = 0;
-    timeout.tv_nsec = 0;
-
-    sigset_t empty_mask;
-    sigemptyset(&empty_mask);
+	struct pollfd fds[1] = {
+        {
+            .fd  = sp->fd,
+            .events = POLLIN,
+        },
+    };
 
     /* Loop handling notifications */
     for (;;) {
 		/* Watch stdin (supervisor's fd) to see when it has input. */
-		FD_ZERO(&rfds);
-		FD_SET(sp->fd, &rfds);
-
 		/* Wait for next notification, returning info in '*req' */
 		memset(req, 0, sizes.seccomp_notif);
-
-		retval = pselect(sp->fd + 1, &rfds, NULL, NULL, &timeout, &empty_mask);
+        retval = poll(fds, 1, 0);
 		if (retval == -1)
 			perror("pselect()");
 		else if (retval) {
