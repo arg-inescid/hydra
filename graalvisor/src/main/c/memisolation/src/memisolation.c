@@ -734,14 +734,31 @@ void *zombie_handler(void *arg)
 void *log_domains(void *arg) {
     long long microseconds_since_epoch;
     int non_zero_count;
-    char *output_file;
+	char buffer[256];
+    FILE *file_exp = fopen("/tmp/experiment_name.log", "r");
 
-    if (eager_mpk) {
-        output_file = "/tmp/faastlane/domains.csv";
-    } else {
-        output_file = "/tmp/faastion/domains.csv";
+    if (!file_exp) {
+        perror("Error opening file");
+        return 1;
+    }
+    
+    char *experiment_name = fgets(buffer, sizeof(buffer), file_exp);
+    fclose(file_exp);
+
+    if (!experiment_name) {
+        perror("Error reading file");
+        return 1;
     }
 
+	size_t len = strlen(buffer);
+    if (len > 0 && buffer[len - 1] == '\n') {
+        buffer[len - 1] = '\0';
+    }
+
+    char *template_path = eager_mpk ? "/tmp/%s/faastlane/domains.csv" : "/tmp/%s/faastion/domains.csv";
+    char output_file[512];
+    snprintf(output_file, sizeof(output_file), template_path, buffer);
+    fprintf(stderr,"Output file: %s\n", output_file);
     FILE *file = fopen(output_file, "w");
     if (file == NULL) {
         perror("Failed to open file");
