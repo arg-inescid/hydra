@@ -13,13 +13,13 @@ Argo can be easily launched locally for test and development purposes using the 
 
 The project relies on three main observations:
 
-- Function-as-a-Service (FaaS) is a new programming paradigmn that has become extremely popular (estimated market value of USD 3.14B in 2017[1]) and which is still gaining momentum (estimated to reach USD 7.7B in 2021[2]);
+- Function-as-a-Service (FaaS) is a new programming paradigm that has become extremely popular (estimated market value of USD 3.14B in 2017[1]) and which is still gaining momentum (estimated to reach USD 7.7B in 2021[2]);
 
 <img src="docs/resources/serverless.png" width="400">
 
 - FaaS is executed in a Serverless approach, where users have no control over the execution environment where the function invocation is executed. Users can only select the Language Runtime version and therefore, the runtime is the new virtualization boundary. In other words, it is now possible to virtualize the runtime to service multiple function invocations at the same time;
 
-- Current virtualization technilogy is slow and memory expensive. Launching a full VM, OS, or even a JVM takes 100s of milliseconds. Using a lightweight VM based on Native Image Unikernel can reduce both latency and memory footprint.
+- Current virtualization technology is slow and memory expensive. Launching a full VM, OS, or even a JVM takes 100s of milliseconds. Using a lightweight VM based on Native Image Unikernel can reduce both latency and memory footprint.
 
 <img src="docs/resources/virtualization.png" width="800">
 
@@ -35,7 +35,7 @@ Upon receiving a function invocation, Argo schedules the invocation to execute i
 
 Functions with high invocation rates will have their invocations handled in Native Image Isolates in a single NIUk VM. Isolates provide a Language Runtime abstraction which can be leveraged to encapsulate function invocations.
 
-Applications that require functions written in multiple languages can also benefit from Native Image Isolates through Truffle. Truffle is used launch one engine per Isolate, allowing a single NIUk to host concurrent function invocations in different languages.
+Applications that require functions written in multiple languages can also benefit from Native Image Isolates through Truffle. Truffle is used to launch one engine per Isolate, allowing a single NIUk to host concurrent function invocations in different languages.
 
 
 #### Project Structure
@@ -56,7 +56,7 @@ We have deployed Argo in a OCI node with 2 x Intel(R) Xeon(R) Platinum 8167M CPU
 ###### Lambda Startup
 <img src="docs/resources/argo-startup.png" width="500">
 
-NIUk reduces VM startup tyme by ~6x.
+NIUk reduces VM startup time by ~6x.
 
 ###### Lambda Footprint
 <img src="docs/resources/argo-footprint.png" width="500">
