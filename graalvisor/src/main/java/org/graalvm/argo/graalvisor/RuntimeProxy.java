@@ -7,11 +7,6 @@ import static org.graalvm.argo.graalvisor.utils.ProxyUtils.errorResponse;
 import static org.graalvm.argo.graalvisor.utils.ProxyUtils.extractRequestBody;
 import static org.graalvm.argo.graalvisor.utils.ProxyUtils.writeResponse;
 
-import com.oracle.svm.graalvisor.polyglot.PolyglotEngine;
-import com.oracle.svm.graalvisor.polyglot.PolyglotLanguage;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
 import java.io.BufferedInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -27,19 +22,24 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
+
 import org.graalvm.argo.graalvisor.function.HotSpotFunction;
 import org.graalvm.argo.graalvisor.function.NativeFunction;
 import org.graalvm.argo.graalvisor.function.PolyglotFunction;
 import org.graalvm.argo.graalvisor.function.TruffleFunction;
+import org.graalvm.argo.graalvisor.sandboxing.PolyContextSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.ContextSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.IsolateSandboxProvider;
-import org.graalvm.argo.graalvisor.sandboxing.PolyContextSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.ProcessSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.RuntimeSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.SandboxProvider;
 import org.graalvm.argo.graalvisor.utils.ProxyUtils;
 
-
+import com.oracle.svm.graalvisor.polyglot.PolyglotEngine;
+import com.oracle.svm.graalvisor.polyglot.PolyglotLanguage;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
 
 /**
  * The runtime proxy exposes a simple webserver that receives three types of requests:
@@ -135,7 +135,7 @@ public abstract class RuntimeProxy {
                 String async = (String)input.get("async");
                 boolean cached = input.get("cached") == null ? true : Boolean.parseBoolean((String)input.get("cached"));
                 boolean debug = input.get("debug") == null ? false : Boolean.parseBoolean((String)input.get("debug"));
-                
+
                 if (debug) {
                     ProxyUtils.writeResponse(t, 200, "Returned from Graalvisor!");
                 } else if (async != null && async.equals("true")) {
