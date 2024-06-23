@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <poll.h>
 #include <pthread.h>
+#include "utils/mansupervisor.h"
 
 /*
  * Debug prints

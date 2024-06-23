@@ -207,7 +207,10 @@ void reset_env(const char* application, int isLast)
         sp->execution = MANAGED;
         set_permissions(application, 1);    
 	}
-
+	
+	if(sp->fd != 0){
+		add_fd(sp->fd);
+	}
     sp->status = DONE;
 }
 
@@ -221,7 +224,12 @@ static void assign_supervisor(const char* app, int* fd)
 		SEC_DBM("\t[S%d]: Installing filter.", domain);
 		*fd = install_notify_filter();
     }
-    // even if filter is installed we have to update supervisor's file descriptor
+  
+	if(sp->fd != 0){
+		remove_fd(sp->fd);
+	}
+	  
+	// even if filter is installed we have to update supervisor's file descriptor
     // because another thread with another filter could have been used before
     sp->fd = *fd;
 
@@ -295,7 +303,7 @@ void acquire_domain(const char* app, int *fd) {
     if (domain <= 0 || !is_app_cached(app) || !__sync_bool_compare_and_swap(&threadCount[domain], 0, 1)) {
 		find_domain(app, fd);
     } else {
-		SEC_DBM("\t[S%d]: App is cached", domain);
+		SEC_DBM(stderr,"\t[S%d]: App is cached", domain);
 		atomic_fetch_add(&counter, 1);
 		assign_supervisor(app, fd);
     }
@@ -739,7 +747,7 @@ void *log_domains(void *arg) {
 
     if (!file_exp) {
         perror("Error opening file");
-        return 1;
+        exit(EXIT_FAILURE);
     }
     
     char *experiment_name = fgets(buffer, sizeof(buffer), file_exp);
@@ -747,7 +755,7 @@ void *log_domains(void *arg) {
 
     if (!experiment_name) {
         perror("Error reading file");
-        return 1;
+        exit(EXIT_FAILURE);
     }
 
 	size_t len = strlen(buffer);
@@ -758,7 +766,6 @@ void *log_domains(void *arg) {
     char *template_path = eager_mpk ? "/tmp/%s/faastlane/domains.csv" : "/tmp/%s/faastion/domains.csv";
     char output_file[512];
     snprintf(output_file, sizeof(output_file), template_path, buffer);
-    fprintf(stderr,"Output file: %s\n", output_file);
     FILE *file = fopen(output_file, "w");
     if (file == NULL) {
         perror("Failed to open file");
@@ -780,6 +787,50 @@ void *log_domains(void *arg) {
     }
 
     fclose(file);
+    return NULL;
+}
+
+void *managed_supervisor()
+{
+    // Setting the buffers for request and response
+    struct seccomp_notif *req;
+    struct seccomp_notif_resp *resp;
+    struct seccomp_notif_sizes sizes;
+
+    alloc_seccomp_notif_buffers(&req, &resp, &sizes);
+
+    while (1)
+    {
+            poll(fds, MAX_FDS, 0); // polling multiple fds
+
+			for (int i = 0; i < MAX_FDS; ++i) {
+        		if (fds[i].revents & POLLIN) {
+            		SEC_DBM("File descriptor %d has data to read\n", fds[i].fd);
+					memset(req, 0, sizes.seccomp_notif);
+                // Accepting the seccomp unotify request
+                if (ioctl(fds[i].fd, SECCOMP_IOCTL_NOTIF_RECV, req) == -1){
+                    err(EXIT_FAILURE, "\tioctl-SECCOMP_IOCTL_NOTIF_RECV");
+                }
+
+                if (!cookie_is_valid(fds[i].fd, req->id)){
+                        perror("ioctl(SECCOMP_IOCTL_NOTIF_ID_VALID)");
+                        continue;
+                }
+
+                resp->id = req->id;
+                resp->error = resp->val = 0;
+                // Responding to the request with continue flag
+                resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
+
+                // Sending the request to the respective fd
+                if (ioctl(fds[i].fd, SECCOMP_IOCTL_NOTIF_SEND, resp) == -1){
+                    perror("ioctl-SECCOMP_IOCTL_NOTIF_SEND");
+                }
+        	}
+    	}
+    }
+    free(req);
+    free(resp);
     return NULL;
 }
 
@@ -812,9 +863,16 @@ void initialize_memory_isolation()
     init_cache(cache, NUM_DOMAINS);
     init_supervisors(supervisors, NUM_DOMAINS);
     init_thread_count(threadCount, NUM_DOMAINS);
+	init_null_fd();
 	
     pthread_t tid;
     if (pthread_create(&tid, NULL, zombie_handler, NULL) != 0) {
+		perror("pthread_create");
+		exit(EXIT_FAILURE);
+    }
+
+	pthread_t tid_s;
+    if (pthread_create(&tid_s, NULL, managed_supervisor, NULL) != 0) {
 		perror("pthread_create");
 		exit(EXIT_FAILURE);
     }
