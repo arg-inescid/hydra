@@ -26,8 +26,9 @@ function build_memisolation {
 	if [ $major_version -ge 5 ] && [ $minor_version -ge 10 ]; then
 	    	gcc -c -I"$MEM_DIR" $CFLAGS -o $LIB_DIR/appmap.o $MEM_DIR/utils/appmap.c
 	    	gcc -c -I"$MEM_DIR" $CFLAGS -o $LIB_DIR/helpers.o $MEM_DIR/helpers/helpers.c
+            gcc -c -I"$MEM_DIR" $CFLAGS -o $LIB_DIR/mansupervisor.o $MEM_DIR/utils/mansupervisor.c
         	gcc -c -I"$MEM_DIR" $CFLAGS -o $LIB_DIR/memisolation.o $MEM_DIR/memisolation.c
-            gcc $CFLAGS -o $LIB_DIR/libmemiso.so $LIB_DIR/appmap.o $LIB_DIR/helpers.o $LIB_DIR/memisolation.o -lm $ERIM_LIBS
+            gcc $CFLAGS -o $LIB_DIR/libmemiso.so $LIB_DIR/mansupervisor.o $LIB_DIR/appmap.o $LIB_DIR/helpers.o $LIB_DIR/memisolation.o -lm $ERIM_LIBS
             
             # LD_PRELOAD library
             gcc -I"$MEM_DIR" $CFLAGS -o $LIB_DIR/libpreload.so $MEM_DIR/preload.c -L$LIB_DIR -lmemiso
