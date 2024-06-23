@@ -30,9 +30,8 @@ void add_fd(int fd) {
     if (fd < MAX_FDS) {
         fds[fd].fd = fd; // Updating the fd to be polled
         fds[fd].events = POLLIN;
-        fprintf(stderr,"Added fd %d at index %d\n", fd, fd);
     } else {
-        printf("Error: Exceeded maximum number of file descriptors\n");
+        perror("Error: Exceeded maximum number of file descriptors\n");
     }
 
 }
