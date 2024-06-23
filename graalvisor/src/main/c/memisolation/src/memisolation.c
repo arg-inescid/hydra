@@ -5,7 +5,6 @@
 #include <limits.h>
 #include <linux/audit.h>
 #include <linux/filter.h>
-#include <linux/seccomp.h>
 #include <pthread.h>
 #include <sched.h>
 #include <signal.h>
@@ -25,13 +24,10 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/un.h>
+#include "seccomp.h" // Note: constants copied from '/usr/include/linux/seccomp.h'
 #include "utils/appmap.h"
 #include "helpers/helpers.h"
 #include "memisolation.h"
-
-/* erim includes */
-#include <common.h>
-#include <erim.h>
 
 #define ARRAY_SIZE(arr)  (sizeof(arr) / sizeof((arr)[0]))
 #define NUM_DOMAINS 16
@@ -879,10 +875,7 @@ void initialize_memory_isolation()
 
     init_process_pool();
 
-    /* Init ERIM */
-    if(erim_init(65536, ERIM_FLAG_ISOLATE_UNTRUSTED | ERIM_FLAG_SWAP_STACK, NUM_DOMAINS)) {
-        exit(EXIT_FAILURE);
-    }
+	pthread_sandbox_init();
 
     /* Start supervisors */
     pthread_t workers[NUM_DOMAINS];

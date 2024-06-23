@@ -52,16 +52,16 @@ dlopen(const char * input, int flag)
 
         char native_path[256];
         sprintf(native_path, "%s/lib%s-jni.so", jni_dir, id);
-        
+
         PRL_DBM("[PRELOAD]: Opening JNI library: %s", native_path);
-        real_dlopen(native_path, RTLD_NOW | RTLD_DEEPBIND | RTLD_GLOBAL);
+        real_dlopen(native_path, RTLD_NOW);
         insert_memory_regions(id, native_path, mutex);
     }
 
     return real_dlopen(input, flag);
 }
 
-static void 
+static void
 __attribute__((constructor)) init(void)
 {
     PRL_DBM("[PRELOAD] Initializing...");
