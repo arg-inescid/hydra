@@ -5,7 +5,6 @@
 #include <limits.h>
 #include <linux/audit.h>
 #include <linux/filter.h>
-#include <linux/seccomp.h>
 #include <pthread.h>
 #include <sched.h>
 #include <signal.h>
@@ -25,13 +24,10 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/un.h>
+#include "seccomp.h" // Note: constants copied from '/usr/include/linux/seccomp.h'
 #include "utils/appmap.h"
 #include "helpers/helpers.h"
 #include "memisolation.h"
-
-/* erim includes */
-#include <common.h>
-#include <erim.h>
 
 #define ARRAY_SIZE(arr)  (sizeof(arr) / sizeof((arr)[0]))
 #define NUM_DOMAINS 16
@@ -742,30 +738,8 @@ void *zombie_handler(void *arg)
 void *log_domains(void *arg) {
     long long microseconds_since_epoch;
     int non_zero_count;
-	char buffer[256];
-    FILE *file_exp = fopen("/tmp/experiment_name.log", "r");
 
-    if (!file_exp) {
-        perror("Error opening file");
-        exit(EXIT_FAILURE);
-    }
-    
-    char *experiment_name = fgets(buffer, sizeof(buffer), file_exp);
-    fclose(file_exp);
-
-    if (!experiment_name) {
-        perror("Error reading file");
-        exit(EXIT_FAILURE);
-    }
-
-	size_t len = strlen(buffer);
-    if (len > 0 && buffer[len - 1] == '\n') {
-        buffer[len - 1] = '\0';
-    }
-
-    char *template_path = eager_mpk ? "/tmp/%s/faastlane/domains.csv" : "/tmp/%s/faastion/domains.csv";
-    char output_file[512];
-    snprintf(output_file, sizeof(output_file), template_path, buffer);
+    char* output_file = eager_mpk ? "/tmp/faastlane/domains.csv" : "/tmp/faastion/domains.csv";
     FILE *file = fopen(output_file, "w");
     if (file == NULL) {
         perror("Failed to open file");
@@ -879,10 +853,7 @@ void initialize_memory_isolation()
 
     init_process_pool();
 
-    /* Init ERIM */
-    if(erim_init(65536, ERIM_FLAG_ISOLATE_UNTRUSTED | ERIM_FLAG_SWAP_STACK, NUM_DOMAINS)) {
-        exit(EXIT_FAILURE);
-    }
+	pthread_sandbox_init();
 
     /* Start supervisors */
     pthread_t workers[NUM_DOMAINS];

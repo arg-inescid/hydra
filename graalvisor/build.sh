@@ -6,35 +6,33 @@ GRAALVISOR_JAR=$DIR/build/libs/graalvisor-1.0-all.jar
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
+CC=gcc
+
 function build_memisolation {
 	release=$(uname -r)
 	major_version=${release%%.*}
 	release=${release#*.}
 	minor_version=${release%%.*}
-    
+
     JNI_INCLUDE="-I$DEF_JAVA_HOME/include -I$DEF_JAVA_HOME/include/linux"
-    ERIM_LIBS="$ERIM_HOME/bin/common/libswscommon.a $ERIM_HOME/bin/erim/liberim.a"
-	CFLAGS="-Wall -g -fno-inline -fPIC -shared \
-            -I"$ERIM_HOME/src/erim" \
-            -I"$ERIM_HOME/src/common" \
-            -DERIM_SWAP_STACKS"
+	CFLAGS="-Wall -g -fno-inline -fPIC -shared"
             #-DSEC_DBG \
             #-DJNI_DBG \
             #-DPRL_DBG \
             #-DERIM_DBG \
 
 	if [ $major_version -ge 5 ] && [ $minor_version -ge 10 ]; then
-	    	gcc -c -I"$MEM_DIR" $CFLAGS -o $LIB_DIR/appmap.o $MEM_DIR/utils/appmap.c
-	    	gcc -c -I"$MEM_DIR" $CFLAGS -o $LIB_DIR/helpers.o $MEM_DIR/helpers/helpers.c
-            gcc -c -I"$MEM_DIR" $CFLAGS -o $LIB_DIR/mansupervisor.o $MEM_DIR/utils/mansupervisor.c
-        	gcc -c -I"$MEM_DIR" $CFLAGS -o $LIB_DIR/memisolation.o $MEM_DIR/memisolation.c
-            gcc $CFLAGS -o $LIB_DIR/libmemiso.so $LIB_DIR/mansupervisor.o $LIB_DIR/appmap.o $LIB_DIR/helpers.o $LIB_DIR/memisolation.o -lm $ERIM_LIBS
-            
+	    	$CC -c -I"$MEM_DIR" -fPIC -o $LIB_DIR/appmap.o $MEM_DIR/utils/appmap.c
+	    	$CC -c -I"$MEM_DIR" -fPIC -o $LIB_DIR/helpers.o $MEM_DIR/helpers/helpers.c
+        	$CC -c -I"$MEM_DIR" -fPIC -o $LIB_DIR/memisolation.o $MEM_DIR/memisolation.c
+            $CC -c -I"$MEM_DIR" -fPIC -o $LIB_DIR/mansupervisor.o $MEM_DIR/utils/mansupervisor.c
+            $CC $CFLAGS -o $LIB_DIR/libmemiso.so $LIB_DIR/mansupervisor.o $LIB_DIR/appmap.o $LIB_DIR/helpers.o $LIB_DIR/memisolation.o -lm
+
             # LD_PRELOAD library
-            gcc -I"$MEM_DIR" $CFLAGS -o $LIB_DIR/libpreload.so $MEM_DIR/preload.c -L$LIB_DIR -lmemiso
-            
+            $CC -I"$MEM_DIR" $CFLAGS -o $LIB_DIR/libpreload.so $MEM_DIR/preload.c -L$LIB_DIR -lmemiso
+
             # JNI Wrapper library
-            gcc -I"$MEM_DIR" $JNI_INCLUDE $CFLAGS -o $LIB_DIR/libjniwrapper.so $MEM_DIR/JNIWrapper.c -L$LIB_DIR -lmemiso -lm $ERIM_LIBS
+#            $CC -I"$MEM_DIR" $JNI_INCLUDE $CFLAGS -o $LIB_DIR/libjniwrapper.so $MEM_DIR/JNIWrapper.c -L$LIB_DIR -lmemiso -lm
 
             LINKER_OPTIONS_MEM_ISO="-H:NativeLinkerOption=$LIB_DIR/libmemiso.so"
             MEM_FLAGS="-DMEM_ISOLATION"
@@ -48,9 +46,9 @@ function build_lazyisolation {
 	minor_version=${release%%.*}
 
 	if [ $major_version -ge 5 ] && [ $minor_version -ge 10 ]; then
-        	gcc -c -I"$LAZY_DIR" -o $LIB_DIR/lazyisolation.o $LAZY_DIR/lazyisolation.c
-	    	gcc -c -I"$LAZY_DIR" -o $LIB_DIR/shared_queue.o $LAZY_DIR/shared_queue.c
-	    	gcc -c -I"$LAZY_DIR" -o $LIB_DIR/filters.o $LAZY_DIR/filters.c
+        	$CC -c -I"$LAZY_DIR" -o $LIB_DIR/lazyisolation.o $LAZY_DIR/lazyisolation.c
+	    	$CC -c -I"$LAZY_DIR" -o $LIB_DIR/shared_queue.o $LAZY_DIR/shared_queue.c
+	    	$CC -c -I"$LAZY_DIR" -o $LIB_DIR/filters.o $LAZY_DIR/filters.c
         	LINKER_OPTIONS_LAZY_ISO="
             		-H:NativeLinkerOption=-lpthread
             		-H:NativeLinkerOption="$LIB_DIR/lazyisolation.o"
@@ -66,9 +64,8 @@ function build_nsi {
 	LAZY_DIR=$DIR/src/main/c/lazyisolation/src
     MEM_DIR=$DIR/src/main/c/memisolation/src
 	LIB_DIR=$DIR/build/libs
-	build_lazyisolation
     build_memisolation
-	gcc -c -I"$JAVA_HOME/include" -I"$JAVA_HOME/include/linux" -I"$HEADER_DIR" -I"$LAZY_DIR" -I"$MEM_DIR" -o $LIB_DIR/NativeSandboxInterface.o $C_DIR/NativeSandboxInterface.c $LAZY_FLAGS $MEM_FLAGS
+	$CC -c -I"$JAVA_HOME/include" -I"$JAVA_HOME/include/linux" -I"$HEADER_DIR" -I"$LAZY_DIR" -I"$MEM_DIR" -o $LIB_DIR/NativeSandboxInterface.o $C_DIR/NativeSandboxInterface.c $LAZY_FLAGS $MEM_FLAGS
 	ar rcs $LIB_DIR/libNativeSandboxInterface.a $LIB_DIR/NativeSandboxInterface.o
 }
 
@@ -89,6 +86,7 @@ function build_ni {
         --no-fallback \
         --enable-url-protocols=http \
         --initialize-at-run-time=com.oracle.svm.graalvisor.utils.JsonUtils \
+        $LIBC_OPTION \
         $LINKER_OPTIONS_LAZY_ISO \
         $LINKER_OPTIONS_MEM_ISO \
         -H:CLibraryPath=$LIB_DIR \
@@ -130,7 +128,15 @@ then  # Build native image inside Docker container.
     docker run -it -v $JAVA_HOME:/jvm -v $ARGO_HOME:/argo --rm argo-builder /argo/graalvisor/build.sh "local"
     sudo chown -R $(id -u -n):$(id -g -n) $ARGO_HOME/graalvisor/build
     sudo chown -R $(id -u -n):$(id -g -n) $ARGO_HOME/graalvisor-lib/build
-else  # Build native image locally (inside container or directly on host).
+else
+    read -p "Use musl libc? (y or Y, everything else as no)? " -n 1 -r
+    echo    # move to a new line
+    if [[ $REPLY =~ ^[Yy]$ ]]
+    then
+        export PATH=$ARGO_HOME/resources/x86_64-linux-musl-native/bin:$PATH
+        CC=x86_64-linux-musl-cc
+        LIBC_OPTION="--libc=musl"
+    fi # Build native image locally (inside container or directly on host).
     LANGS=""
     read -p "Javascript support (y or Y, everything else as no)? " -n 1 -r
     echo    # move to a new line

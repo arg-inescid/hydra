@@ -29,8 +29,6 @@ import com.oracle.svm.graalvisor.GraalVisor;
 @SuppressWarnings("unused")
 public class GraalVisorAPI implements Closeable {
 
-    private static final int RTLD_DEEPBIND = 0x00008;
-
     /**
      * Pointer to the guest dynamic library (function/application code).
      */
@@ -59,7 +57,7 @@ public class GraalVisorAPI implements Closeable {
      * @throws FileNotFoundException No corresponding file found in LD_LIBRARY_PATH
      */
     public GraalVisorAPI(String soName) throws FileNotFoundException {
-        dlHandle = PosixUtils.dlopen(soName, RTLD_NOW() | RTLD_DEEPBIND);
+        dlHandle = PosixUtils.dlopen(soName, RTLD_NOW());
 
         if (dlHandle.rawValue() == 0) {
             throw new FileNotFoundException(String.format("%s (%s) hasn't been found, please check the file name or your environment variable LD_LIBRARY_PATH.", soName, PosixUtils.dlerror()));
