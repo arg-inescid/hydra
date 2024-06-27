@@ -18,9 +18,6 @@ extern struct pollfd fds[MAX_FDS];
 // Tracks the usage of a file descriptor
 extern volatile atomic_int fd_list[MAX_FDS];
 
-// NULL file descriptor
-extern int null_fd;
-
 /**
  * @brief Adds the file descriptor to a maintained list polled fds 
  * 
@@ -35,13 +32,6 @@ void add_fd(int fd);
  */
 void remove_fd(int index);
 
-/**
- * @brief Checkes if a specified file descriptor is being polled or not
- * 
- * @param fd file desciptor to be checked.
- * @return int 
- */
-int is_fd_present(int fd);
 
 /**
  * @brief Obtains the file descriptor for /dev/null

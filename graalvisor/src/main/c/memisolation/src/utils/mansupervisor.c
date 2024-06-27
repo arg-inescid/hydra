@@ -18,11 +18,10 @@ int null_fd = -1;
 
 void add_fd(int fd) {
 
-    if(fd_list[fd]) return;
+    if(atomic_load(&fd_list[fd])) return;
     
     int expected_value = 0;
-    int desired_value = 1;
-    
+    int desired_value = 1;    
     // Updating the list to display the fd usage
     if (!atomic_compare_exchange_strong(&fd_list[fd], &expected_value, desired_value)) 
         printf("fd_list[%d] was not %d, operation failed.\n", fd, expected_value);
@@ -38,16 +37,14 @@ void add_fd(int fd) {
 
 void remove_fd(int fd){
 
-    fprintf(stderr,"Removing fd %d",fd);
-
-    if (fds[fd].fd == null_fd) {
-        fprintf(stderr,"fds[%d].fd is already null, operation skipped.\n", fd);
+    if (!atomic_load(&fd_list[fd])) {
+        // SEC_DBG("fds[%d].fd is already null, operation skipped.\n", fd);
         return;
     }
 
     int expected_value = 1;
     int desired_value = 0;
-    fds[fd].fd = null_fd; // Marking the fd as empty using null fd
+    fds[fd].fd = -1; // Marking the fd as empty using null fd
     // Updating the list to display the fd usage
     if (!atomic_compare_exchange_strong(&fd_list[fd], &expected_value, desired_value)) {
         fprintf(stderr,"fd_list[%d] was not %d, operation failed.\n", fd, expected_value);
@@ -56,20 +53,12 @@ void remove_fd(int fd){
 
 }
 
-int is_fd_present(int fd) {
-    return fd_list[fd]; 
-}
-
 
 int init_null_fd() {
     if (null_fd == -1) {
-        // Obtaining dummy null file descriptor
-        null_fd = open("/dev/null", O_RDWR);
-        if (null_fd == -1) {
-            perror("Failed to open /dev/null");
-        }
+        
         for(int i = 0; i < MAX_FDS;i++){
-            fds[i].fd = null_fd;
+            fds[i].fd = -1;
         }
     }
     return null_fd;
