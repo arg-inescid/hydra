@@ -225,14 +225,14 @@ static void assign_supervisor(const char* app, int* fd)
 		*fd = install_notify_filter();
     }
   
-	if(sp->fd != 0){
-		remove_fd(sp->fd);
-	}
-	  
 	// even if filter is installed we have to update supervisor's file descriptor
     // because another thread with another filter could have been used before
     sp->fd = *fd;
 
+	if(sp->fd != 0){
+	remove_fd(sp->fd);
+	}
+	  
     strcpy(sp->app, app);
 
     prep_env(app);
@@ -805,7 +805,7 @@ void *managed_supervisor()
 
 			for (int i = 0; i < MAX_FDS; ++i) {
         		if (fds[i].revents & POLLIN) {
-            		SEC_DBM("File descriptor %d has data to read\n", fds[i].fd);
+            		fprintf(stderr,"File descriptor %d has data to read\n", fds[i].fd);
 					memset(req, 0, sizes.seccomp_notif);
                 // Accepting the seccomp unotify request
                 if (ioctl(fds[i].fd, SECCOMP_IOCTL_NOTIF_RECV, req) == -1){
