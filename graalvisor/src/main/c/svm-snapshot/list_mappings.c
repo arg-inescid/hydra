@@ -3,7 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/mman.h>
-#include "list.h"
+#include "list_mappings.h"
 #include "cr.h"
 
 size_t bytes_to_pages(size_t bytes) {

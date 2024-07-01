@@ -10,7 +10,6 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include "cr.h"
-#include "list.h"
 #include "syscalls.h"
 
 // Number of fds that we allow for the function to use. We may use some fds after this limit.

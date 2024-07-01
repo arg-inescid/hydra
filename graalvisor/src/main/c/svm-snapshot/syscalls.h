@@ -1,7 +1,7 @@
 #ifndef SYSCALLS_H
 #define SYSCALLS_H
 
-#include "list.h"
+#include "list_mappings.h"
 
 #include <fcntl.h>
 #include <stdio.h>

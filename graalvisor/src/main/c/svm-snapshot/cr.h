@@ -2,7 +2,7 @@
 #define CR_H
 
 #include "svm-snapshot.h"
-#include "list.h"
+#include "list_mappings.h"
 #include <sys/types.h>
 
 /*
