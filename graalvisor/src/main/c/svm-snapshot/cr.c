@@ -129,7 +129,7 @@ void check_proc_maps(char* filename, mapping_t * head) {
             fprintf(out, "matched = %d on %s\n", matched, buffer);
         }
 
-        mapping_t* mapping = list_find(head, (void*)start, finish - start);
+        mapping_t* mapping = list_mappings_find(head, (void*)start, finish - start);
         if (mapping != NULL && (r != '-' || w != '-' || x != '-')) {
             mapping_update_validated(mapping, (void*)start, (void*)finish);
         }

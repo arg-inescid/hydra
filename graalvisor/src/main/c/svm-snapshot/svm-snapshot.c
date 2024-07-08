@@ -219,7 +219,7 @@ void checkpoint_svm(
     handle_syscalls(seed, wargs.seccomp_fd, &(wargs.finished), meta_snap_fd, &mappings);
 
     // Merge memory mappings.
-    list_merge(&mappings);
+    list_mappings_merge(&mappings);
 
     // If in checkpoint mode, checkpoint memory.
     check_proc_maps("before_checkpoint.log", &mappings);

@@ -107,11 +107,11 @@ void handle_mmap(int meta_snap_fd, mapping_t* mappings, long long unsigned int* 
         syscall_args.length += padding;
     }
 
-    mapping_t* mapping = list_find(mappings, ret, syscall_args.length);
+    mapping_t* mapping = list_mappings_find(mappings, ret, syscall_args.length);
 
     // Add mapping if it does not exist yet.
     if (mapping == NULL) {
-        mapping = list_push(mappings, ret, syscall_args.length);
+        mapping = list_mappings_push(mappings, ret, syscall_args.length);
     }
 
     // Update permissions.
@@ -136,7 +136,7 @@ void handle_munmap(int meta_snap_fd, mapping_t* mappings, long long unsigned int
         syscall_args.length += padding;
     }
 
-    mapping_t* mapping = list_find(mappings, syscall_args.addr, syscall_args.length);
+    mapping_t* mapping = list_mappings_find(mappings, syscall_args.addr, syscall_args.length);
 
     // Add mapping if it does not exist yet.
     if (mapping == NULL) {
@@ -155,7 +155,7 @@ void handle_mprotect(int meta_snap_fd, mapping_t* mappings, long long unsigned i
     // Checkpoint the syscall.
     checkpoint_syscall(meta_snap_fd, __NR_mprotect, &syscall_args, sizeof(mprotect_t));
 
-    mapping_t* mapping = list_find(mappings, syscall_args.addr, syscall_args.length);
+    mapping_t* mapping = list_mappings_find(mappings, syscall_args.addr, syscall_args.length);
 
     // Add mapping if it does not exist yet.
     if (mapping == NULL) {
@@ -188,7 +188,7 @@ void handle_madvise(int meta_snap_fd, mapping_t* mappings, long long unsigned in
         syscall_args.length += padding;
     }
 
-    mapping_t* mapping = list_find(mappings, syscall_args.addr, syscall_args.length);
+    mapping_t* mapping = list_mappings_find(mappings, syscall_args.addr, syscall_args.length);
 
     // Add mapping if it does not exist yet.
     if (mapping == NULL) {

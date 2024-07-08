@@ -1,5 +1,5 @@
-#ifndef LIST_H
-#define LIST_H
+#ifndef LIST_MAPPINGS_H
+#define LIST_MAPPINGS_H
 
 #include <sys/types.h>
 
@@ -25,19 +25,19 @@ typedef struct mapping {
 } mapping_t;
 
 // Adds a new mapping to the list of mappings.
-mapping_t* list_push(mapping_t * head, void* start, size_t size);
+mapping_t* list_mappings_push(mapping_t * head, void* start, size_t size);
 
 // This method will return a mapping that includes the requested range.
-mapping_t* list_find(mapping_t* head, void* start, size_t size);
+mapping_t* list_mappings_find(mapping_t* head, void* start, size_t size);
 
 // Deletes one element from the list.
-void list_delete(mapping_t* head, mapping_t* to_delete);
+void list_mappings_delete(mapping_t* head, mapping_t* to_delete);
 
 // Merges two consecutive mappings in the list.
-void list_merge(mapping_t* head);
+void list_mappings_merge(mapping_t* head);
 
 // Prints the list of mappings starting from `head`.
-void print_list(mapping_t * head);
+void print_list_mappings(mapping_t * head);
 
 // Returns the permission of the page containing `addr`, which must be withing the mapping.
 char permission(void* mapping_start, void* mapping_finish, char* mapping_perms, void* addr);

@@ -45,7 +45,7 @@ void init_mapping(mapping_t* mapping, void* start, size_t size) {
     mapping->next = NULL;
 }
 
-mapping_t* list_push(mapping_t* head, void* start, size_t size) {
+mapping_t* list_mappings_push(mapping_t* head, void* start, size_t size) {
     mapping_t* current = head;
 
     // If the list is empty, fill in the head and return.
@@ -67,7 +67,7 @@ mapping_t* list_push(mapping_t* head, void* start, size_t size) {
     return new;
 }
 
-void list_delete(mapping_t* head, mapping_t* to_delete) {
+void list_mappings_delete(mapping_t* head, mapping_t* to_delete) {
     // If the list is empty or the element to delete is null, do nothing.
     if (head->start == NULL || to_delete == NULL) {
         return;
@@ -112,7 +112,7 @@ void list_delete(mapping_t* head, mapping_t* to_delete) {
     err("warning: unable to delete mapping %16p - %16p\n", to_delete->start, ((char*) to_delete->start) + to_delete->size);
 }
 
-mapping_t* list_find(mapping_t* head, void* start, size_t size) {
+mapping_t* list_mappings_find(mapping_t* head, void* start, size_t size) {
     mapping_t* current = head;
     void* finish = ((char*) start) + size;
 
@@ -158,7 +158,7 @@ char* array_merge(char* arr1, size_t arr1_len, char* arr2, size_t arr2_len) {
         return newarr;
 }
 
-void list_merge(mapping_t* head) {
+void list_mappings_merge(mapping_t* head) {
     mapping_t* current = head;
 
     if (current == NULL || current->start == NULL) {
@@ -184,7 +184,7 @@ void list_merge(mapping_t* head) {
             current->dirty_base = current->dirty;
             current->permissions_base = current->permissions;
             current->validated_base = current->validated;
-            list_delete(head, current->next);
+            list_mappings_delete(head, current->next);
         } else {
             current = current->next;
         }
@@ -213,7 +213,7 @@ void print_mapping(void* mapping_start, void* mapping_finish, char* mapping_perm
     }
 }
 
-void print_list(mapping_t * head) {
+void print_list_mappings(mapping_t * head) {
     mapping_t* current = head;
 
     // If the list if empty, nothing to print.
@@ -262,7 +262,7 @@ void mapping_update_size(mapping_t* head, mapping_t* mapping, void* unmapping_st
     if (unmapping_start == mapping->start && unmapping_finish <= mapping_finish) {
         if (unmapping_size == mapping->size) {
             dbg("tracking  %16p - %16p (deleted)\n", mapping->start, mapping_finish);
-            list_delete(head, mapping);
+            list_mappings_delete(head, mapping);
         } else {
             mapping->size -= unmapping_size;
             mapping->start = unmapping_finish;
@@ -279,7 +279,7 @@ void mapping_update_size(mapping_t* head, mapping_t* mapping, void* unmapping_st
     else if (unmapping_finish == mapping_finish && unmapping_start >= mapping->start) {
         if (unmapping_size == mapping->size) {
             dbg("tracking  %16p - %16p (deleted)\n", mapping->start, mapping_finish);
-            list_delete(head, mapping);
+            list_mappings_delete(head, mapping);
         } else {
             mapping->size -= unmapping_size;
             mapping_finish = ((char*) mapping->start) + mapping->size;
