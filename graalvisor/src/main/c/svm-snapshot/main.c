@@ -72,7 +72,7 @@ void init_args(int argc, char** argv) {
 }
 
 int main(int argc, char** argv) {
-    const char* fin = NULL;
+    const char* fin = "(null)";
     char  fout[FOUT_LEN];
 
     // Initialize arguments.

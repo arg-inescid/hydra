@@ -1,0 +1,166 @@
+#define _GNU_SOURCE
+
+#include "cr.h"
+#include "list_threads.h"
+
+#include <pthread.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ucontext.h>
+
+// This variable is needed so that the signal handler below can use the thread list.
+static thread_t* background_threads;
+
+// Declaration of thread condition variable used to pause threads during checkpoint.
+pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+
+// Mutex used for pausing treads during checkpointing.
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
+// Background thread handler used to pause threads during checkpointing.
+void background_threads_handler(int signum, siginfo_t* sigingo, void* ctx) {
+    pid_t tid = gettid();
+    thread_t* thread = list_threads_find(background_threads, &tid);
+
+    if (thread == NULL) {
+        err("error: cannot register sp for background thread tid = %d\n", tid);
+        return;
+    }
+
+    // Saving context.
+    memcpy(&(thread->ctx), ctx, sizeof(ucontext_t));
+
+    // Acquire lock.
+    pthread_mutex_lock(&lock);
+    // Wait on conditional variable.
+    pthread_cond_wait(&cond, &lock);
+    // Release lock.
+    pthread_mutex_unlock(&lock);
+}
+
+void pause_background_threads(thread_t* threads) {
+    struct sigaction new_action;
+
+    // Zero out the struct.
+    memset(&new_action, 0, sizeof(new_action));
+
+    // Initialize the global variable that keeps a copy of the threads list.
+    background_threads = threads;
+
+    // Register signal handler used to pause threads.
+    new_action.sa_sigaction = background_threads_handler;
+    new_action.sa_flags = SA_RESTART | SA_SIGINFO;
+    sigemptyset(&new_action.sa_mask);
+    sigaction(SIGINT, &new_action, NULL);
+
+    // For each background thread, signal it.
+    for (thread_t* current = threads; current != NULL; current = current->next) {
+        tgkill(getpid(), *(current->tid), SIGINT);
+        log("pausing background thread tid = %d\n", *(current->tid));
+    }
+}
+
+void resume_background_threads(thread_t* threads) {
+    pthread_cond_broadcast(&cond);
+    // TODO - restore any previous SIGINT handler. // needed? We are going to kill it any way.
+}
+
+void init_thread(thread_t* thread, pid_t* tid, struct clone_args* cargs) {
+    thread->tid = tid;
+    memcpy(&(thread->cargs), cargs, sizeof(struct clone_args));
+}
+
+thread_t* list_threads_push(thread_t* head, pid_t* tid, struct clone_args* cargs) {
+    thread_t* current = head;
+
+    // If the list is empty, fill in the head and return.
+    if (current->tid == NULL) {
+        init_thread(current, tid, cargs);
+        return current;
+    }
+
+    // Insert new element after current.
+    thread_t * new = (thread_t *) malloc(sizeof(thread_t));
+    memset(new, 0, sizeof(thread_t));
+    init_thread(new, tid, cargs);
+    new->next = current->next;
+    current->next = new;
+    return new;
+}
+
+void list_threads_delete(thread_t * head, thread_t* to_delete) {
+    // If the list is empty or the element to delete is null, do nothing.
+    if (head->tid == NULL || to_delete == NULL) {
+        return;
+    }
+    // If the element to delete is the head, we copy the second element into the head and delete the second element.
+    else if (head == to_delete) {
+        if (head->next == NULL) {
+            memset(head, 0, sizeof(thread_t));
+        } else {
+            // Save pointer to the second element.
+            to_delete = head->next;
+            // Copy the second element into the head.
+            memcpy(head, head->next, sizeof(thread_t));
+            // Free the second element.
+            free(to_delete);
+        }
+        return;
+    }
+    // Else, iterate the list until you find the element to delete.
+    else {
+        thread_t* current = head;
+        // Iterate until we find the node just before the one to delete.
+        while (current != NULL) {
+            // If the element to delete is the next
+            if (current->next == to_delete) {
+                current->next = to_delete->next;
+                free(to_delete);
+                return;
+            }
+            current = current->next;
+        }
+    }
+    err("warning: unable to delete thread %d\n", *(to_delete->tid));
+}
+
+thread_t* list_threads_find(thread_t* head, pid_t* tid) {
+    // If the list if empty, nothing to print.
+    if (head->tid == NULL) {
+        return NULL;
+    }
+
+    // Loop through the list until we find the corresponding tid.
+    for (thread_t* current = head; current != NULL ; current = current->next) {
+        if (*(current->tid) == *tid) {
+            return current;
+        }
+    }
+
+    // If no tid is matched, return null.
+    return NULL;
+}
+
+void print_thread_cargs(struct clone_args* cargs) {
+    log("thread clone args: flags = %p stack = %p tls = %p\n",
+        (void*) cargs->flags, (void*) cargs->stack, (void*) cargs->tls);
+}
+
+void print_thread_context(ucontext_t* ctx) {
+    log("thread context: rsp = %p rip = %p\n",
+        (void*) ctx->uc_mcontext.gregs[REG_RSP], (void*) ctx->uc_mcontext.gregs[REG_RIP]);
+}
+
+void print_thread(thread_t * thread) {
+    log("thread: tid = %d\n", *(thread->tid));
+    print_thread_cargs(&(thread->cargs));
+    print_thread_context(&(thread->ctx));
+}
+
+void print_list_threads(thread_t * head) {
+    for (thread_t* current = head; current != NULL; current = current->next) {
+        print_thread(current);
+    }
+}

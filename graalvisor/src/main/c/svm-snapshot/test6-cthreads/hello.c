@@ -5,13 +5,13 @@
 #include "../graal_isolate.h"
 
 pthread_t worker = 0;
-int finished = 0;
 
 void* run_function(void* args) {
     int myvar = 0;
-    fprintf(stderr, "Worker thread with tid: %lu (pid = %d)\n", syscall(__NR_gettid), getpid());
-    while(!finished) {
-        fprintf(stderr, "myvar = %d\n", myvar++);
+    int tid = syscall(__NR_gettid);
+    int pid = getpid();
+    while(1) {
+        fprintf(stderr, "[background thread] myvar = %d tid = %d pid = %d\n", myvar++, tid, pid);
         sleep(1);
     }
 }
@@ -23,14 +23,16 @@ int graal_create_isolate (graal_create_isolate_params_t* params, graal_isolate_t
 }
 
 int graal_tear_down_isolate(graal_isolatethread_t* thread) {
-    finished = 1;
     pthread_join(worker, NULL);
 }
 
 void entrypoint(graal_isolatethread_t* thread, const char* fin, const char* fout, unsigned long fout_len) {
-    fprintf(stderr, "Function thread with tid: %lu (pid = %d)\n", syscall(__NR_gettid), getpid());
+    int tid = syscall(__NR_gettid);
+    int pid = getpid();
+    fprintf(stderr, "[foreground thread] tid = %d pid = %d\n", tid, pid);
     if (worker == 0) {
         pthread_create(&worker, NULL, run_function, NULL);
+        sleep(2); // Give the worker the change to print something.
     }
 }
 

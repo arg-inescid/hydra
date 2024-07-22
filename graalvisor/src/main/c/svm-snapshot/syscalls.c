@@ -258,7 +258,7 @@ int should_follow_clone3(struct clone_args *cl_args, size_t size) {
     return should_follow_clone(cl_args->flags);
 }
 
-void handle_syscalls(size_t seed, int seccomp_fd, int* finished, int meta_snap_fd, mapping_t* mappings) {
+void handle_syscalls(size_t seed, int seccomp_fd, int* finished, int meta_snap_fd, mapping_t* mappings, thread_t* threads) {
     // Base for memory mappings. Each seed value is 16TB apart.
     size_t mem_base = 0xA00000000000 + 0x100000000000 * seed;
     // This number represents the number of threads that are initially running in the sandbox.
@@ -286,8 +286,6 @@ void handle_syscalls(size_t seed, int seccomp_fd, int* finished, int meta_snap_f
             err("error: failed to pool for events");
             continue;
         } else if (events == 0 && *finished) {
-            // TODO - we should kill all remaining threads at this moment.
-            err("warning: monitor exiting before all function threads terminate (%d active threads)!\n", active_threads);
             break;
         } else if (fds[0].revents & POLLNVAL) {
             break;
@@ -343,19 +341,23 @@ void handle_syscalls(size_t seed, int seccomp_fd, int* finished, int meta_snap_f
                 resp->flags = 0;
                 handle_close(meta_snap_fd, args, resp->val);
                 break;
+            // TODO - move exit, clone, and clone3 to handle_{}.
             case __NR_exit:
-                if (active_threads > 1) {
-                    err("warning: exit was invoked!\n");
-                }
                 active_threads--;
+                list_threads_delete(threads, list_threads_find(threads, (pid_t*) &(req->pid)));
+                err("tid = %d exited\n", req->pid);
                 resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
                 break;
             case __NR_clone:
-                // TODO - we will need to handle threads. To checkpoint threads, we need to know
-                // which threads belong to which sandbox.
-                if (should_follow_clone((int)args[0])) {
+                if (should_follow_clone((int) args[0])) {
+                    struct clone_args cargs = {0};
+                    cargs.flags = args[0];
+                    cargs.stack = args[1];
+                    cargs.parent_tid = args[2];
+                    cargs.child_tid = args[3];
+                    cargs.tls = args[4];
                     active_threads++;
-                    err("warning: clone was invoked (%d active threads)!\n", active_threads);
+                    list_threads_push(threads, (pid_t *) args[3], &cargs);
                     resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
                 } else {
                     err("warning: blocking clone (new process)!\n");
@@ -365,9 +367,10 @@ void handle_syscalls(size_t seed, int seccomp_fd, int* finished, int meta_snap_f
                 }
                 break;
             case __NR_clone3:
-                if (should_follow_clone3((struct clone_args*) args[0], (size_t) args[1])) {
+                struct clone_args* cargs = (struct clone_args*) args[0];
+                if (should_follow_clone3(cargs, (size_t) args[1])) {
                     active_threads++;
-                    err("warning: clone3 was invoked (%d active threads)!\n", active_threads);
+                    list_threads_push(threads, (pid_t *) cargs->child_tid, cargs);
                     resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
                 } else {
                     err("warning: blocking clone3 (new process)!\n");

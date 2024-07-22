@@ -3,6 +3,7 @@
 
 #include "svm-snapshot.h"
 #include "list_mappings.h"
+#include "list_threads.h"
 #include <sys/types.h>
 
 /*
@@ -42,14 +43,11 @@
 // Goes through process memory maps and prints it to a file while validating our maps.
 void check_proc_maps(char* filename, mapping_t * head);
 
-// Loads, invokes, and checkpoints an svm instance.
-void checkpoint(const char* function_path, const char* function_args, char* meta_snap_path, char* mem_snap_path);
-
 // Checkpoints a single syscall invocation.
 void checkpoint_syscall(int meta_snap_fd, int tag, void* syscall_args, size_t size);
 
 // Checkpoints an svm instance memory maps.
-void checkpoint_memory(int meta_snap_fd, int mem_snap_fd, mapping_t* mappings, isolate_abi_t* abi, graal_isolate_t* isolate);
+void checkpoint(int meta_snap_fd, int mem_snap_fd, mapping_t* mappings, thread_t* threads, isolate_abi_t* abi, graal_isolate_t* isolate);
 
 // Restores a substrace vm instance.
 void restore(const char* meta_snap_path, const char* mem_snap_path, isolate_abi_t* abi, graal_isolate_t** isolate);
