@@ -86,6 +86,18 @@ void print_close(close_t* sargs) {
     dbg("close(%d) -> %d\n", sargs->fd, sargs->ret);
 }
 
+void print_exit(exit_t* sargs) {
+    dbg("exit(%d)\n", sargs->pid);
+}
+
+void print_clone(struct clone_args* cargs) {
+    dbg("clone (stack = %p stack_size = %llu)\n", (void*) cargs->stack, cargs->stack_size);
+}
+
+void print_clone3(struct clone_args* cargs) {
+    dbg("clone3 (stack = %p stack_size = %llu)\n", (void*) cargs->stack, cargs->stack_size);
+}
+
 void handle_mmap(int meta_snap_fd, mapping_t* mappings, long long unsigned int* args, void* ret) {
     mmap_t syscall_args = {
         .addr = (void*) args[0],
@@ -258,9 +270,31 @@ int should_follow_clone3(struct clone_args *cl_args, size_t size) {
     return should_follow_clone(cl_args->flags);
 }
 
+void handle_clone(int meta_snap_fd, thread_t* threads, long long unsigned int* args) {
+    struct clone_args cargs = {0};
+    cargs.flags = args[0];
+    cargs.stack = args[1];
+    cargs.parent_tid = args[2];
+    cargs.child_tid = args[3];
+    cargs.tls = args[4];
+    print_clone(&cargs);
+    list_threads_push(threads, (pid_t *) args[3], &cargs);
+}
+
+void handle_clone3(int meta_snap_fd, thread_t* threads, struct clone_args *cargs) {
+    print_clone3(cargs);
+    list_threads_push(threads, (pid_t *) cargs->child_tid, cargs);
+}
+
+void handle_exit(int meta_snap_fd, thread_t* threads, pid_t pid) {
+    exit_t syscall_args = {.pid = pid};
+    print_exit(&syscall_args);
+    list_threads_delete(threads, list_threads_find(threads, (pid_t*) &pid));
+}
+
 void handle_syscalls(size_t seed, int seccomp_fd, int* finished, int meta_snap_fd, mapping_t* mappings, thread_t* threads) {
     // Base for memory mappings. Each seed value is 16TB apart.
-    size_t mem_base = 0xA00000000000 + 0x100000000000 * seed;
+    size_t mem_base = 0xA00000000000 + 0x100000000000 * seed; // TODO - use a smaller gap (32 GB?) since we only have 48 usable bits.
     // This number represents the number of threads that are initially running in the sandbox.
     int active_threads = 1;
     struct seccomp_notif_sizes sizes;
@@ -341,23 +375,15 @@ void handle_syscalls(size_t seed, int seccomp_fd, int* finished, int meta_snap_f
                 resp->flags = 0;
                 handle_close(meta_snap_fd, args, resp->val);
                 break;
-            // TODO - move exit, clone, and clone3 to handle_{}.
             case __NR_exit:
+                handle_exit(meta_snap_fd, threads, req->pid);
                 active_threads--;
-                list_threads_delete(threads, list_threads_find(threads, (pid_t*) &(req->pid)));
-                err("tid = %d exited\n", req->pid);
                 resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
                 break;
             case __NR_clone:
                 if (should_follow_clone((int) args[0])) {
-                    struct clone_args cargs = {0};
-                    cargs.flags = args[0];
-                    cargs.stack = args[1];
-                    cargs.parent_tid = args[2];
-                    cargs.child_tid = args[3];
-                    cargs.tls = args[4];
+                    handle_clone(meta_snap_fd, threads, args);
                     active_threads++;
-                    list_threads_push(threads, (pid_t *) args[3], &cargs);
                     resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
                 } else {
                     err("warning: blocking clone (new process)!\n");
@@ -369,8 +395,8 @@ void handle_syscalls(size_t seed, int seccomp_fd, int* finished, int meta_snap_f
             case __NR_clone3:
                 struct clone_args* cargs = (struct clone_args*) args[0];
                 if (should_follow_clone3(cargs, (size_t) args[1])) {
+                    handle_clone3(meta_snap_fd, threads, cargs);
                     active_threads++;
-                    list_threads_push(threads, (pid_t *) cargs->child_tid, cargs);
                     resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
                 } else {
                     err("warning: blocking clone3 (new process)!\n");

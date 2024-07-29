@@ -10,6 +10,8 @@
 #include <string.h>
 #include <ucontext.h>
 
+#define THR_CR_SIGNAL SIGUSR1
+
 // This variable is needed so that the signal handler below can use the thread list.
 static thread_t* background_threads;
 
@@ -42,9 +44,11 @@ void background_threads_handler(int signum, siginfo_t* sigingo, void* ctx) {
 
 void pause_background_threads(thread_t* threads) {
     struct sigaction new_action;
+    struct sigaction old_action; // TODO - save in thread_t so that we can restore.
 
     // Zero out the struct.
     memset(&new_action, 0, sizeof(new_action));
+    memset(&old_action, 0, sizeof(old_action));
 
     // Initialize the global variable that keeps a copy of the threads list.
     background_threads = threads;
@@ -53,18 +57,17 @@ void pause_background_threads(thread_t* threads) {
     new_action.sa_sigaction = background_threads_handler;
     new_action.sa_flags = SA_RESTART | SA_SIGINFO;
     sigemptyset(&new_action.sa_mask);
-    sigaction(SIGINT, &new_action, NULL);
+    sigaction(THR_CR_SIGNAL, &new_action, &old_action);
 
     // For each background thread, signal it.
     for (thread_t* current = threads; current != NULL; current = current->next) {
-        tgkill(getpid(), *(current->tid), SIGINT);
+        tgkill(getpid(), *(current->tid), THR_CR_SIGNAL);
         log("pausing background thread tid = %d\n", *(current->tid));
     }
 }
 
 void resume_background_threads(thread_t* threads) {
     pthread_cond_broadcast(&cond);
-    // TODO - restore any previous SIGINT handler. // needed? We are going to kill it any way.
 }
 
 void init_thread(thread_t* thread, pid_t* tid, struct clone_args* cargs) {

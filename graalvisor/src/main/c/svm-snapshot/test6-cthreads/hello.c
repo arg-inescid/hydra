@@ -10,9 +10,10 @@ void* run_function(void* args) {
     int myvar = 0;
     int tid = syscall(__NR_gettid);
     int pid = getpid();
-    while(1) {
-        fprintf(stderr, "[background thread] myvar = %d tid = %d pid = %d\n", myvar++, tid, pid);
-        sleep(1);
+    while(myvar < 50) {
+        register void *sp asm ("sp");
+        fprintf(stderr, "[background thread] sp = %p myvar = %d tid = %d pid = %d\n", sp, myvar++, tid, pid);
+        for (int i = 0; i < 100000000; i++) ;
     }
 }
 
