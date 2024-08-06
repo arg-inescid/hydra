@@ -14,6 +14,8 @@
 #include "cr.h"
 #include "syscalls.h"
 #include <pthread.h>
+#include <asm/prctl.h>
+#include <sys/syscall.h>
 
 // Number of fds that we allow for the function to use. We may use some fds after this limit.
 #define RESERVED_FDS 768
@@ -335,74 +337,58 @@ void restore_memory(int meta_snap_fd, int mem_snapshot_fd) {
 void checkpoint_threads(int meta_snap_fd, thread_t* threads) {
     int tag = THREAD_TAG;
     for (thread_t* current = threads; current != NULL; current = current->next) {
-        log("checkpointing thread tid = %d ip = %p\n", *(current->tid), (void*) current->ctx.uc_mcontext.gregs[REG_RIP]);
+        log("checkpointing thread tid = %d ip = %p\n", *(current->tid), (void*) current->context.ctx.uc_mcontext.gregs[REG_RIP]);
         print_thread_cargs(&(current->cargs));
-        print_thread_context(&(current->ctx));
+        print_thread_context(&(current->context));
         if (write(meta_snap_fd, &tag, sizeof(int)) != sizeof(int)) {
             perror("error: failed to serialize thread tag");
         }
+        if (write(meta_snap_fd, &(current->context), sizeof(thread_context_t)) != sizeof(thread_context_t)) {
+            perror("error: failed to serialize thread context");
+        }
         if (write(meta_snap_fd, &(current->cargs), sizeof(struct clone_args)) != sizeof(struct clone_args)) {
             perror("error: failed to serialize clone args");
-        }
-        if (write(meta_snap_fd, &(current->ctx), sizeof(ucontext_t)) != sizeof(ucontext_t)) {
-            perror("error: failed to serialize thread context");
         }
     }
 }
 
 void* restore_thread_internal(void* arg) {
-    ucontext_t* ctx = (ucontext_t*) arg;
-    log("restoring thread ip = %p\n", (void*) ctx->uc_mcontext.gregs[REG_RIP]);
-    setcontext(ctx);
+    thread_context_t* context = (thread_context_t*) arg;
+    log("restoring thread ip = %p tls = %p\n", (void*) context->ctx.uc_mcontext.gregs[REG_RIP], context->tls);
+    if (syscall(SYS_arch_prctl, ARCH_SET_FS, context->tls)) {
+        fprintf(stderr, "failed to set tls\n");
+    }
+    setcontext(&(context->ctx));
     return NULL;
 }
 
 void restore_thread(int meta_snap_fd) {
+    thread_context_t context;
     struct clone_args cargs;
-    ucontext_t ctx;
+    pthread_t thread;
+
+    if (read(meta_snap_fd, &context, sizeof(thread_context_t)) != sizeof(thread_context_t)) {
+        perror("error: failed to deserialize thread context");
+        return;
+    }
 
     if (read(meta_snap_fd, &cargs, sizeof(struct clone_args)) != sizeof(struct clone_args)) {
         perror("error: failed to deserialize clone args");
         return;
     }
 
-    if (read(meta_snap_fd, &ctx, sizeof(ucontext_t)) != sizeof(ucontext_t)) {
-        perror("error: failed to deserialize thread context");
-        return;
-    }
-
-    log("restoring thread ip = %p\n", (void*) ctx.uc_mcontext.gregs[REG_RIP]);
+    log("restoring thread ip = %p\n", (void*) context.ctx.uc_mcontext.gregs[REG_RIP]);
     print_thread_cargs(&cargs);
-    print_thread_context(&ctx);
+    print_thread_context(&context);
 
-    pthread_t thread;
-    if (pthread_create(&thread, NULL, restore_thread_internal, &ctx) != 0) {
+    // TODO - use clone3 instead of relying on pthread. This will require some work.
+    // See here on how to create a clone3 wrapper: https://nullprogram.com/blog/2023/03/23/
+    if (pthread_create(&thread, NULL, restore_thread_internal, &context) != 0) {
         perror("error: failed to create restoring thread");
         return;
     }
-    pthread_join(thread, NULL);
 
-    // If stack size is zero, then the syscall was a clone. // TODO - should we use clone directly?
-    /*
-    long ret = cargs.stack_size == 0 ?
-        syscall(    __NR_clone,
-                    (unsigned long) cargs.flags,
-                    (void*) cargs.stack, // TODO - use a different one?
-                    (int*) cargs.parent_tid,
-                    (int*) cargs.child_tid,
-                    (unsigned long) cargs.tls) : // TODO - use a different one?
-        syscall(__NR_clone3, &(cargs), sizeof(struct clone_args));
-
-    if (ret < 0) {
-        err("error: failed to clone thread TODO\n");
-    } else if (ret == 0) {
-        err("error: failed to create new thread\n");
-        setcontext(&ctx);
-        err("error: failed to set context for thread TODO\n");
-    } else {
-        log("restored thread: TODO\n");
-    }
-    */
+    pthread_join(thread, NULL); // TODO - this should not be here?
 }
 
 void checkpoint_isolate(int meta_snap_fd, graal_isolate_t* isolate) {
@@ -601,7 +587,9 @@ void checkpoint(int meta_snap_fd, int mem_snap_fd, mapping_t* mappings, thread_t
     checkpoint_mappings(meta_snap_fd, mem_snap_fd, mappings);
     checkpoint_abi(meta_snap_fd, abi);
     checkpoint_isolate(meta_snap_fd, isolate);
-    checkpoint_threads(meta_snap_fd, threads);
+    if (!list_threads_empty(threads)) {
+        checkpoint_threads(meta_snap_fd, threads);
+    }
 }
 
 void restore(const char* meta_snap_path, const char* mem_snap_path, isolate_abi_t* abi, graal_isolate_t** isolate){

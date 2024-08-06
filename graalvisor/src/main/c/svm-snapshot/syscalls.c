@@ -278,18 +278,24 @@ void handle_clone(int meta_snap_fd, thread_t* threads, long long unsigned int* a
     cargs.child_tid = args[3];
     cargs.tls = args[4];
     print_clone(&cargs);
+#ifdef THREADS
     list_threads_push(threads, (pid_t *) args[3], &cargs);
+#endif
 }
 
 void handle_clone3(int meta_snap_fd, thread_t* threads, struct clone_args *cargs) {
     print_clone3(cargs);
+#ifdef THREADS
     list_threads_push(threads, (pid_t *) cargs->child_tid, cargs);
+#endif
 }
 
 void handle_exit(int meta_snap_fd, thread_t* threads, pid_t pid) {
     exit_t syscall_args = {.pid = pid};
     print_exit(&syscall_args);
+#ifdef THREADS
     list_threads_delete(threads, list_threads_find(threads, (pid_t*) &pid));
+#endif
 }
 
 void handle_syscalls(size_t seed, int seccomp_fd, int* finished, int meta_snap_fd, mapping_t* mappings, thread_t* threads) {

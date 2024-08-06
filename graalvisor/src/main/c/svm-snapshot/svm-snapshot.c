@@ -224,7 +224,9 @@ void checkpoint_svm(
     handle_syscalls(seed, wargs.seccomp_fd, &(wargs.finished), meta_snap_fd, &mappings, &threads);
 
     // Pause background threads before checkpointing.
-    pause_background_threads(&threads);
+    if (!list_threads_empty(&threads)) {
+        pause_background_threads(&threads);
+    }
 
     // Merge memory mappings.
     list_mappings_merge(&mappings);
@@ -245,7 +247,9 @@ void checkpoint_svm(
 #endif
 
     // Resume background threads before checkpointing.
-    resume_background_threads(&threads);
+    if (!list_threads_empty(&threads)) {
+        resume_background_threads(&threads);
+    }
 
     // Join thread after checkpoint (this glibc may free memory right before we checkpoint).
     // Glibc is tricky as it has internal state. We should avoid it at all cost.

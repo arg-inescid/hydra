@@ -43,8 +43,8 @@ benchmarks_home = ${ARGO_HOME}/benchmarks
 gcommands = -x gdb-commands.txt
 
 all: *.h *.c
-	gcc -g -Wall -c *.c
-	gcc -g -Wall -o main *.o
+	gcc -O0 -g3 -Wall -c *.c
+	gcc -O0 -g3 -Wall -o main *.o
 
 tests: all
 	make -C test0-clib test
@@ -57,8 +57,9 @@ tests: all
 	make -C test4-svm-exception test
 	make -C test5-svm-truffle-cached-js test
 	make -C test5-svm-truffle-cached-py test
-#	make -C test6-cthreads test
+	make -C test6-cthreads test
 	make -C test7-svm-truffle-function-py test
+	make -C test8-cthreads-syscall test
 
 run-normal: all
 	setarch -R ./main normal $(app) 2>&1 | tee normal.log
@@ -116,3 +117,4 @@ clean-tests:
 	make -C test5-svm-truffle-cached-py clean
 	make -C test6-cthreads clean
 	make -C test7-svm-truffle-function-py clean
+	make -C test8-cthreads-syscall clean

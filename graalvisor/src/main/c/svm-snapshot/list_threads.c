@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ucontext.h>
+#include <asm/prctl.h>
+#include <sys/syscall.h>
 
 #define THR_CR_SIGNAL SIGUSR1
 
@@ -31,8 +33,18 @@ void background_threads_handler(int signum, siginfo_t* sigingo, void* ctx) {
         return;
     }
 
+    // Saving tls location.
+    if (syscall(SYS_arch_prctl, ARCH_GET_FS, &(thread->context.tls))) {
+        fprintf(stderr, "failed to get tls\n");
+    }
+
     // Saving context.
-    memcpy(&(thread->ctx), ctx, sizeof(ucontext_t));
+    memcpy(&(thread->context.ctx), ctx, sizeof(ucontext_t));
+    err("[tid = %d] RSP:    %p\n", tid, (void*) ((ucontext_t*)ctx)->uc_mcontext.gregs[REG_RSP]);
+    err("[tid = %d] RIP:    %p\n", tid, (void*) ((ucontext_t*)ctx)->uc_mcontext.gregs[REG_RIP]);
+    err("[tid = %d] TLS:    %p\n", tid, thread->context.tls);
+    err("[tid = %d] CSGSFS: %p\n", tid, (void*) ((ucontext_t*)ctx)->uc_mcontext.gregs[REG_CSGSFS]);
+
 
     // Acquire lock.
     pthread_mutex_lock(&lock);
@@ -73,6 +85,10 @@ void resume_background_threads(thread_t* threads) {
 void init_thread(thread_t* thread, pid_t* tid, struct clone_args* cargs) {
     thread->tid = tid;
     memcpy(&(thread->cargs), cargs, sizeof(struct clone_args));
+}
+
+int list_threads_empty(thread_t* head) {
+    return head->tid == NULL;
 }
 
 thread_t* list_threads_push(thread_t* head, pid_t* tid, struct clone_args* cargs) {
@@ -151,15 +167,17 @@ void print_thread_cargs(struct clone_args* cargs) {
         (void*) cargs->flags, (void*) cargs->stack, (void*) cargs->tls);
 }
 
-void print_thread_context(ucontext_t* ctx) {
-    log("thread context: rsp = %p rip = %p\n",
-        (void*) ctx->uc_mcontext.gregs[REG_RSP], (void*) ctx->uc_mcontext.gregs[REG_RIP]);
+void print_thread_context(thread_context_t* context) {
+    log("thread context: rsp = %p rip = %p tls = %p\n",
+        (void*) context->ctx.uc_mcontext.gregs[REG_RSP],
+        (void*) context->ctx.uc_mcontext.gregs[REG_RIP],
+        context->tls);
 }
 
 void print_thread(thread_t * thread) {
     log("thread: tid = %d\n", *(thread->tid));
     print_thread_cargs(&(thread->cargs));
-    print_thread_context(&(thread->ctx));
+    print_thread_context(&(thread->context));
 }
 
 void print_list_threads(thread_t * head) {
