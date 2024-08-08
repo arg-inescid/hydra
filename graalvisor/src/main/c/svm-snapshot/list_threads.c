@@ -68,12 +68,13 @@ void pause_background_threads(thread_t* threads) {
 
     // For each background thread, signal it.
     for (thread_t* current = threads; current != NULL; current = current->next) {
-        tgkill(getpid(), *(current->tid), THR_CR_SIGNAL);
         dbg("pausing background thread tid = %d\n", *(current->tid));
+        tgkill(getpid(), *(current->tid), THR_CR_SIGNAL);
     }
 }
 
 void resume_background_threads(thread_t* threads) {
+    dbg("resuming background threads\n");
     pthread_cond_broadcast(&cond);
 }
 

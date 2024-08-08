@@ -9,38 +9,17 @@
 #app = "$(shell pwd)/test5-svm-truffle-cached-js/libhello.so"
 #app = "$(shell pwd)/test5-svm-truffle-cached-py/libhello.so"
 #app = "$(shell pwd)/test6-cthreads/libhello.so"
-app = "$(shell pwd)/test7-svm-truffle-function-py/libcompression.so"
+#app = "$(shell pwd)/test7-svm-truffle-function-py/libcompression.so"
 #app = "$(shell pwd)/test8-cthreads-syscall/libhello.so"
 #app = "$(shell pwd)/test9-cthreads-futex/libhello.so"
+#app="${ARGO_HOME}/benchmarks/src/java/gv-hello-world/build/libhelloworld.so"
+#app="${ARGO_HOME}/benchmarks/src/javascript/gv-hello-world/build/libhelloworld.so"
+#app="${ARGO_HOME}/benchmarks/src/python/gv-hello-world/build/libhelloworld.so"
+app="${ARGO_HOME}/benchmarks/src/python/gv-dynamic-html/build/libdynamichtml.so"
 
-benchmarks_home = ${ARGO_HOME}/benchmarks
-#app = "$(benchmarks_home)/src/java/gv-hello-world/build/libhelloworld.so"
-#app = "$(benchmarks_home)/src/java/gv-file-hashing/build/libfilehashing.so"
-# TODO - classify (process)
-#app = "$(benchmarks_home)/src/java/gv-httprequest/build/libhttprequest.so"
-# TODO - videoprocessing (process)
-
-#app = "$(benchmarks_home)/src/javascript/gv-hello-world/build/libhelloworld.so"
-# Note: sometimes is hangs with high concurrency due to network connections.
-#app = "$(benchmarks_home)/src/javascript/gv-dynamic-html/build/libdynamichtml.so"
-# Note: thumbnail calls native code and it also leaves files behind. We do not support that.
-#app = "$(benchmarks_home)/src/javascript/gv-thumbnail/build/libthumbnail.so"
-#app = "$(benchmarks_home)/src/javascript/gv-uploader/build/libuploader.so"
-
-#app = "$(benchmarks_home)/src/python/gv-hello-world/build/libhelloworld.so"
-# Seems to be crashing.
-#app = "$(benchmarks_home)/src/python/gv-compression/build/libcompression.so"
-#app = "$(benchmarks_home)/src/python/gv-uploader/build/libuploader.so"
-#app = "$(benchmarks_home)/src/python/gv-mst/build/libmst.so"
-#app = "$(benchmarks_home)/src/python/gv-pagerank/build/libpr.so"
-#app = "$(benchmarks_home)/src/python/gv-bfs/build/libbfs.so"
-#app = "$(benchmarks_home)/src/python/gv-dna/build/libdna.so"
-#app = "$(benchmarks_home)/src/python/gv-dynamic-html/build/libdynamichtml.so"
-# Note: fails on restore w/ segfault.
-#app = "$(benchmarks_home)/src/python/gv-thumbnail/build/libthumbnail.so"
-# Note both of these use sub-processes.
-#gv_python_videoprocessing (process?)
-# TODO - classify (process)
+ifndef ARGO_HOME
+$(error ARGO_HOME is not set (needed to run benchmarks)!)
+endif
 
 gcommands = -x gdb-commands.txt
 
@@ -63,6 +42,33 @@ tests: all
 	make -C test7-svm-truffle-function-py test
 	make -C test8-cthreads-syscall test
 	make -C test9-cthreads-futex test
+
+benchmarks: all
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/java/gv-hello-world/build/libhelloworld.so" run
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/java/gv-file-hashing/build/libfilehashing.so" run
+# TODO - classify (process)
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/java/gv-httprequest/build/libhttprequest.so" run
+# TODO - videoprocessing (process)
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/javascript/gv-hello-world/build/libhelloworld.so" run
+# TODO - sometimes is hangs with high concurrency due to network connections.
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/javascript/gv-dynamic-html/build/libdynamichtml.so" run
+# TODO - thumbnail calls native code and it also leaves files behind. We do not support that.
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/javascript/gv-thumbnail/build/libthumbnail.so" run
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/javascript/gv-uploader/build/libuploader.so" run
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-hello-world/build/libhelloworld.so" run
+# TODO - seems to be crashing.
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-compression/build/libcompression.so" run
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-uploader/build/libuploader.so" run
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-mst/build/libmst.so" run
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-pagerank/build/libpr.so" run
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-bfs/build/libbfs.so" run
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-dna/build/libdna.so" run
+# TODO - fails when thread C/R is enabled.
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-dynamic-html/build/libdynamichtml.so" run
+# TODO - fails on restore w/ segfault.
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-thumbnail/build/libthumbnail.so" run
+# TODO - gv_python_videoprocessing (process?)
+# TODO - gv_python_classify (process?)
 
 run-normal: all
 	setarch -R ./main normal $(app) 2>&1 | tee normal.log
