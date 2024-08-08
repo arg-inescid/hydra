@@ -10,6 +10,8 @@
 #app = "$(shell pwd)/test5-svm-truffle-cached-py/libhello.so"
 #app = "$(shell pwd)/test6-cthreads/libhello.so"
 app = "$(shell pwd)/test7-svm-truffle-function-py/libcompression.so"
+#app = "$(shell pwd)/test8-cthreads-syscall/libhello.so"
+#app = "$(shell pwd)/test9-cthreads-futex/libhello.so"
 
 benchmarks_home = ${ARGO_HOME}/benchmarks
 #app = "$(benchmarks_home)/src/java/gv-hello-world/build/libhelloworld.so"
@@ -60,6 +62,7 @@ tests: all
 	make -C test6-cthreads test
 	make -C test7-svm-truffle-function-py test
 	make -C test8-cthreads-syscall test
+	make -C test9-cthreads-futex test
 
 run-normal: all
 	setarch -R ./main normal $(app) 2>&1 | tee normal.log
@@ -118,3 +121,4 @@ clean-tests:
 	make -C test6-cthreads clean
 	make -C test7-svm-truffle-function-py clean
 	make -C test8-cthreads-syscall clean
+	make -C test9-cthreads-futex clean

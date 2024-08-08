@@ -42,9 +42,8 @@ void background_threads_handler(int signum, siginfo_t* sigingo, void* ctx) {
     memcpy(&(thread->context.ctx), ctx, sizeof(ucontext_t));
     err("[tid = %d] RSP:    %p\n", tid, (void*) ((ucontext_t*)ctx)->uc_mcontext.gregs[REG_RSP]);
     err("[tid = %d] RIP:    %p\n", tid, (void*) ((ucontext_t*)ctx)->uc_mcontext.gregs[REG_RIP]);
+    err("[tid = %d] RAX:    %p\n", tid, (void*) ((ucontext_t*)ctx)->uc_mcontext.gregs[REG_RAX]);
     err("[tid = %d] TLS:    %p\n", tid, thread->context.tls);
-    err("[tid = %d] CSGSFS: %p\n", tid, (void*) ((ucontext_t*)ctx)->uc_mcontext.gregs[REG_CSGSFS]);
-
 
     // Acquire lock.
     pthread_mutex_lock(&lock);
@@ -67,7 +66,8 @@ void pause_background_threads(thread_t* threads) {
 
     // Register signal handler used to pause threads.
     new_action.sa_sigaction = background_threads_handler;
-    new_action.sa_flags = SA_RESTART | SA_SIGINFO;
+    // TODO - check if we should restart syscalls that got interrupted (add `| SA_RESTART` to sa_flags).
+    new_action.sa_flags = SA_SIGINFO;
     sigemptyset(&new_action.sa_mask);
     sigaction(THR_CR_SIGNAL, &new_action, &old_action);
 

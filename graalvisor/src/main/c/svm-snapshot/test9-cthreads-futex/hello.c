@@ -2,18 +2,30 @@
 #include <sys/syscall.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <asm/prctl.h>
 #include "../graal_isolate.h"
+#include <time.h>
 
 pthread_t worker = 0;
+pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+struct timespec ts;
 
 void* run_function(void* args) {
-    int myvar = 0;
-    int tid = syscall(__NR_gettid);
-    int pid = getpid();
-    while(myvar < 50) {
-        register void *sp asm ("sp");
-        fprintf(stderr, "[background thread] sp = %p myvar = %d tid = %d pid = %d\n", sp, myvar++, tid, pid);
-        for (int i = 0; i < 100000000; i++) ;
+    for (int i = 0; i < 5; i++) {
+        // Read tid and pid.
+        int tid = syscall(__NR_gettid);
+        int pid = getpid();
+
+        pthread_mutex_lock(&lock);
+
+        fprintf(stderr, "[background thread] before wait tid = %d pid = %d\n", tid, pid);
+        clock_gettime(CLOCK_REALTIME, &ts);
+        ts.tv_sec += 1;
+        pthread_cond_timedwait(&cond, &lock, &ts);
+
+        fprintf(stderr, "[background thread] after wait tid = %d pid = %d\n", tid, pid);
+        pthread_mutex_unlock(&lock);
     }
 }
 

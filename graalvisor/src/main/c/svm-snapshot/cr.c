@@ -353,21 +353,34 @@ void checkpoint_threads(int meta_snap_fd, thread_t* threads) {
 }
 
 void* restore_thread_internal(void* arg) {
-    thread_context_t* context = (thread_context_t*) arg;
-    log("restoring thread ip = %p tls = %p\n", (void*) context->ctx.uc_mcontext.gregs[REG_RIP], context->tls);
-    if (syscall(SYS_arch_prctl, ARCH_SET_FS, context->tls)) {
+    thread_context_t* context_cpy = (thread_context_t*) arg;
+    thread_context_t context;
+
+    // Note: we need to perform this copy because the cpy verson was malloced by the caller.
+    memcpy(&context, context_cpy, sizeof(thread_context_t));
+    free(context_cpy);
+
+    log("restoring thread ip = %p tls = %p\n", (void*) context.ctx.uc_mcontext.gregs[REG_RIP], context.tls);
+    if (syscall(SYS_arch_prctl, ARCH_SET_FS, context.tls)) {
         fprintf(stderr, "failed to set tls\n");
     }
-    setcontext(&(context->ctx));
+
+    // TODO - if the thread was stopped during a syscall, should we set the reval to EINTR?
+    setcontext(&(context.ctx));
     return NULL;
 }
 
 void restore_thread(int meta_snap_fd) {
-    thread_context_t context;
-    struct clone_args cargs;
     pthread_t thread;
+    struct clone_args cargs;
+    thread_context_t* context = (thread_context_t*) malloc(sizeof(thread_context_t));
 
-    if (read(meta_snap_fd, &context, sizeof(thread_context_t)) != sizeof(thread_context_t)) {
+    if (context == NULL) {
+        err("error: failed to malloc thread context\n");
+        return;
+    }
+
+    if (read(meta_snap_fd, context, sizeof(thread_context_t)) != sizeof(thread_context_t)) {
         perror("error: failed to deserialize thread context");
         return;
     }
@@ -377,18 +390,12 @@ void restore_thread(int meta_snap_fd) {
         return;
     }
 
-    log("restoring thread ip = %p\n", (void*) context.ctx.uc_mcontext.gregs[REG_RIP]);
-    print_thread_cargs(&cargs);
-    print_thread_context(&context);
-
     // TODO - use clone3 instead of relying on pthread. This will require some work.
     // See here on how to create a clone3 wrapper: https://nullprogram.com/blog/2023/03/23/
-    if (pthread_create(&thread, NULL, restore_thread_internal, &context) != 0) {
+    if (pthread_create(&thread, NULL, restore_thread_internal, context) != 0) {
         perror("error: failed to create restoring thread");
         return;
     }
-
-    pthread_join(thread, NULL); // TODO - this should not be here?
 }
 
 void checkpoint_isolate(int meta_snap_fd, graal_isolate_t* isolate) {
