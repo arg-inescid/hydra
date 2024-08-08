@@ -337,9 +337,7 @@ void restore_memory(int meta_snap_fd, int mem_snapshot_fd) {
 void checkpoint_threads(int meta_snap_fd, thread_t* threads) {
     int tag = THREAD_TAG;
     for (thread_t* current = threads; current != NULL; current = current->next) {
-        log("checkpointing thread tid = %d ip = %p\n", *(current->tid), (void*) current->context.ctx.uc_mcontext.gregs[REG_RIP]);
-        print_thread_cargs(&(current->cargs));
-        print_thread_context(&(current->context));
+        dbg("checkpointing thread ip = %p tls = %p\n", (void*) current->context.ctx.uc_mcontext.gregs[REG_RIP], current->context.tls);
         if (write(meta_snap_fd, &tag, sizeof(int)) != sizeof(int)) {
             perror("error: failed to serialize thread tag");
         }
@@ -360,12 +358,12 @@ void* restore_thread_internal(void* arg) {
     memcpy(&context, context_cpy, sizeof(thread_context_t));
     free(context_cpy);
 
-    log("restoring thread ip = %p tls = %p\n", (void*) context.ctx.uc_mcontext.gregs[REG_RIP], context.tls);
+    dbg("restoring thread ip = %p tls = %p\n", (void*) context.ctx.uc_mcontext.gregs[REG_RIP], context.tls);
     if (syscall(SYS_arch_prctl, ARCH_SET_FS, context.tls)) {
         fprintf(stderr, "failed to set tls\n");
     }
 
-    // TODO - if the thread was stopped during a syscall, should we set the reval to EINTR?
+    // TODO - if the thread was stopped during a syscall, should we set the reval (RAX) to -EINTR?
     setcontext(&(context.ctx));
     return NULL;
 }

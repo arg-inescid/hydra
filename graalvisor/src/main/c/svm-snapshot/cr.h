@@ -24,10 +24,11 @@
 // TODO - implement file descriptor optimization: keep an array with the syscall call index that openned the file descriptor of the corresponding index.
 
 // If defined, enables debug prints and extra sanitization checks.
-#define DEBUG
+//#define DEBUG
 // If defined, enables thread checkpointing.
 #define THREADS
-//#define PERF
+// If defined, enables performance measurements.
+#define PERF
 // If defined, enables fine-grained performance measurements.
 //#define PERF_DEBUG
 // If defined, enables performance optimizations.

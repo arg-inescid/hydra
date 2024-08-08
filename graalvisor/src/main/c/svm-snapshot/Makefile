@@ -45,8 +45,8 @@ benchmarks_home = ${ARGO_HOME}/benchmarks
 gcommands = -x gdb-commands.txt
 
 all: *.h *.c
-	gcc -O0 -g3 -Wall -c *.c
-	gcc -O0 -g3 -Wall -o main *.o
+	gcc -g -Wall -c *.c
+	gcc -g -Wall -o main *.o
 
 tests: all
 	make -C test0-clib test

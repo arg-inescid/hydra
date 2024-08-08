@@ -35,16 +35,11 @@ void background_threads_handler(int signum, siginfo_t* sigingo, void* ctx) {
 
     // Saving tls location.
     if (syscall(SYS_arch_prctl, ARCH_GET_FS, &(thread->context.tls))) {
-        fprintf(stderr, "failed to get tls\n");
+        err("failed to get tls for thread tid = %d\n", tid);
     }
 
     // Saving context.
     memcpy(&(thread->context.ctx), ctx, sizeof(ucontext_t));
-    err("[tid = %d] RSP:    %p\n", tid, (void*) ((ucontext_t*)ctx)->uc_mcontext.gregs[REG_RSP]);
-    err("[tid = %d] RIP:    %p\n", tid, (void*) ((ucontext_t*)ctx)->uc_mcontext.gregs[REG_RIP]);
-    err("[tid = %d] RAX:    %p\n", tid, (void*) ((ucontext_t*)ctx)->uc_mcontext.gregs[REG_RAX]);
-    err("[tid = %d] TLS:    %p\n", tid, thread->context.tls);
-
     // Acquire lock.
     pthread_mutex_lock(&lock);
     // Wait on conditional variable.
@@ -74,7 +69,7 @@ void pause_background_threads(thread_t* threads) {
     // For each background thread, signal it.
     for (thread_t* current = threads; current != NULL; current = current->next) {
         tgkill(getpid(), *(current->tid), THR_CR_SIGNAL);
-        log("pausing background thread tid = %d\n", *(current->tid));
+        dbg("pausing background thread tid = %d\n", *(current->tid));
     }
 }
 
