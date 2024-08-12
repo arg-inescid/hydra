@@ -1,4 +1,5 @@
 #include "cr.h"
+#include "list_threads.h"
 #include "syscalls.h"
 
 #include <dlfcn.h>
@@ -186,6 +187,10 @@ void checkpoint_svm(
     mapping_t mappings;
     memset(&mappings, 0, sizeof(mapping_t));
 
+    // Create and initialize the children thread list head;
+    thread_t threads;
+    memset(&threads, 0, sizeof(thread_t));
+
      // Create and initialize the checkpoint worker arguments struct.
     checkpoint_worker_args_t wargs;
     memset(&wargs, 0, sizeof(checkpoint_worker_args_t));
@@ -210,13 +215,18 @@ void checkpoint_svm(
     pthread_create(&worker, NULL, checkpoint_worker, &wargs);
 
     // Wait while the thread initilizes and installs the seccomp filter.
-    while (!wargs.seccomp_fd) ; // TODO - avoid active waiting
+    while (!wargs.seccomp_fd) ;
 
     // Move seccomp fd to a reserved fd.
     wargs.seccomp_fd = move_to_reserved_fd(wargs.seccomp_fd);
 
     // Keep handling syscall notifications.
-    handle_syscalls(seed, wargs.seccomp_fd, &(wargs.finished), meta_snap_fd, &mappings);
+    handle_syscalls(seed, wargs.seccomp_fd, &(wargs.finished), meta_snap_fd, &mappings, &threads);
+
+    // Pause background threads before checkpointing.
+    if (!list_threads_empty(&threads)) {
+        pause_background_threads(&threads);
+    }
 
     // Merge memory mappings.
     list_mappings_merge(&mappings);
@@ -224,17 +234,22 @@ void checkpoint_svm(
     // If in checkpoint mode, checkpoint memory.
     check_proc_maps("before_checkpoint.log", &mappings);
 #ifdef DEBUG
-    print_list(&mappings);
+    print_list_mappings(&mappings);
 #endif
 #ifdef PERF
     struct timeval st, et;
     gettimeofday(&st, NULL);
 #endif
-    checkpoint_memory(meta_snap_fd, mem_snap_fd, &mappings, &(wargs.abi), wargs.isolate);
+    checkpoint(meta_snap_fd, mem_snap_fd, &mappings, &threads, &(wargs.abi), wargs.isolate);
 #ifdef PERF
     gettimeofday(&et, NULL);
     log("checkpoint took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
 #endif
+
+    // Resume background threads before checkpointing.
+    if (!list_threads_empty(&threads)) {
+        resume_background_threads(&threads);
+    }
 
     // Join thread after checkpoint (this glibc may free memory right before we checkpoint).
     // Glibc is tricky as it has internal state. We should avoid it at all cost.

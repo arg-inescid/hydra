@@ -2,18 +2,30 @@
 #include <sys/syscall.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <asm/prctl.h>
 #include "../graal_isolate.h"
 
 pthread_t worker = 0;
+int myvar = 0;
 
 void* run_function(void* args) {
-    int myvar = 0;
-    int tid = syscall(__NR_gettid);
-    int pid = getpid();
-    while(myvar < 50) {
+    while(myvar < 10) {
+        void* tls = NULL;
+
+        // Read tid and pid.
+        int tid = syscall(__NR_gettid);
+        int pid = getpid();
+
+        // Read tls pointer.
+        if (syscall(SYS_arch_prctl, ARCH_GET_FS, &tls)) {
+            fprintf(stderr, "failed to get tls\n");
+        }
+
+        // Read stack pointer.
         register void *sp asm ("sp");
-        fprintf(stderr, "[background thread] sp = %p myvar = %d tid = %d pid = %d\n", sp, myvar++, tid, pid);
-        for (int i = 0; i < 100000000; i++) ;
+
+        fprintf(stderr, "[background thread] sp = %p myvar = %d tls = %p tid = %d pid = %d\n", sp, myvar++, tls, tid, pid);
+        sleep(1);
     }
 }
 
@@ -34,7 +46,7 @@ void entrypoint(graal_isolatethread_t* thread, const char* fin, const char* fout
     if (worker == 0) {
         pthread_create(&worker, NULL, run_function, NULL);
     }
-    sleep(1); // Give some time for the worker to do something.
+    sleep(2); // Give the worker the change to print something.
 }
 
 int graal_detach_thread(graal_isolatethread_t* thread) {

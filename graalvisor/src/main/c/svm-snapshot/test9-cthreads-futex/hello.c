@@ -2,18 +2,27 @@
 #include <sys/syscall.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <asm/prctl.h>
 #include "../graal_isolate.h"
+#include <time.h>
 
 pthread_t worker = 0;
+pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 void* run_function(void* args) {
-    int myvar = 0;
-    int tid = syscall(__NR_gettid);
-    int pid = getpid();
-    while(myvar < 50) {
-        register void *sp asm ("sp");
-        fprintf(stderr, "[background thread] sp = %p myvar = %d tid = %d pid = %d\n", sp, myvar++, tid, pid);
-        for (int i = 0; i < 100000000; i++) ;
+    for (;;) {
+        // Read tid and pid.
+        int tid = syscall(__NR_gettid);
+        int pid = getpid();
+
+        pthread_mutex_lock(&lock);
+        fprintf(stderr, "[background thread] before wait tid = %d pid = %d\n", tid, pid);
+        pthread_cond_wait(&cond, &lock);
+        fprintf(stderr, "[background thread] after wait tid = %d pid = %d\n", tid, pid);
+        pthread_mutex_unlock(&lock);
+        sleep(1); // Give time for the main thread to reach the cond wait.
+        pthread_cond_broadcast(&cond);
     }
 }
 
@@ -34,7 +43,11 @@ void entrypoint(graal_isolatethread_t* thread, const char* fin, const char* fout
     if (worker == 0) {
         pthread_create(&worker, NULL, run_function, NULL);
     }
-    sleep(1); // Give some time for the worker to do something.
+    sleep(1); // Give time for the worker to reach the cond wait.
+    pthread_cond_broadcast(&cond);
+    pthread_mutex_lock(&lock);
+    pthread_cond_wait(&cond, &lock);
+    pthread_mutex_unlock(&lock);
 }
 
 int graal_detach_thread(graal_isolatethread_t* thread) {
