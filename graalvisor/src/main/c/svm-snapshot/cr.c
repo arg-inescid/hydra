@@ -353,29 +353,30 @@ void checkpoint_threads(int meta_snap_fd, thread_t* threads) {
     }
 }
 
-// TODO - check if we are missing other registers.
+// Note: based on https://codebrowser.dev/glibc/glibc/sysdeps/unix/sysv/linux/x86_64/setcontext.S.html
 extern int __setcontext(const ucontext_t *__ucp);
 __asm__(
 "__setcontext:\n"
 "  mov    0xe0(%rdi),%rcx\n"
 "  fldenv (%rcx)\n"
 "  ldmxcsr 0x1c0(%rdi)\n"
-"  mov    0xa0(%rdi),%rsp\n"
-"  mov    0x80(%rdi),%rbx\n"
-"  mov    0x78(%rdi),%rbp\n"
+"  mov    0x28(%rdi),%r8\n"
+"  mov    0x30(%rdi),%r9\n"
+"  mov    0x38(%rdi),%r10\n"
+"  mov    0x40(%rdi),%r11\n"
 "  mov    0x48(%rdi),%r12\n"
 "  mov    0x50(%rdi),%r13\n"
 "  mov    0x58(%rdi),%r14\n"
 "  mov    0x60(%rdi),%r15\n"
-"  mov    0xa8(%rdi),%rcx\n"
-"  push   %rcx\n"
+"  mov    0xa0(%rdi),%rsp\n"
+"  mov    0x80(%rdi),%rbx\n"
+"  mov    0x78(%rdi),%rbp\n"
 "  mov    0x70(%rdi),%rsi\n"
 "  mov    0x98(%rdi),%rcx\n"
-"  mov    0x28(%rdi),%r8\n"
-"  mov    0x30(%rdi),%r9\n"
-"  mov    0x38(%rdi),%r10\n"
 "  mov    0x88(%rdi),%rdx\n"
 "  mov    0x90(%rdi),%rax\n"
+"  mov    0xa8(%rdi),%rcx\n"
+"  push   %rcx\n"
 "  mov    0x68(%rdi),%rdi\n"
 "  ret\n"
 );
