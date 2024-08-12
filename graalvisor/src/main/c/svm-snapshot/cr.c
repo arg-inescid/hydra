@@ -337,7 +337,10 @@ void restore_memory(int meta_snap_fd, int mem_snapshot_fd) {
 void checkpoint_threads(int meta_snap_fd, thread_t* threads) {
     int tag = THREAD_TAG;
     for (thread_t* current = threads; current != NULL; current = current->next) {
-        dbg("checkpointing thread ip = %p tls = %p\n", (void*) current->context.ctx.uc_mcontext.gregs[REG_RIP], current->context.tls);
+        dbg("checkpointing thread ip = %p sp = %p tls = %p\n",
+            (void*) current->context.ctx.uc_mcontext.gregs[REG_RIP],
+            (void*) current->context.ctx.uc_mcontext.gregs[REG_RSP],
+            current->context.tls);
         if (write(meta_snap_fd, &tag, sizeof(int)) != sizeof(int)) {
             perror("error: failed to serialize thread tag");
         }
@@ -350,6 +353,33 @@ void checkpoint_threads(int meta_snap_fd, thread_t* threads) {
     }
 }
 
+// TODO - check if we are missing other registers.
+extern int __setcontext(const ucontext_t *__ucp);
+__asm__(
+"__setcontext:\n"
+"  mov    0xe0(%rdi),%rcx\n"
+"  fldenv (%rcx)\n"
+"  ldmxcsr 0x1c0(%rdi)\n"
+"  mov    0xa0(%rdi),%rsp\n"
+"  mov    0x80(%rdi),%rbx\n"
+"  mov    0x78(%rdi),%rbp\n"
+"  mov    0x48(%rdi),%r12\n"
+"  mov    0x50(%rdi),%r13\n"
+"  mov    0x58(%rdi),%r14\n"
+"  mov    0x60(%rdi),%r15\n"
+"  mov    0xa8(%rdi),%rcx\n"
+"  push   %rcx\n"
+"  mov    0x70(%rdi),%rsi\n"
+"  mov    0x98(%rdi),%rcx\n"
+"  mov    0x28(%rdi),%r8\n"
+"  mov    0x30(%rdi),%r9\n"
+"  mov    0x38(%rdi),%r10\n"
+"  mov    0x88(%rdi),%rdx\n"
+"  mov    0x90(%rdi),%rax\n"
+"  mov    0x68(%rdi),%rdi\n"
+"  ret\n"
+);
+
 void* restore_thread_internal(void* arg) {
     thread_context_t* context_cpy = (thread_context_t*) arg;
     thread_context_t context;
@@ -358,13 +388,16 @@ void* restore_thread_internal(void* arg) {
     memcpy(&context, context_cpy, sizeof(thread_context_t));
     free(context_cpy);
 
-    dbg("restoring thread ip = %p tls = %p\n", (void*) context.ctx.uc_mcontext.gregs[REG_RIP], context.tls);
+    err("restoring thread ip = %p sp = %p tls = %p\n",
+        (void*) context.ctx.uc_mcontext.gregs[REG_RIP],
+        (void*) context.ctx.uc_mcontext.gregs[REG_RSP],
+        context.tls);
+
     if (syscall(SYS_arch_prctl, ARCH_SET_FS, context.tls)) {
         fprintf(stderr, "failed to set tls\n");
     }
 
-    // TODO - if the thread was stopped during a syscall, should we set the reval (RAX) to -EINTR?
-    setcontext(&(context.ctx));
+    __setcontext(&(context.ctx));
     return NULL;
 }
 

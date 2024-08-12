@@ -61,8 +61,7 @@ void pause_background_threads(thread_t* threads) {
 
     // Register signal handler used to pause threads.
     new_action.sa_sigaction = background_threads_handler;
-    // TODO - check if we should restart syscalls that got interrupted (add `| SA_RESTART` to sa_flags).
-    new_action.sa_flags = SA_SIGINFO;
+    new_action.sa_flags = SA_SIGINFO | SA_RESTART;
     sigemptyset(&new_action.sa_mask);
     sigaction(THR_CR_SIGNAL, &new_action, &old_action);
 

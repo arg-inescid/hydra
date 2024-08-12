@@ -45,8 +45,8 @@ void entrypoint(graal_isolatethread_t* thread, const char* fin, const char* fout
     fprintf(stderr, "[foreground thread] tid = %d pid = %d\n", tid, pid);
     if (worker == 0) {
         pthread_create(&worker, NULL, run_function, NULL);
-        sleep(2); // Give the worker the change to print something.
     }
+    sleep(2); // Give the worker the change to print something.
 }
 
 int graal_detach_thread(graal_isolatethread_t* thread) {
