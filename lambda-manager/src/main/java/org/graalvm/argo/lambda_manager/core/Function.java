@@ -48,6 +48,9 @@ public class Function {
     /** Desired sandbox for Graalvisor runtime. Can only be used with Graalvisor. */
     private final String gvSandbox;
 
+    /** SVM ID used for sandbox checkpoint/restore for this function. Should be a valid small integer. Can only be used with Graalvisor. Can be null. */
+    private final String svmId;
+
     /** Flag stating if this function can be re-built into native image in case of fallback (only for Graalvisor). */
     private final boolean canRebuild;
 
@@ -62,7 +65,7 @@ public class Function {
      */
     private long lastAgentPID;
 
-    public Function(String name, String language, String entryPoint, String memory, String runtime, byte[] functionCode, boolean functionIsolation, boolean invocationCollocation, String gvSandbox) throws Exception {
+    public Function(String name, String language, String entryPoint, String memory, String runtime, byte[] functionCode, boolean functionIsolation, boolean invocationCollocation, String gvSandbox, String svmId) throws Exception {
         this.name = name;
         this.language = FunctionLanguage.fromString(language);
         this.entryPoint = entryPoint;
@@ -77,6 +80,7 @@ public class Function {
         this.functionIsolation = functionIsolation;
         this.invocationCollocation = invocationCollocation;
         this.gvSandbox = gvSandbox;
+        this.svmId = svmId;
         this.window = new ColdStartSlidingWindow(Environment.AOT_OPTIMIZATION_THRESHOLD, Environment.SLIDING_WINDOW_PERIOD);
     }
 
@@ -201,7 +205,11 @@ public class Function {
     }
 
     public boolean snapshotSandbox() {
-        return "context-snapshot".equals(gvSandbox);
+        return svmId != null && "context-snapshot".equals(gvSandbox);
+    }
+
+    public String getSvmId() {
+        return svmId;
     }
 
     /**

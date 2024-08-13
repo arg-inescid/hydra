@@ -1,4 +1,7 @@
 FROM debian
+
+ENV JAVA_HOME=/jvm
+
 ADD disk/ /
 
 RUN apt update && \
