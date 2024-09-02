@@ -38,8 +38,9 @@ void background_threads_handler(int signum, siginfo_t* sigingo, void* ctx) {
         err("failed to get tls for thread tid = %d\n", tid);
     }
 
-    // Saving context.
+    // Saving ucontext_t and fpregs.
     memcpy(&(thread->context.ctx), ctx, sizeof(ucontext_t));
+    memcpy(&(thread->context.fpstate), thread->context.ctx.uc_mcontext.fpregs, sizeof(struct _libc_fpstate));
     // Acquire lock.
     pthread_mutex_lock(&lock);
     // Wait on conditional variable.

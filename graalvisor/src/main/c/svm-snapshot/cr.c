@@ -353,33 +353,13 @@ void checkpoint_threads(int meta_snap_fd, thread_t* threads) {
     }
 }
 
-// Note: based on https://codebrowser.dev/glibc/glibc/sysdeps/unix/sysv/linux/x86_64/setcontext.S.html
-extern int __setcontext(const ucontext_t *__ucp);
-__asm__(
-"__setcontext:\n"
-"  mov    0xe0(%rdi),%rcx\n"
-"  fldenv (%rcx)\n"
-"  ldmxcsr 0x1c0(%rdi)\n"
-"  mov    0x28(%rdi),%r8\n"
-"  mov    0x30(%rdi),%r9\n"
-"  mov    0x38(%rdi),%r10\n"
-"  mov    0x40(%rdi),%r11\n"
-"  mov    0x48(%rdi),%r12\n"
-"  mov    0x50(%rdi),%r13\n"
-"  mov    0x58(%rdi),%r14\n"
-"  mov    0x60(%rdi),%r15\n"
-"  mov    0xa0(%rdi),%rsp\n"
-"  mov    0x80(%rdi),%rbx\n"
-"  mov    0x78(%rdi),%rbp\n"
-"  mov    0x70(%rdi),%rsi\n"
-"  mov    0x98(%rdi),%rcx\n"
-"  mov    0x88(%rdi),%rdx\n"
-"  mov    0x90(%rdi),%rax\n"
-"  mov    0xa8(%rdi),%rcx\n"
-"  push   %rcx\n"
-"  mov    0x68(%rdi),%rdi\n"
-"  ret\n"
-);
+inline void __attribute__((always_inline)) __sigreturn(ucontext_t* ucontext) {
+    asm volatile("mov %0,%%rsp\n\t"
+                 "mov %1,%%eax\n\t"
+                 "syscall\n\t"
+                 :
+                 : "r"(ucontext), "i"(SYS_rt_sigreturn));
+}
 
 void* restore_thread_internal(void* arg) {
     thread_context_t* context_cpy = (thread_context_t*) arg;
@@ -388,17 +368,20 @@ void* restore_thread_internal(void* arg) {
     // Note: we need to perform this copy because the cpy verson was malloced by the caller.
     memcpy(&context, context_cpy, sizeof(thread_context_t));
     free(context_cpy);
+    // Note: this line reconstructs the deep-copied data structure.
+    context.ctx.uc_mcontext.fpregs = &(context.fpstate);
 
-    err("restoring thread ip = %p sp = %p tls = %p\n",
+    dbg("restoring thread ip = %p sp = %p tls = %p\n",
         (void*) context.ctx.uc_mcontext.gregs[REG_RIP],
         (void*) context.ctx.uc_mcontext.gregs[REG_RSP],
         context.tls);
+
 
     if (syscall(SYS_arch_prctl, ARCH_SET_FS, context.tls)) {
         fprintf(stderr, "failed to set tls\n");
     }
 
-    __setcontext(&(context.ctx));
+    __sigreturn(&(context.ctx));
     return NULL;
 }
 
@@ -424,6 +407,7 @@ void restore_thread(int meta_snap_fd) {
 
     // TODO - use clone3 instead of relying on pthread. This will require some work.
     // See here on how to create a clone3 wrapper: https://nullprogram.com/blog/2023/03/23/
+    // Once we use clone, we can set the TLS right away.
     if (pthread_create(&thread, NULL, restore_thread_internal, context) != 0) {
         perror("error: failed to create restoring thread");
         return;

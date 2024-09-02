@@ -10,6 +10,9 @@ typedef struct thread_context {
 
     // Thread context when checkpointing.
     ucontext_t ctx;
+
+    // fpstate structed pointed by mcontext.
+    struct _libc_fpstate fpstate;
 } thread_context_t;
 
 // Basic entry of a thread list.
