@@ -23,9 +23,11 @@ endif
 
 gcommands = -x gdb-commands.txt
 
+debug = -O0 -g3
+
 all: *.h *.c
-	gcc -g -Wall -c *.c
-	gcc -g -Wall -o main *.o
+	gcc $(debug) -Wall -c *.c
+	gcc $(debug) -Wall -o main *.o deps/printf/printf.o
 
 tests: all
 	make -C test0-clib test

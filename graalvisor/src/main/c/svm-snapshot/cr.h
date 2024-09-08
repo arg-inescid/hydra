@@ -34,13 +34,15 @@
 // If defined, enables performance optimizations.
 #define OPT
 
-#define log(format, args...) do { fprintf(stdout, format, ## args); } while(0)
+void cr_printf(int fd, const char* restrict fmt, ...);
+
+#define log(format, args...) do { cr_printf(STDOUT_FILENO, format, ## args); } while(0)
 #ifdef DEBUG
-    #define dbg(format, args...) do { fprintf(stdout, format, ## args); } while(0)
+    #define dbg(format, args...) do { cr_printf(STDOUT_FILENO, format, ## args); } while(0)
 #else
     #define dbg(format, args...) do { } while(0)
 #endif
-#define err(format, args...) do { fprintf(stdout, format, ## args); } while(0)
+#define err(format, args...) do { cr_printf(STDERR_FILENO, format, ## args); } while(0)
 
 // Goes through process memory maps and prints it to a file while validating our maps.
 void check_proc_maps(char* filename, mapping_t * head);

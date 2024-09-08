@@ -1,5 +1,5 @@
-all: printf.c printf.h
-	gcc -O3 -Wall -c printf.c
+all: printf.c
+	gcc -O3 -Wall -c *.c
 
 clean:
 	rm -f *.o
