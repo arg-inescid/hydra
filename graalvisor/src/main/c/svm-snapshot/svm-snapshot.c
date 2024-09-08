@@ -98,8 +98,8 @@ void run_entrypoint(
     if (concurrency == 1) {
         run_serial_entrypoint(abi, isolatethread, requests, fin, fout, fout_len);
     } else {
-        pthread_t* workers = (pthread_t*) malloc(concurrency * sizeof(pthread_t));
-        entrypoint_worker_args_t* wargs = (entrypoint_worker_args_t*) malloc(concurrency * sizeof(entrypoint_worker_args_t));
+        pthread_t* workers = (pthread_t*) cr_malloc(concurrency * sizeof(pthread_t));
+        entrypoint_worker_args_t* wargs = (entrypoint_worker_args_t*) cr_malloc(concurrency * sizeof(entrypoint_worker_args_t));
         for (int i = 0; i < concurrency; i++) {
             wargs[i].abi = abi;
             wargs[i].isolate = isolate;
@@ -113,8 +113,8 @@ void run_entrypoint(
         for (int i = 0; i < concurrency; i++) {
             pthread_join(workers[i], NULL);
         }
-        free(workers);
-        free(wargs);
+        cr_free(workers);
+        cr_free(wargs);
     }
 }
 

@@ -36,9 +36,9 @@ void* repeated(void* mapping_start, void* mapping_finish, char* mapping_perms, v
 void init_mapping(mapping_t* mapping, void* start, size_t size) {
     mapping->start = start;
     mapping->size = size;
-    mapping->permissions_base = mapping->permissions = (char*) malloc(bytes_to_pages(size) * sizeof(char));
-    mapping->dirty_base = mapping->dirty = (char*) malloc(bytes_to_pages(size) * sizeof(char));
-    mapping->validated_base = mapping->validated = (char*) malloc(bytes_to_pages(size) * sizeof(char));
+    mapping->permissions_base = mapping->permissions = (char*) cr_malloc(bytes_to_pages(size) * sizeof(char));
+    mapping->dirty_base = mapping->dirty = (char*) cr_malloc(bytes_to_pages(size) * sizeof(char));
+    mapping->validated_base = mapping->validated = (char*) cr_malloc(bytes_to_pages(size) * sizeof(char));
     memset(mapping->permissions, 0, bytes_to_pages(size));
     memset(mapping->dirty, 0, bytes_to_pages(size));
     memset(mapping->validated, 0, bytes_to_pages(size));
@@ -60,7 +60,7 @@ mapping_t* list_mappings_push(mapping_t* head, void* start, size_t size) {
     }
 
     // Insert new element after current.
-    mapping_t * new = (mapping_t *) malloc(sizeof(mapping_t));
+    mapping_t * new = (mapping_t *) cr_malloc(sizeof(mapping_t));
     init_mapping(new, start, size);
     new->next = current->next;
     current->next = new;
@@ -76,9 +76,9 @@ void list_mappings_delete(mapping_t* head, mapping_t* to_delete) {
     else if (head == to_delete) {
         // We need free the old dirty and permissions before we copy or memset.
         // If head node is the only element in the list.
-        free(head->dirty_base);
-        free(head->permissions_base);
-        free(head->validated_base);
+        cr_free(head->dirty_base);
+        cr_free(head->permissions_base);
+        cr_free(head->validated_base);
         if (head->next == NULL) {
             memset(head, 0, sizeof(mapping_t));
         } else {
@@ -87,7 +87,7 @@ void list_mappings_delete(mapping_t* head, mapping_t* to_delete) {
             // Copy the second element into the head.
             memcpy(head, head->next, sizeof(mapping_t));
             // Free the second element.
-            free(to_delete);
+            cr_free(to_delete);
         }
         return;
     }
@@ -99,10 +99,10 @@ void list_mappings_delete(mapping_t* head, mapping_t* to_delete) {
             // If the element to delete is the next
             if (current->next == to_delete) {
                 current->next = to_delete->next;
-                free(to_delete->dirty_base);
-                free(to_delete->permissions_base);
-                free(to_delete->validated_base);
-                free(to_delete);
+                cr_free(to_delete->dirty_base);
+                cr_free(to_delete->permissions_base);
+                cr_free(to_delete->validated_base);
+                cr_free(to_delete);
                 return;
             }
             current = current->next;
@@ -152,7 +152,7 @@ mapping_t* list_mappings_find(mapping_t* head, void* start, size_t size) {
 
 char* array_merge(char* arr1, size_t arr1_len, char* arr2, size_t arr2_len) {
         size_t newsize = arr1_len + arr2_len;
-        char* newarr = (char*) malloc(newsize * sizeof(char));
+        char* newarr = (char*) cr_malloc(newsize * sizeof(char));
         memcpy(newarr, arr1, bytes_to_pages(arr1_len));
         memcpy(newarr + bytes_to_pages(arr1_len), arr2, bytes_to_pages(arr2_len));
         return newarr;
@@ -177,9 +177,9 @@ void list_mappings_merge(mapping_t* head) {
             current->validated = array_merge(current->validated, csize, current->next->validated, nsize);
             current->size += nsize;
             // Free the old buffers.
-            free(current->dirty_base);
-            free(current->permissions_base);
-            free(current->validated_base);
+            cr_free(current->dirty_base);
+            cr_free(current->permissions_base);
+            cr_free(current->validated_base);
             // Initialize the new base pointers with the buffers just allocated.
             current->dirty_base = current->dirty;
             current->permissions_base = current->permissions;

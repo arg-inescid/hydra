@@ -394,9 +394,9 @@ void* restore_thread_internal(void* arg) {
     thread_context_t* context_cpy = (thread_context_t*) arg;
     thread_context_t context;
 
-    // Note: we need to perform this copy because the cpy verson was malloced by the caller.
+    // Note: we need to perform this copy because the cpy verson was allocated by the caller.
     memcpy(&context, context_cpy, sizeof(thread_context_t));
-    free(context_cpy);
+    cr_free(context_cpy);
     // Note: this line reconstructs the deep-copied data structure.
     context.ctx.uc_mcontext.fpregs = &(context.fpstate);
 
@@ -417,10 +417,10 @@ void* restore_thread_internal(void* arg) {
 void restore_thread(int meta_snap_fd) {
     pthread_t thread;
     struct clone_args cargs;
-    thread_context_t* context = (thread_context_t*) malloc(sizeof(thread_context_t));
+    thread_context_t* context = (thread_context_t*) cr_malloc(sizeof(thread_context_t));
 
     if (context == NULL) {
-        err("error: failed to malloc thread context\n");
+        err("error: failed to alloc thread context\n");
         return;
     }
 

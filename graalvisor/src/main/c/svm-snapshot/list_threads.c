@@ -97,7 +97,7 @@ thread_t* list_threads_push(thread_t* head, pid_t* tid, struct clone_args* cargs
     }
 
     // Insert new element after current.
-    thread_t * new = (thread_t *) malloc(sizeof(thread_t));
+    thread_t * new = (thread_t *) cr_malloc(sizeof(thread_t));
     memset(new, 0, sizeof(thread_t));
     init_thread(new, tid, cargs);
     new->next = current->next;
@@ -120,7 +120,7 @@ void list_threads_delete(thread_t * head, thread_t* to_delete) {
             // Copy the second element into the head.
             memcpy(head, head->next, sizeof(thread_t));
             // Free the second element.
-            free(to_delete);
+            cr_free(to_delete);
         }
         return;
     }
@@ -132,7 +132,7 @@ void list_threads_delete(thread_t * head, thread_t* to_delete) {
             // If the element to delete is the next
             if (current->next == to_delete) {
                 current->next = to_delete->next;
-                free(to_delete);
+                cr_free(to_delete);
                 return;
             }
             current = current->next;

@@ -1,10 +1,10 @@
 #ifndef CR_H
 #define CR_H
 
+#include <sys/types.h>
 #include "svm-snapshot.h"
 #include "list_mappings.h"
 #include "list_threads.h"
-#include <sys/types.h>
 
 /*
  * Limitations:
@@ -34,6 +34,14 @@
 // If defined, enables performance optimizations.
 #define OPT
 
+// Forward declarations for our custom memory allocator (Doug Lea's).
+void* dlmalloc(size_t);
+void  dlfree(void*);
+
+#define cr_malloc dlmalloc
+#define cr_free   dlfree
+
+// Custom print functions.
 void cr_printf(int fd, const char* restrict fmt, ...);
 
 #define log(format, args...) do { cr_printf(STDOUT_FILENO, format, ## args); } while(0)

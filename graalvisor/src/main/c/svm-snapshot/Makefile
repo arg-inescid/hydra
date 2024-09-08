@@ -27,7 +27,7 @@ debug = -O0 -g3
 
 all: *.h *.c
 	gcc $(debug) -Wall -c *.c
-	gcc $(debug) -Wall -o main *.o deps/printf/printf.o
+	gcc $(debug) -Wall -o main *.o deps/printf/printf.o deps/dlmalloc/malloc.o
 
 tests: all
 	make -C test0-clib test
