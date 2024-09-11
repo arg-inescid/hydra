@@ -4,8 +4,8 @@ RED = '\033[0;31m'
 GREEN = '\033[0;32m'
 
 all:
-	gcc -O0 -g -c -fPIC hello.c
-	gcc -O0 -g -shared -o libhello.so *.o
+	gcc -O0 -g3 -c -fPIC hello.c
+	gcc -O0 -g3 -shared -o libhello.so *.o
 
 run-checkpoint:
 	rm -f snapshot.mem

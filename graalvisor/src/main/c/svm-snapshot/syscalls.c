@@ -107,17 +107,10 @@ void handle_mmap(int meta_snap_fd, mapping_t* mappings, long long unsigned int* 
         .fd = (int) args[4],
         .offset = (off_t) args[5],
         .ret = ret};
-    int pagesize = getpagesize();
     print_mmap(&syscall_args);
 
     // Checkpoint the syscall.
     checkpoint_syscall(meta_snap_fd, __NR_mmap, &syscall_args, sizeof(mmap_t));
-
-    // When length is not a multiple of pagesize, we extend it to the next page boundary (check mmap man).
-    if (syscall_args.length % pagesize) {
-        size_t padding = (pagesize - (syscall_args.length % pagesize));
-        syscall_args.length += padding;
-    }
 
     mapping_t* mapping = list_mappings_find(mappings, ret, syscall_args.length);
 
@@ -303,6 +296,7 @@ void handle_syscalls(size_t seed, int seccomp_fd, int* finished, int meta_snap_f
     size_t mem_base = 0xA00000000000 + 0x100000000000 * seed; // TODO - use a smaller gap (32 GB?) since we only have 48 usable bits.
     // This number represents the number of threads that are initially running in the sandbox.
     int active_threads = 1;
+    int pagesize = getpagesize();
     struct seccomp_notif_sizes sizes;
     if (syscall(SYS_seccomp, SECCOMP_GET_NOTIF_SIZES, 0, &sizes) < 0) {
         err("error: failed to seccomp(SECCOMP_GET_NOTIF_SIZES)");
@@ -412,13 +406,22 @@ void handle_syscalls(size_t seed, int seccomp_fd, int* finished, int meta_snap_f
                 }
                 break;
             case __NR_mmap:
+                // If the size is not a multiple of page size, apply padding.
+                // When length is not a multiple of pagesize, we extend it to the next page boundary (check mmap man).
+                if (args[1] % pagesize) {
+                    size_t padding = (pagesize - (args[1] % pagesize));
+                    args[1] = args[1] + padding;
+                }
+                // If the address is not defined, move into sandbox.
                 if ((void*)args[0] == NULL) {
-                    // Move mmap into address.
+                    // Set top of the sandbox.
                     args[0] = mem_base;
                     // Update base for next time.
                     mem_base += args[1];
+                    // Add fixed to flags to ensure new base.
+                    args[3] = args[3] | MAP_FIXED;
                 }
-                // TODO - should we use fixed to enforce our address hint?
+
                 resp->val = syscall(__NR_mmap, args[0], args[1], args[2], args[3], args[4], args[5]);
                 resp->error = resp->val < 0 ? -errno : 0;
                 resp->flags = 0;
