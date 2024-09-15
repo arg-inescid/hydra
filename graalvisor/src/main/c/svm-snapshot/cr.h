@@ -2,6 +2,7 @@
 #define CR_H
 
 #include <sys/types.h>
+#include "cr_logger.h"
 #include "svm-snapshot.h"
 #include "list_mappings.h"
 #include "list_threads.h"

@@ -18,9 +18,6 @@
 #include <asm/prctl.h>
 #include <sys/syscall.h>
 
-// CR printf (stack-allocated) buffer.
-#define PRINTF_BUF_SZ 1024
-
 // Number of fds that we allow for the function to use. We may use some fds after this limit.
 #define RESERVED_FDS 768
 
@@ -78,31 +75,6 @@ size_t file_to_memory(int fd, char* buffer, size_t count) {
         written += n;
     }
     return written;
-}
-
-// Forward declaration of this function (see deps/printf/printf.c).
-int vsnprintf_(char* buffer, size_t count, const char* format, va_list va);
-
-// Malloc-free printf.
-void cr_printf(int fd, const char* restrict fmt, ...) {
-    char buffer[PRINTF_BUF_SZ];
-
-    va_list ap;
-    va_start(ap, fmt);
-    int chars = vsnprintf_(buffer, PRINTF_BUF_SZ, fmt, ap);
-    va_end(ap);
-
-    if (chars >= PRINTF_BUF_SZ) {
-       (void) memory_to_file(STDERR_FILENO, "error: printf buffer not large enough\n", 38);
-    }
-
-    memory_to_file(fd, buffer, chars);
-}
-
-
-// printf.h requires this method to be implemented, even if we don't need it.
-void _putchar(char character) {
-    cr_printf(STDERR_FILENO, "error: _putchar shouldn't be called directly\n");
 }
 
 int move_fd(int oldfd, int newfd) {
