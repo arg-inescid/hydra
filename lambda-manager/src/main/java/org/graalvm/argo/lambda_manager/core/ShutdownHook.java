@@ -1,29 +1,17 @@
 package org.graalvm.argo.lambda_manager.core;
 
-import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.processes.devmapper.DeleteDevmapperBase;
 import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
 import org.graalvm.argo.lambda_manager.processes.lambda.DefaultLambdaShutdownHandler;
-import org.graalvm.argo.lambda_manager.processes.taps.RemoveTapsOutsidePool;
 import org.graalvm.argo.lambda_manager.utils.Messages;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
-import io.micronaut.context.event.ApplicationEventListener;
-import io.micronaut.runtime.event.ApplicationShutdownEvent;
 
-import javax.inject.Singleton;
-
-import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
-@SuppressWarnings("unused")
-@Singleton
-public class ShutdownHook implements ApplicationEventListener<ApplicationShutdownEvent> {
+public class ShutdownHook extends Thread {
 
     private void deleteDevmapperBase() throws InterruptedException {
         ProcessBuilder deleteDevmapperBase = new DeleteDevmapperBase().build();
@@ -48,7 +36,7 @@ public class ShutdownHook implements ApplicationEventListener<ApplicationShutdow
     }
 
     @Override
-    public void onApplicationEvent(ApplicationShutdownEvent event) {
+    public void run() {
         try {
             Environment.setShutdownHookActive(true);
             // This sleep is used to allow other threads to react to the active shutdown hook flag.

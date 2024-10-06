@@ -1,17 +1,11 @@
 package org.graalvm.argo.lambda_manager.core;
 
-import io.micronaut.context.event.ApplicationEventListener;
-import io.micronaut.runtime.event.ApplicationStartupEvent;
-
-import javax.inject.Singleton;
 import java.io.File;
 
-@SuppressWarnings("unused")
-@Singleton
-public class StartupHook implements ApplicationEventListener<ApplicationStartupEvent> {
+public class StartupHook implements Runnable {
 
     @Override
-    public void onApplicationEvent(ApplicationStartupEvent event) {
+    public void run() {
         purgeDirectory(new File(Environment.CODEBASE), false);
         purgeDirectory(new File(Environment.LAMBDA_LOGS), false);
         purgeDirectory(new File(Environment.MANAGER_LOGS), false);

@@ -9,8 +9,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import io.reactivex.Single;
-
 public class JsonUtils {
 
     private static final ObjectMapper mapper = new ObjectMapper();
@@ -47,7 +45,7 @@ public class JsonUtils {
         return resultJSON;
     }
 
-    public static Single<String> constructJsonResponseObject(Object response) {
+    public static String constructJsonResponseObject(Object response) {
         try {
             ObjectMapper mapper = new ObjectMapper();
             ObjectNode resultObject = mapper.createObjectNode();
@@ -56,10 +54,10 @@ public class JsonUtils {
             } else if (response instanceof JsonNode) {
                 resultObject.set("data", (JsonNode) response);
             }
-            return Single.just(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(resultObject));
+            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(resultObject);
         } catch (Throwable throwable) {
             Logger.log(Level.SEVERE, throwable.getMessage(), throwable);
-            return Single.just(Messages.INTERNAL_ERROR);
+            return Messages.INTERNAL_ERROR;
         }
     }
 }

@@ -13,7 +13,6 @@ import org.graalvm.argo.lambda_manager.utils.Messages;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 import org.graalvm.argo.lambda_manager.utils.parser.ArgumentParser;
 import io.micronaut.context.BeanContext;
-import io.reactivex.Single;
 
 import java.util.Collections;
 import java.util.Map;
@@ -34,7 +33,7 @@ public class LambdaManager {
         return String.format(Messages.TIME_REQUEST, username, functionName, lambda.getExecutionMode(), lambda.getLambdaID(), spentTime, infrTime);
     }
 
-    public static Single<String> processRequest(String username, String functionName, String arguments) {
+    public static String processRequest(String username, String functionName, String arguments) {
         String response = null;
         Function function = null;
         Lambda lambda = null;
@@ -103,7 +102,7 @@ public class LambdaManager {
         return JsonUtils.constructJsonResponseObject(response);
     }
 
-    public static Single<String> uploadFunction(String username,
+    public static String uploadFunction(String username,
                                                 String functionName,
                                                 String functionLanguage,
                                                 String functionEntryPoint,
@@ -137,7 +136,7 @@ public class LambdaManager {
         return JsonUtils.constructJsonResponseObject(responseString);
     }
 
-    public static Single<String> removeFunction(String username, String functionName) {
+    public static String removeFunction(String username, String functionName) {
         String responseString;
 
         if (!Configuration.isInitialized()) {
@@ -158,7 +157,7 @@ public class LambdaManager {
         return JsonUtils.constructJsonResponseObject(responseString);
     }
 
-    public static Single<String> configureManager(String lambdaManagerConfiguration, BeanContext beanContext) {
+    public static String configureManager(String lambdaManagerConfiguration, BeanContext beanContext) {
         String responseString;
         try {
             if (!Configuration.isInitialized()) {
@@ -178,7 +177,7 @@ public class LambdaManager {
         return JsonUtils.constructJsonResponseObject(responseString);
     }
 
-    public static Single<String> getFunctions() {
+    public static String getFunctions() {
         Object response;
 
         if (!Configuration.isInitialized()) {

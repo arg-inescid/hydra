@@ -1,0 +1,81 @@
+package org.graalvm.argo.lambda_manager.socketserver;
+
+import org.graalvm.argo.lambda_manager.core.LambdaManager;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public class RequestUtils {
+
+    /**
+     * This pattern splits strings on spaces except if between quotes ("...");
+     * Source: https://stackoverflow.com/a/7804472
+     */
+    private static final String TOKEN_PATTERN = "([^\"]\\S*|\".+?\")\\s*";
+    private static final String REQUEST_TYPE_UPLOAD = "upload";
+    private static final String REQUEST_TYPE_INVOCATION = "invocation";
+
+    /**
+     * This method acts as a controller in LambdaManagerController.
+     */
+    public static String processOperation(Map<String, String> parameters) {
+        String result;
+        if (REQUEST_TYPE_UPLOAD.equals(parameters.get("type"))) {
+            String username = parameters.get("username");
+            String functionName = parameters.get("function_name");
+            String functionLanguage = parameters.get("function_language");
+            String functionEntryPoint = parameters.get("function_entry_point");
+            String functionMemory = parameters.get("function_memory");
+            String functionRuntime = parameters.get("function_runtime");
+            byte[] functionCode = parameters.get("payload").getBytes();
+            boolean functionIsolation = Boolean.parseBoolean(parameters.get("function_isolation"));
+            boolean invocationCollocation = Boolean.parseBoolean(parameters.get("invocation_collocation"));
+            String gvSandbox = parameters.get("gv_sandbox");
+            String svmId = parameters.get("svm_id");
+
+            result = LambdaManager.uploadFunction(username, functionName, functionLanguage, functionEntryPoint,
+                    functionMemory, functionRuntime, functionCode, Boolean.TRUE.equals(functionIsolation),
+                    Boolean.TRUE.equals(invocationCollocation), gvSandbox, svmId);
+        } else if (REQUEST_TYPE_INVOCATION.equals(parameters.get("type"))) {
+            String username = parameters.get("username");
+            String functionName = parameters.get("function_name");
+            String arguments = parameters.get("payload");
+
+            result = LambdaManager.processRequest(username, functionName, arguments);
+        } else {
+            throw new IllegalArgumentException("Unknown request type. Parameters:\n" + parameters);
+        }
+        return result;
+    }
+
+    static Map<String, String> parsePayload(String payload) {
+        Map<String, String> parameters = new HashMap<>();
+        // Check request type.
+        if (payload.startsWith("u ")) {
+            parameters.put("type", REQUEST_TYPE_UPLOAD);
+        } else if (payload.startsWith("i ")) {
+            parameters.put("type", REQUEST_TYPE_INVOCATION);
+        } else {
+            throw new IllegalArgumentException("Unknown request type. Payload:\n" + payload);
+        }
+        // Parse the rest of the payload.
+        Matcher m = Pattern.compile(TOKEN_PATTERN).matcher(payload.substring(2));
+        boolean parsedPayload = false;
+        while (m.find()) {
+            String token = m.group(1).replace("\"", "");
+            if (token.contains("=")) {
+                String[] keyValue = token.split("=");
+                parameters.put(keyValue[0], keyValue[1]);
+            } else {
+                if (parsedPayload) {
+                    throw new IllegalArgumentException("There should be at most one payload token in the message surrounded by quotes (\"...\").");
+                }
+                parameters.put("payload", token);
+                parsedPayload = true;
+            }
+        }
+        return parameters;
+    }
+}

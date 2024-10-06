@@ -19,7 +19,7 @@ import javax.inject.Inject;
 public class LambdaManagerController {
 
     @Inject
-    private BeanContext beanContext;
+    public BeanContext beanContext;
 
     @Post(value = "/{username}/{function_name}", consumes = MediaType.APPLICATION_JSON)
     public Single<String> processRequest(@PathVariable("username") String username,
@@ -34,7 +34,7 @@ public class LambdaManagerController {
         }
         try {
             MetricsProvider.addConcurrentRequest();
-            return LambdaManager.processRequest(username, functionName, arguments);
+            return Single.just(LambdaManager.processRequest(username, functionName, arguments));
         } finally {
             MetricsProvider.removeConcurrentRequest();
         }
@@ -42,7 +42,7 @@ public class LambdaManagerController {
 
     @Get("/get_functions")
     public Single<String> getFunctions() {
-        return LambdaManager.getFunctions();
+        return Single.just(LambdaManager.getFunctions());
     }
 
     @Post(value = "/upload_function", consumes = MediaType.APPLICATION_OCTET_STREAM)
@@ -57,21 +57,15 @@ public class LambdaManagerController {
                                          @Nullable @QueryValue("gv_sandbox") String gvSandbox,
                                          @Nullable @QueryValue("svm_id") String svmId,
                                          @Body byte[] functionCode) {
-        return LambdaManager.uploadFunction(username, functionName, functionLanguage, functionEntryPoint,
+        return Single.just(LambdaManager.uploadFunction(username, functionName, functionLanguage, functionEntryPoint,
                 functionMemory, functionRuntime, functionCode, Boolean.TRUE.equals(functionIsolation),
-                Boolean.TRUE.equals(invocationCollocation), gvSandbox, svmId);
+                Boolean.TRUE.equals(invocationCollocation), gvSandbox, svmId));
     }
 
     @Post("/remove_function")
     public Single<String> removeFunction(@QueryValue("username") String username,
                                          @QueryValue("function_name") String functionName) {
-        return LambdaManager.removeFunction(username, functionName);
-    }
-
-    // TODO - remove this endpoint, we don't need it.
-    @Post(value = "/configure_manager", consumes = MediaType.APPLICATION_JSON)
-    public Single<String> configureManager(@Body String lambdaManagerConfiguration) {
-        return LambdaManager.configureManager(lambdaManagerConfiguration, beanContext);
+        return Single.just(LambdaManager.removeFunction(username, functionName));
     }
 
     @Get(value = "/metrics", produces = MediaType.TEXT_PLAIN)
