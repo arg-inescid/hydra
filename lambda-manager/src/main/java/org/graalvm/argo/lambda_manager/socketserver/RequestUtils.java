@@ -10,10 +10,10 @@ import java.util.regex.Pattern;
 public class RequestUtils {
 
     /**
-     * This pattern splits strings on spaces except if between quotes ("...");
+     * This pattern splits strings on spaces except if between quotes ('...');
      * Source: https://stackoverflow.com/a/7804472
      */
-    private static final String TOKEN_PATTERN = "([^\"]\\S*|\".+?\")\\s*";
+    private static final String TOKEN_PATTERN = "([^']\\S*|'.+?')\\s*";
     private static final String REQUEST_TYPE_UPLOAD = "upload";
     private static final String REQUEST_TYPE_INVOCATION = "invocation";
 
@@ -64,13 +64,13 @@ public class RequestUtils {
         Matcher m = Pattern.compile(TOKEN_PATTERN).matcher(payload.substring(2));
         boolean parsedPayload = false;
         while (m.find()) {
-            String token = m.group(1).replace("\"", "");
+            String token = m.group(1).replace("'", "");
             if (token.contains("=")) {
                 String[] keyValue = token.split("=");
                 parameters.put(keyValue[0], keyValue[1]);
             } else {
                 if (parsedPayload) {
-                    throw new IllegalArgumentException("There should be at most one payload token in the message surrounded by quotes (\"...\").");
+                    throw new IllegalArgumentException("There should be at most one payload token in the message surrounded by quotes ('...').");
                 }
                 parameters.put("payload", token);
                 parsedPayload = true;
