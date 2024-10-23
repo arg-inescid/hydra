@@ -1,5 +1,7 @@
 package org.graalvm.argo.lambda_manager.socketserver;
 
+import org.graalvm.argo.lambda_manager.metrics.MetricsProvider;
+
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.Map;
@@ -20,12 +22,18 @@ public class RequestTask implements Runnable {
 
     @Override
     public void run() {
+        MetricsProvider.addConcurrentRequest();
         try {
             Map<String, String> parameters = RequestUtils.parsePayload(payload);
             String response = RequestUtils.processOperation(parameters);
+            if (response.length() >= 248) {
+                response = response.substring(0, 248);
+            }
             SocketServer.writeResponse(buffer, requestId, response.getBytes(), client);
         } catch (Throwable t) {
             SocketServer.writeResponse(buffer, requestId, t.getMessage().getBytes(), client);
+        } finally {
+            MetricsProvider.removeConcurrentRequest();
         }
     }
 
