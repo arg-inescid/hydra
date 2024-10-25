@@ -12,14 +12,16 @@ import java.util.logging.Level;
 public class DefaultLambdaShutdownHandler extends TimerTask {
 
     private final Lambda lambda;
+    private final String reason;
 
-    public DefaultLambdaShutdownHandler(Lambda lambda) {
+    public DefaultLambdaShutdownHandler(Lambda lambda, String reason) {
         this.lambda = lambda;
+        this.reason = reason;
     }
 
     @Override
     public void run() {
-        Logger.log(Level.INFO, String.format("Terminating lambda %d.", lambda.getLambdaID()));
+        Logger.log(Level.INFO, String.format("Terminating lambda %d for reason: %s.", lambda.getLambdaID(), reason));
         // Remove lambda from global state.
         LambdaManager.lambdas.remove(lambda);
 

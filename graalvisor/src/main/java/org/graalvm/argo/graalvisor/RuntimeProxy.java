@@ -143,6 +143,11 @@ public abstract class RuntimeProxy {
                 String async = (String)input.get("async");
                 boolean cached = input.get("cached") == null ? true : Boolean.parseBoolean((String)input.get("cached"));
                 boolean debug = input.get("debug") == null ? false : Boolean.parseBoolean((String)input.get("debug"));
+                String requestId = (String) input.get("requestId");
+                long sendTimestamp = (long) input.get("sendTimestamp");
+                int lmTimestamp = (int) input.get("lmTimestamp");
+                long startTimestamp = System.currentTimeMillis();
+                System.out.println(String.format("%d Receiving req %s at %d. Time elapsed: %d", lmTimestamp, requestId, startTimestamp, (startTimestamp - sendTimestamp)));
 
                 if (debug) {
                     ProxyUtils.writeResponse(t, 200, "Returned from Graalvisor!");
@@ -152,6 +157,8 @@ public abstract class RuntimeProxy {
                     System.out.println(output);
                 } else {
                     String output = invokeWrapper(functionName, cached, 0, 0, arguments);
+                    long finishTimestamp = System.currentTimeMillis();
+                    System.out.println(String.format("%d Finishing req %s at %d. Time elapsed: %d", lmTimestamp, requestId, finishTimestamp, (finishTimestamp - startTimestamp)));
                     ProxyUtils.writeResponse(t, 200, output);
                 }
             } catch (Exception e) {

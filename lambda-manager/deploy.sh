@@ -15,8 +15,9 @@ cd "$ARGO_HOME/lambda-manager" || {
   exit 1
 }
 
-# Can be empty; in this case, a normal HTTP server will be launched.
+# Can be empty; in this case, only a normal HTTP server will be launched.
+# If set to "socket", then the socket server will be launched in addition to an HTTP server.
 SOCKET=$1
 DEFAULT_LAMBDA_MANAGER_CONFIG="$ARGO_HOME/run/configs/manager/default-lambda-manager.json"
 
-sudo java -jar build/libs/lambda-manager-1.0-all.jar $DEFAULT_LAMBDA_MANAGER_CONFIG $SOCKET
+java -jar build/libs/lambda-manager-1.0-all.jar $DEFAULT_LAMBDA_MANAGER_CONFIG $SOCKET

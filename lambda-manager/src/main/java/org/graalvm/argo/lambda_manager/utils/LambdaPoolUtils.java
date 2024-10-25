@@ -48,6 +48,7 @@ public class LambdaPoolUtils {
         startLambdasPerMode(lambdaPool, LambdaExecutionMode.HOTSPOT_W_AGENT, poolConfiguration.getHotspotWithAgent(), executor);
         startLambdasPerMode(lambdaPool, LambdaExecutionMode.HOTSPOT, poolConfiguration.getHotspot(), executor);
         startLambdasPerMode(lambdaPool, LambdaExecutionMode.GRAALVISOR, poolConfiguration.getGraalvisor(), executor);
+        startLambdasPerMode(lambdaPool, LambdaExecutionMode.GRAALOS, poolConfiguration.getGraalOS(), executor);
         startLambdasPerMode(lambdaPool, LambdaExecutionMode.CUSTOM_JAVA, poolConfiguration.getCustomJava(), executor);
         startLambdasPerMode(lambdaPool, LambdaExecutionMode.CUSTOM_JAVASCRIPT, poolConfiguration.getCustomJavaScript(), executor);
         startLambdasPerMode(lambdaPool, LambdaExecutionMode.CUSTOM_PYTHON, poolConfiguration.getCustomPython(), executor);
@@ -89,7 +90,7 @@ public class LambdaPoolUtils {
                 lambdaPool.get(targetMode).add(lambda);
                 Logger.log(Level.INFO, "Added new lambda with mode " + targetMode + ". It took " + (System.currentTimeMillis() - timeBefore) + " ms.");
             } else {
-                new DefaultLambdaShutdownHandler(lambda).run();
+                new DefaultLambdaShutdownHandler(lambda, "failed to add").run();
                 Logger.log(Level.SEVERE, "Failed to add new lambda with mode " + targetMode);
             }
         } catch (Exception e) {
@@ -112,6 +113,8 @@ public class LambdaPoolUtils {
                 return Configuration.argumentStorage.getLambdaFactory().createGraalvisorPgo(lambda);
             case GRAALVISOR_PGO_OPTIMIZED:
                 return Configuration.argumentStorage.getLambdaFactory().createGraalvisorPgoOptimized(lambda);
+            case GRAALOS:
+                return Configuration.argumentStorage.getLambdaFactory().createGraalOS(lambda);
             case CUSTOM_JAVA:
             case CUSTOM_JAVASCRIPT:
             case CUSTOM_PYTHON:
@@ -125,18 +128,19 @@ public class LambdaPoolUtils {
         ExecutorService executor = Executors.newFixedThreadPool(EXECUTOR_THREAD_COUNT);
         // Shutdown lambdas being currently started.
         for (Lambda lambda : startingLambdas) {
-            executor.execute(new DefaultLambdaShutdownHandler(lambda)::run);
+            executor.execute(new DefaultLambdaShutdownHandler(lambda, "pool tear down (starting)")::run);
         }
         startingLambdas.clear();
         // Shutdown lambdas from the pool.
         for (Queue<Lambda> queue : lambdaPool.values()) {
             for (Lambda lambda : queue) {
-                executor.execute(new DefaultLambdaShutdownHandler(lambda)::run);
+                executor.execute(new DefaultLambdaShutdownHandler(lambda, "pool tear down (from the pool)")::run);
             }
         }
         lambdaPool.get(LambdaExecutionMode.HOTSPOT_W_AGENT).clear();
         lambdaPool.get(LambdaExecutionMode.HOTSPOT).clear();
         lambdaPool.get(LambdaExecutionMode.GRAALVISOR).clear();
+        lambdaPool.get(LambdaExecutionMode.GRAALOS).clear();
         lambdaPool.get(LambdaExecutionMode.CUSTOM_JAVA).clear();
         lambdaPool.get(LambdaExecutionMode.CUSTOM_JAVASCRIPT).clear();
         lambdaPool.get(LambdaExecutionMode.CUSTOM_PYTHON).clear();
@@ -233,6 +237,7 @@ public class LambdaPoolUtils {
             this.maxLambdas.put(LambdaExecutionMode.HOTSPOT_W_AGENT, poolConfiguration.getHotspotWithAgent());
             this.maxLambdas.put(LambdaExecutionMode.HOTSPOT, poolConfiguration.getHotspot());
             this.maxLambdas.put(LambdaExecutionMode.GRAALVISOR, poolConfiguration.getGraalvisor());
+            this.maxLambdas.put(LambdaExecutionMode.GRAALOS, poolConfiguration.getGraalvisor());
             this.maxLambdas.put(LambdaExecutionMode.CUSTOM_JAVA, poolConfiguration.getCustomJava());
             this.maxLambdas.put(LambdaExecutionMode.CUSTOM_JAVASCRIPT, poolConfiguration.getCustomJavaScript());
             this.maxLambdas.put(LambdaExecutionMode.CUSTOM_PYTHON, poolConfiguration.getCustomPython());
@@ -264,7 +269,7 @@ public class LambdaPoolUtils {
                 int lambdasToReclaim = (int) Math.ceil(total * LAMBDA_PERCENTAGE_TO_RECLAIM);
                 long ts = System.currentTimeMillis();
                 LambdaManager.lambdas.stream().filter(l -> l.getExecutionMode() == mode && l.getOpenRequestCount() <= 0 && ts - l.getTimerTimestamp() > LRU_RECLAMATION_PERIOD_MS).sorted(this::compare)
-                        .limit(lambdasToReclaim).parallel().forEach(l -> new DefaultLambdaShutdownHandler(l).run());
+                        .limit(lambdasToReclaim).parallel().forEach(l -> new DefaultLambdaShutdownHandler(l, "reclaiming").run());
             }
         }
 

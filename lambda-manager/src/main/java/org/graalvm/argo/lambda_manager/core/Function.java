@@ -144,6 +144,8 @@ public class Function {
             case READY:
                 if (getRuntime().equals(Environment.GRAALVISOR_RUNTIME)) {
                     return LambdaExecutionMode.GRAALVISOR;
+                } else if (getRuntime().equals(Environment.GRAALOS_RUNTIME)) {
+                    return LambdaExecutionMode.GRAALOS;
                 } else {
                     switch (getLanguage()) {
                         case JAVA:

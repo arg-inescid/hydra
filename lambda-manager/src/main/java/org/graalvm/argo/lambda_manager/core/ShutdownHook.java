@@ -22,7 +22,7 @@ public class ShutdownHook extends Thread {
     private void shutdownLambdas() {
         ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         for (Lambda lambda : LambdaManager.lambdas) {
-            executor.execute(new DefaultLambdaShutdownHandler(lambda)::run);
+            executor.execute(new DefaultLambdaShutdownHandler(lambda, "LM shutdown (active lambdas)")::run);
         }
         LambdaManager.lambdas.clear();
         executor.shutdown();

@@ -37,6 +37,7 @@ public class LambdaPool {
             Map.entry(LambdaExecutionMode.HOTSPOT_W_AGENT, new ConcurrentLinkedQueue<>()),
             Map.entry(LambdaExecutionMode.HOTSPOT, new ConcurrentLinkedQueue<>()),
             Map.entry(LambdaExecutionMode.GRAALVISOR, new ConcurrentLinkedQueue<>()),
+            Map.entry(LambdaExecutionMode.GRAALOS, new ConcurrentLinkedQueue<>()),
             Map.entry(LambdaExecutionMode.CUSTOM_JAVA, new ConcurrentLinkedQueue<>()),
             Map.entry(LambdaExecutionMode.CUSTOM_JAVASCRIPT, new ConcurrentLinkedQueue<>()),
             Map.entry(LambdaExecutionMode.CUSTOM_PYTHON, new ConcurrentLinkedQueue<>()),

@@ -14,10 +14,10 @@ public class JsonUtils {
     private static final ObjectMapper mapper = new ObjectMapper();
 
     public static String convertParametersIntoJsonObject(String arguments, String entryPoint, String functionName) {
-        return convertParametersIntoJsonObject(arguments, entryPoint, functionName, false);
+        return convertParametersIntoJsonObject(arguments, entryPoint, functionName, false, null, 0, 0);
     }
 
-    public static String convertParametersIntoJsonObject(String arguments, String entryPoint, String functionName, boolean debug) {
+    public static String convertParametersIntoJsonObject(String arguments, String entryPoint, String functionName, boolean debug, String requestId, long currentTimestamp, long lmTimestamp) {
         ObjectNode inputObject = mapper.createObjectNode();
 
         if (arguments != null) {
@@ -34,6 +34,18 @@ public class JsonUtils {
 
         if (debug) {
             inputObject.put("debug", "true");
+        }
+
+        if (requestId != null) {
+            inputObject.put("requestId", requestId);
+        }
+
+        if (currentTimestamp != 0) {
+            inputObject.put("sendTimestamp", currentTimestamp);
+        }
+
+        if (lmTimestamp != 0) {
+            inputObject.put("lmTimestamp", lmTimestamp);
         }
 
         String resultJSON = "";

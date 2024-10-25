@@ -12,7 +12,7 @@ public class Configuration {
     /**
      * Number of times a request will be sent to a different Lambda upon timeout.
      */
-    public static final int LAMBDA_FAULT_TOLERANCE = 3;
+    public static final int LAMBDA_FAULT_TOLERANCE = 1;
 
     /**
      * Number of times a request will be re-sent to a particular Lambda upon an error.

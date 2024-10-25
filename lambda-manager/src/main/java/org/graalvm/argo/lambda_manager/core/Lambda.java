@@ -5,7 +5,6 @@ import org.graalvm.argo.lambda_manager.memory.MemoryPool;
 import org.graalvm.argo.lambda_manager.optimizers.FunctionStatus;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
-import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 import org.graalvm.argo.lambda_manager.processes.lambda.DefaultLambdaShutdownHandler;
 
 import java.util.Iterator;
@@ -13,7 +12,6 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
 
 public class Lambda {
 
@@ -48,12 +46,15 @@ public class Lambda {
 
 	private String customRuntimeId;
 
+    private final AtomicInteger requestId;
+
     public Lambda(LambdaExecutionMode executionMode) {
         this.openRequestCount = new AtomicInteger(0);
         this.executionMode = executionMode;
         this.registeredFunctions = new ConcurrentHashMap<>();
         this.requiresFunctionUpload = ConcurrentHashMap.newKeySet();
         this.memoryPool = new FixedMemoryPool(Configuration.argumentStorage.getMaxMemory(), Configuration.argumentStorage.getMaxMemory());
+        this.requestId = new AtomicInteger(0);
     }
 
 	public long setLambdaID(long lid) {
@@ -95,7 +96,7 @@ public class Lambda {
 	public void resetTimer() {
 		Timer oldTimer = timer;
 		Timer newTimer = new Timer();
-		newTimer.schedule(new DefaultLambdaShutdownHandler(this), Configuration.argumentStorage.getTimeout()
+		newTimer.schedule(new DefaultLambdaShutdownHandler(this, "timer"), Configuration.argumentStorage.getTimeout()
 				+ (int) (Configuration.argumentStorage.getTimeout() * Math.random()));
 		timer = newTimer;
 		timerTimestamp = System.currentTimeMillis();
@@ -178,7 +179,7 @@ public class Lambda {
             }
         } else if (function.canCollocateInvocation()) {
             // Print a message only if we did not manage to allocate memory in the memory pool.
-            Logger.log(Level.INFO, String.format("[function=%s, mode=%s]: Couldn't allocate memory in lambda %d.", function.getName(), executionMode, lid));
+            // Logger.log(Level.INFO, String.format("[function=%s, mode=%s]: Couldn't allocate memory in lambda %d.", function.getName(), executionMode, lid));
         }
         return false;
     }
@@ -253,5 +254,9 @@ public class Lambda {
         return function.canCollocateInvocation()
                 ? memoryPool.deallocateMemoryLambda(function.getMemory())
                 : memoryPool.deallocateMemoryLambda(memoryPool.getMaxMemory());
+    }
+
+    public int getRequestId() {
+        return requestId.getAndIncrement();
     }
 }

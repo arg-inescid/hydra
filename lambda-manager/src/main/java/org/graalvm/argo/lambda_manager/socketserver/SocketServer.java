@@ -26,7 +26,7 @@ public class SocketServer {
     public void start() throws IOException {
         Selector selector = Selector.open();
         ServerSocketChannel serverSocket = ServerSocketChannel.open();
-        serverSocket.bind(new InetSocketAddress("localhost", port));
+        serverSocket.bind(new InetSocketAddress("0.0.0.0", port));
         serverSocket.configureBlocking(false);
         serverSocket.register(selector, SelectionKey.OP_ACCEPT);
         while (true) {

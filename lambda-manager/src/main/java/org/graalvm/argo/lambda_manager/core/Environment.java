@@ -36,6 +36,7 @@ public class Environment {
 
     // Graalvisor runtime identifiers.
     public static final String GRAALVISOR_RUNTIME = "graalvisor";
+    public static final String GRAALOS_RUNTIME = "graalos";
     public static final String GRAALVISOR_DOCKER_RUNTIME = "docker.io/sergiyivan/large-scale-experiment:graalvisor";
     public static final String HOTSPOT_DOCKER_RUNTIME = "docker.io/sergiyivan/large-scale-experiment:argo-hotspot";
     public static final String HOTSPOT_AGENT_DOCKER_RUNTIME = "docker.io/sergiyivan/large-scale-experiment:argo-hotspot-agent";
