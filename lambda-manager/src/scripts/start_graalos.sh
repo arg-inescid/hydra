@@ -40,7 +40,7 @@ docker run --rm --name $LAMBDA_NAME \
     -w "/graalos-benchmarks/graalos-client/" \
     --user 1274:1145 \
     $CONTAINER_IMAGE \
-    ./run-graalhost.sh $GRAALOS_PORT &
+    ./run-graalhost-lm.sh $GRAALOS_PORT &
 
 # Wait for GraalOS port open.
 while ! nc -z localhost ${GRAALOS_PORT}; do
