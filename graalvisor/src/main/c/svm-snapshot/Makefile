@@ -12,6 +12,7 @@
 #app = "$(shell pwd)/test7-svm-truffle-function-py/libcompression.so"
 #app = "$(shell pwd)/test8-cthreads-syscall/libhello.so"
 #app = "$(shell pwd)/test9-cthreads-futex/libhello.so"
+#app = "$(shell pwd)/test10-malloc/libhello.so"
 #app="${ARGO_HOME}/benchmarks/src/java/gv-hello-world/build/libhelloworld.so"
 #app="${ARGO_HOME}/benchmarks/src/javascript/gv-hello-world/build/libhelloworld.so"
 #app="${ARGO_HOME}/benchmarks/src/python/gv-hello-world/build/libhelloworld.so"
@@ -65,12 +66,13 @@ benchmarks: all
 	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-pagerank/build/libpr.so" run
 	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-bfs/build/libbfs.so" run
 	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-dna/build/libdna.so" run
-# TODO - fails when thread C/R is enabled.
+# Note: there is an intermittent bug when threads are enabled on this benchmark.
+# It is memory related and I hope it will be fixed once we properly isolate memory from libc.
+# Impossible to reproduce if NI compiled with -O0.
 	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-dynamic-html/build/libdynamichtml.so" run
 # TODO - fails on restore w/ segfault.
 	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-thumbnail/build/libthumbnail.so" run
-# TODO - gv_python_videoprocessing (process?)
-# TODO - gv_python_classify (process?)
+# TODO - gv_python_videoprocessing (process)
 
 run-normal: all
 	setarch -R ./main normal $(app) 2>&1 | tee normal.log
