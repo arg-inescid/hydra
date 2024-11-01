@@ -16,6 +16,7 @@ public class MetricsProvider {
     private static final AtomicInteger cinv = new AtomicInteger(0);
 
     private static final String METRIC_RECORD = "{\"timestamp\":%d, \"system_footprint\":%.3f, "
+            + "\"user_cpu\":%.3f, \"system_cpu\":%.3f, "
             + "\"open_requests\":%d, \"active_lambdas\":%d, \"active_lambdas_running\":%d, "
             + "\"lambda_pool_lambdas\":%d, \"active_users\":%d, \"throughput\":%d, \"cinv\":%d, "
             + "\"lambdas_memory_pool\":[%s]},\n";
@@ -25,7 +26,10 @@ public class MetricsProvider {
     public static String getMetricsRecord() {
         long timestamp = ElapseTimer.elapsedTime();
 
-        double systemFootprint = LambdaMemoryUtils.collectSystemFootprint();
+        double systemFootprint = LambdaMetricsUtils.collectSystemFootprint();
+        double[] cpus = LambdaMetricsUtils.collectCpuNumbers();
+        double userCpu = cpus[0];
+        double systemCpu = cpus[1];
         int lambdasRunning = 0;
         int lambdaPoolLambdas = 0;
         int openRequests = 0;
@@ -47,7 +51,7 @@ public class MetricsProvider {
         }
         sb.setLength(Math.max(sb.length() - 1, 0)); // To remove the last comma.
 
-        String result = String.format(METRIC_RECORD, timestamp, systemFootprint, openRequests, LambdaManager.lambdas.size(),
+        String result = String.format(METRIC_RECORD, timestamp, systemFootprint, userCpu, systemCpu, openRequests, LambdaManager.lambdas.size(),
                 lambdasRunning, lambdaPoolLambdas, activeUsers.size(), completedRequests.get(), cinv.get(), sb.toString());
 
         completedRequests.set(0);
