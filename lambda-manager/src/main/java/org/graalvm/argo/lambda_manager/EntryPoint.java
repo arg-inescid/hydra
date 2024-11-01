@@ -3,6 +3,12 @@ package org.graalvm.argo.lambda_manager;
 import io.micronaut.context.ApplicationContext;
 import io.micronaut.context.BeanContext;
 import io.micronaut.runtime.Micronaut;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.graalvm.argo.lambda_manager.core.LambdaManager;
 import org.graalvm.argo.lambda_manager.core.ShutdownHook;
 import org.graalvm.argo.lambda_manager.core.StartupHook;
@@ -15,24 +21,29 @@ import java.nio.file.Paths;
 public class EntryPoint {
 
     public static void main(String[] args) {
-        if (args.length < 1) {
-            System.err.println("The first argument should be a path to a configuration file.");
-            System.exit(1);
-        }
-        String configPath = args[0];
-        // Launch the Micronaut app and configure.
-        ApplicationContext context = Micronaut.run(EntryPoint.class, args);
-        configure(configPath, context.getBean(LambdaManagerController.class).beanContext);
-        // If we want to use socket server, stop the Micronaut's HTTP server and run the socket server.
-        if (args.length > 1 && "socket".equals(args[1])) {
-            // context.getBean(io.micronaut.runtime.server.EmbeddedServer.class).stop();
-//            context.getBean(io.micronaut.http.server.netty.NettyHttpServer.class).stop();
-            SocketServer server = new SocketServer(30009);
-            try {
-                server.start();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+        Options options = prepareOptions();
+        try {
+            CommandLine cmd = new DefaultParser().parse(options, args);
+            String configPath = cmd.getOptionValue("config");
+            String variablesPath = cmd.getOptionValue("variables");
+            boolean httpServer = cmd.hasOption("http");
+            boolean socketServer = cmd.hasOption("socket");
+
+            if (httpServer) {
+
             }
+            ApplicationContext context = Micronaut.run(EntryPoint.class, args);
+            configure(configPath, context.getBean(LambdaManagerController.class).beanContext);
+
+            if (socketServer) {
+                SocketServer server = new SocketServer(30009);
+                server.start();
+            }
+        } catch (ParseException e) {
+            System.out.println(e.getMessage());
+            new HelpFormatter().printHelp("utility-name", options);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -47,6 +58,23 @@ public class EntryPoint {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static Options prepareOptions() {
+        Options options = new Options();
+        Option config = new Option("c", "config", true, "Configuration JSON file path.");
+        config.setRequired(true);
+        options.addOption(config);
+        Option variables = new Option("vars", "variables", true, "Variables JSON file path.");
+        variables.setRequired(false);
+        options.addOption(variables);
+        Option http = new Option("h", "http", false, "Start an HTTP server.");
+        http.setRequired(false);
+        options.addOption(http);
+        Option socket = new Option("s", "socket", false, "Start a socket server.");
+        socket.setRequired(false);
+        options.addOption(socket);
+        return options;
     }
 
 }
