@@ -46,8 +46,16 @@ done
 sleep 0.5
 
 res=""
+declare -i attempts=0
 while [[ ! ${res} == *"AddEndpoint"* ]]; do
     res=$(docker exec $LAMBDA_NAME curl --silent --show-error --write-out "%{http_code}" --data-binary '{ "act": "add_ep", "app": "/graalos/benchmarks/graalos-client/apps/simple-http/build/native/nativeCompile/simple-http", "ep": 2001, "default_socket": { "port": 9001 }, "listen_socket": { "port": 9001 }, "fsroot": "/", "fsmappings": [ { "concrete": "/", "virt": "/" } ], "env": { "myvar": "initial_value" }, "instances": 1 }' http://localhost:$GRAALOS_PORT/command)
+    attempts=$((attempts+1))
+
+    if [ "$attempts" -gt "1000" ]; then
+        break
+    fi
+
+    sleep 0.5
 done
 echo $res
 
