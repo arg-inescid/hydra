@@ -46,15 +46,12 @@ public class Lambda {
 
 	private String customRuntimeId;
 
-    private final AtomicInteger requestId;
-
     public Lambda(LambdaExecutionMode executionMode) {
         this.openRequestCount = new AtomicInteger(0);
         this.executionMode = executionMode;
         this.registeredFunctions = new ConcurrentHashMap<>();
         this.requiresFunctionUpload = ConcurrentHashMap.newKeySet();
         this.memoryPool = new FixedMemoryPool(Configuration.argumentStorage.getMaxMemory(), Configuration.argumentStorage.getMaxMemory());
-        this.requestId = new AtomicInteger(0);
     }
 
 	public long setLambdaID(long lid) {
@@ -254,9 +251,5 @@ public class Lambda {
         return function.canCollocateInvocation()
                 ? memoryPool.deallocateMemoryLambda(function.getMemory())
                 : memoryPool.deallocateMemoryLambda(memoryPool.getMaxMemory());
-    }
-
-    public int getRequestId() {
-        return requestId.getAndIncrement();
     }
 }

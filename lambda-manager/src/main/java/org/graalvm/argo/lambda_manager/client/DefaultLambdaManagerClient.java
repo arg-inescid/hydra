@@ -12,7 +12,6 @@ import org.graalvm.argo.lambda_manager.core.Lambda;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.utils.JsonUtils;
 import org.graalvm.argo.lambda_manager.utils.Messages;
-import org.graalvm.argo.lambda_manager.utils.logger.ElapseTimer;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 
 import io.micronaut.http.HttpRequest;
@@ -105,10 +104,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
 
         if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZING) {
             // Both canRebuild and readily-provided GV functions go here.
-            String requestId = lambda.getLambdaID() + ":" + lambda.getRequestId();
-            long currentTimestamp = System.currentTimeMillis();
-            Logger.log(Level.INFO, String.format("Sending req %s at %d", requestId, currentTimestamp));
-            payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, getFunctionName(function, false), Configuration.argumentStorage.isDebugMode(), requestId, currentTimestamp, ElapseTimer.elapsedTime());
+            payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, getFunctionName(function, false), Configuration.argumentStorage.isDebugMode());
         } else if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT || lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT) {
             payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getName());
         } else if (lambda.getExecutionMode().isCustom()) {
