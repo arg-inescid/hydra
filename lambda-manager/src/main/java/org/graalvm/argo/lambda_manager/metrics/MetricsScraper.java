@@ -11,6 +11,7 @@ public class MetricsScraper implements Runnable {
 
     private final BufferedWriter bw;
     private final ExecutorService service;
+    private boolean isFirstRecord = true;
 
     public MetricsScraper(File output, ExecutorService executor) throws IOException {
         this.bw = new BufferedWriter(new FileWriter(output));
@@ -21,6 +22,11 @@ public class MetricsScraper implements Runnable {
     @Override
     public void run() {
         String record = MetricsProvider.getMetricsRecord();
+        if (isFirstRecord) {
+            isFirstRecord = false;
+        } else {
+            record = ",\n".concat(record);
+        }
         try {
             bw.write(record);
         } catch (IOException e) {

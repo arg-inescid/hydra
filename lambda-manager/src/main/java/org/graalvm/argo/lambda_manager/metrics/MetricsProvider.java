@@ -19,7 +19,7 @@ public class MetricsProvider {
             + "\"user_cpu\":%.3f, \"system_cpu\":%.3f, "
             + "\"open_requests\":%d, \"active_lambdas\":%d, \"active_lambdas_running\":%d, "
             + "\"lambda_pool_lambdas\":%d, \"active_users\":%d, \"throughput\":%d, \"cinv\":%d, "
-            + "\"lambdas_memory_pool\":[%s]},\n";
+            + "\"lambdas_memory_pool\":[%s]}";
 
     private static final String LAMBDA_OBJECT = "{\"name\":\"%s\",\"pool_free\":%d,\"running\":%d},";
 
