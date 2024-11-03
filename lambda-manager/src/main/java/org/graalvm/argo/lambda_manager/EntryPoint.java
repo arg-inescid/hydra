@@ -1,7 +1,5 @@
 package org.graalvm.argo.lambda_manager;
 
-import io.micronaut.context.ApplicationContext;
-import io.micronaut.context.BeanContext;
 import io.micronaut.runtime.Micronaut;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
@@ -30,10 +28,10 @@ public class EntryPoint {
             boolean socketServer = cmd.hasOption("socket");
 
             if (httpServer) {
-
+                Micronaut.run(EntryPoint.class, args);
             }
-            ApplicationContext context = Micronaut.run(EntryPoint.class, args);
-            configure(configPath, context.getBean(LambdaManagerController.class).beanContext);
+
+            configure(configPath);
 
             if (socketServer) {
                 SocketServer server = new SocketServer(30009);
@@ -47,14 +45,14 @@ public class EntryPoint {
         }
     }
 
-    private static void configure(String configPath, BeanContext beanContext) {
+    private static void configure(String configPath) {
         // No builtin startup hooks in Java, running it directly.
         new StartupHook().run();
         // Registering shutdown hook instead of using the Micronaut's lifecycle management.
         Runtime.getRuntime().addShutdownHook(new ShutdownHook());
         // Configuring Lambda Manager with the JSON configuration.
         try {
-            LambdaManager.configureManager(Files.readString(Paths.get(configPath)), beanContext);
+            System.out.println(LambdaManager.configureManager(Files.readString(Paths.get(configPath))));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

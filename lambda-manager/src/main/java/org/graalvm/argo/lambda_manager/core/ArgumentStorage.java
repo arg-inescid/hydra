@@ -18,9 +18,6 @@ import org.graalvm.argo.lambda_manager.utils.logger.LambdaManagerFormatter;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 import org.graalvm.argo.lambda_manager.utils.parser.LambdaManagerConfiguration;
 import org.graalvm.argo.lambda_manager.utils.parser.LambdaManagerConsole;
-import io.micronaut.context.BeanContext;
-import io.reactivex.exceptions.UndeliverableException;
-import io.reactivex.plugins.RxJavaPlugins;
 
 import java.io.File;
 import java.io.IOException;
@@ -98,36 +95,6 @@ public class ArgumentStorage {
         }
     }
 
-    private void initErrorHandler() {
-        RxJavaPlugins.setErrorHandler(e -> {
-            if (e instanceof UndeliverableException) {
-                e = e.getCause();
-            }
-            if (e instanceof IOException) {
-                // Irrelevant network problem or API that throws on cancellation.
-                Logger.log(Level.WARNING, Messages.INTERNAL_ERROR, e);
-                return;
-            }
-            if (e instanceof InterruptedException) {
-                // Fine, some blocking code was interrupted by a disposed call.
-                Logger.log(Level.WARNING, Messages.INTERNAL_ERROR, e);
-                return;
-            }
-            if ((e instanceof NullPointerException) || (e instanceof IllegalArgumentException)) {
-                // That's likely a bug in the application.
-                Logger.log(Level.WARNING, Messages.INTERNAL_ERROR, e);
-                return;
-            }
-            if (e instanceof IllegalStateException) {
-                // That's a bug in RxJava or in a custom operator.
-                Logger.log(Level.WARNING, Messages.INTERNAL_ERROR, e);
-                return;
-            }
-            // TODO: We should discuss what to do in case of severe exceptions.
-            Logger.log(Level.SEVERE, Messages.UNDELIVERABLE_EXCEPTION, e);
-        });
-    }
-
     private void prepareLogger(LambdaManagerConsole lambdaManagerConsole) {
         java.util.logging.Logger logger = java.util.logging.Logger.getLogger(java.util.logging.Logger.GLOBAL_LOGGER_NAME);
         LambdaManagerFormatter formatter = new LambdaManagerFormatter();
@@ -180,11 +147,9 @@ public class ArgumentStorage {
         }
     }
 
-    public void doInitialize(LambdaManagerConfiguration lambdaManagerConfiguration, BeanContext beanContext) throws InterruptedException {
+    public void doInitialize(LambdaManagerConfiguration lambdaManagerConfiguration) {
 
         initClassFields(lambdaManagerConfiguration);
-
-        initErrorHandler();
 
         prepareLogger(lambdaManagerConfiguration.getManagerConsole());
         initMetricsScraper();
@@ -202,7 +167,7 @@ public class ArgumentStorage {
 
         ElapseTimer.init(); // Start internal timer.
 
-        this.lambdaPool.setUp(beanContext, lambdaPort, lambdaManagerConfiguration.getGateway(), lambdaManagerConfiguration.getLambdaPool());
+        this.lambdaPool.setUp(lambdaPort, lambdaManagerConfiguration.getGateway(), lambdaManagerConfiguration.getLambdaPool());
     }
 
     private void prepareDevmapper() {
@@ -215,8 +180,8 @@ public class ArgumentStorage {
         }
     }
 
-    public static void initializeLambdaManager(LambdaManagerConfiguration lambdaManagerConfiguration, BeanContext beanContext) throws InterruptedException {
-        new ArgumentStorage().doInitialize(lambdaManagerConfiguration, beanContext);
+    public static void initializeLambdaManager(LambdaManagerConfiguration lambdaManagerConfiguration) {
+        new ArgumentStorage().doInitialize(lambdaManagerConfiguration);
     }
 
     public String getGateway() {

@@ -12,7 +12,6 @@ import org.graalvm.argo.lambda_manager.utils.JsonUtils;
 import org.graalvm.argo.lambda_manager.utils.Messages;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 import org.graalvm.argo.lambda_manager.utils.parser.ArgumentParser;
-import io.micronaut.context.BeanContext;
 
 import java.util.Collections;
 import java.util.Map;
@@ -157,11 +156,11 @@ public class LambdaManager {
         return JsonUtils.constructJsonResponseObject(responseString);
     }
 
-    public static String configureManager(String lambdaManagerConfiguration, BeanContext beanContext) {
+    public static String configureManager(String lambdaManagerConfiguration) {
         String responseString;
         try {
             if (!Configuration.isInitialized()) {
-                ArgumentStorage.initializeLambdaManager(ArgumentParser.parse(lambdaManagerConfiguration), beanContext);
+                ArgumentStorage.initializeLambdaManager(ArgumentParser.parse(lambdaManagerConfiguration));
                 Logger.log(Level.INFO, Messages.SUCCESS_CONFIGURATION_UPLOAD);
                 responseString = Messages.SUCCESS_CONFIGURATION_UPLOAD;
             } else {

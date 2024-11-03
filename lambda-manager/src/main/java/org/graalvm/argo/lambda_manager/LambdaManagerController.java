@@ -1,28 +1,21 @@
 package org.graalvm.argo.lambda_manager;
 
-import io.micronaut.context.BeanContext;
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.*;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.ExecuteOn;
-import io.reactivex.Single;
 
 import org.graalvm.argo.lambda_manager.core.LambdaManager;
 import org.graalvm.argo.lambda_manager.metrics.MetricsProvider;
-
-import javax.inject.Inject;
 
 @SuppressWarnings("unused")
 @ExecuteOn(TaskExecutors.IO)
 @Controller()
 public class LambdaManagerController {
 
-    @Inject
-    public BeanContext beanContext;
-
     @Post(value = "/{username}/{function_name}", consumes = MediaType.APPLICATION_JSON)
-    public Single<String> processRequest(@PathVariable("username") String username,
+    public String processRequest(@PathVariable("username") String username,
                                          @PathVariable("function_name") String functionName,
                                          @Nullable @Body String arguments,
                                          @Nullable @QueryValue("count") String warmupCount) {
@@ -34,19 +27,19 @@ public class LambdaManagerController {
         }
         try {
             MetricsProvider.addConcurrentRequest();
-            return Single.just(LambdaManager.processRequest(username, functionName, arguments));
+            return LambdaManager.processRequest(username, functionName, arguments);
         } finally {
             MetricsProvider.removeConcurrentRequest();
         }
     }
 
     @Get("/get_functions")
-    public Single<String> getFunctions() {
-        return Single.just(LambdaManager.getFunctions());
+    public String getFunctions() {
+        return LambdaManager.getFunctions();
     }
 
     @Post(value = "/upload_function", consumes = MediaType.APPLICATION_OCTET_STREAM)
-    public Single<String> uploadFunction(@QueryValue("username") String username,
+    public String uploadFunction(@QueryValue("username") String username,
                                          @QueryValue("function_name") String functionName,
                                          @QueryValue("function_language") String functionLanguage,
                                          @QueryValue("function_entry_point") String functionEntryPoint,
@@ -57,20 +50,20 @@ public class LambdaManagerController {
                                          @Nullable @QueryValue("gv_sandbox") String gvSandbox,
                                          @Nullable @QueryValue("svm_id") String svmId,
                                          @Body byte[] functionCode) {
-        return Single.just(LambdaManager.uploadFunction(username, functionName, functionLanguage, functionEntryPoint,
+        return LambdaManager.uploadFunction(username, functionName, functionLanguage, functionEntryPoint,
                 functionMemory, functionRuntime, functionCode, Boolean.TRUE.equals(functionIsolation),
-                Boolean.TRUE.equals(invocationCollocation), gvSandbox, svmId));
+                Boolean.TRUE.equals(invocationCollocation), gvSandbox, svmId);
     }
 
     @Post("/remove_function")
-    public Single<String> removeFunction(@QueryValue("username") String username,
+    public String removeFunction(@QueryValue("username") String username,
                                          @QueryValue("function_name") String functionName) {
-        return Single.just(LambdaManager.removeFunction(username, functionName));
+        return LambdaManager.removeFunction(username, functionName);
     }
 
     @Get(value = "/metrics", produces = MediaType.TEXT_PLAIN)
-    public Single<String> scrapeMetrics() {
-        return Single.just(MetricsProvider.getMetricsRecord());
+    public String scrapeMetrics() {
+        return MetricsProvider.getMetricsRecord();
     }
 
 }

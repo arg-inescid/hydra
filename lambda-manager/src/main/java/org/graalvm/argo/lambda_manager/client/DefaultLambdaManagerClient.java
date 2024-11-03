@@ -2,8 +2,10 @@ package org.graalvm.argo.lambda_manager.client;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import org.graalvm.argo.lambda_manager.core.Configuration;
@@ -14,37 +16,26 @@ import org.graalvm.argo.lambda_manager.utils.JsonUtils;
 import org.graalvm.argo.lambda_manager.utils.Messages;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 
-import io.micronaut.http.HttpRequest;
-import io.micronaut.http.client.RxHttpClient;
-import io.micronaut.http.client.exceptions.HttpClientException;
-import io.micronaut.http.client.exceptions.ReadTimeoutException;
-import io.reactivex.Flowable;
-
 public class DefaultLambdaManagerClient implements LambdaManagerClient {
 
-    private String sendRequest(HttpRequest<?> request, Lambda lambda) {
-        try (RxHttpClient client = lambda.getConnection().client) {
-            Flowable<String> flowable = client.retrieve(request);
-            for (int failures = 0; failures < Configuration.FAULT_TOLERANCE; failures++) {
+    private String sendRequest(HttpRequest request, Lambda lambda) {
+        HttpClient client = lambda.getConnection().client;
+        for (int failures = 0; failures < Configuration.FAULT_TOLERANCE; failures++) {
+            try {
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                return response.body();
+            } catch (IOException | InterruptedException e) {
                 try {
-                    return flowable.timeout(60, TimeUnit.SECONDS).blockingFirst();
-                } catch (ReadTimeoutException readTimeoutException) {
-                    Logger.log(Level.WARNING, "Received readTimeoutException in lambda " + lambda.getLambdaID() + ". Message: " + readTimeoutException.getMessage());
-                    break;
-                } catch (HttpClientException httpClientException) {
-                    try {
-                        Logger.log(Level.WARNING, "Received httpClientException in lambda " + lambda.getLambdaID() + ". Message: " + httpClientException.getMessage());
-                        Thread.sleep(Configuration.argumentStorage.getHealthCheck());
-                    } catch (InterruptedException interruptedException) {
-                        Logger.log(Level.WARNING, "Received interruptedException");
-                        // Skipping raised exception.
-                    }
+                    Logger.log(Level.WARNING, "Received exception in lambda " + lambda.getLambdaID() + ". Message: " + e.getMessage());
+                    Thread.sleep(Configuration.argumentStorage.getHealthCheck());
+                } catch (InterruptedException interruptedException) {
+                    // Skipping raised exception.
                 }
             }
-            lambda.setDecommissioned(true);
-            Logger.log(Level.WARNING, Messages.HTTP_TIMEOUT);
-            return Messages.HTTP_TIMEOUT;
         }
+        lambda.setDecommissioned(true);
+        Logger.log(Level.WARNING, Messages.HTTP_TIMEOUT);
+        return Messages.HTTP_TIMEOUT;
     }
 
     @Override
@@ -71,7 +62,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
             if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALOS) {
                 return "No registration needed in a GraalOS lambda.";
             } else {
-                return sendRequest(HttpRequest.POST(path, payload), lambda);
+                return sendRequest(lambda.getConnection().post(path, payload), lambda);
             }
         } catch (IOException e) {
             Logger.log(Level.WARNING, String.format("Failed load function %s source file %s", function.getName(), function.buildFunctionSourceCodePath()));
@@ -93,7 +84,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
             Logger.log(Level.WARNING, String.format("Unexpected lambda mode (%s) when registering function %s!", lambda.getExecutionMode(), function.getName()));
         }
 
-        return sendRequest(HttpRequest.POST(path, payload), lambda);
+        return sendRequest(lambda.getConnection().post(path, payload), lambda);
     }
 
     @Override
@@ -116,7 +107,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
             Logger.log(Level.WARNING, String.format("Unexpected lambda mode (%s) when invoking function %s!", lambda.getExecutionMode(), function.getName()));
         }
 
-        return sendRequest(HttpRequest.POST(path, payload), lambda);
+        return sendRequest(lambda.getConnection().post(path, payload), lambda);
     }
 
     private static boolean isBinaryFunctionExecution(Lambda lambda){

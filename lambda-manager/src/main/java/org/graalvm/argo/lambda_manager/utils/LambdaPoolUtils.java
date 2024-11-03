@@ -94,7 +94,6 @@ public class LambdaPoolUtils {
                 Logger.log(Level.SEVERE, "Failed to add new lambda with mode " + targetMode);
             }
         } catch (Exception e) {
-            System.out.println("WARNING!");
             e.printStackTrace();
         } finally {
             startingLambdas.remove(lambda);
@@ -128,13 +127,13 @@ public class LambdaPoolUtils {
         ExecutorService executor = Executors.newFixedThreadPool(EXECUTOR_THREAD_COUNT);
         // Shutdown lambdas being currently started.
         for (Lambda lambda : startingLambdas) {
-            executor.execute(new DefaultLambdaShutdownHandler(lambda, "pool tear down (starting)")::run);
+            executor.execute(new DefaultLambdaShutdownHandler(lambda, "pool tear down (starting)"));
         }
         startingLambdas.clear();
         // Shutdown lambdas from the pool.
         for (Queue<Lambda> queue : lambdaPool.values()) {
             for (Lambda lambda : queue) {
-                executor.execute(new DefaultLambdaShutdownHandler(lambda, "pool tear down (from the pool)")::run);
+                executor.execute(new DefaultLambdaShutdownHandler(lambda, "pool tear down (from the pool)"));
             }
         }
         lambdaPool.get(LambdaExecutionMode.HOTSPOT_W_AGENT).clear();
