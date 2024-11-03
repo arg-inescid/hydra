@@ -10,8 +10,6 @@ public enum LambdaType {
     VM_FIRECRACKER("VM_FIRECRACKER"),
     // Lambda to be deployed as Firecracker VM with snapshotting.
     VM_FIRECRACKER_SNAPSHOT("VM_FIRECRACKER_SNAPSHOT"),
-    // Lambda to be deployed as Firecracker Containerd VM.
-    VM_CONTAINERD("VM_CONTAINERD"),
     // Lambda to be deployed as container.
     CONTAINER("CONTAINER"),
     // Lambda to be deployed as container; in Graalvisor mode users will be collocated.
@@ -24,7 +22,7 @@ public enum LambdaType {
     }
 
     public boolean isVM() {
-        return this.equals(VM_FIRECRACKER) || this.equals(VM_FIRECRACKER_SNAPSHOT) || this.equals(VM_CONTAINERD);
+        return this.equals(VM_FIRECRACKER) || this.equals(VM_FIRECRACKER_SNAPSHOT);
     }
 
     public boolean isContainer() {

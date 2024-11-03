@@ -9,7 +9,6 @@ import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
 import org.graalvm.argo.lambda_manager.processes.devmapper.PrepareDevmapperBase;
 import org.graalvm.argo.lambda_manager.processes.lambda.factory.AbstractLambdaFactory;
 import org.graalvm.argo.lambda_manager.processes.lambda.factory.ContainerLambdaFactory;
-import org.graalvm.argo.lambda_manager.processes.lambda.factory.FirecrackerCtrLambdaFactory;
 import org.graalvm.argo.lambda_manager.processes.lambda.factory.FirecrackerLambdaFactory;
 import org.graalvm.argo.lambda_manager.processes.lambda.factory.FirecrackerSnapshotLambdaFactory;
 import org.graalvm.argo.lambda_manager.schedulers.RoundedRobinScheduler;
@@ -89,9 +88,6 @@ public class ArgumentStorage {
                 break;
             case VM_FIRECRACKER_SNAPSHOT:
                 this.lambdaFactory = new FirecrackerSnapshotLambdaFactory();
-                break;
-            case VM_CONTAINERD:
-                this.lambdaFactory = new FirecrackerCtrLambdaFactory();
                 break;
             case CONTAINER:
             case CONTAINER_DEBUG:

@@ -162,8 +162,6 @@ public class LambdaPoolUtils {
                 shutdownContainerLambda(lambda, Environment.CODEBASE + "/" + lambda.getLambdaName());
             } else if (lambdaType == LambdaType.VM_FIRECRACKER || lambdaType == LambdaType.VM_FIRECRACKER_SNAPSHOT) {
                 shutdownFirecrackerLambda(lambda, Environment.CODEBASE + "/" + lambda.getLambdaName(), lambdaType);
-            } else if (lambdaType == LambdaType.VM_CONTAINERD) {
-                shutdownFirecrackerContainerdLambda(lambda, Environment.CODEBASE + "/" + lambda.getLambdaName());
             } else {
                 Logger.log(Level.WARNING, String.format("Lambda ID=%d has no known execution mode: %s", lambda.getLambdaID(), lambda.getExecutionMode()));
             }
@@ -183,17 +181,6 @@ public class LambdaPoolUtils {
 
         while ((line = is.readLine()) != null) {
             Logger.log(level, line);
-        }
-    }
-
-    private static void shutdownFirecrackerContainerdLambda(Lambda lambda, String lambdaPath) throws Throwable {
-        String lambdaMode = lambda.getExecutionMode().toString();
-        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_cruntime.sh", lambdaPath, lambdaMode,
-                lambda.getConnection().ip, String.valueOf(lambda.getConnection().port)).start();
-        p.waitFor();
-        if (p.exitValue() != 0) {
-            Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", lambda.getLambdaID()));
-            printStream(Level.WARNING, p.getErrorStream());
         }
     }
 
