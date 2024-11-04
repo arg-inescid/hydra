@@ -55,15 +55,11 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
             } else if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT || lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT) {
                 path = String.format("/register?name=%s&language=%s&entryPoint=%s", function.getName(), function.getLanguage().toString(), function.getEntryPoint());
             } else if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALOS) {
-                // Skip.
+                return "No registration needed in a GraalOS lambda.";
             } else {
                 Logger.log(Level.WARNING, String.format("Unexpected lambda mode (%s) when registering function %s!", lambda.getExecutionMode(), function.getName()));
             }
-            if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALOS) {
-                return "No registration needed in a GraalOS lambda.";
-            } else {
-                return sendRequest(lambda.getConnection().post(path, payload), lambda);
-            }
+            return sendRequest(lambda.getConnection().post(path, payload), lambda);
         } catch (IOException e) {
             Logger.log(Level.WARNING, String.format("Failed load function %s source file %s", function.getName(), function.buildFunctionSourceCodePath()));
             return Messages.ERROR_FUNCTION_UPLOAD;
