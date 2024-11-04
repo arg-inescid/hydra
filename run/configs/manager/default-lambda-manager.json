@@ -1,8 +1,8 @@
 {
   "gateway": "172.18.0.1/16",
-  "maxMemory": 2048,
-  "maxTaps": 60000,
-  "timeout": 600000,
+  "maxMemory": 256,
+  "maxTaps": 1,
+  "timeout": 25000,
   "healthCheck": 50,
   "lambdaPort": 8080,
   "lambdaType": "container",
@@ -15,7 +15,7 @@
   "lambdaPool": {
     "hotspotWithAgent": 0,
     "hotspot": 0,
-    "graalvisor": 52,
+    "graalvisor": 1,
     "graalos": 0,
     "customJava": 0,
     "customJavaScript": 0,

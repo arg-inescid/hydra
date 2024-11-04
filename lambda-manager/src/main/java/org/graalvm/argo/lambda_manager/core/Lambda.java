@@ -172,9 +172,6 @@ public class Lambda {
                     deallocateMemory(function);
                 }
             }
-        } else if (function.canCollocateInvocation()) {
-            // Print a message only if we did not manage to allocate memory in the memory pool.
-            // Logger.log(Level.INFO, String.format("[function=%s, mode=%s]: Couldn't allocate memory in lambda %d.", function.getName(), executionMode, lid));
         }
         return false;
     }
