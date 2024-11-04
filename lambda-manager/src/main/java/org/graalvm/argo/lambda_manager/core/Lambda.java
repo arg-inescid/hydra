@@ -44,8 +44,6 @@ public class Lambda {
 	/** Functions that need to be uploaded to this lambda. */
 	private Set<Function> requiresFunctionUpload;
 
-	private String customRuntimeId;
-
     public Lambda(LambdaExecutionMode executionMode) {
         this.openRequestCount = new AtomicInteger(0);
         this.executionMode = executionMode;
@@ -209,14 +207,6 @@ public class Lambda {
 
     public boolean isFunctionUploadRequired(Function function) {
         return requiresFunctionUpload.remove(function);
-    }
-
-    public String getCustomRuntimeId() {
-        return customRuntimeId;
-    }
-
-    public void setCustomRuntimeId(String customRuntimeId) {
-        this.customRuntimeId = customRuntimeId;
     }
 
     /** This method is only called after a lambda with Agent terminates. */

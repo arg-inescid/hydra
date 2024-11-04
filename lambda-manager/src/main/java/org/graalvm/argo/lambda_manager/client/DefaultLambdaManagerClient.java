@@ -20,7 +20,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
 
     private String sendRequest(HttpRequest request, Lambda lambda) {
         HttpClient client = lambda.getConnection().client;
-        for (int failures = 0; failures < Configuration.FAULT_TOLERANCE; failures++) {
+        for (int failures = 0; failures < Configuration.argumentStorage.getFaultTolerance(); failures++) {
             try {
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
                 return response.body();

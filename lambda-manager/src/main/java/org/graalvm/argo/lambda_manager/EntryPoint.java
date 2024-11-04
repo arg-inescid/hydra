@@ -31,7 +31,7 @@ public class EntryPoint {
                 Micronaut.run(EntryPoint.class, args);
             }
 
-            configure(configPath);
+            configure(configPath, variablesPath);
 
             if (socketServer) {
                 SocketServer server = new SocketServer(30009);
@@ -45,14 +45,15 @@ public class EntryPoint {
         }
     }
 
-    private static void configure(String configPath) {
+    private static void configure(String configPath, String variablesPath) {
         // No builtin startup hooks in Java, running it directly.
         new StartupHook().run();
         // Registering shutdown hook instead of using the Micronaut's lifecycle management.
         Runtime.getRuntime().addShutdownHook(new ShutdownHook());
         // Configuring Lambda Manager with the JSON configuration.
         try {
-            System.out.println(LambdaManager.configureManager(Files.readString(Paths.get(configPath))));
+            String result = LambdaManager.configureManager(Files.readString(Paths.get(configPath)), Files.readString(Paths.get(variablesPath)));
+            System.out.println(result);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

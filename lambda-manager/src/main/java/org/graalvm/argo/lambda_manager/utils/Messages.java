@@ -41,9 +41,6 @@ public class Messages {
     public static final String PROCESS_SHUTDOWN_EXCEPTION_FINE = "PID -> %d | | Command -> %s | " + "Raise exception in shutdown callback!";
     public static final String PROCESS_SHUTDOWN_EXCEPTION_INFO = "PID -> %d | | Type -> %s | " + "Raise exception in shutdown callback!";
 
-    // Connection pool messages.
-    public static final String ERROR_POOL_CREATION = "Error during creating new connection pool!";
-
     // Parse/Serialize JSON.
     public static final String ERROR_PARSING_JSON = "Error during parsing JSON configuration file!";
     public static final String ERROR_SERIALIZE_JSON = "Error during serialization of JSON object!";

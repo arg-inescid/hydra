@@ -4,6 +4,7 @@ import java.util.Iterator;
 import java.util.Queue;
 import java.util.Random;
 
+import org.graalvm.argo.lambda_manager.core.Configuration;
 import org.graalvm.argo.lambda_manager.core.Environment;
 import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
 import org.graalvm.argo.lambda_manager.processes.taps.CreateTap;
@@ -15,7 +16,6 @@ import com.github.maltalex.ineter.range.IPv4Subnet;
 public class NetworkConfigurationUtils {
 
     private static final String LOCALHOST_IP = "127.0.0.1";
-    private static final int FIRST_LAMBDA_PORT = 30100;
 
     public static void prepareVmConnectionPool(Queue<LambdaConnection> pool, int connections, String gatewayWithMask, int lambdaPort) {
         Iterator<IPv4Address> iPv4AddressIterator = IPv4Subnet.of(gatewayWithMask).iterator();
@@ -31,7 +31,7 @@ public class NetworkConfigurationUtils {
     }
 
     public static void prepareContainerConnectionPool(Queue<LambdaConnection> pool, int connections) {
-        for (int lambdaPort = FIRST_LAMBDA_PORT; lambdaPort < FIRST_LAMBDA_PORT + connections; lambdaPort++) {
+        for (int lambdaPort = Configuration.argumentStorage.getFirstLambdaPort(); lambdaPort < Configuration.argumentStorage.getFirstLambdaPort() + connections; lambdaPort++) {
             pool.add(new LambdaConnection(LOCALHOST_IP, null, lambdaPort));
         }
     }

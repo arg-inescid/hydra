@@ -31,7 +31,7 @@ cd "$ARGO_HOME/lambda-manager" || {
 
 # Initialize parameters with default values or leave empty.
 CONFIG_PATH="$ARGO_HOME/run/configs/manager/default-lambda-manager.json"
-VARIABLES_PATH=
+VARIABLES_PATH="$ARGO_HOME/run/configs/manager/default-variables.json"
 SOCKET_SERVER_OPTION=
 HTTP_SERVER_OPTION=
 

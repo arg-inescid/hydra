@@ -51,7 +51,7 @@ public class LambdaManager {
         }
         LambdaExecutionMode targetMode = function.getLambdaExecutionMode();
 
-        for (int i = 0; i < Configuration.LAMBDA_FAULT_TOLERANCE; i++) {
+        for (int i = 0; i < Configuration.argumentStorage.getLambdaFaultTolerance(); i++) {
             try {
                 lambda = Configuration.scheduler.schedule(function, targetMode);
 
@@ -156,11 +156,11 @@ public class LambdaManager {
         return JsonUtils.constructJsonResponseObject(responseString);
     }
 
-    public static String configureManager(String lambdaManagerConfiguration) {
+    public static String configureManager(String lambdaManagerConfiguration, String variablesConfiguration) {
         String responseString;
         try {
             if (!Configuration.isInitialized()) {
-                ArgumentStorage.initializeLambdaManager(ArgumentParser.parse(lambdaManagerConfiguration));
+                ArgumentStorage.initializeLambdaManager(ArgumentParser.parseLambdaManagerConfiguration(lambdaManagerConfiguration), ArgumentParser.parseVariables(variablesConfiguration));
                 Logger.log(Level.INFO, Messages.SUCCESS_CONFIGURATION_UPLOAD);
                 responseString = Messages.SUCCESS_CONFIGURATION_UPLOAD;
             } else {

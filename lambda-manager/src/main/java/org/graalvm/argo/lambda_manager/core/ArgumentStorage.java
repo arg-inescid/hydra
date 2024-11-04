@@ -18,6 +18,7 @@ import org.graalvm.argo.lambda_manager.utils.logger.LambdaManagerFormatter;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 import org.graalvm.argo.lambda_manager.utils.parser.LambdaManagerConfiguration;
 import org.graalvm.argo.lambda_manager.utils.parser.LambdaManagerConsole;
+import org.graalvm.argo.lambda_manager.utils.parser.VariablesConfiguration;
 
 import java.io.File;
 import java.io.IOException;
@@ -56,6 +57,14 @@ public class ArgumentStorage {
     private int cpuQuota;
     private boolean isLambdaConsoleActive; // TODO - do we ever disable this?
 
+    private int firstLambdaPort;
+    private int faultTolerance;
+    private int lambdaFaultTolerance;
+    private int reclamationInterval;
+    private int lruReclamationPeriod;
+    private float reclamationThreshold;
+    private float reclamationPercentage;
+
     /**
      * Scheduled worker that writes metrics to a file.
      */
@@ -64,7 +73,7 @@ public class ArgumentStorage {
     /* Private constructor. */
     private ArgumentStorage() { }
 
-    private void initClassFields(LambdaManagerConfiguration lambdaManagerConfiguration) {
+    private void initClassFields(LambdaManagerConfiguration lambdaManagerConfiguration, VariablesConfiguration variablesConfiguration) {
         this.gateway = lambdaManagerConfiguration.getGateway().split("/")[0];
         this.mask = IPv4Subnet.of(lambdaManagerConfiguration.getGateway()).getNetworkMask().toString();
         this.lambdaType = LambdaType.fromString(lambdaManagerConfiguration.getLambdaType());
@@ -76,6 +85,15 @@ public class ArgumentStorage {
         this.lambdaPort = lambdaManagerConfiguration.getLambdaPort();
         initLambdaFactory(this.lambdaType);
         this.isLambdaConsoleActive = lambdaManagerConfiguration.isLambdaConsole();
+
+        // Global variables coming from a separate JSON file.
+        this.firstLambdaPort = variablesConfiguration.getFirstLambdaPort();
+        this.faultTolerance = variablesConfiguration.getFaultTolerance();
+        this.lambdaFaultTolerance = variablesConfiguration.getLambdaFaultTolerance();
+        this.reclamationInterval = variablesConfiguration.getReclamationInterval();
+        this.lruReclamationPeriod = variablesConfiguration.getLruReclamationPeriod();
+        this.reclamationThreshold = variablesConfiguration.getReclamationThreshold();
+        this.reclamationPercentage = variablesConfiguration.getReclamationPercentage();
     }
 
     private void initLambdaFactory(LambdaType lambdaType) {
@@ -147,9 +165,9 @@ public class ArgumentStorage {
         }
     }
 
-    public void doInitialize(LambdaManagerConfiguration lambdaManagerConfiguration) {
+    public void doInitialize(LambdaManagerConfiguration lambdaManagerConfiguration, VariablesConfiguration variablesConfiguration) {
 
-        initClassFields(lambdaManagerConfiguration);
+        initClassFields(lambdaManagerConfiguration, variablesConfiguration);
 
         prepareLogger(lambdaManagerConfiguration.getManagerConsole());
         initMetricsScraper();
@@ -180,8 +198,8 @@ public class ArgumentStorage {
         }
     }
 
-    public static void initializeLambdaManager(LambdaManagerConfiguration lambdaManagerConfiguration) {
-        new ArgumentStorage().doInitialize(lambdaManagerConfiguration);
+    public static void initializeLambdaManager(LambdaManagerConfiguration lambdaManagerConfiguration, VariablesConfiguration variablesConfiguration) {
+        new ArgumentStorage().doInitialize(lambdaManagerConfiguration, variablesConfiguration);
     }
 
     public String getGateway() {
@@ -238,5 +256,33 @@ public class ArgumentStorage {
 
     public void tearDownMetricsScraper() {
         metricsScraper.close();
+    }
+
+    public int getFirstLambdaPort() {
+        return firstLambdaPort;
+    }
+
+    public int getFaultTolerance() {
+        return faultTolerance;
+    }
+
+    public int getLambdaFaultTolerance() {
+        return lambdaFaultTolerance;
+    }
+
+    public int getReclamationInterval() {
+        return reclamationInterval;
+    }
+
+    public int getLruReclamationPeriod() {
+        return lruReclamationPeriod;
+    }
+
+    public float getReclamationThreshold() {
+        return reclamationThreshold;
+    }
+
+    public float getReclamationPercentage() {
+        return reclamationPercentage;
     }
 }

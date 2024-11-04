@@ -34,14 +34,6 @@ public class LambdaPoolUtils {
 
     private static final int EXECUTOR_THREAD_COUNT = Runtime.getRuntime().availableProcessors() / 2;
 
-    private static final int DAEMON_SLEEP_PERIOD_MS = 5000;
-    /**
-     * Only reclaim lambdas that were used more than "LRU_RECLAMATION_PERIOD_MS" ms ago.
-     */
-    private static final int LRU_RECLAMATION_PERIOD_MS = 5000;
-    private static final float LAMBDA_RECLAIM_THRESHOLD = 0.3f;
-    private static final float LAMBDA_PERCENTAGE_TO_RECLAIM = LAMBDA_RECLAIM_THRESHOLD * 0.5f;
-
     public static void prepareLambdaPool(Map<LambdaExecutionMode, ConcurrentLinkedQueue<Lambda>> lambdaPool, LambdaManagerPool poolConfiguration) {
         ExecutorService executor = Executors.newFixedThreadPool(EXECUTOR_THREAD_COUNT);
 
@@ -237,7 +229,7 @@ public class LambdaPoolUtils {
             while (Environment.notShutdownHookActive()) {
                 try {
                     lambdaPool.forEach(this::reclaim);
-                    Thread.sleep(DAEMON_SLEEP_PERIOD_MS);
+                    Thread.sleep(Configuration.argumentStorage.getReclamationInterval());
                 } catch (InterruptedException ie) {
                     // Ignore.
                 } catch (Throwable th) {
@@ -248,13 +240,13 @@ public class LambdaPoolUtils {
 
         private void reclaim(LambdaExecutionMode mode, ConcurrentLinkedQueue<Lambda> lambdas) {
             int total = maxLambdas.get(mode);
-            int minimalThreshold = (int) (total * LAMBDA_RECLAIM_THRESHOLD);
+            int minimalThreshold = (int) (total * Configuration.argumentStorage.getReclamationThreshold());
             int lambdasInPool = lambdas.size();
             if (lambdasInPool < minimalThreshold) {
                 // Use Math.ceil to always reclaim at least one lambda.
-                int lambdasToReclaim = (int) Math.ceil(total * LAMBDA_PERCENTAGE_TO_RECLAIM);
+                int lambdasToReclaim = (int) Math.ceil(total * Configuration.argumentStorage.getReclamationPercentage());
                 long ts = System.currentTimeMillis();
-                LambdaManager.lambdas.stream().filter(l -> l.getExecutionMode() == mode && l.getOpenRequestCount() <= 0 && ts - l.getTimerTimestamp() > LRU_RECLAMATION_PERIOD_MS).sorted(this::compare)
+                LambdaManager.lambdas.stream().filter(l -> l.getExecutionMode() == mode && l.getOpenRequestCount() <= 0 && ts - l.getTimerTimestamp() > Configuration.argumentStorage.getLruReclamationPeriod()).sorted(this::compare)
                         .limit(lambdasToReclaim).parallel().forEach(l -> new DefaultLambdaShutdownHandler(l, "reclaiming").run());
             }
         }
