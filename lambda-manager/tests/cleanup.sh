@@ -1,4 +1,11 @@
+#!/bin/bash
+
+function DIR {
+    echo "$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+}
+
 # This script cleans up Firecracker/Docker lambdas in case Lambda Manager terminated abruptly.
+# Warning: this script will terminate all Firecracker VMs!
 
 cd $ARGO_HOME/lambda-manager/src/scripts/devmapper
 
