@@ -4,30 +4,21 @@ import java.io.IOException;
 
 import org.graalvm.argo.graalvisor.function.NativeFunction;
 import org.graalvm.argo.graalvisor.function.PolyglotFunction;
-import org.graalvm.nativeimage.IsolateThread;
-
-import com.oracle.svm.graalvisor.api.GraalVisorAPI;
-import com.oracle.svm.graalvisor.polyglot.PolyglotLanguage;
 
 public class ProcessSandboxProvider extends SandboxProvider {
 
     /**
-     * The process sandbox provider loads the function so that child processes can benefit form
-     * COW memory.
+     * The process sandbox provider loads the function so that child processes
+     * can benefit form COW memory.
      */
-    private GraalVisorAPI graalvisorAPI;
-
     public ProcessSandboxProvider(PolyglotFunction function) {
         super(function);
     }
 
-    public GraalVisorAPI getGraalvisorAPI() {
-        return this.graalvisorAPI;
-    }
-
     @Override
     public void loadProvider() throws IOException {
-        this.graalvisorAPI = new GraalVisorAPI(((NativeFunction) getFunction()).getPath());
+        String fpath = ((NativeFunction) getFunction()).getPath();
+        this.functionHandle = NativeSandboxInterface.loadFunction(fpath);
     }
 
     @Override
@@ -35,10 +26,11 @@ public class ProcessSandboxProvider extends SandboxProvider {
         if (concurrency > 1 || requests > 1) {
             return "Error': Warmup operation not supported with multiple threads and requests.";
         }
-        IsolateThread isolateThread = graalvisorAPI.createIsolate();
-        String result = graalvisorAPI.invokeFunction((IsolateThread) isolateThread, getFunction().getEntryPoint(), jsonArguments);
-        graalvisorAPI.tearDownIsolate(isolateThread);
-        graalvisorAPI.close();
+
+        long iThreadHandle = NativeSandboxInterface.createSandbox(functionHandle);
+        String result = NativeSandboxInterface.invokeSandbox(functionHandle, iThreadHandle, jsonArguments);
+        NativeSandboxInterface.destroySandbox(functionHandle, iThreadHandle);
+        NativeSandboxInterface.unloadFunction(functionHandle);
         this.loadProvider();
         return result;
     }
@@ -55,7 +47,7 @@ public class ProcessSandboxProvider extends SandboxProvider {
 
     @Override
     public void unloadProvider() throws IOException {
-        graalvisorAPI.close();
+        NativeSandboxInterface.unloadFunction(this.functionHandle);
     }
 
     @Override
