@@ -71,11 +71,11 @@ public class RoundedRobinScheduler implements Scheduler {
             obtainedLambda = false;
         }
 
-        // synchronized (function) {
-        //     if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT && function.getStatus() == FunctionStatus.READY && !lambda.isDecommissioned()) {
-        //         lambda.setDecommissioned(true);
-        //         Logger.log(Level.INFO, "Decommissioning (hotspot to native image) lambda " + lambda.getLambdaID());
-        //     }
+         synchronized (function) {
+             if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT && function.getStatus() == FunctionStatus.READY && !lambda.isDecommissioned()) {
+                 lambda.setDecommissioned(true);
+                 Logger.log(Level.INFO, "Decommissioning (hotspot to native image) lambda " + lambda.getLambdaID());
+             }
         
             if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT && lambda.getClosedRequestCount() > 1000 && !lambda.isDecommissioned()) {
                 lambda.setDecommissioned(true);
