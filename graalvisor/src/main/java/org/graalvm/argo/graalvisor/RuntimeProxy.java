@@ -1,7 +1,7 @@
 package org.graalvm.argo.graalvisor;
 
-import static com.oracle.svm.graalvisor.utils.JsonUtils.json;
-import static com.oracle.svm.graalvisor.utils.JsonUtils.jsonToMap;
+import static org.graalvm.argo.graalvisor.utils.JsonUtils.json;
+import static org.graalvm.argo.graalvisor.utils.JsonUtils.jsonToMap;
 import static org.graalvm.argo.graalvisor.utils.ProxyUtils.errorResponse;
 import static org.graalvm.argo.graalvisor.utils.ProxyUtils.extractRequestBody;
 import static org.graalvm.argo.graalvisor.utils.ProxyUtils.writeResponse;

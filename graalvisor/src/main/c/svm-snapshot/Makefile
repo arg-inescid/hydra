@@ -27,6 +27,8 @@ gcommands = -x gdb-commands.txt
 debug = -O0 -g3
 
 all: *.h *.c
+	make -C deps/printf
+	make -C deps/dlmalloc
 	gcc $(debug) -Wall -c *.c
 	gcc $(debug) -Wall -o main *.o deps/printf/printf.o deps/dlmalloc/malloc.o
 
