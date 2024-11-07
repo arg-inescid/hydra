@@ -34,9 +34,9 @@ import org.graalvm.argo.graalvisor.sandboxing.ExecutableSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.ProcessSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.SandboxProvider;
 import org.graalvm.argo.graalvisor.utils.ProxyUtils;
-import org.graalvm.argo.graalvisor.polyglot.PolyglotLanguage;
-import org.graalvm.argo.graalvisor.polyglot.PolyglotEngine;
 
+import com.oracle.svm.graalvisor.polyglot.PolyglotLanguage;
+import com.oracle.svm.graalvisor.polyglot.PolyglotEngine;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;

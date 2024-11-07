@@ -15,9 +15,9 @@ import org.graalvm.argo.graalvisor.function.HotSpotFunction;
 import org.graalvm.argo.graalvisor.function.PolyglotFunction;
 import org.graalvm.argo.graalvisor.function.TruffleFunction;
 import org.graalvm.argo.graalvisor.utils.ProxyUtils;
-import org.graalvm.argo.graalvisor.polyglot.PolyglotLanguage;
 
 import com.sun.net.httpserver.HttpExchange;
+import com.oracle.svm.graalvisor.polyglot.PolyglotLanguage;
 
 /**
  * Runtime proxy that runs on HotSpot JVM. Right now we only support truffle

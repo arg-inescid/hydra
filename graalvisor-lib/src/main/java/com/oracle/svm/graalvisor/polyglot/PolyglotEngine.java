@@ -46,7 +46,7 @@ public class PolyglotEngine {
         }
 
         // Adding compilation option.
-        if ("python".equals(language)) {
+        if (PolyglotLanguage.PYTHON.toString().equals(language)) {
             // Necessary to allow python imports.
             options.put("python.ForceImportSite", "true");
             // Loading the virtual env with installed packages
