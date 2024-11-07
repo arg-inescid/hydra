@@ -1,7 +1,7 @@
 package org.graalvm.argo.graalvisor;
 
-import static com.oracle.svm.graalvisor.utils.JsonUtils.json;
-import static com.oracle.svm.graalvisor.utils.JsonUtils.jsonToMap;
+import static org.graalvm.argo.graalvisor.utils.JsonUtils.json;
+import static org.graalvm.argo.graalvisor.utils.JsonUtils.jsonToMap;
 import static org.graalvm.argo.graalvisor.utils.ProxyUtils.errorResponse;
 
 import java.io.IOException;
@@ -15,10 +15,9 @@ import org.graalvm.argo.graalvisor.function.HotSpotFunction;
 import org.graalvm.argo.graalvisor.function.PolyglotFunction;
 import org.graalvm.argo.graalvisor.function.TruffleFunction;
 import org.graalvm.argo.graalvisor.utils.ProxyUtils;
+import org.graalvm.argo.graalvisor.polyglot.PolyglotLanguage;
 
-import com.oracle.svm.graalvisor.utils.JsonUtils;
 import com.sun.net.httpserver.HttpExchange;
-import com.oracle.svm.graalvisor.polyglot.PolyglotLanguage;
 
 /**
  * Runtime proxy that runs on HotSpot JVM. Right now we only support truffle
@@ -43,7 +42,7 @@ public class HotSpotProxy extends RuntimeProxy {
         } else if (function.getLanguage() == PolyglotLanguage.JAVA) {
             HotSpotFunction hf = (HotSpotFunction) function;
             Method method = hf.getMethod();
-            return json.asString(method.invoke(null, new Object[] { JsonUtils.jsonToMap(arguments) }));
+            return json.asString(method.invoke(null, new Object[] { jsonToMap(arguments) }));
         } else if (function instanceof TruffleFunction){
             TruffleFunction tf = (TruffleFunction) function;
             return RuntimeProxy.LANGUAGE_ENGINE.invoke(tf.getLanguage().toString(), tf.getSource(), tf.getEntryPoint(), arguments);

@@ -4,7 +4,7 @@ import java.util.Locale;
 
 import org.graalvm.argo.graalvisor.sandboxing.SandboxProvider;
 
-import com.oracle.svm.graalvisor.polyglot.PolyglotLanguage;
+import org.graalvm.argo.graalvisor.polyglot.PolyglotLanguage;
 
 public class PolyglotFunction {
     private final String name;
