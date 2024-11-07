@@ -27,13 +27,11 @@ import org.graalvm.argo.graalvisor.function.HotSpotFunction;
 import org.graalvm.argo.graalvisor.function.NativeFunction;
 import org.graalvm.argo.graalvisor.function.PolyglotFunction;
 import org.graalvm.argo.graalvisor.function.TruffleFunction;
-import org.graalvm.argo.graalvisor.sandboxing.PolyContextSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.ContextSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.ContextSnapshotSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.IsolateSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.ExecutableSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.ProcessSandboxProvider;
-import org.graalvm.argo.graalvisor.sandboxing.RuntimeSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.SandboxProvider;
 import org.graalvm.argo.graalvisor.utils.ProxyUtils;
 
@@ -195,17 +193,15 @@ public abstract class RuntimeProxy {
         private SandboxProvider getDefaultSandboxProvider(PolyglotFunction function) {
             if (function.isExecutable()) {
                 return new ExecutableSandboxProvider(function, appDir);
-            } else if (function.getLanguage() == PolyglotLanguage.JAVA) {
-                return new IsolateSandboxProvider(function);
             } else {
-                return new PolyContextSandboxProvider(function);
+                return new IsolateSandboxProvider(function);
             }
         }
 
         private SandboxProvider getSandboxProvider(PolyglotFunction function, String sandboxName) {
 
             if (sandboxName == null) {
-                return getDefaultSandboxProvider(function);
+                return getDefaultSandboxProvider(function); // TODO - should we not have a default value?
             }
 
             if (function.getLanguage() == PolyglotLanguage.JAVA) {
@@ -215,19 +211,12 @@ public abstract class RuntimeProxy {
                     return new ContextSnapshotSandboxProvider(function);
                 } else if (sandboxName.equals("isolate")) {
                     return new IsolateSandboxProvider(function);
-                } else if (sandboxName.equals("runtime")) {
-                    return new RuntimeSandboxProvider(function);
                 } else if (sandboxName.equals("process")) {
                     return new ProcessSandboxProvider(function);
                 } else if (sandboxName.equals("pgo")) {
                     return new ExecutableSandboxProvider(function, appDir);
                 }
-            } else {
-                if (sandboxName.equals("context")) {
-                    return new PolyContextSandboxProvider(function);
-                }
             }
-
             return null;
         }
 

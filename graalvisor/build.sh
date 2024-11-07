@@ -27,23 +27,20 @@ function build_lazyisolation {
 }
 
 function build_svm_snapshot {
-    gcc -c -I"$SNAP_DIR" -o $LIB_DIR/svm-snapshot.o $SNAP_DIR/svm-snapshot.c
-    gcc -c -I"$SNAP_DIR" -o $LIB_DIR/cr.o           $SNAP_DIR/cr.c
-    gcc -c -I"$SNAP_DIR" -o $LIB_DIR/syscalls.o     $SNAP_DIR/syscalls.c
-    gcc -c -I"$SNAP_DIR" -o $LIB_DIR/list.o         $SNAP_DIR/list.c
-    LINKER_OPTIONS="
-        $LINKER_OPTIONS
-        -H:NativeLinkerOption="$LIB_DIR/svm-snapshot.o"
-        -H:NativeLinkerOption="$LIB_DIR/cr.o"
-        -H:NativeLinkerOption="$LIB_DIR/syscalls.o"
-        -H:NativeLinkerOption="$LIB_DIR/list.o""
+    # Build svm snapshot sub-project.
+    make -C $SNAP_DIR
+    # We don't want to include the main (which is used for testing).
+    rm $SNAP_DIR/main.o
+    # Add all object files to the list of objects to be included in the final binary.
+    for f in $SNAP_DIR/*.o $SNAP_DIR/deps/printf/printf.o $SNAP_DIR/deps/dlmalloc/malloc.o;
+    do
+        LINKER_OPTIONS="$LINKER_OPTIONS -H:NativeLinkerOption="$f""
+    done
 }
 
 function build_network_isolation {
     gcc -c -I"$NET_DIR" -o $LIB_DIR/network-isolation.o $NET_DIR/network-isolation.c
-    LINKER_OPTIONS="
-        $LINKER_OPTIONS
-        -H:NativeLinkerOption="$LIB_DIR/network-isolation.o""
+    LINKER_OPTIONS="$LINKER_OPTIONS -H:NativeLinkerOption="$LIB_DIR/network-isolation.o""
 }
 
 function build_nsi {
@@ -130,7 +127,6 @@ if [[ "$EXECUTION_ENVIRONMENT" != "local" ]]
 then  # Build native image inside Docker container.
     docker run -it -v $JAVA_HOME:/jvm -v $ARGO_HOME:/argo --rm argo-builder /argo/graalvisor/build.sh "local"
     sudo chown -R $(id -u -n):$(id -g -n) $ARGO_HOME/graalvisor/build
-    sudo chown -R $(id -u -n):$(id -g -n) $ARGO_HOME/graalvisor-lib/build
 else  # Build native image locally (inside container or directly on host).
     read -p "Use musl libc? (y or Y, everything else as no)? " -n 1 -r
     echo    # move to a new line
@@ -155,10 +151,6 @@ else  # Build native image locally (inside container or directly on host).
         LANGS="$LANGS --language:python"
         echo "Python support added!"
     fi
-
-    echo -e "${GREEN}Building graalvisor-lib jar...${NC}"
-    $ARGO_HOME/graalvisor-lib/build.sh
-    echo -e "${GREEN}Building graalvisor-lib jar... done!${NC}"
 
     echo -e "${GREEN}Building graalvisor jar...${NC}"
     ./gradlew clean shadowJar javaProxy

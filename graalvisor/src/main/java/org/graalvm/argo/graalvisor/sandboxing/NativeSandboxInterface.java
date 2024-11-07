@@ -31,4 +31,15 @@ public class NativeSandboxInterface {
         String functionPath,
         String metaSnapshotPath,
         String memSnapshotPath);
+
+
+    // TODO - define function_abi structs.
+    public static native long loadFunction(String path);
+    public static native long createSandbox(long fabi);
+    public static native long getSandbox(long fabi, long ithread);
+    public static native long attachThread(long fabi, long isolate);
+    public static native String invokeSandbox(long fabi, long ithread, String args);
+    public static native int detachThread(long fabi, long ithread);
+    public static native void destroySandbox(long fabi, long ithread);
+    public static native int unloadFunction(long fabi);
 }

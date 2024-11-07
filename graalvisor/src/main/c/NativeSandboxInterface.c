@@ -1,9 +1,11 @@
 #include <jni.h>
+#include <dlfcn.h>
 #include <unistd.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include "graal_capi.h"
 #ifdef LAZY_ISOLATION
 #include "lazyisolation.h"
 #endif
@@ -209,4 +211,161 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     (*env)->ReleaseStringUTFChars(env, fpath, fpath_str);
     (*env)->ReleaseStringUTFChars(env, mem_snap_path, mem_snap_path_str);
     (*env)->ReleaseStringUTFChars(env, meta_snap_path, meta_snap_path_str);
+}
+
+
+typedef struct {
+    // dlopen handle that points to the function code.
+    void* dlhandle;
+    // Struct of pointers to svm abi.
+    isolate_abi_t sabi;
+} function_abi_t;
+
+JNIEXPORT long JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_loadFunction(
+        JNIEnv *env,
+        jobject thisObj,
+        jstring pathStr) {
+    char* derror = NULL;
+    function_abi_t* fabi = (function_abi_t*) malloc(sizeof(function_abi_t));
+
+    // Load functin path into C.
+    const char* path = (*env)->GetStringUTFChars(env, pathStr, 0);
+    // Load function from library.
+    fabi->dlhandle = dlopen(path, RTLD_LAZY);
+    if (fabi->dlhandle == NULL) {
+        fprintf(stderr, "error: failed to load dynamic library: %s\n", dlerror());
+        return 0;
+    }
+    // Release function path string.
+    (*env)->ReleaseStringUTFChars(env, pathStr, path);
+
+    // Load function abi.
+    fabi->sabi.graal_create_isolate = (int (*)(graal_create_isolate_params_t*, graal_isolate_t**, graal_isolatethread_t**)) dlsym(fabi->dlhandle, "graal_create_isolate");
+    if ((derror = dlerror()) != NULL) {
+        fprintf(stderr, "error: %s\n", derror);
+        return 0;
+    }
+
+    fabi->sabi.graal_tear_down_isolate = (int (*)(graal_isolatethread_t*)) dlsym(fabi->dlhandle, "graal_tear_down_isolate");
+    if ((derror = dlerror()) != NULL) {
+        fprintf(stderr, "error: %s\n", derror);
+        return 0;
+    }
+
+    fabi->sabi.graal_get_isolate = (graal_isolate_t* (*)(graal_isolatethread_t*)) dlsym(fabi->dlhandle, "graal_get_isolate");
+    if ((derror = dlerror()) != NULL) {
+        fprintf(stderr, "error: %s\n", derror);
+        return 0;
+    }
+
+    fabi->sabi.entrypoint = (void (*)(graal_isolatethread_t*, const char*, const char*, unsigned long)) dlsym(fabi->dlhandle, "entrypoint");
+    if ((derror = dlerror()) != NULL) {
+        fprintf(stderr, "error: %s\n", derror);
+        return 0;
+    }
+
+    fabi->sabi.graal_detach_thread = (int (*)(graal_isolatethread_t*)) dlsym(fabi->dlhandle, "graal_detach_thread");
+    if ((derror = dlerror()) != NULL) {
+        fprintf(stderr, "error: %s\n", derror);
+        return 0;
+    }
+
+    fabi->sabi.graal_attach_thread = (int (*)(graal_isolate_t*, graal_isolatethread_t**)) dlsym(fabi->dlhandle, "graal_attach_thread");
+    if ((derror = dlerror()) != NULL) {
+        fprintf(stderr, "error: %s\n", derror);
+        return 0;
+    }
+    return (long) fabi;
+}
+
+JNIEXPORT long JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createSandbox(
+        JNIEnv *env,
+        jobject thisObj,
+        long fabiPtr) {
+    function_abi_t* fabi = (function_abi_t*) fabiPtr;
+    graal_create_isolate_params_t params;
+    graal_isolate_t* isolate = NULL;
+    graal_isolatethread_t* ithread = NULL;
+
+    // TODO - set to 256MB?
+    memset(&params, 0, sizeof(graal_create_isolate_params_t));
+
+    if (fabi->sabi.graal_create_isolate(&params, &isolate, &ithread) != 0) {
+        fprintf(stderr, "error: failed to create isolate\n");
+        return 0;
+    }
+
+    return (long) ithread;
+}
+
+JNIEXPORT long JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_getSandbox(
+        JNIEnv *env,
+        jobject thisObj,
+        long fabiPtr,
+        long ithreadPtr) {
+    function_abi_t* fabi = (function_abi_t*) fabiPtr;
+    graal_isolatethread_t* ithread = (graal_isolatethread_t*) ithreadPtr;
+    return (long) fabi->sabi.graal_get_isolate(ithread);
+}
+
+JNIEXPORT long JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_attachThread(
+        JNIEnv *env,
+        jobject thisObj,
+        long fabiPtr,
+        long isolatePtr) {
+    function_abi_t* fabi = (function_abi_t*) fabiPtr;
+    graal_isolate_t* isolate = (graal_isolate_t*) isolatePtr;
+    graal_isolatethread_t* ithread = NULL;
+
+    if (fabi->sabi.graal_attach_thread(isolate, &ithread) != 0) {
+        fprintf(stderr, "error: failed to attach thread to isolate\n");
+        return 0;
+    }
+
+    return (long) ithread;
+}
+
+JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_invokeSandbox(
+        JNIEnv *env,
+        jobject thisObj,
+        long fabiPtr,
+        long ithreadPtr,
+        jstring argsStr) {
+    function_abi_t* fabi = (function_abi_t*) fabiPtr;
+    graal_isolatethread_t* ithread = (graal_isolatethread_t*) ithreadPtr;
+    char fout[256];
+    const char* args = (*env)->GetStringUTFChars(env, argsStr, 0);
+    fabi->sabi.entrypoint(ithread, args, fout, 256);
+    (*env)->ReleaseStringUTFChars(env, argsStr, args);
+    return (*env)->NewStringUTF(env, fout);
+}
+
+JNIEXPORT int JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_detachThread(
+        JNIEnv *env,
+        jobject thisObj,
+        long fabiPtr,
+        long ithreadPtr) {
+    function_abi_t* fabi = (function_abi_t*) fabiPtr;
+    graal_isolatethread_t* ithread = (graal_isolatethread_t*) ithreadPtr;
+
+    return fabi->sabi.graal_detach_thread(ithread);
+}
+
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_destroySandbox(
+        JNIEnv *env,
+        jobject thisObj,
+        long fabiPtr,
+        long ithreadPtr) {
+    function_abi_t* fabi = (function_abi_t*) fabiPtr;
+    graal_isolatethread_t* ithread = (graal_isolatethread_t*) ithreadPtr;
+    if (fabi->sabi.graal_tear_down_isolate(ithread) != 0) {
+        fprintf(stderr, "error: failed to create isolate\n");
+    }
+}
+
+JNIEXPORT int JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_unloadFunction(
+        JNIEnv *env,
+        jobject thisObj,
+        long fabi) {
+    return dlclose(((function_abi_t*)fabi)->dlhandle);
 }

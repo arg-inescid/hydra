@@ -6,13 +6,9 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
-import org.graalvm.argo.graalvisor.function.NativeFunction;
-import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.StackValue;
 import org.graalvm.nativeimage.c.function.CFunction;
 import org.graalvm.nativeimage.c.type.CIntPointer;
-
-import com.oracle.svm.graalvisor.api.GraalVisorAPI;
 
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
@@ -57,13 +53,14 @@ public class ProcessSandboxHandle extends SandboxHandle {
     public static native int waitpid(int pid, CIntPointer stat_loc, int options);
 
     private void child(ProcessSandboxProvider rsProvider) {
-        NativeFunction function = (NativeFunction) rsProvider.getFunction();
-        GraalVisorAPI gvAPI = rsProvider.getGraalvisorAPI();
-        IsolateThread ithread = gvAPI.createIsolate();
+        long functionHandle = rsProvider.getFunctionHandle();
+        long iThreadHandle = NativeSandboxInterface.createSandbox(functionHandle);
+
         String line;
         try {
             while((line = receiver.readLine()) != null) {
-                sender.write(String.format("%s\n", gvAPI.invokeFunction(ithread, function.getEntryPoint(), line)).getBytes());
+                String output = NativeSandboxInterface.invokeSandbox(functionHandle, iThreadHandle, line);
+                sender.write(String.format("%s\n", output).getBytes());
             }
         } catch(Exception e) {
             System.err.println(e.getMessage());

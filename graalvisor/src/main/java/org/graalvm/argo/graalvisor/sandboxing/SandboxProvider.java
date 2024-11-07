@@ -6,7 +6,12 @@ import org.graalvm.argo.graalvisor.function.PolyglotFunction;
 
 public abstract class SandboxProvider {
 
+    // The function that this provider if serving.
     protected final PolyglotFunction function;
+
+    // Native function handle (pointer casted to long).
+    protected long functionHandle;
+
 
     public SandboxProvider(PolyglotFunction function) {
         this.function = function;
@@ -14,6 +19,10 @@ public abstract class SandboxProvider {
 
     public PolyglotFunction getFunction() {
         return this.function;
+    }
+
+    public long getFunctionHandle() {
+        return this.functionHandle;
     }
 
     public abstract String getName();
