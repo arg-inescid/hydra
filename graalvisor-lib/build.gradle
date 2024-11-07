@@ -19,6 +19,4 @@ shadowJar() {
 
 dependencies {
     compileOnly 'org.graalvm.sdk:graal-sdk:23.0.0'
-    compileOnly 'org.graalvm.nativeimage:svm:23.0.0'
-    implementation 'com.fasterxml.jackson.jr:jackson-jr-objects:2.13.0-rc2'
 }
