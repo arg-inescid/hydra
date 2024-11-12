@@ -17,4 +17,5 @@ public abstract class AbstractLambdaFactory {
 
     public abstract StartLambda createOpenWhisk(Lambda lambda);
 
+    public abstract StartLambda createGraalOS(Lambda lambda);
 }

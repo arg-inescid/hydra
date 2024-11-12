@@ -1,6 +1,7 @@
 package org.graalvm.argo.lambda_manager.processes.lambda.factory;
 
 import org.graalvm.argo.lambda_manager.core.Lambda;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalOSContainer;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalvisorContainer;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalvisorPgoContainer;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalvisorPgoOptimizedContainer;
@@ -39,6 +40,10 @@ public class ContainerLambdaFactory extends AbstractLambdaFactory {
     @Override
     public StartLambda createGraalvisorPgoOptimized(Lambda lambda) {
         return new StartGraalvisorPgoOptimizedContainer(lambda);
+    }
+
+    public StartLambda createGraalOS(Lambda lambda) {
+        return new StartGraalOSContainer(lambda);
     }
 
 }

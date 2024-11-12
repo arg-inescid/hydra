@@ -26,7 +26,7 @@ public class Messages {
 
     // Request messages.
     public static final String FUNCTION_NOT_FOUND = "Function - %s - has not been uploaded!";
-    public static final String TIME_REQUEST = "Time (user=%s, function_name=%s, mode=%s, id=%d): %d\t[ms]";
+    public static final String TIME_REQUEST = "Time (user=%s, function_name=%s, mode=%s, id=%d) req: %d; infr: %d\t[ms]";
 
     // Tap messages.
     public static final String ERROR_TAP_REMOVAL = "Error during cleaning taps!";
@@ -40,9 +40,6 @@ public class Messages {
     public static final String PROCESS_RAISE_EXCEPTION_INFO = "PID -> %d | Type -> %s | Raised exception!";
     public static final String PROCESS_SHUTDOWN_EXCEPTION_FINE = "PID -> %d | | Command -> %s | " + "Raise exception in shutdown callback!";
     public static final String PROCESS_SHUTDOWN_EXCEPTION_INFO = "PID -> %d | | Type -> %s | " + "Raise exception in shutdown callback!";
-
-    // Connection pool messages.
-    public static final String ERROR_POOL_CREATION = "Error during creating new connection pool!";
 
     // Parse/Serialize JSON.
     public static final String ERROR_PARSING_JSON = "Error during parsing JSON configuration file!";

@@ -5,7 +5,6 @@ import org.graalvm.argo.lambda_manager.memory.MemoryPool;
 import org.graalvm.argo.lambda_manager.optimizers.FunctionStatus;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
-import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 import org.graalvm.argo.lambda_manager.processes.lambda.DefaultLambdaShutdownHandler;
 
 import java.util.Iterator;
@@ -13,7 +12,6 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
 
 public class Lambda {
 
@@ -45,8 +43,6 @@ public class Lambda {
 
 	/** Functions that need to be uploaded to this lambda. */
 	private Set<Function> requiresFunctionUpload;
-
-	private String customRuntimeId;
 
     public Lambda(LambdaExecutionMode executionMode) {
         this.openRequestCount = new AtomicInteger(0);
@@ -95,7 +91,7 @@ public class Lambda {
 	public void resetTimer() {
 		Timer oldTimer = timer;
 		Timer newTimer = new Timer();
-		newTimer.schedule(new DefaultLambdaShutdownHandler(this), Configuration.argumentStorage.getTimeout()
+		newTimer.schedule(new DefaultLambdaShutdownHandler(this, "timer"), Configuration.argumentStorage.getTimeout()
 				+ (int) (Configuration.argumentStorage.getTimeout() * Math.random()));
 		timer = newTimer;
 		timerTimestamp = System.currentTimeMillis();
@@ -176,9 +172,6 @@ public class Lambda {
                     deallocateMemory(function);
                 }
             }
-        } else if (function.canCollocateInvocation()) {
-            // Print a message only if we did not manage to allocate memory in the memory pool.
-            Logger.log(Level.INFO, String.format("[function=%s, mode=%s]: Couldn't allocate memory in lambda %d.", function.getName(), executionMode, lid));
         }
         return false;
     }
@@ -211,14 +204,6 @@ public class Lambda {
 
     public boolean isFunctionUploadRequired(Function function) {
         return requiresFunctionUpload.remove(function);
-    }
-
-    public String getCustomRuntimeId() {
-        return customRuntimeId;
-    }
-
-    public void setCustomRuntimeId(String customRuntimeId) {
-        this.customRuntimeId = customRuntimeId;
     }
 
     /** This method is only called after a lambda with Agent terminates. */

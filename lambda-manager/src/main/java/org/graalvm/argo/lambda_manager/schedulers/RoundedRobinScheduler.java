@@ -5,38 +5,11 @@ import org.graalvm.argo.lambda_manager.core.Environment;
 import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.core.Lambda;
 import org.graalvm.argo.lambda_manager.core.LambdaManager;
-import org.graalvm.argo.lambda_manager.core.LambdaType;
 import org.graalvm.argo.lambda_manager.optimizers.FunctionStatus;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
-import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
-import org.graalvm.argo.lambda_manager.processes.lambda.BuildSO;
-import org.graalvm.argo.lambda_manager.processes.lambda.DefaultLambdaShutdownHandler;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotFirecrackerCtr;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotWithAgentContainer;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotWithAgentFirecracker;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotWithAgentFirecrackerCtr;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartLambda;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartOpenWhiskFirecracker;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalvisorFirecracker;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalvisorFirecrackerCtr;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotContainer;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotFirecracker;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartOpenWhiskFirecrackerCtr;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalvisorContainer;
-import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
-import org.graalvm.argo.lambda_manager.utils.NetworkUtils;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 
-import io.micronaut.http.client.RxHttpClient;
-
-import org.graalvm.argo.lambda_manager.core.FunctionLanguage;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 @SuppressWarnings("unused")
@@ -76,7 +49,7 @@ public class RoundedRobinScheduler implements Scheduler {
                     Logger.log(Level.INFO, "Obtained a new lambda from the pool.");
                     newLambda.resetTimer();
                     LambdaManager.lambdas.add(newLambda);
-                    function.updateStatus(targetMode);
+//                    function.updateStatus(targetMode);
                     obtainedLambda = true;
                 } else {
                     Logger.log(Level.FINE, String.format("[function=%s, mode=%s]: The lambda pool is currently empty, waiting.", function.getName(), targetMode));
@@ -90,7 +63,7 @@ public class RoundedRobinScheduler implements Scheduler {
 
             if (!obtainedLambda) {
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(10);
                 } catch (InterruptedException e) {
                     // Ignored.
                 }
@@ -98,12 +71,12 @@ public class RoundedRobinScheduler implements Scheduler {
             obtainedLambda = false;
         }
 
-        synchronized (function) {
-            if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT && function.getStatus() == FunctionStatus.READY && !lambda.isDecommissioned()) {
-                lambda.setDecommissioned(true);
-                Logger.log(Level.INFO, "Decommissioning (hotspot to native image) lambda " + lambda.getLambdaID());
-            }
-
+         synchronized (function) {
+             if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT && function.getStatus() == FunctionStatus.READY && !lambda.isDecommissioned()) {
+                 lambda.setDecommissioned(true);
+                 Logger.log(Level.INFO, "Decommissioning (hotspot to native image) lambda " + lambda.getLambdaID());
+             }
+        
             if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT && lambda.getClosedRequestCount() > 1000 && !lambda.isDecommissioned()) {
                 lambda.setDecommissioned(true);
                 Logger.log(Level.INFO, "Decommissioning (wrapping agent) lambda " + lambda.getLambdaID());

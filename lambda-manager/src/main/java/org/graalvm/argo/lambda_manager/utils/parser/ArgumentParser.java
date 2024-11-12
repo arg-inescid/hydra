@@ -15,7 +15,7 @@ public class ArgumentParser {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    public static LambdaManagerConfiguration parse(String configData) throws ErrorDuringParsingJSONFile {
+    public static LambdaManagerConfiguration parseLambdaManagerConfiguration(String configData) throws ErrorDuringParsingJSONFile {
         try {
             return objectMapper.readValue(configData, LambdaManagerConfiguration.class);
         } catch (IOException ioException) {
@@ -31,6 +31,14 @@ public class ArgumentParser {
             Logger.log(Level.INFO, String.format(Messages.SUCCESS_SERIALIZE_JSON, writer));
         } catch (IOException ioException) {
             throw new ErrorDuringSerializationJSONObject(Messages.ERROR_SERIALIZE_JSON, ioException);
+        }
+    }
+
+    public static VariablesConfiguration parseVariables(String configData) throws ErrorDuringParsingJSONFile {
+        try {
+            return objectMapper.readValue(configData, VariablesConfiguration.class);
+        } catch (IOException ioException) {
+            throw new ErrorDuringParsingJSONFile(Messages.ERROR_PARSING_JSON, ioException);
         }
     }
 }

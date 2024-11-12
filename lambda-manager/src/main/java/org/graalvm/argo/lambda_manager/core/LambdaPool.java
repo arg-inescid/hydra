@@ -11,8 +11,6 @@ import org.graalvm.argo.lambda_manager.utils.LambdaPoolUtils;
 import org.graalvm.argo.lambda_manager.utils.NetworkConfigurationUtils;
 import org.graalvm.argo.lambda_manager.utils.parser.LambdaManagerPool;
 
-import io.micronaut.context.BeanContext;
-
 public class LambdaPool {
 
     /**
@@ -37,6 +35,7 @@ public class LambdaPool {
             Map.entry(LambdaExecutionMode.HOTSPOT_W_AGENT, new ConcurrentLinkedQueue<>()),
             Map.entry(LambdaExecutionMode.HOTSPOT, new ConcurrentLinkedQueue<>()),
             Map.entry(LambdaExecutionMode.GRAALVISOR, new ConcurrentLinkedQueue<>()),
+            Map.entry(LambdaExecutionMode.GRAALOS, new ConcurrentLinkedQueue<>()),
             Map.entry(LambdaExecutionMode.CUSTOM_JAVA, new ConcurrentLinkedQueue<>()),
             Map.entry(LambdaExecutionMode.CUSTOM_JAVASCRIPT, new ConcurrentLinkedQueue<>()),
             Map.entry(LambdaExecutionMode.CUSTOM_PYTHON, new ConcurrentLinkedQueue<>()),
@@ -49,11 +48,11 @@ public class LambdaPool {
         this.connectionPool = new ConcurrentLinkedQueue<>();
     }
 
-    public void setUp(BeanContext beanContext, int lambdaPort, String gatewayWithMask, LambdaManagerPool poolConfiguration) {
+    public void setUp(int lambdaPort, String gatewayWithMask, LambdaManagerPool poolConfiguration) {
         if (lambdaType.isVM()) {
-            NetworkConfigurationUtils.prepareVmConnectionPool(connectionPool, targetSize, gatewayWithMask, lambdaPort, beanContext);
+            NetworkConfigurationUtils.prepareVmConnectionPool(connectionPool, targetSize, gatewayWithMask, lambdaPort);
         } else {
-            NetworkConfigurationUtils.prepareContainerConnectionPool(connectionPool, targetSize, beanContext);
+            NetworkConfigurationUtils.prepareContainerConnectionPool(connectionPool, targetSize);
         }
         LambdaPoolUtils.prepareLambdaPool(lambdaPool, poolConfiguration);
         LambdaPoolUtils.startLambdaReclaimingDaemon(lambdaPool, poolConfiguration);
@@ -89,11 +88,6 @@ public class LambdaPool {
     public void tearDown() throws InterruptedException {
         // Shutdown lambdas inside pool and starting lambdas.
         LambdaPoolUtils.shutdownLambdas(lambdaPool);
-
-        // Close any lasting connection.
-        for (LambdaConnection connection : connectionPool) {
-            connection.client.close();   // Close http client if it's not closed yet.
-        }
 
         // Delete os-level network interfaces.
         if (lambdaType.isVM()) {

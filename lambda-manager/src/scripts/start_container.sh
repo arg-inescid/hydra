@@ -37,6 +37,7 @@ fi
 # To set up such tags as lambda_port, lambda_timestamp, and LD_LIBRARY_PATH.
 TAGS=( "${@:6}" )
 TAGS=( "${TAGS[@]/#/'-e '}" )
+TAGS+=( "-e app_dir=/codebase/" )
 
 # The default value. Source: https://docs.docker.com/config/containers/resource_constraints/#configure-the-default-cfs-scheduler
 CGROUPS_CPU_PERIOD="100000"
@@ -55,7 +56,9 @@ cd "$LAMBDA_HOME"
 
 docker run --privileged --rm --name="$LAMBDA_NAME" \
   ${TAGS[@]} \
+  --privileged \
   -p "$LAMBDA_PORT":"$PROXY_PORT" \
+  -v "$ARGO_HOME"/lambda-manager/codebase:/codebase \
   --memory "$LAMBDA_MEMORY" \
   --cpu-period="$CGROUPS_CPU_PERIOD" \
   --cpu-quota="$LAMBDA_CPU_QUOTA" \

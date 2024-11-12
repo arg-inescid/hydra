@@ -12,8 +12,6 @@ import org.graalvm.argo.lambda_manager.utils.JsonUtils;
 import org.graalvm.argo.lambda_manager.utils.Messages;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 import org.graalvm.argo.lambda_manager.utils.parser.ArgumentParser;
-import io.micronaut.context.BeanContext;
-import io.reactivex.Single;
 
 import java.util.Collections;
 import java.util.Map;
@@ -28,13 +26,13 @@ public class LambdaManager {
      */
     public static final Set<Lambda> lambdas = Collections.newSetFromMap(new ConcurrentHashMap<Lambda, Boolean>());
 
-    private static String formatRequestSpentTimeMessage(Lambda lambda, Function function, long spentTime) {
+    private static String formatRequestSpentTimeMessage(Lambda lambda, Function function, long spentTime, long infrTime) {
         String username = Configuration.coder.decodeUsername(function.getName());
         String functionName = Configuration.coder.decodeFunctionName(function.getName());
-        return String.format(Messages.TIME_REQUEST, username, functionName, lambda.getExecutionMode(), lambda.getLambdaID(), spentTime);
+        return String.format(Messages.TIME_REQUEST, username, functionName, lambda.getExecutionMode(), lambda.getLambdaID(), spentTime, infrTime);
     }
 
-    public static Single<String> processRequest(String username, String functionName, String arguments) {
+    public static String processRequest(String username, String functionName, String arguments) {
         String response = null;
         Function function = null;
         Lambda lambda = null;
@@ -53,7 +51,7 @@ public class LambdaManager {
         }
         LambdaExecutionMode targetMode = function.getLambdaExecutionMode();
 
-        for (int i = 0; i < Configuration.LAMBDA_FAULT_TOLERANCE; i++) {
+        for (int i = 0; i < Configuration.argumentStorage.getLambdaFaultTolerance(); i++) {
             try {
                 lambda = Configuration.scheduler.schedule(function, targetMode);
 
@@ -64,7 +62,7 @@ public class LambdaManager {
                     }
                 }
 
-                MetricsProvider.reportInfrastructureTime(System.currentTimeMillis() - start);
+                long infrTime = System.currentTimeMillis() - start;
 
                 response = Configuration.client.invokeFunction(lambda, function, arguments);
 
@@ -79,11 +77,11 @@ public class LambdaManager {
                         lambda.setDecommissioned(true);
                     }
                 } else {
-                    long spentTime = System.currentTimeMillis() - start;
-                    MetricsProvider.reportRequestTime(spentTime);
-                    Logger.log(Level.FINE, formatRequestSpentTimeMessage(lambda, function, spentTime));
+                    long requestTime = System.currentTimeMillis() - start;
+                    MetricsProvider.addRequest();
+                    Logger.log(Level.FINE, formatRequestSpentTimeMessage(lambda, function, requestTime, infrTime));
                     if (Configuration.argumentStorage.isDebugMode()) {
-                        response += "; time spent in LM (seconds): " + spentTime / 1000.0;
+                        response += "; time spent in LM (seconds): " + requestTime / 1000.0;
                     }
                     break;
                 }
@@ -103,7 +101,7 @@ public class LambdaManager {
         return JsonUtils.constructJsonResponseObject(response);
     }
 
-    public static Single<String> uploadFunction(String username,
+    public static String uploadFunction(String username,
                                                 String functionName,
                                                 String functionLanguage,
                                                 String functionEntryPoint,
@@ -112,7 +110,8 @@ public class LambdaManager {
                                                 byte[] functionCode,
                                                 boolean functionIsolation,
                                                 boolean invocationCollocation,
-                                                String gvSandbox) {
+                                                String gvSandbox,
+                                                String svmId) {
         String responseString;
 
         if (!Configuration.isInitialized()) {
@@ -122,7 +121,7 @@ public class LambdaManager {
 
         try {
             String encodedFunctionName = Configuration.coder.encodeFunctionName(username, functionName);
-            Function function = new Function(encodedFunctionName, functionLanguage, functionEntryPoint, functionMemory, functionRuntime, functionCode, functionIsolation, invocationCollocation, gvSandbox);
+            Function function = new Function(encodedFunctionName, functionLanguage, functionEntryPoint, functionMemory, functionRuntime, functionCode, functionIsolation, invocationCollocation, gvSandbox, svmId);
             Configuration.storage.register(encodedFunctionName, function, functionCode);
             Logger.log(Level.INFO, String.format(Messages.SUCCESS_FUNCTION_UPLOAD, functionName));
             responseString = String.format(Messages.SUCCESS_FUNCTION_UPLOAD, functionName);
@@ -136,7 +135,7 @@ public class LambdaManager {
         return JsonUtils.constructJsonResponseObject(responseString);
     }
 
-    public static Single<String> removeFunction(String username, String functionName) {
+    public static String removeFunction(String username, String functionName) {
         String responseString;
 
         if (!Configuration.isInitialized()) {
@@ -157,11 +156,11 @@ public class LambdaManager {
         return JsonUtils.constructJsonResponseObject(responseString);
     }
 
-    public static Single<String> configureManager(String lambdaManagerConfiguration, BeanContext beanContext) {
+    public static String configureManager(String lambdaManagerConfiguration, String variablesConfiguration) {
         String responseString;
         try {
             if (!Configuration.isInitialized()) {
-                ArgumentStorage.initializeLambdaManager(ArgumentParser.parse(lambdaManagerConfiguration), beanContext);
+                ArgumentStorage.initializeLambdaManager(ArgumentParser.parseLambdaManagerConfiguration(lambdaManagerConfiguration), ArgumentParser.parseVariables(variablesConfiguration));
                 Logger.log(Level.INFO, Messages.SUCCESS_CONFIGURATION_UPLOAD);
                 responseString = Messages.SUCCESS_CONFIGURATION_UPLOAD;
             } else {
@@ -177,7 +176,7 @@ public class LambdaManager {
         return JsonUtils.constructJsonResponseObject(responseString);
     }
 
-    public static Single<String> getFunctions() {
+    public static String getFunctions() {
         Object response;
 
         if (!Configuration.isInitialized()) {

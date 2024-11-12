@@ -12,6 +12,7 @@ import java.io.Serializable;
                 "hotspotWithAgent",
                 "hotspot",
                 "graalvisor",
+                "graalos",
                 "customJava",
                 "customJavaScript",
                 "customPython",
@@ -22,6 +23,7 @@ public class LambdaManagerPool implements Serializable {
     @JsonProperty("hotspotWithAgent") private int hotspotWithAgent;
     @JsonProperty("hotspot") private int hotspot;
     @JsonProperty("graalvisor") private int graalvisor;
+    @JsonProperty("graalos") private int graalos;
     @JsonProperty("customJava") private int customJava;
     @JsonProperty("customJavaScript") private int customJavaScript;
     @JsonProperty("customPython") private int customPython;
@@ -42,10 +44,12 @@ public class LambdaManagerPool implements Serializable {
      * @param graalvisor - Maximum number of Graalvisor lambdas in the pool.
      * @param custom - Maximum number of custom (OpenWhisk) lambdas in the pool.
      */
-    public LambdaManagerPool(int hotspotWithAgent, int hotspot, int graalvisor, int customJava, int customJavaScript, int customPython, int graalvisorPgo, int graalvisorPgoOptimized) {
+    public LambdaManagerPool(int hotspotWithAgent, int hotspot, int graalvisor, int graalos, int customJava, int customJavaScript, int customPython, int graalvisorPgo, int graalvisorPgoOptimized) {
+        super();
         this.hotspotWithAgent = hotspotWithAgent;
         this.hotspot = hotspot;
         this.graalvisor = graalvisor;
+        this.graalos = graalos;
         this.customJava = customJava;
         this.customJavaScript = customJavaScript;
         this.customPython = customPython;
@@ -81,6 +85,16 @@ public class LambdaManagerPool implements Serializable {
     @JsonProperty("graalvisor")
     public void setGraalvisor(int graalvisor) {
         this.graalvisor = graalvisor;
+    }
+
+    @JsonProperty("graalos")
+    public void setGraalOS(int graalos) {
+        this.graalos = graalos;
+    }
+
+    @JsonProperty("graalos")
+    public int getGraalOS() {
+        return graalos;
     }
 
     @JsonProperty("customJava")

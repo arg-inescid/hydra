@@ -39,4 +39,8 @@ public class FirecrackerSnapshotLambdaFactory extends AbstractLambdaFactory {
         throw new IllegalStateException("Graalvisor PGO Optimized is not yet supported in Firecracker-snapshot mode.");
     }
 
+    public StartLambda createGraalOS(Lambda lambda) {
+        throw new UnsupportedOperationException("GraalOS not available with Firecracker snapshots.");
+    }
+
 }
