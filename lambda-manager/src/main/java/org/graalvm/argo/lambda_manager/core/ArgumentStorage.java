@@ -56,6 +56,7 @@ public class ArgumentStorage {
     private int maxMemory;
     private int cpuQuota;
     private boolean isLambdaConsoleActive; // TODO - do we ever disable this?
+    private boolean isOptimizationPipelineEnabled;
 
     private int firstLambdaPort;
     private int faultTolerance;
@@ -85,6 +86,7 @@ public class ArgumentStorage {
         this.lambdaPort = lambdaManagerConfiguration.getLambdaPort();
         initLambdaFactory(this.lambdaType);
         this.isLambdaConsoleActive = lambdaManagerConfiguration.isLambdaConsole();
+        this.isOptimizationPipelineEnabled = lambdaManagerConfiguration.isOptimizationPipeline();
 
         // Global variables coming from a separate JSON file.
         this.firstLambdaPort = variablesConfiguration.getFirstLambdaPort();
@@ -252,6 +254,10 @@ public class ArgumentStorage {
 
     public boolean isLambdaConsoleActive() {
         return isLambdaConsoleActive;
+    }
+
+    public boolean isOptimizationPipelineEnabled() {
+        return isOptimizationPipelineEnabled;
     }
 
     public void tearDownMetricsScraper() {

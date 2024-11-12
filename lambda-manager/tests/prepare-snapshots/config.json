@@ -6,6 +6,7 @@
   "healthCheck": 50,
   "lambdaPort": 8080,
   "lambdaType": "container",
+  "optimizationPipeline": false,
   "lambdaConsole": true,
   "managerConsole": {
     "turnOn": true,
@@ -19,6 +20,8 @@
     "graalos": 0,
     "customJava": 0,
     "customJavaScript": 0,
-    "customPython": 0
+    "customPython": 0,
+    "graalvisorPgo": 0,
+    "graalvisorPgoOptimized": 0
   }
 }

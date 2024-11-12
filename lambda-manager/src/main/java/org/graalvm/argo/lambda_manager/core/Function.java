@@ -15,9 +15,6 @@ import java.util.logging.Level;
 
 public class Function {
 
-    /** First four bytes of JAR files. */
-    private static final byte[] JAR_FILE_SIGNATURE = { 0x50, 0x4b, 0x03, 0x04 };
-
     /** Name of the function. The name of a function is a unique identifier. */
     private final String name;
 
@@ -195,15 +192,7 @@ public class Function {
     }
 
     private boolean isJar(byte[] functionCode) {
-        if (functionCode == null || JAR_FILE_SIGNATURE.length > functionCode.length) {
-            return false;
-        }
-//        for (int i = 0; i < JAR_FILE_SIGNATURE.length; ++i) {
-//            if (functionCode[i] != JAR_FILE_SIGNATURE[i]) {
-//                return false;
-//            }
-//        }
-        return false;
+        return functionCode != null && new String(functionCode).endsWith(".jar");
     }
 
     public boolean snapshotSandbox() {
