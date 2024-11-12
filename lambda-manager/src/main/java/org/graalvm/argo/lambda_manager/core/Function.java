@@ -203,7 +203,7 @@ public class Function {
 //                return false;
 //            }
 //        }
-        return true;
+        return false;
     }
 
     public boolean snapshotSandbox() {
