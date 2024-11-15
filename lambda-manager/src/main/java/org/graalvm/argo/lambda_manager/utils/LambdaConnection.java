@@ -1,41 +1,30 @@
 package org.graalvm.argo.lambda_manager.utils;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.time.Duration;
+import io.micronaut.http.HttpRequest;
+import io.micronaut.http.client.RxHttpClient;
+
+import java.net.MalformedURLException;
+import java.net.URL;
 
 public class LambdaConnection {
     public final String ip;
     public final String tap;
-    public final HttpClient client;
+    public final RxHttpClient client;
     public final int port;
 
-    private final String address;
-
-    public LambdaConnection(String ip, String tap, int port) {
+    public LambdaConnection(String ip, String tap, int port) throws MalformedURLException {
         this.ip = ip;
         this.tap = tap;
-        this.client = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_2)
-                .connectTimeout(Duration.ofSeconds(60)).build();
+        this.client = RxHttpClient.create(new URL("http", ip, port, "/"));
         this.port = port;
-        this.address = String.join("", "http://", ip, ":", Integer.toString(port));
     }
 
-    public HttpRequest post(String path, byte[] payload) {
-        return HttpRequest.newBuilder()
-                .timeout(Duration.ofSeconds(60))
-                .uri(URI.create(address.concat(path)))
-                .POST(HttpRequest.BodyPublishers.ofByteArray(payload))
-                .build();
+    // Keeping two versions instead of using Java Generics for performance reasons.
+    public HttpRequest<byte[]> post(String path, byte[] payload) {
+        return HttpRequest.POST(path, payload);
     }
 
-    public HttpRequest post(String path, String payload) {
-        return HttpRequest.newBuilder()
-                .timeout(Duration.ofSeconds(60))
-                .uri(URI.create(address.concat(path)))
-                .POST(HttpRequest.BodyPublishers.ofString(payload))
-                .build();
+    public HttpRequest<String> post(String path, String payload) {
+        return HttpRequest.POST(path, payload);
     }
 }

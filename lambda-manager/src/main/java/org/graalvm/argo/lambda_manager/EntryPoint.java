@@ -27,9 +27,9 @@ public class EntryPoint {
             boolean httpServer = cmd.hasOption("http");
             boolean socketServer = cmd.hasOption("socket");
 
-            if (httpServer) {
-                Micronaut.run(EntryPoint.class, args);
-            }
+            // Starting the Micronaut application nevertheless
+            // due to the usage of the Micronaut's HTTP client.
+            Micronaut.run(EntryPoint.class, args);
 
             configure(configPath, variablesPath);
 

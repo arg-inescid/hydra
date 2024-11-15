@@ -1,6 +1,8 @@
 package org.graalvm.argo.lambda_manager.core;
 
 import com.github.maltalex.ineter.range.IPv4Subnet;
+import io.reactivex.exceptions.UndeliverableException;
+import io.reactivex.plugins.RxJavaPlugins;
 import org.graalvm.argo.lambda_manager.client.DefaultLambdaManagerClient;
 import org.graalvm.argo.lambda_manager.encoders.DefaultCoder;
 import org.graalvm.argo.lambda_manager.function_storage.LocalFunctionStorage;
@@ -171,6 +173,8 @@ public class ArgumentStorage {
 
         initClassFields(lambdaManagerConfiguration, variablesConfiguration);
 
+        initErrorHandler();
+
         prepareLogger(lambdaManagerConfiguration.getManagerConsole());
         initMetricsScraper();
 
@@ -188,6 +192,36 @@ public class ArgumentStorage {
         ElapseTimer.init(); // Start internal timer.
 
         this.lambdaPool.setUp(lambdaPort, lambdaManagerConfiguration.getGateway(), lambdaManagerConfiguration.getLambdaPool());
+    }
+
+    private void initErrorHandler() {
+        RxJavaPlugins.setErrorHandler(e -> {
+            if (e instanceof UndeliverableException) {
+                e = e.getCause();
+            }
+            if (e instanceof IOException) {
+                // Irrelevant network problem or API that throws on cancellation.
+                Logger.log(Level.WARNING, Messages.INTERNAL_ERROR, e);
+                return;
+            }
+            if (e instanceof InterruptedException) {
+                // Fine, some blocking code was interrupted by a disposed call.
+                Logger.log(Level.WARNING, Messages.INTERNAL_ERROR, e);
+                return;
+            }
+            if ((e instanceof NullPointerException) || (e instanceof IllegalArgumentException)) {
+                // That's likely a bug in the application.
+                Logger.log(Level.WARNING, Messages.INTERNAL_ERROR, e);
+                return;
+            }
+            if (e instanceof IllegalStateException) {
+                // That's a bug in RxJava or in a custom operator.
+                Logger.log(Level.WARNING, Messages.INTERNAL_ERROR, e);
+                return;
+            }
+            // TODO: We should discuss what to do in case of severe exceptions.
+            Logger.log(Level.SEVERE, Messages.UNDELIVERABLE_EXCEPTION, e);
+        });
     }
 
     private void prepareDevmapper() {
