@@ -57,7 +57,7 @@ public class LambdaManagerConfiguration implements Serializable {
      * @param lambdaPool - The class that describes the pool of lambdas to be used.
      */
     public LambdaManagerConfiguration(String gateway, int maxMemory, int maxTaps, int timeout, int healthCheck, int lambdaPort, String lambdaType,
-                                      boolean optimizationPipeline, boolean lambdaConsole, LambdaManagerConsole lambdaManagerConsole, LambdaManagerPool lambdaPool) {
+                    boolean optimizationPipeline, boolean lambdaConsole, LambdaManagerConsole lambdaManagerConsole, LambdaManagerPool lambdaPool) {
         super();
         this.gateway = gateway;
         this.maxMemory = maxMemory;
