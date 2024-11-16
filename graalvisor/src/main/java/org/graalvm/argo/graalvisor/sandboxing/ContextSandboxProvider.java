@@ -23,13 +23,13 @@ public class ContextSandboxProvider extends SandboxProvider {
     }
 
     @Override
-    public SandboxHandle createSandbox() {
+    public SandboxHandle createSandbox() throws IOException {
         long iThreadHandle = NativeSandboxInterface.attachThread(functionHandle, isolateHandle);
         return new ContextSandboxHandle(functionHandle, iThreadHandle);
     }
 
     @Override
-    public void destroySandbox(SandboxHandle shandle) {
+    public void destroySandbox(SandboxHandle shandle) throws IOException {
         NativeSandboxInterface.detachThread(functionHandle, ((ContextSandboxHandle)shandle).getIThreadHandle());
     }
 

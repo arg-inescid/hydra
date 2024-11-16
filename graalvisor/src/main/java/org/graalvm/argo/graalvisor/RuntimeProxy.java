@@ -35,11 +35,11 @@ import org.graalvm.argo.graalvisor.sandboxing.ProcessSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.SandboxProvider;
 import org.graalvm.argo.graalvisor.utils.ProxyUtils;
 
-import com.oracle.svm.graalvisor.polyglot.PolyglotLanguage;
-import com.oracle.svm.graalvisor.polyglot.PolyglotEngine;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
+
+// TODO - registry should have a type of function code, lib, bin, zip.
 
 /**
  * The runtime proxy exposes a simple webserver that receives three types of requests:
@@ -58,15 +58,11 @@ public abstract class RuntimeProxy {
             try {
                 handleInternal(exchange);
             } catch (Exception e) {
-                e.printStackTrace();
+                e.printStackTrace(System.err);
+                errorResponse(exchange, "An error has occurred (see logs for details): " + e);
             }
         }
     }
-
-    /**
-     * Global reference to the engine that runs truffle functions.
-     */
-    public static final PolyglotEngine LANGUAGE_ENGINE;
 
     /**
      *  FunctionTable is used to store registered functions inside default and worker isolates.
@@ -92,32 +88,31 @@ public abstract class RuntimeProxy {
         RuntimeProxy.appDir = appDir;
     }
 
-    static {
-        PolyglotEngine engine = null;
-        try {
-            engine = new PolyglotEngine();
-        } catch (Throwable e) {
-            System.out.println("Warning: graalvisor compiled with no truffle language support.");
-        } finally {
-            LANGUAGE_ENGINE = engine;
-        }
-    }
+    protected abstract String invoke(
+            PolyglotFunction functionName,
+            boolean cached,
+            int warmupConc,
+            int warmupReqs,
+            String arguments) throws IOException;
 
-    protected abstract String invoke(PolyglotFunction functionName, boolean cached, int warmupConc, int warmupReqs, String arguments) throws Exception;
+   private String invokeWrapper(
+            String functionName,
+            boolean cached,
+            int warmupConc,
+            int warmupReqs,
+            String arguments) throws IOException {
+        PolyglotFunction function = FTABLE.get(functionName);
+        String res;
 
-   private String invokeWrapper(String functionName, boolean cached, int warmupConc, int warmupReqs, String arguments) throws Exception {
-      PolyglotFunction function = FTABLE.get(functionName);
-      String res;
+        long start = System.nanoTime();
+        if (function == null) {
+                res = String.format("{'Error': 'Function %s not registered!'}", functionName);
+            } else {
+                res = invoke(function, cached, warmupConc, warmupReqs, arguments);
+            }
+        long finish = System.nanoTime();
 
-      long start = System.nanoTime();
-      if (function == null) {
-            res = String.format("{'Error': 'Function %s not registered!'}", functionName);
-        } else {
-            res = invoke(function, cached, warmupConc, warmupReqs, arguments);
-        }
-      long finish = System.nanoTime();
-
-      Map<String, Object> output = new HashMap<>();
+        Map<String, Object> output = new HashMap<>();
         output.put("result", res);
         output.put("process time (us)", (finish - start) / 1000);
         return json.asString(output);
@@ -135,28 +130,26 @@ public abstract class RuntimeProxy {
 
         @Override
         public void handleInternal(HttpExchange t) throws IOException {
-            try {
-                String jsonBody = ProxyUtils.extractRequestBody(t);
-                Map<String, Object> input = jsonToMap(jsonBody);
-                String functionName = (String) input.get("name");
-                String arguments = (String) input.get("arguments");
-                String async = (String)input.get("async");
-                boolean cached = input.get("cached") == null ? true : Boolean.parseBoolean((String)input.get("cached"));
-                boolean debug = input.get("debug") == null ? false : Boolean.parseBoolean((String)input.get("debug"));
+            Map<String, Object> input = jsonToMap(ProxyUtils.extractRequestBody(t));
+            String functionName = (String) input.get("name");
+            String arguments = (String) input.get("arguments");
+            String async = (String)input.get("async");
+            boolean cached = input.get("cached") == null ? true : Boolean.parseBoolean((String)input.get("cached"));
+            boolean debug = input.get("debug") == null ? false : Boolean.parseBoolean((String)input.get("debug"));
 
+            if (async != null && async.equals("true")) {
+                ProxyUtils.writeResponse(t, 200, "Asynchronous request submitted!");
+                String output = invokeWrapper(functionName, cached, 0, 0, arguments);
+                System.out.println(output);
+            } else {
                 if (debug) {
-                    ProxyUtils.writeResponse(t, 200, "Returned from Graalvisor!");
-                } else if (async != null && async.equals("true")) {
-                    ProxyUtils.writeResponse(t, 200, "Asynchronous request submitted!");
-                    String output = invokeWrapper(functionName, cached, 0, 0, arguments);
-                    System.out.println(output);
-                } else {
-                    String output = invokeWrapper(functionName, cached, 0, 0, arguments);
-                    ProxyUtils.writeResponse(t, 200, output);
+                    System.out.println(String.format("Calling %s with arguments %s", functionName, arguments));
                 }
-            } catch (Exception e) {
-                e.printStackTrace(System.err);
-                errorResponse(t, "An error has occurred (see logs for details): " + e);
+                String output = invokeWrapper(functionName, cached, 0, 0, arguments);
+                if (debug) {
+                    System.out.println(String.format("Calling %s with arguments %s returned ", functionName, arguments, output));
+                }
+                ProxyUtils.writeResponse(t, 200, output);
             }
         }
     }
@@ -165,26 +158,14 @@ public abstract class RuntimeProxy {
 
         @Override
         public void handleInternal(HttpExchange t) throws IOException {
-            try {
-                // TODO - same code as in the invocation handleInternal, could be factorized.
-                String[] params = t.getRequestURI().getQuery().split("&");
-                Map<String, String> metadata = new HashMap<>();
-                for (String param : params) {
-                    String[] keyValue = param.split("=");
-                    metadata.put(keyValue[0], keyValue[1]);
-                }
-                int concurrency = metadata.get("concurrency") == null ? 1 : Integer.parseInt(metadata.get("concurrency"));
-                int requests = metadata.get("requests") == null ? 1 : Integer.parseInt(metadata.get("requests"));
-                String jsonBody = ProxyUtils.extractRequestBody(t);
-                Map<String, Object> input = jsonToMap(jsonBody);
-                String functionName = (String) input.get("name");
-                String arguments = (String) input.get("arguments");
-                String output = invokeWrapper(functionName, false, concurrency, requests, arguments);
-                ProxyUtils.writeResponse(t, 200, output);
-            } catch (Exception e) {
-                e.printStackTrace(System.err);
-                errorResponse(t, "An error has occurred (see logs for details): " + e);
-            }
+            Map<String, String> metadata = ProxyUtils.getRequestParameters(t.getRequestURI().getQuery());
+            int concurrency = metadata.get("concurrency") == null ? 1 : Integer.parseInt(metadata.get("concurrency"));
+            int requests = metadata.get("requests") == null ? 1 : Integer.parseInt(metadata.get("requests"));
+            Map<String, Object> input = jsonToMap(ProxyUtils.extractRequestBody(t));
+            String functionName = (String) input.get("name");
+            String arguments = (String) input.get("arguments");
+            String output = invokeWrapper(functionName, false, concurrency, requests, arguments);
+            ProxyUtils.writeResponse(t, 200, output);
         }
     }
 
@@ -199,35 +180,28 @@ public abstract class RuntimeProxy {
         }
 
         private SandboxProvider getSandboxProvider(PolyglotFunction function, String sandboxName) {
-
             if (sandboxName == null) {
-                return getDefaultSandboxProvider(function); // TODO - should we not have a default value?
+                // If no sandbox is provided, get the default one.
+                return getDefaultSandboxProvider(function);
+            } else if (sandboxName.equals("context")) {
+                return new ContextSandboxProvider(function);
+            } else if (sandboxName.equals("context-snapshot")) {
+                return new ContextSnapshotSandboxProvider(function);
+            } else if (sandboxName.equals("isolate")) {
+                return new IsolateSandboxProvider(function);
+            } else if (sandboxName.equals("process")) {
+                return new ProcessSandboxProvider(function);
+            } else if (sandboxName.equals("pgo")) {
+                return new ExecutableSandboxProvider(function, appDir);
+            } else {
+                System.err.println(String.format("Invalid sandbox %s for function %s", sandboxName, function.getName()));
+                return null;
             }
-
-            if (function.getLanguage() == PolyglotLanguage.JAVA) {
-                if (sandboxName.equals("context")) {
-                    return new ContextSandboxProvider(function);
-                } else if (sandboxName.equals("context-snapshot")) {
-                    return new ContextSnapshotSandboxProvider(function);
-                } else if (sandboxName.equals("isolate")) {
-                    return new IsolateSandboxProvider(function);
-                } else if (sandboxName.equals("process")) {
-                    return new ProcessSandboxProvider(function);
-                } else if (sandboxName.equals("pgo")) {
-                    return new ExecutableSandboxProvider(function, appDir);
-                }
-            }
-            return null;
         }
 
         @Override
         public void handleInternal(HttpExchange t) throws IOException {
-            String[] params = t.getRequestURI().getQuery().split("&");
-            Map<String, String> metaData = new HashMap<>();
-            for (String param : params) {
-                String[] keyValue = param.split("=");
-                metaData.put(keyValue[0], keyValue[1]);
-            }
+            Map<String, String> metaData = ProxyUtils.getRequestParameters(t.getRequestURI().getQuery());
             String functionName = metaData.get("name");
             String codeFileName = appDir + "/" + functionName;
             String functionEntryPoint = metaData.get("entryPoint");
@@ -236,7 +210,7 @@ public abstract class RuntimeProxy {
             int svmID = Integer.parseInt(metaData.getOrDefault("svmid", "0"));
             final boolean isExecutable = Boolean.parseBoolean(metaData.get("isBinary"));
 
-            if (System.getProperty("java.vm.name").equals("Substrate VM") || !functionLanguage.equalsIgnoreCase("java")) {
+            if (System.getProperty("java.vm.name").equals("Substrate VM")) {
                 handlePolyglotRegistration(t, functionName, codeFileName, functionEntryPoint, functionLanguage, sandboxName, svmID, isExecutable);
             } else {
                 handleHotSpotRegistration(t, functionName, codeFileName, functionEntryPoint);
@@ -258,9 +232,9 @@ public abstract class RuntimeProxy {
 
                     // Use class loader explicitly to load new classes from a JAR dynamically.
                     URLClassLoader loader = new URLClassLoader(new URL[] { Paths.get(jarFileName).toUri().toURL() }, this.getClass().getClassLoader());
-                    Class<?> cls = Class.forName(functionEntryPoint, true, loader);
+                    Class<?> cls = Class.forName(functionEntryPoint, true, loader); // TODO - push this into the constructor.
                     Method method = cls.getMethod("main", Map.class);
-                    HotSpotFunction function = new HotSpotFunction(functionName, functionEntryPoint, PolyglotLanguage.JAVA.toString(), method);
+                    HotSpotFunction function = new HotSpotFunction(functionName, functionEntryPoint, method);
                     FTABLE.put(functionName, function);
                 } catch (ReflectiveOperationException e) {
                     e.printStackTrace(System.err);
@@ -272,10 +246,12 @@ public abstract class RuntimeProxy {
             writeResponse(t, 200, String.format("Function %s registered!", functionName));
         }
 
+        // TODO - rename to svm function.
         private void handlePolyglotRegistration(HttpExchange t, String functionName, String soFileName, String functionEntryPoint, String functionLanguage, String sandboxName, int svmID, boolean isExecutable) throws IOException {
             long start = System.currentTimeMillis();
             PolyglotFunction function = null;
             SandboxProvider sprovider = null;
+            // TODO - avoid large sync block.
             synchronized (FTABLE) {
                 if (FTABLE.containsKey(functionName)) {
                     writeResponse(t, 200, String.format("Function %s has already been registered!", functionName));
@@ -283,6 +259,7 @@ public abstract class RuntimeProxy {
                 }
 
                 if (functionLanguage.equalsIgnoreCase("java")) {
+                    // TODO - split soFileName by ';', for each path, check if it starts with 'file://'. otherwise wget it.
                     File targetFile = new File(soFileName);
                     if (targetFile.exists() && targetFile.isFile()) {
                         System.out.println(String.format("Reusing %s", soFileName));
@@ -292,7 +269,9 @@ public abstract class RuntimeProxy {
                         }
                     }
                     function = new NativeFunction(functionName, functionEntryPoint, functionLanguage, soFileName, isExecutable);
-                } else {
+                }
+                // TODO - this case won't exist any more.
+                else {
                     try (InputStream bis = new BufferedInputStream(t.getRequestBody(), 4096)) {
                         String sourceCode = new String(bis.readAllBytes(), StandardCharsets.UTF_8);
                         function = new TruffleFunction(functionName, functionEntryPoint, functionLanguage, sourceCode);
@@ -320,20 +299,15 @@ public abstract class RuntimeProxy {
 
         @Override
         public void handleInternal(HttpExchange t) throws IOException {
-            try {
-                String functionName = (String) jsonToMap(extractRequestBody(t)).get("name");
-                PolyglotFunction function = FTABLE.get(functionName);
-                if (function == null) {
-                    errorResponse(t, String.format("Function %s has not been registered before!", functionName));
-                } else {
-                   function.getSandboxProvider().unloadProvider();
-                   FTABLE.remove(functionName);
-                }
-                writeResponse(t, 200, String.format("Function %s removed!", functionName));
-            } catch (Exception e) {
-                e.printStackTrace(System.err);
-                errorResponse(t, "An error has occurred (see logs for details): " + e);
+            String functionName = (String) jsonToMap(extractRequestBody(t)).get("name");
+            PolyglotFunction function = FTABLE.get(functionName);
+            if (function == null) {
+                errorResponse(t, String.format("Function %s has not been registered before!", functionName));
+            } else {
+                function.getSandboxProvider().unloadProvider();
+                FTABLE.remove(functionName);
             }
+            writeResponse(t, 200, String.format("Function %s removed!", functionName));
         }
     }
 }

@@ -21,7 +21,7 @@ public class JsonUtils {
                 return json.mapFrom(jsonString);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            e.printStackTrace(System.err);
         }
         return new HashMap<>();
     }

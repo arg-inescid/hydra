@@ -58,7 +58,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
                 try {
                     req.setOutput(shandle.invokeSandbox(req.getInput()));
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    e.printStackTrace(System.err);
                 }
                 // Notify the frontend thread about the result being ready.
                 req.notify();
@@ -73,7 +73,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
             try {
                 while (true) {
                     req = pipeline.queue.poll();
-    
+
                     if (req != null) {
                         processRequest(shandle, req);
                         // Reset the counter since we successfully processed a request
@@ -81,7 +81,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
                     } else {
                         // Sleep for 1 millisecond before trying again
                         Thread.sleep(1);
-    
+
                         // Check if we have been polling for more than 60,000 times. Due to the 1 millisecond sleep, this is similar to a 60-second timeout
                         if (numberAttempts++ > 60000) {
                             break;
@@ -89,7 +89,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
                     }
                 }
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                e.printStackTrace(System.err);
             }
 
             pipeline.workers.decrementAndGet();
@@ -102,7 +102,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
                 runInternal();
             } catch (Exception e) {
                 System.err.println(String.format("[thread %s] Error: thread quit unexpectedly", Thread.currentThread().getId()));
-                e.printStackTrace();
+                e.printStackTrace(System.err);
             }
         }
     }
@@ -177,7 +177,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
         return pipeline;
     }
 
-    private static SandboxHandle prepareSandbox(PolyglotFunction function) throws Exception {
+    private static SandboxHandle prepareSandbox(PolyglotFunction function) throws IOException {
         long start = System.nanoTime();
         SandboxHandle worker = function.getSandboxProvider().createSandbox();
         long finish = System.nanoTime();
@@ -185,13 +185,13 @@ public class SubstrateVMProxy extends RuntimeProxy {
         return worker;
     }
 
-    private static void destroySandbox(PolyglotFunction function, SandboxHandle shandle) throws Exception {
+    private static void destroySandbox(PolyglotFunction function, SandboxHandle shandle) throws IOException {
         System.out.println(String.format("[thread %s] Destroying %s sandbox %s", Thread.currentThread().getId(), function.getSandboxProvider().getName(), shandle));
         function.getSandboxProvider().destroySandbox(shandle);
     }
 
     @Override
-    protected String invoke(PolyglotFunction function, boolean cached, int warmupConc, int warmupReqs, String arguments) throws Exception {
+    protected String invoke(PolyglotFunction function, boolean cached, int warmupConc, int warmupReqs, String arguments) throws IOException {
         String res;
 
         if (warmupConc != 0 || warmupReqs != 0) {

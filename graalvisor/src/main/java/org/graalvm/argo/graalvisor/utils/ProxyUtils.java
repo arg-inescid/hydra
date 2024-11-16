@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import com.sun.net.httpserver.HttpExchange;
+import java.util.Map;
+import java.util.HashMap;
 
 public class ProxyUtils {
 
@@ -29,8 +31,18 @@ public class ProxyUtils {
             }
             return result.toString(StandardCharsets.UTF_8);
         } catch (IOException e) {
-            e.printStackTrace();
+            e.printStackTrace(System.err);
             return "";
         }
+    }
+
+    public static Map<String, String> getRequestParameters(String request) {
+        String[] splits = request.split("&");
+        Map<String, String> params = new HashMap<>();
+        for (String param : splits) {
+            String[] keyValue = param.split("=");
+            params.put(keyValue[0], keyValue[1]);
+        }
+        return params;
     }
 }
