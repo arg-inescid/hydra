@@ -42,9 +42,6 @@ void  dlfree(void*);
 #define cr_malloc dlmalloc
 #define cr_free   dlfree
 
-// Custom print functions.
-void cr_printf(int fd, const char* restrict fmt, ...);
-
 #define log(format, args...) do { cr_printf(STDOUT_FILENO, format, ## args); } while(0)
 #ifdef DEBUG
     #define dbg(format, args...) do { cr_printf(STDOUT_FILENO, format, ## args); } while(0)
