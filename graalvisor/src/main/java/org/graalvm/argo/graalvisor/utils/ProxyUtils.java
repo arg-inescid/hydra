@@ -1,8 +1,12 @@
 package org.graalvm.argo.graalvisor.utils;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URL;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import com.sun.net.httpserver.HttpExchange;
 import java.util.Map;
@@ -44,5 +48,12 @@ public class ProxyUtils {
             params.put(keyValue[0], keyValue[1]);
         }
         return params;
+    }
+
+    public static void downloadFile(String url, String localPath) throws IOException {
+        ReadableByteChannel rbc = Channels.newChannel(new URL(url).openStream());
+        FileOutputStream fos = new FileOutputStream(localPath);
+        fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+        fos.close();
     }
 }

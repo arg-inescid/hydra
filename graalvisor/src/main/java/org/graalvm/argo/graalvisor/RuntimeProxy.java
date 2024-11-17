@@ -201,97 +201,89 @@ public abstract class RuntimeProxy {
 
         @Override
         public void handleInternal(HttpExchange t) throws IOException {
-            Map<String, String> metaData = ProxyUtils.getRequestParameters(t.getRequestURI().getQuery());
-            String functionName = metaData.get("name");
-            String codeFileName = appDir + "/" + functionName;
-            String functionEntryPoint = metaData.get("entryPoint");
-            String functionLanguage = metaData.get("language");
-            String sandboxName = metaData.get("sandbox");
-            int svmID = Integer.parseInt(metaData.getOrDefault("svmid", "0"));
-            final boolean isExecutable = Boolean.parseBoolean(metaData.get("isBinary"));
-
-            if (System.getProperty("java.vm.name").equals("Substrate VM")) {
-                handlePolyglotRegistration(t, functionName, codeFileName, functionEntryPoint, functionLanguage, sandboxName, svmID, isExecutable);
-            } else {
-                handleHotSpotRegistration(t, functionName, codeFileName, functionEntryPoint);
-            }
-        }
-
-        private void handleHotSpotRegistration(HttpExchange t, String functionName, String jarFileName, String functionEntryPoint) throws IOException {
+            // Measure the registration duration.
             long start = System.currentTimeMillis();
-            // This lock will be acquired at most once since only 1 function can be registered in HotSpot mode.
-            synchronized (FTABLE) {
-                if (!FTABLE.isEmpty()) {
-                    writeResponse(t, 200, String.format("Function has already been registered!"));
-                    return;
-                }
+            // Extract parameters in the REST request.
+            Map<String, String> params = ProxyUtils.getRequestParameters(t.getRequestURI().getQuery());
+            // Name of the function code file (unique identifier).
+            String functionName = params.get("name");
+            // URL of the function code.
+            String functionURL = params.get("url");
+            // Path in the local cache (appDir) where we will check if the file exists.
+            String functionPath = appDir + "/" + functionName;
+            // Function entrypoint (used in hotspot mode).
+            String functionEntryPoint = params.get("entryPoint");
+            // Function language. // TODO - can we remove?
+            String functionLanguage = params.get("language");
+            // Type of sandbox to use (used in svm mode).
+            String sandboxName = params.get("sandbox");
+            // SVM sandbox id (used to checkpoint/restore svm sandboxes).
+            int svmID = Integer.parseInt(params.getOrDefault("svmid", "0"));
+            // Checks if the function code is an executable or a library (used in svm mode).
+            final boolean isExecutable = Boolean.parseBoolean(params.get("isBinary"));
+            // Checks if the function code is a zipped archive.
+            final boolean isZip = Boolean.parseBoolean(params.get("isZip"));
 
-                try (OutputStream fos = new FileOutputStream(jarFileName); InputStream bis = new BufferedInputStream(t.getRequestBody(), 4096)) {
-                    // Write JAR to a file.
-                    bis.transferTo(fos);
-
-                    // Use class loader explicitly to load new classes from a JAR dynamically.
-                    URLClassLoader loader = new URLClassLoader(new URL[] { Paths.get(jarFileName).toUri().toURL() }, this.getClass().getClassLoader());
-                    Class<?> cls = Class.forName(functionEntryPoint, true, loader); // TODO - push this into the constructor.
-                    Method method = cls.getMethod("main", Map.class);
-                    HotSpotFunction function = new HotSpotFunction(functionName, functionEntryPoint, method);
-                    FTABLE.put(functionName, function);
-                } catch (ReflectiveOperationException e) {
-                    e.printStackTrace(System.err);
-                    errorResponse(t, "An error has occurred (see logs for details): " + e);
-                    return;
-                }
-            }
-            System.out.println(String.format("Function %s registered in %s ms", functionName, (System.currentTimeMillis() - start)));
-            writeResponse(t, 200, String.format("Function %s registered!", functionName));
-        }
-
-        // TODO - rename to svm function.
-        private void handlePolyglotRegistration(HttpExchange t, String functionName, String soFileName, String functionEntryPoint, String functionLanguage, String sandboxName, int svmID, boolean isExecutable) throws IOException {
-            long start = System.currentTimeMillis();
-            PolyglotFunction function = null;
-            SandboxProvider sprovider = null;
-            // TODO - avoid large sync block.
-            synchronized (FTABLE) {
+            synchronized (FTABLE) { // TODO - avoid large sync block?
                 if (FTABLE.containsKey(functionName)) {
                     writeResponse(t, 200, String.format("Function %s has already been registered!", functionName));
+                    System.out.println(String.format("Function %s has been already registed!", functionName));
                     return;
                 }
 
-                if (functionLanguage.equalsIgnoreCase("java")) {
-                    // TODO - split soFileName by ';', for each path, check if it starts with 'file://'. otherwise wget it.
-                    File targetFile = new File(soFileName);
-                    if (targetFile.exists() && targetFile.isFile()) {
-                        System.out.println(String.format("Reusing %s", soFileName));
-                    } else {
-                        try (OutputStream fos = new FileOutputStream(soFileName); InputStream bis = new BufferedInputStream(t.getRequestBody(), 4096)) {
-                            bis.transferTo(fos);
-                        }
+                System.out.println(String.format("Registering function %s: %s", functionName, params));
+
+                // Download file if not on the local cache already.
+                if (new File(functionPath).length() == 0) {
+                    System.out.println(String.format("Downloading %s", functionURL));
+                    ProxyUtils.downloadFile(functionURL, functionPath);
+                    if (isZip) {
+                        // TODO - unzip
                     }
-                    function = new NativeFunction(functionName, functionEntryPoint, functionLanguage, soFileName, isExecutable);
-                }
-                // TODO - this case won't exist any more.
-                else {
-                    try (InputStream bis = new BufferedInputStream(t.getRequestBody(), 4096)) {
-                        String sourceCode = new String(bis.readAllBytes(), StandardCharsets.UTF_8);
-                        function = new TruffleFunction(functionName, functionEntryPoint, functionLanguage, sourceCode);
-                    }
+                } else {
+                    System.out.println(String.format("Reusing %s", functionPath));
                 }
 
-                sprovider = getSandboxProvider(function, sandboxName);
-                if (sprovider == null) {
-                    writeResponse(t, 200, String.format("Failed to register function: unknown sandbox %s!", sandboxName));
-                    return;
-                } else if (sprovider instanceof ContextSnapshotSandboxProvider) {
-                    ((ContextSnapshotSandboxProvider) sprovider).setSVMID(svmID);
-                }
+                // Register depending on the current vm type.
+                PolyglotFunction pf = System.getProperty("java.vm.name").equals("Substrate VM") ?
+                    handleSvmRegistration(t, functionName, functionPath, functionEntryPoint, functionLanguage, sandboxName, svmID, isExecutable) :
+                    handleHotSpotRegistration(t, functionName, functionPath, functionEntryPoint);
 
-                function.setSandboxProvider(sprovider);
-                sprovider.loadProvider();
-                FTABLE.put(functionName, function);
+                if (pf != null) {
+                    FTABLE.put(functionName, pf);
+                    writeResponse(t, 200, String.format("Function %s registered!", functionName));
+                } else {
+                    errorResponse(t, "Failed to register function (see runtime logs for details).");
+                }
+                System.out.println(String.format("Registering function: %s... done in %s ms!", functionName, (System.currentTimeMillis() - start)));
             }
-            System.out.println(String.format("Function %s registered with %s sandboxing in %s ms", functionName, sprovider.getName(), (System.currentTimeMillis() - start)));
-            writeResponse(t, 200, String.format("Function %s registered!", functionName));
+        }
+
+        private PolyglotFunction handleHotSpotRegistration(HttpExchange t, String functionName, String jarFileName, String functionEntryPoint) throws IOException {
+            try {
+                // Use class loader explicitly to load new classes from a JAR dynamically.
+                URLClassLoader loader = new URLClassLoader(new URL[] { Paths.get(jarFileName).toUri().toURL() }, this.getClass().getClassLoader());
+                Class<?> cls = Class.forName(functionEntryPoint, true, loader);
+                Method method = cls.getMethod("main", Map.class);
+                return new HotSpotFunction(functionName, functionEntryPoint, method);
+            } catch (ReflectiveOperationException e) {
+                e.printStackTrace(System.err);
+                return null;
+            }
+        }
+
+        private PolyglotFunction handleSvmRegistration(HttpExchange t, String functionName, String soFileName, String functionEntryPoint, String functionLanguage, String sandboxName, int svmID, boolean isExecutable) throws IOException {
+            PolyglotFunction function = new NativeFunction(functionName, functionEntryPoint, functionLanguage, soFileName, isExecutable);
+            SandboxProvider sprovider = getSandboxProvider(function, sandboxName);
+            if (sprovider == null) {
+                return null;
+            } else if (sprovider instanceof ContextSnapshotSandboxProvider) {
+                ((ContextSnapshotSandboxProvider) sprovider).setSVMID(svmID);
+            }
+
+            function.setSandboxProvider(sprovider);
+            sprovider.loadProvider();
+            return function;
         }
     }
 
