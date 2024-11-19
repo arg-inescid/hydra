@@ -1,10 +1,14 @@
 package org.graalvm.argo.lambda_manager.utils;
 
 import io.micronaut.http.HttpRequest;
+import io.micronaut.http.client.DefaultHttpClientConfiguration;
 import io.micronaut.http.client.RxHttpClient;
+import io.micronaut.http.client.HttpClientConfiguration;
+import io.micronaut.http.client.netty.DefaultHttpClient;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.time.Duration;
 
 public class LambdaConnection {
     public final String ip;
@@ -15,7 +19,10 @@ public class LambdaConnection {
     public LambdaConnection(String ip, String tap, int port) throws MalformedURLException {
         this.ip = ip;
         this.tap = tap;
-        this.client = RxHttpClient.create(new URL("http", ip, port, "/"));
+        URL url = new URL("http", ip, port, "/");
+        HttpClientConfiguration config = new DefaultHttpClientConfiguration();
+        config.setReadTimeout(Duration.ofSeconds(60));
+        this.client = new DefaultHttpClient(url, config);
         this.port = port;
     }
 
