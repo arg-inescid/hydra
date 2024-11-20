@@ -21,7 +21,7 @@ public class LambdaConnection {
         this.tap = tap;
         URL url = new URL("http", ip, port, "/");
         HttpClientConfiguration config = new DefaultHttpClientConfiguration();
-        config.setReadTimeout(Duration.ofSeconds(60));
+        config.setReadTimeout(Duration.ofSeconds(30));
         this.client = new DefaultHttpClient(url, config);
         this.port = port;
     }
