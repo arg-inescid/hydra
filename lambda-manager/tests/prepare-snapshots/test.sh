@@ -16,6 +16,7 @@ sudo ls &> /dev/null
 # Declare global variables.
 USERNAME=user
 BENCH_ARRAY=(jshw jsup jsdh pyhw pyup pyco)
+FUNCTION_MEMORY=1024
 
 declare -A BENCHMARK_BINARIES
 BENCHMARK_BINARIES[jshw]="$ARGO_HOME/benchmarks/src/javascript/gv-hello-world/build/libhelloworld.so"
@@ -58,13 +59,13 @@ for bench in "${BENCH_ARRAY[@]}"; do
     bench_dir=$(dirname ${BENCHMARK_BINARIES["$bench"]})
     bench_filename=$(basename ${BENCHMARK_BINARIES["$bench"]})
     bench_filename="${bench_filename%.*}"
-    full_bench_name="$USERNAME"_"$bench"
+    full_bench_name="$USERNAME"-"$bench"
 
     rm -f $bench_dir/$bench_filename.memsnap
     rm -f $bench_dir/$bench_filename.metasnap
 
     # Register.
-    curl -s -X POST $LAMBDA_MANAGER_HOST:$LAMBDA_MANAGER_PORT/upload_function?username=$USERNAME\&function_name=$bench\&function_language=java\&function_entry_point=${BENCHMARK_ENTRYPOINTS["$bench"]}\&function_memory=256\&function_runtime=graalvisor\&function_isolation=false\&invocation_collocation=true\&gv_sandbox=context-snapshot\&svm_id=${BENCHMARK_SVMIDS["$bench"]} -H 'Content-Type: application/octet-stream' --data-binary ${BENCHMARK_BINARIES["$bench"]}
+    curl -s -X POST $LAMBDA_MANAGER_HOST:$LAMBDA_MANAGER_PORT/upload_function?username=$USERNAME\&function_name=$bench\&function_language=java\&function_entry_point=${BENCHMARK_ENTRYPOINTS["$bench"]}\&function_memory=$FUNCTION_MEMORY\&function_runtime=graalvisor\&function_isolation=false\&invocation_collocation=true\&gv_sandbox=context-snapshot\&svm_id=${BENCHMARK_SVMIDS["$bench"]} -H 'Content-Type: application/octet-stream' --data-binary ${BENCHMARK_BINARIES["$bench"]}
     # Invoke.
     curl -s -X POST $LAMBDA_MANAGER_HOST:$LAMBDA_MANAGER_PORT/$USERNAME/$bench -H 'Content-Type: application/json' --data ${BENCHMARK_PAYLOADS["$bench"]}
 

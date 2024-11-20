@@ -89,6 +89,11 @@ public class LambdaPool {
         // Shutdown lambdas inside pool and starting lambdas.
         LambdaPoolUtils.shutdownLambdas(lambdaPool);
 
+        // Close any lasting connection.
+        for (LambdaConnection connection : connectionPool) {
+            connection.client.close();
+        }
+
         // Delete os-level network interfaces.
         if (lambdaType.isVM()) {
             ProcessBuilder removeTapsOutsidePoolWorker = new RemoveTapsOutsidePool(null).build();

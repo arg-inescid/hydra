@@ -1,8 +1,10 @@
 package org.graalvm.argo.lambda_manager.utils;
 
+import java.net.MalformedURLException;
 import java.util.Iterator;
 import java.util.Queue;
 import java.util.Random;
+import java.util.logging.Level;
 
 import org.graalvm.argo.lambda_manager.core.Configuration;
 import org.graalvm.argo.lambda_manager.core.Environment;
@@ -12,6 +14,7 @@ import org.graalvm.argo.lambda_manager.processes.taps.RemoveTap;
 
 import com.github.maltalex.ineter.base.IPv4Address;
 import com.github.maltalex.ineter.range.IPv4Subnet;
+import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 
 public class NetworkConfigurationUtils {
 
@@ -23,16 +26,24 @@ public class NetworkConfigurationUtils {
         iPv4AddressIterator.next(); // Note: skip *.*.*.1
         String gateway = gatewayWithMask.split("/")[0];
 
-        for (int i = 0; i < connections; i++) {
-            String ip = getNextIPAddress(iPv4AddressIterator, gateway);
-            String tap = String.format("%s-%s", Environment.TAP_PREFIX, generateRandomString());
-            pool.add(new LambdaConnection(ip, tap, lambdaPort));
+        try {
+            for (int i = 0; i < connections; i++) {
+                String ip = getNextIPAddress(iPv4AddressIterator, gateway);
+                String tap = String.format("%s-%s", Environment.TAP_PREFIX, generateRandomString());
+                pool.add(new LambdaConnection(ip, tap, lambdaPort));
+            }
+        } catch (MalformedURLException e) {
+            Logger.log(Level.INFO, "Failed to prepare lambda connection", e);
         }
     }
 
     public static void prepareContainerConnectionPool(Queue<LambdaConnection> pool, int connections) {
-        for (int lambdaPort = Configuration.argumentStorage.getFirstLambdaPort(); lambdaPort < Configuration.argumentStorage.getFirstLambdaPort() + connections; lambdaPort++) {
-            pool.add(new LambdaConnection(LOCALHOST_IP, null, lambdaPort));
+        try {
+            for (int lambdaPort = Configuration.argumentStorage.getFirstLambdaPort(); lambdaPort < Configuration.argumentStorage.getFirstLambdaPort() + connections; lambdaPort++) {
+                pool.add(new LambdaConnection(LOCALHOST_IP, null, lambdaPort));
+            }
+        } catch (MalformedURLException e) {
+            Logger.log(Level.INFO, "Failed to prepare lambda connection", e);
         }
     }
 

@@ -6,6 +6,7 @@
   "healthCheck": 50,
   "lambdaPort": 8080,
   "lambdaType": "container",
+  "optimizationPipeline": false,
   "lambdaConsole": true,
   "managerConsole": {
     "turnOn": true,

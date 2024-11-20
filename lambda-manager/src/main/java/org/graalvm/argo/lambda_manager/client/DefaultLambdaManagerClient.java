@@ -2,12 +2,14 @@ package org.graalvm.argo.lambda_manager.client;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.file.Files;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
+import io.micronaut.http.HttpRequest;
+import io.micronaut.http.client.exceptions.HttpClientException;
+import io.netty.handler.timeout.ReadTimeoutException;
+import io.reactivex.Flowable;
 import org.graalvm.argo.lambda_manager.core.Configuration;
 import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.core.Lambda;
@@ -18,15 +20,17 @@ import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 
 public class DefaultLambdaManagerClient implements LambdaManagerClient {
 
-    private String sendRequest(HttpRequest request, Lambda lambda) {
-        HttpClient client = lambda.getConnection().client;
+    private String sendRequest(HttpRequest<?> request, Lambda lambda) {
+        Flowable<String> flowable = lambda.getConnection().client.retrieve(request);
         for (int failures = 0; failures < Configuration.argumentStorage.getFaultTolerance(); failures++) {
             try {
-                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-                return response.body();
-            } catch (IOException | InterruptedException e) {
+                return flowable.timeout(60, TimeUnit.SECONDS).blockingFirst();
+            } catch (ReadTimeoutException e) {
+                Logger.log(Level.WARNING, "Received ReadTimeoutException in lambda " + lambda.getLambdaID() + ". Message: " + e.getMessage());
+                break;
+            } catch (HttpClientException e) {
                 try {
-                    Logger.log(Level.WARNING, "Received exception in lambda " + lambda.getLambdaID() + ". Message: " + e.getMessage());
+                    Logger.log(Level.WARNING, "Received HttpClientException in lambda " + lambda.getLambdaID() + ". Message: " + e.getMessage());
                     Thread.sleep(Configuration.argumentStorage.getHealthCheck());
                 } catch (InterruptedException interruptedException) {
                     // Skipping raised exception.
@@ -102,7 +106,6 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         } else {
             Logger.log(Level.WARNING, String.format("Unexpected lambda mode (%s) when invoking function %s!", lambda.getExecutionMode(), function.getName()));
         }
-
         return sendRequest(lambda.getConnection().post(path, payload), lambda);
     }
 

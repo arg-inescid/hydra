@@ -70,4 +70,4 @@ while :; do
     shift
 done
 
-java -jar build/libs/lambda-manager-1.0-all.jar --config $CONFIG_PATH --variables $VARIABLES_PATH $SOCKET_SERVER_OPTION $HTTP_SERVER_OPTION
+$JAVA_HOME/bin/java -jar build/libs/lambda-manager-1.0-all.jar --config $CONFIG_PATH --variables $VARIABLES_PATH $SOCKET_SERVER_OPTION $HTTP_SERVER_OPTION
