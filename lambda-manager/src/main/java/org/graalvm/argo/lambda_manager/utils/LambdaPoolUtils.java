@@ -1,6 +1,7 @@
 package org.graalvm.argo.lambda_manager.utils;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -202,7 +203,8 @@ public class LambdaPoolUtils {
     }
 
     private static void shutdownNativeLambda(Lambda lambda, String lambdaPath) throws Throwable {
-        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_graalos_native.sh", lambdaPath, String.valueOf(lambda.getConnection().port)).start();
+        File f = new File(Environment.LAMBDA_LOGS + "/" + lambda.getLambdaName() + "/terminate.log");
+        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_graalos_native.sh", lambdaPath, String.valueOf(lambda.getConnection().port)).redirectOutput(f).redirectError(f).start();
         p.waitFor();
         if (p.exitValue() != 0) {
             Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", lambda.getLambdaID()));
