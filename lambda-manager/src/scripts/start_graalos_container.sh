@@ -6,7 +6,7 @@ source "$DIR"/environment.sh
 
 if [ -z "$GRAALOS_SDK_DIR" ]
 then
-    echo "Please set GRAALOS_SDK_DIR first. It should point to directory conainting an unziped version of the Graal OS SDK."
+    echo "Please set GRAALOS_SDK_DIR first. It should point to directory containing an unzipped version of the GraalOS SDK."
     exit 1
 fi
 
