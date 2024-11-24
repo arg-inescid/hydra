@@ -111,6 +111,32 @@ public class LambdaMetricsUtils {
         }
     }
 
+    // Metrics collection for GraalOS (GraalHub) footprint.
+    public static double collectGraalOSFootprint() {
+        try (InputStream stream = executeCommand("bash", "-c", "top -bn 1 | grep \"GraalHub\"")) {
+            return readGraalHubFootprint(stream);
+        } catch (Throwable thr) {
+            thr.printStackTrace();
+            return 0;
+        }
+    }
+
+    private static double readGraalHubFootprint(InputStream stream) throws IOException {
+        double total = 0;
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                // Line format:
+                // PID  USER  PR  NI  VIRT  RES  SHR  S  %CPU  %MEM  TIME+  COMMAND
+                if (line.contains("GraalHub")) {
+                    String[] tokens = line.split("\\s+");
+                    total += Double.parseDouble(tokens[5]);
+                }
+            }
+        }
+        return kilobytesToMegabytes(total);
+    }
+
     private static double[] readCpu(InputStream stream) throws IOException {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
             String line;
@@ -118,9 +144,8 @@ public class LambdaMetricsUtils {
                 // Line format:
                 // %Cpu(s):  0.0 us,  0.2 sy,  0.0 ni, 99.8 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
                 if (line.contains("%Cpu(s):")) {
-                    String tokens[] = line.split("\\s+");
-                    double[] result = { Double.parseDouble(tokens[1]), Double.parseDouble(tokens[3]) };
-                    return result;
+                    String[] tokens = line.split("\\s+");
+                    return new double[]{ Double.parseDouble(tokens[1]), Double.parseDouble(tokens[3]) };
                 }
             }
         }
