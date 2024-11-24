@@ -37,8 +37,6 @@ while ! nc -z localhost ${GRAALOS_PORT}; do
     sleep 0.1
 done
 
-sleep 0.5
-
 http_code=""
 declare -i attempts=0
 while [[ ! ${http_code} == "201" ]]; do
@@ -51,7 +49,7 @@ while [[ ! ${http_code} == "201" ]]; do
         break
     fi
 
-    sleep 0.5
+    sleep 0.1
 done
 echo $res
 
