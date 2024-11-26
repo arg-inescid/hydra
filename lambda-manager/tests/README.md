@@ -69,3 +69,13 @@ Upload and run Java HelloWorld in GraalOS:
 
 > i username=user function_name=graalos_test '{}'
 ```
+
+You can also use the HTTP requests below to test GraalOS manually:
+
+```
+# Upload the function
+> curl -s -X POST localhost:30008/upload_function?username=user\&function_name=graalos_test\&function_language=java\&function_entry_point=null\&function_memory=1024\&function_runtime=graalos\&function_isolation=true\&invocation_collocation=false -H 'Content-Type: application/octet-stream' --data-binary "$ARGO_HOME/../graalos/benchmarks/graalos-client/apps/simple-http/build/native/nativeCompile/simple-http"
+
+# Invoke the function
+> curl -s -X POST localhost:30008/user/graalos_test -H 'Content-Type: application/json' --data '{ }'
+```
