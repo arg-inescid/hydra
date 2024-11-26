@@ -1,9 +1,11 @@
 package org.graalvm.argo.lambda_manager.metrics;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import org.graalvm.argo.lambda_manager.core.Configuration;
 import org.graalvm.argo.lambda_manager.core.Lambda;
@@ -19,7 +21,7 @@ public class MetricsProvider {
             + "\"user_cpu\":%.3f, \"system_cpu\":%.3f, \"graalos_memory\":%.3f,"
             + "\"open_requests\":%d, \"active_lambdas\":%d, \"active_lambdas_running\":%d, "
             + "\"lambda_pool_lambdas\":%d, \"active_users\":%d, \"throughput\":%d, \"cinv\":%d, "
-            + "\"lambdas_memory_pool\":[%s]}";
+            + "\"lambdas_memory_pool\":[%s], \"graalos_individual_memory\":[%s]}";
 
     private static final String LAMBDA_OBJECT = "{\"name\":\"%s\",\"pool_free\":%d,\"running\":%d},";
 
@@ -30,7 +32,9 @@ public class MetricsProvider {
         double[] cpus = LambdaMetricsUtils.collectCpuNumbers();
         double userCpu = cpus[0];
         double systemCpu = cpus[1];
-        double graalosFootprint = LambdaMetricsUtils.collectGraalOSFootprint();
+        List<Double> graalosFootprints = LambdaMetricsUtils.collectGraalOSFootprint();
+        String individualGraalosFootprints = graalosFootprints.stream().map(String::valueOf).collect(Collectors.joining(","));
+        double totalGraalosFootprint = graalosFootprints.stream().mapToDouble(Double::doubleValue).sum();
         int lambdasRunning = 0;
         int lambdaPoolLambdas = 0;
         int openRequests = 0;
@@ -52,8 +56,8 @@ public class MetricsProvider {
         }
         sb.setLength(Math.max(sb.length() - 1, 0)); // To remove the last comma.
 
-        String result = String.format(METRIC_RECORD, timestamp, systemFootprint, userCpu, systemCpu, graalosFootprint, openRequests, LambdaManager.lambdas.size(),
-                lambdasRunning, lambdaPoolLambdas, activeUsers.size(), completedRequests.get(), cinv.get(), sb.toString());
+        String result = String.format(METRIC_RECORD, timestamp, systemFootprint, userCpu, systemCpu, totalGraalosFootprint, openRequests, LambdaManager.lambdas.size(),
+                lambdasRunning, lambdaPoolLambdas, activeUsers.size(), completedRequests.get(), cinv.get(), sb.toString(), individualGraalosFootprints);
 
         completedRequests.set(0);
         return result;

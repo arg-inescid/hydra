@@ -4,7 +4,10 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 public class LambdaMetricsUtils {
@@ -112,29 +115,29 @@ public class LambdaMetricsUtils {
     }
 
     // Metrics collection for GraalOS (GraalHub) footprint.
-    public static double collectGraalOSFootprint() {
+    public static List<Double> collectGraalOSFootprint() {
         try (InputStream stream = executeCommand("bash", "-c", "top -bn 1 | grep \"GraalHub\"")) {
             return readGraalHubFootprint(stream);
         } catch (Throwable thr) {
             thr.printStackTrace();
-            return 0;
+            return Collections.emptyList();
         }
     }
 
-    private static double readGraalHubFootprint(InputStream stream) throws IOException {
-        double total = 0;
+    private static List<Double> readGraalHubFootprint(InputStream stream) throws IOException {
+        List<Double> result = new LinkedList<>();
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 // Line format:
                 // PID  USER  PR  NI  VIRT  RES  SHR  S  %CPU  %MEM  TIME+  COMMAND
                 if (line.contains("GraalHub")) {
-                    String[] tokens = line.split("\\s+");
-                    total += Double.parseDouble(tokens[5]);
+                    String[] tokens = line.trim().split("\\s+");
+                    result.add(kilobytesToMegabytes(Double.parseDouble(tokens[5])));
                 }
             }
         }
-        return kilobytesToMegabytes(total);
+        return result;
     }
 
     private static double[] readCpu(InputStream stream) throws IOException {
