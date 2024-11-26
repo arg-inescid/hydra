@@ -1,0 +1,42 @@
+package org.graalvm.argo.lambda_manager.processes.lambda.factory;
+
+import org.graalvm.argo.lambda_manager.core.Lambda;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalOSNative;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartLambda;
+
+public class NativeLambdaFactory extends AbstractLambdaFactory {
+    @Override
+    public StartLambda createHotspotWithAgent(Lambda lambda) {
+        throw new IllegalStateException("HotSpot with Agent is not yet supported in native mode.");
+    }
+
+    @Override
+    public StartLambda createHotspot(Lambda lambda) {
+        throw new IllegalStateException("HotSpot is not yet supported in native mode.");
+    }
+
+    @Override
+    public StartLambda createGraalvisor(Lambda lambda) {
+        throw new IllegalStateException("Graalvisor is not yet supported in native mode.");
+    }
+
+    @Override
+    public StartLambda createGraalvisorPgo(Lambda lambda) {
+        throw new IllegalStateException("Graalvisor PGO is not yet supported in native mode.");
+    }
+
+    @Override
+    public StartLambda createGraalvisorPgoOptimized(Lambda lambda) {
+        throw new IllegalStateException("Graalvisor PGO Optimized is not yet supported in native mode.");
+    }
+
+    @Override
+    public StartLambda createOpenWhisk(Lambda lambda) {
+        throw new IllegalStateException("OpenWhisk is not yet supported in native mode.");
+    }
+
+    @Override
+    public StartLambda createGraalOS(Lambda lambda) {
+        return new StartGraalOSNative(lambda);
+    }
+}

@@ -1,6 +1,7 @@
 package org.graalvm.argo.lambda_manager.utils;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -153,6 +154,8 @@ public class LambdaPoolUtils {
                 shutdownContainerLambda(lambda, Environment.CODEBASE + "/" + lambda.getLambdaName());
             } else if (lambdaType == LambdaType.VM_FIRECRACKER || lambdaType == LambdaType.VM_FIRECRACKER_SNAPSHOT) {
                 shutdownFirecrackerLambda(lambda, Environment.CODEBASE + "/" + lambda.getLambdaName(), lambdaType);
+            } else if (lambdaType == LambdaType.GRAALOS_NATIVE) {
+                shutdownNativeLambda(lambda, Environment.CODEBASE + "/" + lambda.getLambdaName());
             } else {
                 Logger.log(Level.WARNING, String.format("Lambda ID=%d has no known execution mode: %s", lambda.getLambdaID(), lambda.getExecutionMode()));
             }
@@ -192,6 +195,16 @@ public class LambdaPoolUtils {
         String lambdaMode = lambda.getExecutionMode().toString();
         Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_container.sh", lambdaPath, lambdaMode,
                 lambda.getConnection().ip, String.valueOf(lambda.getConnection().port), lambda.getLambdaName()).start();
+        p.waitFor();
+        if (p.exitValue() != 0) {
+            Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", lambda.getLambdaID()));
+            printStream(Level.WARNING, p.getErrorStream());
+        }
+    }
+
+    private static void shutdownNativeLambda(Lambda lambda, String lambdaPath) throws Throwable {
+        File f = new File(Environment.LAMBDA_LOGS + "/" + lambda.getLambdaName() + "/terminate.log");
+        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_graalos_native.sh", lambdaPath, String.valueOf(lambda.getConnection().port)).redirectOutput(f).redirectError(f).start();
         p.waitFor();
         if (p.exitValue() != 0) {
             Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", lambda.getLambdaID()));

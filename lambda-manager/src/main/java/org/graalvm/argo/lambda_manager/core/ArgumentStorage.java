@@ -13,6 +13,7 @@ import org.graalvm.argo.lambda_manager.processes.lambda.factory.AbstractLambdaFa
 import org.graalvm.argo.lambda_manager.processes.lambda.factory.ContainerLambdaFactory;
 import org.graalvm.argo.lambda_manager.processes.lambda.factory.FirecrackerLambdaFactory;
 import org.graalvm.argo.lambda_manager.processes.lambda.factory.FirecrackerSnapshotLambdaFactory;
+import org.graalvm.argo.lambda_manager.processes.lambda.factory.NativeLambdaFactory;
 import org.graalvm.argo.lambda_manager.schedulers.RoundedRobinScheduler;
 import org.graalvm.argo.lambda_manager.utils.Messages;
 import org.graalvm.argo.lambda_manager.utils.logger.ElapseTimer;
@@ -111,6 +112,9 @@ public class ArgumentStorage {
             case CONTAINER:
             case CONTAINER_DEBUG:
                 this.lambdaFactory = new ContainerLambdaFactory();
+                break;
+            case GRAALOS_NATIVE:
+                this.lambdaFactory = new NativeLambdaFactory();
                 break;
             default:
                 throw new IllegalStateException("Could not instantiate lambda factory due to unknown lambda type: " + lambdaType);

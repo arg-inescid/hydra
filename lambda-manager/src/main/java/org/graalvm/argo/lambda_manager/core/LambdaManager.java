@@ -36,7 +36,7 @@ public class LambdaManager {
         String response = null;
         Function function = null;
         Lambda lambda = null;
-        long start = System.currentTimeMillis();
+        long start = System.nanoTime();
 
         if (!Configuration.isInitialized()) {
             Logger.log(Level.WARNING, Messages.NO_CONFIGURATION_UPLOADED);
@@ -62,7 +62,7 @@ public class LambdaManager {
                     }
                 }
 
-                long infrTime = System.currentTimeMillis() - start;
+                long infrTime = (System.nanoTime() - start) / 1000;
 
                 response = Configuration.client.invokeFunction(lambda, function, arguments);
 
@@ -77,7 +77,7 @@ public class LambdaManager {
                         lambda.setDecommissioned(true);
                     }
                 } else {
-                    long requestTime = System.currentTimeMillis() - start;
+                    long requestTime = (System.nanoTime() - start) / 1000;
                     MetricsProvider.addRequest();
                     Logger.log(Level.FINE, formatRequestSpentTimeMessage(lambda, function, requestTime, infrTime));
                     if (Configuration.argumentStorage.isDebugMode()) {

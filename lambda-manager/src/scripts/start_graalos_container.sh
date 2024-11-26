@@ -6,7 +6,7 @@ source "$DIR"/environment.sh
 
 if [ -z "$GRAALOS_SDK_DIR" ]
 then
-    echo "Please set GRAALOS_SDK_DIR first. It should point to directory conainting an unziped version of the Graal OS SDK."
+    echo "Please set GRAALOS_SDK_DIR first. It should point to directory containing an unzipped version of the GraalOS SDK."
     exit 1
 fi
 
@@ -43,19 +43,19 @@ while ! nc -z localhost ${GRAALOS_PORT}; do
     sleep 0.1
 done
 
-sleep 0.5
-
-res=""
+http_code=""
 declare -i attempts=0
-while [[ ! ${res} == *"AddEndpoint"* ]]; do
-    res=$(docker exec $LAMBDA_NAME curl --silent --show-error --write-out "%{http_code}" --data-binary '{ "act": "add_ep", "app": "/graalos/benchmarks/graalos-client/apps/simple-http/build/native/nativeCompile/simple-http", "ep": 2001, "default_socket": { "port": 9001 }, "listen_socket": { "port": 9001 }, "fsroot": "/", "fsmappings": [ { "concrete": "/", "virt": "/" } ], "env": { "myvar": "initial_value" }, "instances": 1 }' http://localhost:$GRAALOS_PORT/command)
+while [[ ! ${http_code} == "201" ]]; do
+    res=$(curl --silent --show-error --write-out "%{http_code}" --data-binary '{ "act": "add_ep", "app": "/graalos/benchmarks/graalos-client/apps/simple-http/build/native/nativeCompile/simple-http", "ep": 2001, "default_socket": { "port": 9001 }, "listen_socket": { "port": 9001 }, "fsroot": "/", "fsmappings": [ { "concrete": "/", "virt": "/" } ], "env": { "myvar": "initial_value" }, "instances": 1 }' http://localhost:$GRAALOS_PORT/command)
+    http_code=$(echo $res | awk '{print $NF}')
+    echo "$res"
     attempts=$((attempts+1))
 
     if [ "$attempts" -gt "1000" ]; then
         break
     fi
 
-    sleep 0.5
+    sleep 0.1
 done
 echo $res
 

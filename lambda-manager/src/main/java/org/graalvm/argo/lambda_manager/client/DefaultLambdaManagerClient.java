@@ -21,9 +21,9 @@ import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 public class DefaultLambdaManagerClient implements LambdaManagerClient {
 
     private String sendRequest(HttpRequest<?> request, Lambda lambda) {
-        Flowable<String> flowable = lambda.getConnection().client.retrieve(request);
         for (int failures = 0; failures < Configuration.argumentStorage.getFaultTolerance(); failures++) {
             try {
+                Flowable<String> flowable = lambda.getConnection().client.retrieve(request);
                 return flowable.timeout(60, TimeUnit.SECONDS).blockingFirst();
             } catch (ReadTimeoutException e) {
                 Logger.log(Level.WARNING, "Received ReadTimeoutException in lambda " + lambda.getLambdaID() + ". Message: " + e.getMessage());
