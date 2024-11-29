@@ -89,7 +89,10 @@ int main(int argc, char** argv) {
         restore_svm(FPATH, "metadata.snap", "memory.snap", &abi, &isolate);
         abi.graal_attach_thread(isolate, &isolatethread);
         run_entrypoint(&abi, isolate, isolatethread, CONC, ITERS, fin, fout, FOUT_LEN);
-        abi.graal_detach_thread(isolatethread);
+        // Note: from manual (https://www.graalvm.org/22.1/reference-manual/native-image/C-API/):
+        // 'no code may still be executing in the isolate thread's context.' Since we cannot
+        // guarantee that threads may be left behind, it is not safe to detach.
+        //abi.graal_detach_thread(isolatethread);
     } else if (CURRENT_MODE == CHECKPOINT) {
         checkpoint_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, FOUT_LEN, NULL, NULL);
     } else {

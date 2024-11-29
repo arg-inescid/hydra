@@ -40,7 +40,7 @@ public class ContextSnapshotSandboxProvider extends SandboxProvider {
     public String invoke(String jsonArguments) {
         long isolateThread = NativeSandboxInterface.svmAttachThread(svmID);
         String output = NativeSandboxInterface.svmEntrypoint(svmID, isolateThread, jsonArguments);
-        NativeSandboxInterface.svmDetachThread(svmID, isolateThread);
+        // Note: we do not detach as there may be code left running behind (see CAPI documentation).
         return output;
     }
 
