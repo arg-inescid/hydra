@@ -2,38 +2,32 @@ package org.graalvm.argo.graalvisor;
 
 import static org.graalvm.argo.graalvisor.utils.JsonUtils.json;
 import static org.graalvm.argo.graalvisor.utils.JsonUtils.jsonToMap;
-import static org.graalvm.argo.graalvisor.utils.ProxyUtils.errorResponse;
-import static org.graalvm.argo.graalvisor.utils.ProxyUtils.extractRequestBody;
-import static org.graalvm.argo.graalvisor.utils.ProxyUtils.writeResponse;
+import static org.graalvm.argo.graalvisor.utils.HttpUtils.errorResponse;
+import static org.graalvm.argo.graalvisor.utils.HttpUtils.extractRequestBody;
+import static org.graalvm.argo.graalvisor.utils.HttpUtils.writeResponse;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
-
 import org.graalvm.argo.graalvisor.function.HotSpotFunction;
 import org.graalvm.argo.graalvisor.function.NativeFunction;
 import org.graalvm.argo.graalvisor.function.PolyglotFunction;
-import org.graalvm.argo.graalvisor.function.TruffleFunction;
 import org.graalvm.argo.graalvisor.sandboxing.ContextSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.ContextSnapshotSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.IsolateSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.ExecutableSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.ProcessSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.SandboxProvider;
-import org.graalvm.argo.graalvisor.utils.ProxyUtils;
+import org.graalvm.argo.graalvisor.utils.HttpUtils;
+import org.graalvm.argo.graalvisor.utils.ZipUtils;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -130,7 +124,7 @@ public abstract class RuntimeProxy {
 
         @Override
         public void handleInternal(HttpExchange t) throws IOException {
-            Map<String, Object> input = jsonToMap(ProxyUtils.extractRequestBody(t));
+            Map<String, Object> input = jsonToMap(HttpUtils.extractRequestBody(t));
             String functionName = (String) input.get("name");
             String arguments = (String) input.get("arguments");
             String async = (String)input.get("async");
@@ -138,7 +132,7 @@ public abstract class RuntimeProxy {
             boolean debug = input.get("debug") == null ? false : Boolean.parseBoolean((String)input.get("debug"));
 
             if (async != null && async.equals("true")) {
-                ProxyUtils.writeResponse(t, 200, "Asynchronous request submitted!");
+                HttpUtils.writeResponse(t, 200, "Asynchronous request submitted!");
                 String output = invokeWrapper(functionName, cached, 0, 0, arguments);
                 System.out.println(output);
             } else {
@@ -149,7 +143,7 @@ public abstract class RuntimeProxy {
                 if (debug) {
                     System.out.println(String.format("Calling %s with arguments %s returned ", functionName, arguments, output));
                 }
-                ProxyUtils.writeResponse(t, 200, output);
+                HttpUtils.writeResponse(t, 200, output);
             }
         }
     }
@@ -158,14 +152,14 @@ public abstract class RuntimeProxy {
 
         @Override
         public void handleInternal(HttpExchange t) throws IOException {
-            Map<String, String> metadata = ProxyUtils.getRequestParameters(t.getRequestURI().getQuery());
+            Map<String, String> metadata = HttpUtils.getRequestParameters(t.getRequestURI().getQuery());
             int concurrency = metadata.get("concurrency") == null ? 1 : Integer.parseInt(metadata.get("concurrency"));
             int requests = metadata.get("requests") == null ? 1 : Integer.parseInt(metadata.get("requests"));
-            Map<String, Object> input = jsonToMap(ProxyUtils.extractRequestBody(t));
+            Map<String, Object> input = jsonToMap(HttpUtils.extractRequestBody(t));
             String functionName = (String) input.get("name");
             String arguments = (String) input.get("arguments");
             String output = invokeWrapper(functionName, false, concurrency, requests, arguments);
-            ProxyUtils.writeResponse(t, 200, output);
+            HttpUtils.writeResponse(t, 200, output);
         }
     }
 
@@ -199,18 +193,11 @@ public abstract class RuntimeProxy {
             }
         }
 
-        @Override
-        public void handleInternal(HttpExchange t) throws IOException {
-            // Measure the registration duration.
-            long start = System.currentTimeMillis();
-            // Extract parameters in the REST request.
-            Map<String, String> params = ProxyUtils.getRequestParameters(t.getRequestURI().getQuery());
-            // Name of the function code file (unique identifier).
-            String functionName = params.get("name");
+        public PolyglotFunction registerFunction(String functionName, Map<String, String> params) {
             // URL of the function code.
             String functionURL = params.get("url");
             // Path in the local cache (appDir) where we will check if the file exists.
-            String functionPath = appDir + "/" + functionName;
+            String functionPath = appDir + "/" + functionURL.substring(functionURL.lastIndexOf('/') + 1);
             // Function entrypoint (used in hotspot mode).
             String functionEntryPoint = params.get("entryPoint");
             // Function language. // TODO - can we remove?
@@ -221,45 +208,33 @@ public abstract class RuntimeProxy {
             int svmID = Integer.parseInt(params.getOrDefault("svmid", "0"));
             // Checks if the function code is an executable or a library (used in svm mode).
             final boolean isExecutable = Boolean.parseBoolean(params.get("isBinary"));
-            // Checks if the function code is a zipped archive.
-            final boolean isZip = Boolean.parseBoolean(params.get("isZip"));
 
-            synchronized (FTABLE) { // TODO - avoid large sync block?
-                if (FTABLE.containsKey(functionName)) {
-                    writeResponse(t, 200, String.format("Function %s has already been registered!", functionName));
-                    System.out.println(String.format("Function %s has been already registed!", functionName));
-                    return;
-                }
-
-                System.out.println(String.format("Registering function %s: %s", functionName, params));
-
+            try {
                 // Download file if not on the local cache already.
                 if (new File(functionPath).length() == 0) {
                     System.out.println(String.format("Downloading %s", functionURL));
-                    ProxyUtils.downloadFile(functionURL, functionPath);
-                    if (isZip) {
-                        // TODO - unzip
+                    HttpUtils.downloadFile(functionURL, functionPath);
+                    // Note: we rely on file extensions here.
+                    if (functionPath.endsWith(".zip")) {
+                        ZipUtils.unzip(functionPath, appDir);
+                        // Note: this is a convention shared between the function registry and graalvisor.
+                        functionPath = functionPath.replace(".zip", ".so");
                     }
                 } else {
                     System.out.println(String.format("Reusing %s", functionPath));
                 }
 
                 // Register depending on the current vm type.
-                PolyglotFunction pf = System.getProperty("java.vm.name").equals("Substrate VM") ?
-                    handleSvmRegistration(t, functionName, functionPath, functionEntryPoint, functionLanguage, sandboxName, svmID, isExecutable) :
-                    handleHotSpotRegistration(t, functionName, functionPath, functionEntryPoint);
-
-                if (pf != null) {
-                    FTABLE.put(functionName, pf);
-                    writeResponse(t, 200, String.format("Function %s registered!", functionName));
-                } else {
-                    errorResponse(t, "Failed to register function (see runtime logs for details).");
-                }
-                System.out.println(String.format("Registering function: %s... done in %s ms!", functionName, (System.currentTimeMillis() - start)));
+                return System.getProperty("java.vm.name").equals("Substrate VM") ?
+                    handleSvmRegistration(functionName, functionPath, functionEntryPoint, functionLanguage, sandboxName, svmID, isExecutable) :
+                    handleHotSpotRegistration(functionName, functionPath, functionEntryPoint);
+            } catch (IOException e) {
+                e.printStackTrace(System.err);
+                return null;
             }
-        }
+         }
 
-        private PolyglotFunction handleHotSpotRegistration(HttpExchange t, String functionName, String jarFileName, String functionEntryPoint) throws IOException {
+        private PolyglotFunction handleHotSpotRegistration(String functionName, String jarFileName, String functionEntryPoint) throws IOException {
             try {
                 // Use class loader explicitly to load new classes from a JAR dynamically.
                 URLClassLoader loader = new URLClassLoader(new URL[] { Paths.get(jarFileName).toUri().toURL() }, this.getClass().getClassLoader());
@@ -272,7 +247,7 @@ public abstract class RuntimeProxy {
             }
         }
 
-        private PolyglotFunction handleSvmRegistration(HttpExchange t, String functionName, String soFileName, String functionEntryPoint, String functionLanguage, String sandboxName, int svmID, boolean isExecutable) throws IOException {
+        private PolyglotFunction handleSvmRegistration(String functionName, String soFileName, String functionEntryPoint, String functionLanguage, String sandboxName, int svmID, boolean isExecutable) throws IOException {
             PolyglotFunction function = new NativeFunction(functionName, functionEntryPoint, functionLanguage, soFileName, isExecutable);
             SandboxProvider sprovider = getSandboxProvider(function, sandboxName);
             if (sprovider == null) {
@@ -284,6 +259,26 @@ public abstract class RuntimeProxy {
             function.setSandboxProvider(sprovider);
             sprovider.loadProvider();
             return function;
+        }
+
+        @Override
+        public void handleInternal(HttpExchange t) throws IOException {
+            // Measure the registration duration.
+            long start = System.currentTimeMillis();
+            // Extract parameters in the REST request.
+            Map<String, String> params = HttpUtils.getRequestParameters(t.getRequestURI().getQuery());
+            // Name of the function code file (unique identifier).
+            String functionName = params.get("name");
+
+            System.out.println(String.format("Registering function %s: %s", functionName, params));
+
+            if (FTABLE.computeIfAbsent(functionName, n -> registerFunction(functionName, params)) != null) {
+                writeResponse(t, 200, String.format("Function %s registered!", functionName));
+            } else {
+                errorResponse(t, "Failed to register function (see runtime logs for details).");
+            }
+
+            System.out.println(String.format("Registering function: %s... done in %s ms!", functionName, (System.currentTimeMillis() - start)));
         }
     }
 

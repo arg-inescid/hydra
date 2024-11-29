@@ -12,7 +12,7 @@ import com.sun.net.httpserver.HttpExchange;
 import java.util.Map;
 import java.util.HashMap;
 
-public class ProxyUtils {
+public class HttpUtils {
 
     public static void writeResponse(HttpExchange t, int code, String response) throws IOException {
         byte[] bytes = response.getBytes(StandardCharsets.UTF_8);

@@ -2,7 +2,7 @@ package org.graalvm.argo.graalvisor;
 
 import static org.graalvm.argo.graalvisor.utils.JsonUtils.json;
 import static org.graalvm.argo.graalvisor.utils.JsonUtils.jsonToMap;
-import static org.graalvm.argo.graalvisor.utils.ProxyUtils.errorResponse;
+import static org.graalvm.argo.graalvisor.utils.HttpUtils.errorResponse;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -14,7 +14,7 @@ import java.util.concurrent.Executors;
 import org.graalvm.argo.graalvisor.function.HotSpotFunction;
 import org.graalvm.argo.graalvisor.function.PolyglotFunction;
 import org.graalvm.argo.graalvisor.function.TruffleFunction;
-import org.graalvm.argo.graalvisor.utils.ProxyUtils;
+import org.graalvm.argo.graalvisor.utils.HttpUtils;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.oracle.svm.graalvisor.polyglot.PolyglotLanguage;
@@ -84,13 +84,13 @@ public class HotSpotProxy extends RuntimeProxy {
         @Override
         public void handleInternal(HttpExchange t) throws IOException {
             try {
-                String jsonBody = ProxyUtils.extractRequestBody(t);
+                String jsonBody = HttpUtils.extractRequestBody(t);
                 Map<String, Object> input = jsonToMap(jsonBody);
                 String configName = (String) input.get("configName");
                 String configPath = configPaths.get(configName);
                 if (configPath != null) {
                     String configContent = new String(Files.readAllBytes(Paths.get(configPath)));
-                    ProxyUtils.writeResponse(t, 200, configContent);
+                    HttpUtils.writeResponse(t, 200, configContent);
                 } else {
                     errorResponse(t, "No such config: " + configName);
                 }
