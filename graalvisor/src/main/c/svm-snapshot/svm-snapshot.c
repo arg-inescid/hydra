@@ -82,7 +82,10 @@ void* entrypoint_worker(void* args) {
     graal_isolatethread_t *isolatethread = NULL;
     wargs->abi->graal_attach_thread(wargs->isolate, &isolatethread);
     run_serial_entrypoint(wargs->abi, isolatethread, wargs->requests, wargs->fin, wargs->fout, wargs->fout_len);
-    wargs->abi->graal_detach_thread(isolatethread);
+    // Note: from manual (https://www.graalvm.org/22.1/reference-manual/native-image/C-API/):
+    // 'no code may still be executing in the isolate thread's context.' Since we cannot
+    // guarantee that threads may be left behind, it is not safe to detach.
+    //wargs->abi->graal_detach_thread(isolatethread);
     return NULL;
 }
 
@@ -147,7 +150,7 @@ void run_svm(
     // Run user code.
     run_entrypoint(abi, *isolate, isolatethread, concurrency, requests, fin, fout, fout_len);
 
-    // Detach thread function isolate and quit.
+    // Detach thread function isolate and quit. This is safe since all threads are stopped.
     abi->graal_detach_thread(isolatethread);
 }
 
