@@ -21,6 +21,8 @@ import java.util.logging.Level;
 
 public class LambdaManager {
 
+    private static final Set<String> registrationInProgress = ConcurrentHashMap.newKeySet();
+
     /**
      * This set contains all the lambdas tracked by the lambda manager.
      */
@@ -43,11 +45,16 @@ public class LambdaManager {
             return JsonUtils.constructJsonResponseObject(Messages.NO_CONFIGURATION_UPLOADED);
         }
 
+        String encodedFunctionName = Configuration.coder.encodeFunctionName(username, functionName);
         try {
-            function = Configuration.storage.get(Configuration.coder.encodeFunctionName(username, functionName));
+            function = Configuration.storage.get(encodedFunctionName);
         } catch (FunctionNotFound functionNotFound) {
-            Logger.log(Level.WARNING, functionNotFound.getMessage(), functionNotFound);
-            return JsonUtils.constructJsonResponseObject(functionNotFound.getMessage());
+            // This function might still be being registered (see uploadFunction).
+            function = tryWaitForRegistration(encodedFunctionName);
+            if (function == null) {
+                Logger.log(Level.WARNING, functionNotFound.getMessage(), functionNotFound);
+                return JsonUtils.constructJsonResponseObject(functionNotFound.getMessage());
+            }
         }
         LambdaExecutionMode targetMode = function.getLambdaExecutionMode();
 
@@ -119,8 +126,9 @@ public class LambdaManager {
             return JsonUtils.constructJsonResponseObject(Messages.NO_CONFIGURATION_UPLOADED);
         }
 
+        String encodedFunctionName = Configuration.coder.encodeFunctionName(username, functionName);
+        registrationInProgress.add(encodedFunctionName);
         try {
-            String encodedFunctionName = Configuration.coder.encodeFunctionName(username, functionName);
             Function function = new Function(encodedFunctionName, functionLanguage, functionEntryPoint, functionMemory, functionRuntime, functionCode, functionIsolation, invocationCollocation, gvSandbox, svmId);
             Configuration.storage.register(encodedFunctionName, function, functionCode);
             Logger.log(Level.INFO, String.format(Messages.SUCCESS_FUNCTION_UPLOAD, functionName));
@@ -131,6 +139,8 @@ public class LambdaManager {
         } catch (Throwable throwable) {
             Logger.log(Level.SEVERE, throwable.getMessage(), throwable);
             responseString = Messages.INTERNAL_ERROR;
+        } finally {
+            registrationInProgress.remove(encodedFunctionName);
         }
         return JsonUtils.constructJsonResponseObject(responseString);
     }
@@ -202,6 +212,24 @@ public class LambdaManager {
             response = Messages.INTERNAL_ERROR;
         }
         return JsonUtils.constructJsonResponseObject(response);
+    }
+
+    private static Function tryWaitForRegistration(String encodedFunctionName) {
+        for (int i = 0; i < 100; ++i) {
+            // Registration might still be in progress, waiting.
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {}
+            if (!registrationInProgress.contains(encodedFunctionName)) {
+                // Registration finished or there was no registration request.
+                try {
+                    return Configuration.storage.get(encodedFunctionName);
+                } catch (FunctionNotFound e) {
+                    return null;
+                }
+            }
+        }
+        return null;
     }
 
 }

@@ -42,7 +42,7 @@ public class Lambda {
 	private final MemoryPool memoryPool;
 
 	/** Functions that need to be uploaded to this lambda. */
-	private Set<Function> requiresFunctionUpload;
+	private final Set<Function> requiresFunctionUpload;
 
     public Lambda(LambdaExecutionMode executionMode) {
         this.openRequestCount = new AtomicInteger(0);
