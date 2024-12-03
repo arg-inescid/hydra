@@ -33,8 +33,6 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
-// TODO - registry should have a type of function code, lib, bin, zip.
-
 /**
  * The runtime proxy exposes a simple webserver that receives three types of requests:
  * - function registration;
