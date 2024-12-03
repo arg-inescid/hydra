@@ -74,6 +74,7 @@ public abstract class RuntimeProxy {
         server = HttpServer.create(new InetSocketAddress(port), -1);
         server.createContext("/", new InvocationHandler());
         server.createContext("/warmup", new WarmupHandler());
+        server.createContext("/stress", new StressHandler());
         server.createContext("/register", new RegisterHandler());
         server.createContext("/deregister", new DeregisterHandler());
         server.setExecutor(Executors.newCachedThreadPool());
@@ -103,11 +104,7 @@ public abstract class RuntimeProxy {
                 res = invoke(function, cached, warmupConc, warmupReqs, arguments);
             }
         long finish = System.nanoTime();
-
-        Map<String, Object> output = new HashMap<>();
-        output.put("result", res);
-        output.put("process time (us)", (finish - start) / 1000);
-        return json.asString(output);
+        return String.format("{\"result\":\"%s\",\"process time (us)\":%s}", res, (finish - start) / 1000);
    }
 
     public void start() {
@@ -156,8 +153,50 @@ public abstract class RuntimeProxy {
             Map<String, Object> input = jsonToMap(HttpUtils.extractRequestBody(t));
             String functionName = (String) input.get("name");
             String arguments = (String) input.get("arguments");
+            // TODO - why calling the invokeWrapper? We could directly call the provider to warmup.
             String output = invokeWrapper(functionName, false, concurrency, requests, arguments);
             HttpUtils.writeResponse(t, 200, output);
+        }
+    }
+
+    private class StressHandler implements ProxyHttpHandler {
+
+        @Override
+        public void handleInternal(HttpExchange t) throws IOException {
+            Map<String, String> metadata = HttpUtils.getRequestParameters(t.getRequestURI().getQuery());
+            int concurrency = metadata.get("concurrency") == null ? 1 : Integer.parseInt(metadata.get("concurrency"));
+            int requests = metadata.get("requests") == null ? 1 : Integer.parseInt(metadata.get("requests"));
+            Map<String, Object> input = jsonToMap(HttpUtils.extractRequestBody(t));
+            String functionName = (String) input.get("name");
+            String arguments = (String) input.get("arguments");
+            Thread[] threads = new Thread[concurrency];
+            System.out.println(String.format("Stress testing with %s threads and %s requests each.", concurrency, requests));
+            for (int i = 0; i < concurrency; i++) {
+                threads[i] = new Thread(new Runnable() {
+
+                    @Override
+                    public void run() {
+                         try {
+                            for (int j = 0; j < requests; j++) {
+                                String output = invokeWrapper(functionName, true, 0, 0, arguments);
+                                System.out.println(output);
+                            }
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+                threads[i].start();
+            }
+            for (int i = 0; i < concurrency; i++) {
+                try {
+                    threads[i].join();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            System.out.println("Stress test done!");
+            HttpUtils.writeResponse(t, 200, "success!");
         }
     }
 
