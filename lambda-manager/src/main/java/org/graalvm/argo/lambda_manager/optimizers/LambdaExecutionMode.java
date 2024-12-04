@@ -29,6 +29,10 @@ public enum LambdaExecutionMode {
         return this == LambdaExecutionMode.CUSTOM_JAVA || this == LambdaExecutionMode.CUSTOM_JAVASCRIPT || this == LambdaExecutionMode.CUSTOM_PYTHON;
     }
 
+    public boolean isGraalvisor() {
+        return this == LambdaExecutionMode.GRAALVISOR || this == LambdaExecutionMode.GRAALVISOR_PGO || this == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED || this == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZING;
+    }
+
     public String getOpenWhiskVMImage() {
         switch (this) {
             case CUSTOM_JAVA:

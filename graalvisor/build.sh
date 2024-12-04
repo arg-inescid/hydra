@@ -85,15 +85,13 @@ function build_ni {
     $JAVA_HOME/bin/native-image \
         $LIBC_OPTION \
         --no-fallback \
-	--install-exit-handlers \
+        --install-exit-handlers \
         --enable-url-protocols=http \
         --initialize-at-run-time=com.oracle.svm.graalvisor.utils.JsonUtils \
         $LINKER_OPTIONS \
         -H:CLibraryPath=$LIB_DIR \
         $JAVA_17_OPTS \
         --features=org.graalvm.argo.graalvisor.sandboxing.NativeSandboxInterfaceFeature \
-        -DGraalVisorHost \
-        -Dcom.oracle.svm.graalvisor.libraryPath=$DIR/build/resources/main/com.oracle.svm.graalvisor.headers \
         $LANGS \
         -cp $GRAALVISOR_JAR \
         org.graalvm.argo.graalvisor.Main \
@@ -135,25 +133,9 @@ else  # Build native image locally (inside container or directly on host).
         export PATH=$ARGO_HOME/resources/x86_64-linux-musl-native/bin:$PATH
         LIBC_OPTION="--libc=musl"
     fi
-    LANGS=""
-    read -p "Native Javascript support (y or Y, everything else as no)? " -n 1 -r
-    echo    # move to a new line
-    if [[ $REPLY =~ ^[Yy]$ ]]
-    then
-        LANGS="$LANGS --language:js"
-        echo "JavaScript support added!"
-    fi
-
-    read -p "Native Python support (y or Y, everything else as no)? " -n 1 -r
-    echo    # move to a new line
-    if [[ $REPLY =~ ^[Yy]$ ]]
-    then
-        LANGS="$LANGS --language:python"
-        echo "Python support added!"
-    fi
 
     echo -e "${GREEN}Building graalvisor jar...${NC}"
-    ./gradlew clean shadowJar javaProxy
+    ./gradlew clean shadowJar
     echo -e "${GREEN}Building graalvisor jar... done!${NC}"
 
     echo -e "${GREEN}Building graalvisor native sandbox interface...${NC}"

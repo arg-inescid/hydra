@@ -1,12 +1,18 @@
 package org.graalvm.argo.graalvisor.utils;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URL;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import com.sun.net.httpserver.HttpExchange;
+import java.util.Map;
+import java.util.HashMap;
 
-public class ProxyUtils {
+public class HttpUtils {
 
     public static void writeResponse(HttpExchange t, int code, String response) throws IOException {
         byte[] bytes = response.getBytes(StandardCharsets.UTF_8);
@@ -29,8 +35,25 @@ public class ProxyUtils {
             }
             return result.toString(StandardCharsets.UTF_8);
         } catch (IOException e) {
-            e.printStackTrace();
+            e.printStackTrace(System.err);
             return "";
         }
+    }
+
+    public static Map<String, String> getRequestParameters(String request) {
+        String[] splits = request.split("&");
+        Map<String, String> params = new HashMap<>();
+        for (String param : splits) {
+            String[] keyValue = param.split("=");
+            params.put(keyValue[0], keyValue[1]);
+        }
+        return params;
+    }
+
+    public static void downloadFile(String url, String localPath) throws IOException {
+        ReadableByteChannel rbc = Channels.newChannel(new URL(url).openStream());
+        FileOutputStream fos = new FileOutputStream(localPath);
+        fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+        fos.close();
     }
 }

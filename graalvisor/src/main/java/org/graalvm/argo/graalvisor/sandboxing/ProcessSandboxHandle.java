@@ -64,7 +64,7 @@ public class ProcessSandboxHandle extends SandboxHandle {
             }
         } catch(Exception e) {
             System.err.println(e.getMessage());
-            e.printStackTrace();
+            e.printStackTrace(System.err);
         } finally {
             destroyChild(childPid);
         }
@@ -76,22 +76,27 @@ public class ProcessSandboxHandle extends SandboxHandle {
         return ctor.newInstance(fd);
     }
 
-    public ProcessSandboxHandle(ProcessSandboxProvider rsProvider) throws Exception {
+    public ProcessSandboxHandle(ProcessSandboxProvider rsProvider) throws IOException {
         int[] childPipe = new int[2];
         int[] parentPipe = new int[2];
-        if ((childPid = NativeSandboxInterface.createNativeProcessSandbox(childPipe, parentPipe)) == 0) {
-            childPid = (int) ProcessHandle.current().pid();
-            sender = new FileOutputStream(createFileDescriptor(childPipe[1]));
-            receiver = new BufferedReader(new FileReader(createFileDescriptor(parentPipe[0])));
-            child(rsProvider);
-        } else {
-            sender = new FileOutputStream(createFileDescriptor(parentPipe[1]));
-            receiver = new BufferedReader(new FileReader(createFileDescriptor(childPipe[0])));
+        try {
+            if ((childPid = NativeSandboxInterface.createNativeProcessSandbox(childPipe, parentPipe)) == 0) {
+                childPid = (int) ProcessHandle.current().pid();
+                sender = new FileOutputStream(createFileDescriptor(childPipe[1]));
+                receiver = new BufferedReader(new FileReader(createFileDescriptor(parentPipe[0])));
+                child(rsProvider);
+            } else {
+                sender = new FileOutputStream(createFileDescriptor(parentPipe[1]));
+                receiver = new BufferedReader(new FileReader(createFileDescriptor(childPipe[0])));
+            }
+        } catch (Exception e) {
+            e.printStackTrace(System.err);
+            throw new IOException(e);
         }
     }
 
     @Override
-    public String invokeSandbox(String jsonArguments) throws Exception {
+    public String invokeSandbox(String jsonArguments) throws IOException {
         sender.write(String.format("%s\n", jsonArguments).getBytes());
         return receiver.readLine();
     }
@@ -104,7 +109,7 @@ public class ProcessSandboxHandle extends SandboxHandle {
             sender.close();
             receiver.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            e.printStackTrace(System.err);
         }
     }
 

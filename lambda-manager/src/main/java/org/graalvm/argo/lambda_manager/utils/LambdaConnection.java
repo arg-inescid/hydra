@@ -28,7 +28,7 @@ public class LambdaConnection {
 
     // Keeping two versions instead of using Java Generics for performance reasons.
     public HttpRequest<byte[]> post(String path, byte[] payload) {
-        return HttpRequest.POST(path, payload);
+        return HttpRequest.POST(path, payload == null ? new byte[0] : payload);
     }
 
     public HttpRequest<String> post(String path, String payload) {

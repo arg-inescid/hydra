@@ -48,6 +48,9 @@ public class Function {
     /** SVM ID used for sandbox checkpoint/restore for this function. Should be a valid small integer. Can only be used with Graalvisor. Can be null. */
     private final String svmId;
 
+    /** URL of the function code to be downloaded by Graalvisor. Can only be used with Graalvisor or HotSpot modes. */
+    private final String functionUrl;
+
     /** Flag stating if this function can be re-built into native image in case of fallback (only for Graalvisor). */
     private final boolean canRebuild;
 
@@ -62,12 +65,13 @@ public class Function {
      */
     private long lastAgentPID;
 
-    public Function(String name, String language, String entryPoint, String memory, String runtime, byte[] functionCode, boolean functionIsolation, boolean invocationCollocation, String gvSandbox, String svmId) throws Exception {
+    public Function(String name, String language, String entryPoint, String memory, String runtime, String functionCode, boolean functionIsolation, boolean invocationCollocation, String gvSandbox, String svmId) throws Exception {
         this.name = name;
         this.language = FunctionLanguage.fromString(language);
         this.entryPoint = entryPoint;
         this.memory = Long.parseLong(memory);
         this.runtime = runtime;
+        this.functionUrl = functionCode;
         this.canRebuild = runtime.equals(Environment.GRAALVISOR_RUNTIME) && this.isJar(functionCode);
         if (this.canRebuild) {
             this.status = FunctionStatus.NOT_BUILT_NOT_CONFIGURED;
@@ -191,8 +195,8 @@ public class Function {
         return this.canRebuild;
     }
 
-    private boolean isJar(byte[] functionCode) {
-        return functionCode != null && new String(functionCode).endsWith(".jar");
+    private boolean isJar(String functionUrl) {
+        return functionUrl != null && functionUrl.endsWith(".jar");
     }
 
     public boolean snapshotSandbox() {
@@ -239,5 +243,9 @@ public class Function {
             default:
                 break;
         }
+    }
+
+    public String getFunctionUrl() {
+        return functionUrl;
     }
 }

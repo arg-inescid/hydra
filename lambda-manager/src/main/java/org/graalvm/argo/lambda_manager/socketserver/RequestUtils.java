@@ -29,7 +29,7 @@ public class RequestUtils {
             String functionEntryPoint = parameters.get("function_entry_point");
             String functionMemory = parameters.get("function_memory");
             String functionRuntime = parameters.get("function_runtime");
-            byte[] functionCode = parameters.get("payload").getBytes();
+            String functionCode = parameters.get("payload");
             boolean functionIsolation = Boolean.parseBoolean(parameters.get("function_isolation"));
             boolean invocationCollocation = Boolean.parseBoolean(parameters.get("invocation_collocation"));
             String gvSandbox = parameters.get("gv_sandbox");

@@ -1,5 +1,7 @@
 package org.graalvm.argo.graalvisor.sandboxing;
 
+import java.io.IOException;
+
 public class ContextSnapshotSandboxHandle extends SandboxHandle {
 
     /**
@@ -22,7 +24,7 @@ public class ContextSnapshotSandboxHandle extends SandboxHandle {
     }
 
     @Override
-    public String invokeSandbox(String jsonArguments) throws Exception {
+    public String invokeSandbox(String jsonArguments) throws IOException {
 	 return provider.invoke(jsonArguments);
     }
 

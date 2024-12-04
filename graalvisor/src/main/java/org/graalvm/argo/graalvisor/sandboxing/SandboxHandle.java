@@ -1,10 +1,12 @@
 package org.graalvm.argo.graalvisor.sandboxing;
 
+import java.io.IOException;
+
 public abstract class SandboxHandle {
 
-    public abstract String invokeSandbox(String jsonArguments) throws Exception;
+    public abstract String invokeSandbox(String jsonArguments) throws IOException;
 
-    public void destroyHandle() throws Exception {
+    public void destroyHandle() throws IOException {
         // default implementation;
     }
 

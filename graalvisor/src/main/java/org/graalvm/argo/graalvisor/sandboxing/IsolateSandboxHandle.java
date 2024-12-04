@@ -1,5 +1,7 @@
 package org.graalvm.argo.graalvisor.sandboxing;
 
+import java.io.IOException;
+
 public class IsolateSandboxHandle extends SandboxHandle {
 
     // Native function handle (pointer casted to long).
@@ -18,7 +20,7 @@ public class IsolateSandboxHandle extends SandboxHandle {
     }
 
     @Override
-    public String invokeSandbox(String jsonArguments) throws Exception {
+    public String invokeSandbox(String jsonArguments) throws IOException {
         return NativeSandboxInterface.invokeSandbox(functionHandle, iThreadHandle, jsonArguments);
     }
 

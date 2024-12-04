@@ -6,6 +6,7 @@ import io.reactivex.plugins.RxJavaPlugins;
 import org.graalvm.argo.lambda_manager.client.DefaultLambdaManagerClient;
 import org.graalvm.argo.lambda_manager.encoders.DefaultCoder;
 import org.graalvm.argo.lambda_manager.function_storage.LocalFunctionStorage;
+import org.graalvm.argo.lambda_manager.function_storage.SimpleFunctionStorage;
 import org.graalvm.argo.lambda_manager.metrics.MetricsScraper;
 import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
 import org.graalvm.argo.lambda_manager.processes.devmapper.PrepareDevmapperBase;
@@ -21,6 +22,7 @@ import org.graalvm.argo.lambda_manager.utils.logger.LambdaManagerFormatter;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 import org.graalvm.argo.lambda_manager.utils.parser.LambdaManagerConfiguration;
 import org.graalvm.argo.lambda_manager.utils.parser.LambdaManagerConsole;
+import org.graalvm.argo.lambda_manager.utils.parser.LambdaManagerPool;
 import org.graalvm.argo.lambda_manager.utils.parser.VariablesConfiguration;
 
 import java.io.File;
@@ -182,10 +184,13 @@ public class ArgumentStorage {
         prepareLogger(lambdaManagerConfiguration.getManagerConsole());
         initMetricsScraper();
 
+        LambdaManagerPool poolConfiguration = lambdaManagerConfiguration.getLambdaPool();
+        boolean hasOpenWhiskLambdas = poolConfiguration.getCustomJava() != 0 || poolConfiguration.getCustomJavaScript() != 0 || poolConfiguration.getCustomPython() != 0;
+
         Configuration.initFields(
             new RoundedRobinScheduler(),
             new DefaultCoder(),
-            new LocalFunctionStorage(),
+            hasOpenWhiskLambdas ? new LocalFunctionStorage() : new SimpleFunctionStorage(),
             new DefaultLambdaManagerClient(),
             this);
 

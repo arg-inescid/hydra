@@ -58,7 +58,7 @@ docker run --privileged --rm --name="$LAMBDA_NAME" \
   ${TAGS[@]} \
   --privileged \
   -p "$LAMBDA_PORT":"$PROXY_PORT" \
-  -v "$ARGO_HOME"/lambda-manager/codebase:/codebase \
+  -v "$ARGO_HOME"/benchmarks/data/apps:/codebase \
   --memory "$LAMBDA_MEMORY" \
   --cpu-period="$CGROUPS_CPU_PERIOD" \
   --cpu-quota="$LAMBDA_CPU_QUOTA" \

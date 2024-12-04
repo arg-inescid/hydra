@@ -37,7 +37,7 @@ public class ExecutableSandboxHandle extends SandboxHandle {
     }
 
     @Override
-    public String invokeSandbox(String jsonArguments) throws Exception {
+    public String invokeSandbox(String jsonArguments) throws IOException {
         final PolyglotFunction function = pgoProvider.getFunction();
         return executeCommand(function.getName(), jsonArguments);
     }
