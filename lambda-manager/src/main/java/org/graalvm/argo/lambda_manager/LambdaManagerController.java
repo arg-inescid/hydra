@@ -38,7 +38,7 @@ public class LambdaManagerController {
         return LambdaManager.getFunctions();
     }
 
-    @Post(value = "/upload_function", consumes = MediaType.APPLICATION_OCTET_STREAM)
+    @Post(value = "/upload_function", consumes = MediaType.TEXT_PLAIN)
     public String uploadFunction(@QueryValue("username") String username,
                                          @QueryValue("function_name") String functionName,
                                          @QueryValue("function_language") String functionLanguage,
@@ -49,7 +49,7 @@ public class LambdaManagerController {
                                          @Nullable @QueryValue("invocation_collocation") Boolean invocationCollocation,
                                          @Nullable @QueryValue("gv_sandbox") String gvSandbox,
                                          @Nullable @QueryValue("svm_id") String svmId,
-                                         @Body byte[] functionCode) {
+                                         @Body String functionCode) {
         return LambdaManager.uploadFunction(username, functionName, functionLanguage, functionEntryPoint,
                 functionMemory, functionRuntime, functionCode, Boolean.TRUE.equals(functionIsolation),
                 Boolean.TRUE.equals(invocationCollocation), gvSandbox, svmId);

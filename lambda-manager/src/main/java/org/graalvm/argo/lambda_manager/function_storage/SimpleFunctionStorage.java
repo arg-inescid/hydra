@@ -12,13 +12,12 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @SuppressWarnings("unused")
-public class InMemoryFunctionStorage implements FunctionStorage {
+public class SimpleFunctionStorage implements FunctionStorage {
 
     protected final ConcurrentHashMap<String, Function> functions = new ConcurrentHashMap<>();
 
     @Override
     public Function register(String functionName, Function function, byte[] functionCode) throws Exception {
-        FileUtils.writeBytesToFile(new File(function.buildFunctionSourceCodePath().toString()), functionCode);
         return functions.put(function.getName(), function);
     }
 

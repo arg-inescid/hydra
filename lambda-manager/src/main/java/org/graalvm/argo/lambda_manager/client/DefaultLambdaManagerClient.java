@@ -44,30 +44,31 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
 
     @Override
     public String registerFunction(Lambda lambda, Function function) {
-        // TODO: optimization: read chunks of file and send it in parts.
-        try (InputStream sourceFile = Files.newInputStream(function.buildFunctionSourceCodePath())) {
             String path = null;
-            byte[] payload = canReuseCode(lambda) ? new byte[0] : sourceFile.readAllBytes();
-            if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZING) {
+            byte[] payload = null;
+            if (lambda.getExecutionMode().isGraalvisor()) {
                 // The two optional parameters - GV sandbox and SVM ID.
                 String sandbox = function.getGraalvisorSandbox() != null ? String.format("&sandbox=%s", function.getGraalvisorSandbox()) : "";
                 String svmId = function.snapshotSandbox() ? String.format("&svmid=%s", function.getSvmId()) : "";
                 final boolean binaryFunctionExecution = isBinaryFunctionExecution(lambda);
-                path = String.format("/register?name=%s&language=%s&entryPoint=%s&isBinary=%s%s%s", getFunctionName(function, true), function.getLanguage().toString(), function.getEntryPoint(), binaryFunctionExecution, sandbox, svmId);
+                path = String.format("/register?name=%s&url=%s&language=%s&entryPoint=%s&isBinary=%s%s%s", function.getName(), function.getFunctionUrl(), function.getLanguage().toString(), function.getEntryPoint(), binaryFunctionExecution, sandbox, svmId);
             } else if (lambda.getExecutionMode().isCustom()) {
+                // TODO: optimization: read chunks of file and send it in parts.
+                try (InputStream sourceFile = Files.newInputStream(function.buildFunctionSourceCodePath())) {
+                    payload = sourceFile.readAllBytes();
+                } catch (IOException e) {
+                    Logger.log(Level.WARNING, String.format("Failed load function %s source file %s", function.getName(), function.buildFunctionSourceCodePath()));
+                    return Messages.ERROR_FUNCTION_UPLOAD;
+                }
                 path = "/init";
             } else if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT || lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT) {
-                path = String.format("/register?name=%s&language=%s&entryPoint=%s", function.getName(), function.getLanguage().toString(), function.getEntryPoint());
+                path = String.format("/register?name=%s&url=%s&language=%s&entryPoint=%s", function.getName(), function.getFunctionUrl(), function.getLanguage().toString(), function.getEntryPoint());
             } else if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALOS) {
                 return "No registration needed in a GraalOS lambda.";
             } else {
                 Logger.log(Level.WARNING, String.format("Unexpected lambda mode (%s) when registering function %s!", lambda.getExecutionMode(), function.getName()));
             }
             return sendRequest(lambda.getConnection().post(path, payload), lambda);
-        } catch (IOException e) {
-            Logger.log(Level.WARNING, String.format("Failed load function %s source file %s", function.getName(), function.buildFunctionSourceCodePath()));
-            return Messages.ERROR_FUNCTION_UPLOAD;
-        }
     }
 
     @Override
@@ -75,9 +76,9 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         String path = null;
         String payload = null;
 
-        if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZING) {
+        if (lambda.getExecutionMode().isGraalvisor()) {
             path ="/deregister";
-            payload = JsonUtils.convertParametersIntoJsonObject(null, null, getFunctionName(function, false));
+            payload = JsonUtils.convertParametersIntoJsonObject(null, null, function.getName());
         } else if (lambda.getExecutionMode().isCustom()) {
             Logger.log(Level.WARNING, String.format("Deregistering functions (%s) is not yet supported for custom runtimes!", function.getName()));
         } else {
@@ -93,9 +94,9 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         String path = function.snapshotSandbox() ? "/warmup?concurrency=1&requests=1" : "/";
         String payload = "";
 
-        if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZING) {
+        if (lambda.getExecutionMode().isGraalvisor()) {
             // Both canRebuild and readily-provided GV functions go here.
-            payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, getFunctionName(function, false), Configuration.argumentStorage.isDebugMode());
+            payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getName(), Configuration.argumentStorage.isDebugMode());
         } else if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT || lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT) {
             payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getName());
         } else if (lambda.getExecutionMode().isCustom()) {
@@ -110,30 +111,6 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
     }
 
     private static boolean isBinaryFunctionExecution(Lambda lambda){
-                return lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZING;
-            }
-
-    private boolean canReuseCode(Lambda lambda) {
-        return lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR && Configuration.argumentStorage.getLambdaType().isContainer();
-    }
-
-    /**
-     * Should only be used for Graalvisor mode.
-     * Graalvisor on Docker can copy function code from the filesystem
-     * directly instead of reading it through POST requests.
-     */
-    private String getFunctionName(Function function, boolean url) {
-        String functionName = function.getName();
-        if (Configuration.argumentStorage.getLambdaType().isContainer()) {
-            if (url) {
-                // Escaping the slash character.
-                return functionName + "%2F" + functionName;
-            } else {
-                return functionName + "/" + functionName;
-            }
-        } else {
-            return functionName;
-        }
-
+        return lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZING;
     }
 }
