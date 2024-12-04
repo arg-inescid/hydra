@@ -1,6 +1,5 @@
 package org.graalvm.argo.graalvisor;
 
-import static org.graalvm.argo.graalvisor.utils.JsonUtils.json;
 import static org.graalvm.argo.graalvisor.utils.JsonUtils.jsonToMap;
 import static org.graalvm.argo.graalvisor.utils.HttpUtils.errorResponse;
 import static org.graalvm.argo.graalvisor.utils.HttpUtils.extractRequestBody;
@@ -13,10 +12,11 @@ import java.net.InetSocketAddress;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.graalvm.argo.graalvisor.function.HotSpotFunction;
 import org.graalvm.argo.graalvisor.function.NativeFunction;
 import org.graalvm.argo.graalvisor.function.PolyglotFunction;
@@ -64,11 +64,15 @@ public abstract class RuntimeProxy {
     /**
      * Simple Http server. It uses a cached thread pool for managing threads.
      */
-    protected static HttpServer server;
+    protected HttpServer server;
     /**
      * Location where function code will be placed.
      */
     private static String appDir;
+    /**
+     * Number of successfully processed requests. This is a global metric.
+     */
+    protected static AtomicInteger PROCESSED_REQUESTS = new AtomicInteger(0);
 
     public RuntimeProxy(int port, String appDir) throws IOException {
         server = HttpServer.create(new InetSocketAddress(port), -1);
@@ -81,31 +85,47 @@ public abstract class RuntimeProxy {
         RuntimeProxy.appDir = appDir;
     }
 
-    protected abstract String invoke(
+    protected abstract void setMaxSandboxes(PolyglotFunction function, int max);
+
+    protected abstract void invoke(
+            HttpExchange he,
             PolyglotFunction functionName,
             boolean cached,
             int warmupConc,
             int warmupReqs,
-            String arguments) throws IOException;
+            long startTime,
+            String arguments);
 
-   private String invokeWrapper(
+   private void invokeWrapper(
+            HttpExchange he,
             String functionName,
             boolean cached,
             int warmupConc,
             int warmupReqs,
-            String arguments) throws IOException {
+            String arguments) {
         PolyglotFunction function = FTABLE.get(functionName);
-        String res;
 
-        long start = System.nanoTime();
         if (function == null) {
-                res = String.format("{'Error': 'Function %s not registered!'}", functionName);
-            } else {
-                res = invoke(function, cached, warmupConc, warmupReqs, arguments);
-            }
-        long finish = System.nanoTime();
-        return String.format("{\"result\":\"%s\",\"process time (us)\":%s}", res, (finish - start) / 1000);
+            String.format("{'Error': 'Function %s not registered!'}", functionName);
+        } else {
+            invoke(he, function, cached, warmupConc, warmupReqs, System.nanoTime(), arguments);
+        }
    }
+
+    protected static void sendReply(HttpExchange he, long startTime, String output) {
+        long microLatency = (System.nanoTime() - startTime) / 1000;
+        String msg = String.format("{\"result\":\"%s\",\"process time (us)\":%s}", output, microLatency);
+        // HttpExchange may be null if the invocation is asynchronous.
+        if (he == null) {
+            System.out.println(msg);
+        } else {
+            try {
+                HttpUtils.writeResponse(he, 200, msg);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
     public void start() {
         server.start();
@@ -124,21 +144,12 @@ public abstract class RuntimeProxy {
             String arguments = (String) input.get("arguments");
             String async = (String)input.get("async");
             boolean cached = input.get("cached") == null ? true : Boolean.parseBoolean((String)input.get("cached"));
-            boolean debug = input.get("debug") == null ? false : Boolean.parseBoolean((String)input.get("debug"));
 
             if (async != null && async.equals("true")) {
+                invokeWrapper(null, functionName, cached, 0, 0, arguments);
                 HttpUtils.writeResponse(t, 200, "Asynchronous request submitted!");
-                String output = invokeWrapper(functionName, cached, 0, 0, arguments);
-                System.out.println(output);
             } else {
-                if (debug) {
-                    System.out.println(String.format("Calling %s with arguments %s", functionName, arguments));
-                }
-                String output = invokeWrapper(functionName, cached, 0, 0, arguments);
-                if (debug) {
-                    System.out.println(String.format("Calling %s with arguments %s returned ", functionName, arguments, output));
-                }
-                HttpUtils.writeResponse(t, 200, output);
+                invokeWrapper(t, functionName, cached, 0, 0, arguments);
             }
         }
     }
@@ -154,8 +165,7 @@ public abstract class RuntimeProxy {
             String functionName = (String) input.get("name");
             String arguments = (String) input.get("arguments");
             // TODO - why calling the invokeWrapper? We could directly call the provider to warmup.
-            String output = invokeWrapper(functionName, false, concurrency, requests, arguments);
-            HttpUtils.writeResponse(t, 200, output);
+            invokeWrapper(t, functionName, false, concurrency, requests, arguments);
         }
     }
 
@@ -169,32 +179,36 @@ public abstract class RuntimeProxy {
             Map<String, Object> input = jsonToMap(HttpUtils.extractRequestBody(t));
             String functionName = (String) input.get("name");
             String arguments = (String) input.get("arguments");
-            Thread[] threads = new Thread[concurrency];
-            System.out.println(String.format("Stress testing with %s threads and %s requests each.", concurrency, requests));
-            for (int i = 0; i < concurrency; i++) {
-                threads[i] = new Thread(new Runnable() {
+            int currentProcessedRequests = PROCESSED_REQUESTS.intValue();
 
-                    @Override
-                    public void run() {
-                         try {
-                            for (int j = 0; j < requests; j++) {
-                                String output = invokeWrapper(functionName, true, 0, 0, arguments);
-                                System.out.println(output);
-                            }
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                });
-                threads[i].start();
+            PolyglotFunction pf = FTABLE.get(functionName);
+            if (pf == null) {
+                HttpUtils.writeResponse(t, 200, "Function not registered!");
             }
-            for (int i = 0; i < concurrency; i++) {
+
+            System.out.println(String.format("Stress testing with %s threads and %s requests each.", concurrency, requests));
+
+            // Set maximum number of sandboxes for a specific function.
+            setMaxSandboxes(pf, concurrency);
+
+            // Submit all function invocations.
+            for (int j = 0; j < requests; j++) {
+                invokeWrapper(null, functionName, true, 0, 0, arguments);
+            }
+
+            // Reset the value.
+            setMaxSandboxes(pf, 0);
+
+            // Wait for all requests to be processed. Note that we just look at the total count,
+            // there is no guarantee that these are actually 'our' requests.
+            while(PROCESSED_REQUESTS.intValue() < (currentProcessedRequests + requests)) {
                 try {
-                    threads[i].join();
+                    Thread.sleep(100);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
+
             System.out.println("Stress test done!");
             HttpUtils.writeResponse(t, 200, "success!");
         }
@@ -237,7 +251,7 @@ public abstract class RuntimeProxy {
             String functionPath = appDir + "/" + functionURL.substring(functionURL.lastIndexOf('/') + 1);
             // Function entrypoint (used in hotspot mode).
             String functionEntryPoint = params.get("entryPoint");
-            // Function language. // TODO - can we remove?
+            // Function language.
             String functionLanguage = params.get("language");
             // Type of sandbox to use (used in svm mode).
             String sandboxName = params.get("sandbox");
