@@ -71,7 +71,7 @@ public class Function {
         this.entryPoint = entryPoint;
         this.memory = Long.parseLong(memory);
         this.runtime = runtime;
-        this.functionUrl = functionCode; // TODO: add check if Graalvisor; exception otherwise.
+        this.functionUrl = functionCode;
         this.canRebuild = runtime.equals(Environment.GRAALVISOR_RUNTIME) && this.isJar(functionCode);
         if (this.canRebuild) {
             this.status = FunctionStatus.NOT_BUILT_NOT_CONFIGURED;
