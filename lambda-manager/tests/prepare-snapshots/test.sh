@@ -16,15 +16,19 @@ sudo ls &> /dev/null
 # Declare global variables.
 USERNAME=user
 BENCH_ARRAY=(jshw jsup jsdh pyhw pyup pyco)
+BENCH_DIR="$ARGO_HOME"/benchmarks/data/apps
+
 FUNCTION_MEMORY=1024
+FUNCTION_ISOLATION=true
+INVOCATION_COLLOCATION=false
 
 declare -A BENCHMARK_BINARIES
-BENCHMARK_BINARIES[jshw]="$ARGO_HOME/benchmarks/src/javascript/gv-hello-world/build/libhelloworld.so"
-BENCHMARK_BINARIES[jsup]="$ARGO_HOME/benchmarks/src/javascript/gv-uploader/build/libuploader.so"
-BENCHMARK_BINARIES[jsdh]="$ARGO_HOME/benchmarks/src/javascript/gv-dynamic-html/build/libdynamichtml.so"
-BENCHMARK_BINARIES[pyhw]="$ARGO_HOME/benchmarks/src/python/gv-hello-world/build/libhelloworld.so"
-BENCHMARK_BINARIES[pyup]="$ARGO_HOME/benchmarks/src/python/gv-uploader/build/libuploader.so"
-BENCHMARK_BINARIES[pyco]="$ARGO_HOME/benchmarks/src/python/gv-compression/build/libcompression.so"
+BENCHMARK_BINARIES[jshw]="http://172.18.0.1:8000/apps/gv-js-hello-world.so"
+BENCHMARK_BINARIES[jsup]="http://172.18.0.1:8000/apps/gv-js-uploader.so"
+BENCHMARK_BINARIES[jsdh]="http://172.18.0.1:8000/apps/gv-js-dynamic-html.so"
+BENCHMARK_BINARIES[pyhw]="http://172.18.0.1:8000/apps/gv-py-hello-world.so"
+BENCHMARK_BINARIES[pyup]="http://172.18.0.1:8000/apps/gv-py-uploader.so"
+BENCHMARK_BINARIES[pyco]="http://172.18.0.1:8000/apps/gv-py-compression.so"
 
 declare -A BENCHMARK_ENTRYPOINTS
 BENCHMARK_ENTRYPOINTS[jshw]="com.helloworld.HelloWorld"
@@ -56,24 +60,19 @@ sleep 5
 # Register, invoke, and save a snapshot of each function.
 for bench in "${BENCH_ARRAY[@]}"; do
     # Define bench-specific variables.
-    bench_dir=$(dirname ${BENCHMARK_BINARIES["$bench"]})
     bench_filename=$(basename ${BENCHMARK_BINARIES["$bench"]})
-    bench_filename="${bench_filename%.*}"
-    full_bench_name="$USERNAME"-"$bench"
 
-    rm -f $bench_dir/$bench_filename.memsnap
-    rm -f $bench_dir/$bench_filename.metasnap
+    rm -f $BENCH_DIR/$bench_filename.memsnap
+    rm -f $BENCH_DIR/$bench_filename.metasnap
 
     # Register.
-    curl -s -X POST $LAMBDA_MANAGER_HOST:$LAMBDA_MANAGER_PORT/upload_function?username=$USERNAME\&function_name=$bench\&function_language=java\&function_entry_point=${BENCHMARK_ENTRYPOINTS["$bench"]}\&function_memory=$FUNCTION_MEMORY\&function_runtime=graalvisor\&function_isolation=false\&invocation_collocation=true\&gv_sandbox=context-snapshot\&svm_id=${BENCHMARK_SVMIDS["$bench"]} -H 'Content-Type: application/octet-stream' --data-binary ${BENCHMARK_BINARIES["$bench"]}
+    curl -s -X POST $LAMBDA_MANAGER_HOST:$LAMBDA_MANAGER_PORT/upload_function?username=$USERNAME\&function_name=$bench\&function_language=java\&function_entry_point=${BENCHMARK_ENTRYPOINTS["$bench"]}\&function_memory=$FUNCTION_MEMORY\&function_runtime=graalvisor\&function_isolation=$FUNCTION_ISOLATION\&invocation_collocation=$INVOCATION_COLLOCATION\&gv_sandbox=context-snapshot\&svm_id=${BENCHMARK_SVMIDS["$bench"]} -H 'Content-Type: text/plain' --data ${BENCHMARK_BINARIES["$bench"]}
     # Invoke.
     curl -s -X POST $LAMBDA_MANAGER_HOST:$LAMBDA_MANAGER_PORT/$USERNAME/$bench -H 'Content-Type: application/json' --data ${BENCHMARK_PAYLOADS["$bench"]}
 
-    # Save snapshot files.
-    sudo chown -R $(id -u -n):$(id -g -n) $ARGO_HOME/lambda-manager/codebase/$full_bench_name/*snap
-    cp $ARGO_HOME/lambda-manager/codebase/$full_bench_name/*snap $bench_dir
-    mv $bench_dir/$full_bench_name.memsnap $bench_dir/$bench_filename.memsnap
-    mv $bench_dir/$full_bench_name.metasnap $bench_dir/$bench_filename.metasnap
+    # Change the owner of the snapshot files.
+    sudo chown -R $(id -u -n):$(id -g -n) $BENCH_DIR/$bench_filename.memsnap
+    sudo chown -R $(id -u -n):$(id -g -n) $BENCH_DIR/$bench_filename.metasnap
 done
 
 stop_lambda_manager

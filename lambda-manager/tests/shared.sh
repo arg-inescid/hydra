@@ -5,6 +5,9 @@ if [[ -z "${ARGO_HOME}" ]]; then
     exit 1
 fi
 
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
 
 LAMBDA_MANAGER_HOST=localhost
 LAMBDA_MANAGER_PORT=30008
