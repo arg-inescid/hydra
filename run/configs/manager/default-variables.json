@@ -5,7 +5,7 @@
     "lambdaFaultTolerance": 1,
 
     "reclamationInterval": 5000,
-    "lruReclamationPeriod": 5000,
-    "reclamationThreshold": 0.3,
-    "reclamationPercentage": 0.15
+    "lruReclamationPeriod": 1000,
+    "reclamationThreshold": 0.2,
+    "reclamationPercentage": 0.1
 }
