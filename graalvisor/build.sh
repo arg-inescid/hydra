@@ -80,6 +80,8 @@ function build_ni {
     JAVA_OPTS="$JAVA_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.hosted=ALL-UNNAMED"
     JAVA_OPTS="$JAVA_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.hosted.c=ALL-UNNAMED"
     JAVA_OPTS="$JAVA_OPTS --add-opens=java.base/java.io=ALL-UNNAMED"
+    # Note: if we intend to expand beyond 32GB, then we need to disable compressed references.
+    #JAVA_OPTS="$JAVA_OPTS -H:-UseCompressedReferences "
     $JAVA_HOME/bin/native-image \
         $LIBC_OPTION \
         --no-fallback \
@@ -94,8 +96,7 @@ function build_ni {
         -cp $GRAALVISOR_JAR \
         org.graalvm.argo.graalvisor.Main \
         polyglot-proxy \
-        -H:+ReportExceptionStackTraces \
-        -H:ConfigurationFileDirectories=$DIR/ni-agent-config/native-image
+        -H:+ReportExceptionStackTraces
 }
 
 if [ -z "$JAVA_HOME" ]

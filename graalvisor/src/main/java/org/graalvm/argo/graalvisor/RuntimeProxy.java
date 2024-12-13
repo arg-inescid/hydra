@@ -194,6 +194,11 @@ public abstract class RuntimeProxy {
             // Submit all function invocations.
             for (int j = 0; j < requests; j++) {
                 invokeWrapper(null, functionName, true, 0, 0, arguments);
+                try {
+                    Thread.sleep(1);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
 
             // Reset the value.
