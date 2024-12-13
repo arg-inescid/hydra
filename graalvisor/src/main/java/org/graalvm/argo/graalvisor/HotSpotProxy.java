@@ -52,24 +52,40 @@ public class HotSpotProxy extends RuntimeProxy {
         server.setExecutor(Executors.newSingleThreadExecutor());
     }
 
+    protected void setMaxSandboxes(PolyglotFunction function, int max) {
+        System.err.println("Error: HotSpot proxy does not support setting a maximum number of sandboxes.");
+    }
+
     @Override
-    public String invoke(PolyglotFunction function, boolean cached, int warmupConc, int warmupReqs, String arguments) throws IOException {
+    public void invoke(
+            HttpExchange he,
+            PolyglotFunction function,
+            boolean cached,
+            int warmupConc,
+            int warmupReqs,
+            long startTime,
+            String arguments) {
+        String output;
         if (warmupConc != 0 || warmupReqs != 0) {
-            return "{'Error': 'Warmup operation in hotspot proxy'}";
+            output = "Error: Warmup operation in hotspot proxy.";
         } else if (function.getLanguage() == PolyglotLanguage.JAVA) {
             HotSpotFunction hf = (HotSpotFunction) function;
             Method method = hf.getMethod();
             try {
-                return json.asString(method.invoke(null, new Object[] { jsonToMap(arguments) }));
+                output = json.asString(method.invoke(null, new Object[] { jsonToMap(arguments) }));
+                RuntimeProxy.PROCESSED_REQUESTS.incrementAndGet();
             } catch (Exception e) {
-                throw new IOException(e);
+                output = e.getLocalizedMessage();
+                e.printStackTrace(System.err);
             }
         } else if (function instanceof TruffleFunction){
             TruffleFunction tf = (TruffleFunction) function;
-            return LANGUAGE_ENGINE.invoke(tf.getLanguage().toString(), tf.getSource(), tf.getEntryPoint(), arguments);
+            output = LANGUAGE_ENGINE.invoke(tf.getLanguage().toString(), tf.getSource(), tf.getEntryPoint(), arguments);
+            RuntimeProxy.PROCESSED_REQUESTS.incrementAndGet();
         } else {
-            return String.format("{'Error': 'Function %s not registered or not truffle function!'}", function.getName());
+            output = String.format("Error: Function %s not registered or not truffle function!", function.getName());
         }
+        sendReply(he, startTime, output);
     }
 
     private class RetrieveAgentConfigHandler implements ProxyHttpHandler {
