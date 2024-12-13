@@ -75,6 +75,7 @@ public class ContextSnapshotSandboxProvider extends SandboxProvider {
 
     @Override
     public void destroySandbox(SandboxHandle shandle) {
+        // TODO - shouldn't this be destroy?
         NativeSandboxInterface.svmDetachThread(svmID, ((ContextSnapshotSandboxHandle)shandle).getIsolateThread());
     }
 

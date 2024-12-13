@@ -287,8 +287,10 @@ JNIEXPORT long JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     graal_isolate_t* isolate = NULL;
     graal_isolatethread_t* ithread = NULL;
 
-    // TODO - set to 256MB?
     memset(&params, 0, sizeof(graal_create_isolate_params_t));
+    params.version = 1;
+    // Note: this is where we may limit the size of a sandbox. E.g. (limit for 1GB):
+    //params.reserved_address_space_size = 1*1024*1024*1024;
 
     if (fabi->sabi.graal_create_isolate(&params, &isolate, &ithread) != 0) {
         fprintf(stderr, "error: failed to create isolate\n");

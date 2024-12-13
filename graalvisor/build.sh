@@ -71,17 +71,17 @@ function build_nsi {
 function build_ni {
     mkdir -p $GRAALVISOR_HOME &> /dev/null
     cd $GRAALVISOR_HOME
-    if [[ $JAVA_VERSION == *"17"* ]]; then
-        JAVA_17_OPTS="$JAVA_17_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.os=ALL-UNNAMED"
-        JAVA_17_OPTS="$JAVA_17_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.posix=ALL-UNNAMED"
-        JAVA_17_OPTS="$JAVA_17_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.posix.headers=ALL-UNNAMED"
-        JAVA_17_OPTS="$JAVA_17_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.c=ALL-UNNAMED"
-        JAVA_17_OPTS="$JAVA_17_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.c.function=ALL-UNNAMED"
-        JAVA_17_OPTS="$JAVA_17_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.jdk=ALL-UNNAMED"
-        JAVA_17_OPTS="$JAVA_17_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.hosted=ALL-UNNAMED"
-        JAVA_17_OPTS="$JAVA_17_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.hosted.c=ALL-UNNAMED"
-        JAVA_17_OPTS="$JAVA_17_OPTS --add-opens=java.base/java.io=ALL-UNNAMED"
-    fi
+    JAVA_OPTS="$JAVA_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.os=ALL-UNNAMED"
+    JAVA_OPTS="$JAVA_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.posix=ALL-UNNAMED"
+    JAVA_OPTS="$JAVA_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.posix.headers=ALL-UNNAMED"
+    JAVA_OPTS="$JAVA_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.c=ALL-UNNAMED"
+    JAVA_OPTS="$JAVA_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.c.function=ALL-UNNAMED"
+    JAVA_OPTS="$JAVA_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.jdk=ALL-UNNAMED"
+    JAVA_OPTS="$JAVA_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.hosted=ALL-UNNAMED"
+    JAVA_OPTS="$JAVA_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.hosted.c=ALL-UNNAMED"
+    JAVA_OPTS="$JAVA_OPTS --add-opens=java.base/java.io=ALL-UNNAMED"
+    # Note: if we intend to expand beyond 32GB, then we need to disable compressed references.
+    #JAVA_OPTS="$JAVA_OPTS -H:-UseCompressedReferences "
     $JAVA_HOME/bin/native-image \
         $LIBC_OPTION \
         --no-fallback \
@@ -90,14 +90,13 @@ function build_ni {
         --initialize-at-run-time=com.oracle.svm.graalvisor.utils.JsonUtils \
         $LINKER_OPTIONS \
         -H:CLibraryPath=$LIB_DIR \
-        $JAVA_17_OPTS \
+        $JAVA_OPTS \
         --features=org.graalvm.argo.graalvisor.sandboxing.NativeSandboxInterfaceFeature \
         $LANGS \
         -cp $GRAALVISOR_JAR \
         org.graalvm.argo.graalvisor.Main \
         polyglot-proxy \
-        -H:+ReportExceptionStackTraces \
-        -H:ConfigurationFileDirectories=$DIR/ni-agent-config/native-image
+        -H:+ReportExceptionStackTraces
 }
 
 if [ -z "$JAVA_HOME" ]
