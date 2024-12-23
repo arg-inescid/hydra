@@ -2,19 +2,19 @@ package org.graalvm.argo.graalvisor.sandboxing;
 
 import java.io.IOException;
 
-public class ContextSnapshotSandboxHandle extends SandboxHandle {
+public class SnapshotSandboxHandle extends SandboxHandle {
 
     /**
      * Provider for this handle.
      */
-    private final ContextSnapshotSandboxProvider provider;
+    private final SnapshotSandboxProvider provider;
 
     /**
      * Pointer to the isolate thread structure (see NativeSandboxInterface.c).
      */
     private final long isolateThread;
 
-    public ContextSnapshotSandboxHandle(ContextSnapshotSandboxProvider provider, long isolateThread) {
+    public SnapshotSandboxHandle(SnapshotSandboxProvider provider, long isolateThread) {
         this.provider = provider;
         this.isolateThread = isolateThread;
     }

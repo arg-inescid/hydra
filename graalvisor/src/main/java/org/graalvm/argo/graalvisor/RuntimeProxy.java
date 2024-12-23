@@ -21,7 +21,7 @@ import org.graalvm.argo.graalvisor.function.HotSpotFunction;
 import org.graalvm.argo.graalvisor.function.NativeFunction;
 import org.graalvm.argo.graalvisor.function.PolyglotFunction;
 import org.graalvm.argo.graalvisor.sandboxing.ContextSandboxProvider;
-import org.graalvm.argo.graalvisor.sandboxing.ContextSnapshotSandboxProvider;
+import org.graalvm.argo.graalvisor.sandboxing.SnapshotSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.IsolateSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.ExecutableSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.ProcessSandboxProvider;
@@ -230,13 +230,13 @@ public abstract class RuntimeProxy {
         }
 
         private SandboxProvider getSandboxProvider(PolyglotFunction function, String sandboxName) {
-            if (sandboxName == null) {
+            if (sandboxName == null || sandboxName.equals("default")) {
                 // If no sandbox is provided, get the default one.
                 return getDefaultSandboxProvider(function);
             } else if (sandboxName.equals("context")) {
                 return new ContextSandboxProvider(function);
-            } else if (sandboxName.equals("context-snapshot")) {
-                return new ContextSnapshotSandboxProvider(function);
+            } else if (sandboxName.equals("snapshot")) {
+                return new SnapshotSandboxProvider(function);
             } else if (sandboxName.equals("isolate")) {
                 return new IsolateSandboxProvider(function);
             } else if (sandboxName.equals("process")) {
@@ -277,6 +277,10 @@ public abstract class RuntimeProxy {
                         functionPath = functionPath.replace(".zip", ".so");
                     }
                 } else {
+                    if (functionPath.endsWith(".zip")) {
+                        // Note: this is a convention shared between the function registry and graalvisor.
+                        functionPath = functionPath.replace(".zip", ".so");
+                    }
                     System.out.println(String.format("Reusing %s", functionPath));
                 }
 
@@ -308,8 +312,8 @@ public abstract class RuntimeProxy {
             SandboxProvider sprovider = getSandboxProvider(function, sandboxName);
             if (sprovider == null) {
                 return null;
-            } else if (sprovider instanceof ContextSnapshotSandboxProvider) {
-                ((ContextSnapshotSandboxProvider) sprovider).setSVMID(svmID);
+            } else if (sprovider instanceof SnapshotSandboxProvider) {
+                ((SnapshotSandboxProvider) sprovider).setSVMID(svmID);
             }
 
             function.setSandboxProvider(sprovider);
