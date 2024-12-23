@@ -66,7 +66,7 @@ for bench in "${BENCH_ARRAY[@]}"; do
     rm -f $BENCH_DIR/$bench_filename.metasnap
 
     # Register.
-    curl -s -X POST $LAMBDA_MANAGER_HOST:$LAMBDA_MANAGER_PORT/upload_function?username=$USERNAME\&function_name=$bench\&function_language=java\&function_entry_point=${BENCHMARK_ENTRYPOINTS["$bench"]}\&function_memory=$FUNCTION_MEMORY\&function_runtime=graalvisor\&function_isolation=$FUNCTION_ISOLATION\&invocation_collocation=$INVOCATION_COLLOCATION\&gv_sandbox=context-snapshot\&svm_id=${BENCHMARK_SVMIDS["$bench"]} -H 'Content-Type: text/plain' --data ${BENCHMARK_BINARIES["$bench"]}
+    curl -s -X POST $LAMBDA_MANAGER_HOST:$LAMBDA_MANAGER_PORT/upload_function?username=$USERNAME\&function_name=$bench\&function_language=java\&function_entry_point=${BENCHMARK_ENTRYPOINTS["$bench"]}\&function_memory=$FUNCTION_MEMORY\&function_runtime=graalvisor\&function_isolation=$FUNCTION_ISOLATION\&invocation_collocation=$INVOCATION_COLLOCATION\&gv_sandbox=snapshot\&svm_id=${BENCHMARK_SVMIDS["$bench"]} -H 'Content-Type: text/plain' --data ${BENCHMARK_BINARIES["$bench"]}
     # Invoke.
     curl -s -X POST $LAMBDA_MANAGER_HOST:$LAMBDA_MANAGER_PORT/$USERNAME/$bench -H 'Content-Type: application/json' --data ${BENCHMARK_PAYLOADS["$bench"]}
 

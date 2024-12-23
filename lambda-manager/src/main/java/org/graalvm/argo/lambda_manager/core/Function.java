@@ -200,7 +200,7 @@ public class Function {
     }
 
     public boolean snapshotSandbox() {
-        return svmId != null && "context-snapshot".equals(gvSandbox);
+        return svmId != null && "snapshot".equals(gvSandbox);
     }
 
     public String getSvmId() {
