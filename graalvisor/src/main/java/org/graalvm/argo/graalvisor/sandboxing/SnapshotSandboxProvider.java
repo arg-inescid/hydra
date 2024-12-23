@@ -6,7 +6,7 @@ import java.io.IOException;
 import org.graalvm.argo.graalvisor.function.NativeFunction;
 import org.graalvm.argo.graalvisor.function.PolyglotFunction;
 
-public class ContextSnapshotSandboxProvider extends SandboxProvider {
+public class SnapshotSandboxProvider extends SandboxProvider {
 
     private boolean warmedUp = false;
     /**
@@ -25,7 +25,7 @@ public class ContextSnapshotSandboxProvider extends SandboxProvider {
     private final String metaSnapPath;
     private final String memSnapPath;
 
-    public ContextSnapshotSandboxProvider(PolyglotFunction function) {
+    public SnapshotSandboxProvider(PolyglotFunction function) {
         super(function);
         this.functionPath = ((NativeFunction) getFunction()).getPath();
         this.metaSnapPath = functionPath + ".metasnap"; // TODO - needs to be configurable.
@@ -44,6 +44,7 @@ public class ContextSnapshotSandboxProvider extends SandboxProvider {
         return output;
     }
 
+    @Override
     public synchronized String warmupProvider(int concurrency, int requests, String jsonArguments) throws IOException {
         if (warmedUp) {
             return invoke(jsonArguments);
@@ -70,13 +71,13 @@ public class ContextSnapshotSandboxProvider extends SandboxProvider {
     public synchronized SandboxHandle createSandbox() throws IOException {
         // TODO - throw Exception if provider is not warmup yet.
         long isolateThread = NativeSandboxInterface.svmAttachThread(svmID);
-        return new ContextSnapshotSandboxHandle(this, isolateThread);
+        return new SnapshotSandboxHandle(this, isolateThread);
     }
 
     @Override
     public void destroySandbox(SandboxHandle shandle) {
         // TODO - shouldn't this be destroy?
-        NativeSandboxInterface.svmDetachThread(svmID, ((ContextSnapshotSandboxHandle)shandle).getIsolateThread());
+        NativeSandboxInterface.svmDetachThread(svmID, ((SnapshotSandboxHandle)shandle).getIsolateThread());
     }
 
     @Override
