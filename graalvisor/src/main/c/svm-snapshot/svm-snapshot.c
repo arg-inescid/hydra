@@ -138,10 +138,11 @@ void run_svm(
         return;
     }
 
-    // Create isolate.
+    // Create isolate with a no limit (use 256*1024*1024 for 256MB).
     graal_create_isolate_params_t params;
-    // TODO - set to 256MB!
     memset(&params, 0, sizeof(graal_create_isolate_params_t));
+    params.version = 1;
+    params.reserved_address_space_size = 0;
     if (abi->graal_create_isolate(&params, isolate, &isolatethread) != 0) {
         err("error: failed to create isolate\n");
         return;
@@ -184,7 +185,10 @@ void checkpoint_svm(
         size_t fout_len,
         isolate_abi_t* abi,
         graal_isolate_t** isolate) {
+    // Thread that will run the sandboxed code.
     pthread_t worker;
+    // Thread that will accept all syscalls after checkpoint.
+    pthread_t allower;
 
     // Create and initialize the memory mappings list head;
     mapping_t mappings;
@@ -226,8 +230,8 @@ void checkpoint_svm(
     // Keep handling syscall notifications.
     handle_syscalls(seed, wargs.seccomp_fd, &(wargs.finished), meta_snap_fd, &mappings, &threads);
 
-    // Pause background threads before checkpointing.
     if (!list_threads_empty(&threads)) {
+        // Pause background threads before checkpointing.
         pause_background_threads(&threads);
     }
 
@@ -249,14 +253,16 @@ void checkpoint_svm(
     log("checkpoint took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
 #endif
 
-    // Resume background threads before checkpointing.
     if (!list_threads_empty(&threads)) {
+        // Starting monitor thread to allow syscalls from the background threads.
+        pthread_create(&allower, NULL, allow_syscalls, &(wargs.seccomp_fd));
+        // Resume background threads before checkpointing.
         resume_background_threads(&threads);
     }
 
     // Join thread after checkpoint (this glibc may free memory right before we checkpoint).
     // Glibc is tricky as it has internal state. We should avoid it at all cost.
-    pthread_join(worker, NULL);
+    pthread_join(worker, NULL); // TODO - move to before we resume threads?
 
     // Close meta and mem fds.
     close(meta_snap_fd);

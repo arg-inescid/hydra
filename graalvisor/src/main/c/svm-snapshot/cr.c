@@ -362,25 +362,33 @@ inline void __attribute__((always_inline)) __sigreturn(ucontext_t* ucontext) {
                  : "r"(ucontext), "i"(SYS_rt_sigreturn));
 }
 
-void* restore_thread_internal(void* arg) {
-    thread_context_t* context_cpy = (thread_context_t*) arg;
+void* restore_thread_internal(void* tdata) {
     thread_context_t context;
+    struct clone_args cargs;
 
     // Note: we need to perform this copy because the cpy verson was allocated by the caller.
-    memcpy(&context, context_cpy, sizeof(thread_context_t));
-    cr_free(context_cpy);
+    memcpy(&context, tdata, sizeof(thread_context_t));
+    memcpy(&cargs, ((char*)tdata) + sizeof(thread_context_t), sizeof(struct clone_args));
+    cr_free(tdata);
+
     // Note: this line reconstructs the deep-copied data structure.
     context.ctx.uc_mcontext.fpregs = &(context.fpstate);
 
-    dbg("restoring thread ip = %p sp = %p tls = %p\n",
-        (void*) context.ctx.uc_mcontext.gregs[REG_RIP],
-        (void*) context.ctx.uc_mcontext.gregs[REG_RSP],
-        context.tls);
-
-
-    if (syscall(SYS_arch_prctl, ARCH_SET_FS, context.tls)) {
+    if (syscall(SYS_arch_prctl, ARCH_SET_FS, cargs.tls)) {
         fprintf(stderr, "failed to set tls\n");
     }
+
+    // Note: this is needed to tell the kernel where the old pid location is. Libc expects the
+    // kernel to zero-out the contents of this memory location. This is used in pthread_join
+    // implementation (check pthread_join_common.c).
+    // Note 2: set tid always succeeds (man 2 set_tid_address)!
+    syscall(SYS_set_tid_address, cargs.child_tid);
+
+    dbg("restoring thread ip = %p sp = %p tls = %p tidptr = %p\n",
+        (void*) context.ctx.uc_mcontext.gregs[REG_RIP],
+        (void*) context.ctx.uc_mcontext.gregs[REG_RSP],
+        cargs.tls,
+        cargs.child_tid);
 
     __sigreturn(&(context.ctx));
     return NULL;
@@ -388,20 +396,19 @@ void* restore_thread_internal(void* arg) {
 
 void restore_thread(int meta_snap_fd) {
     pthread_t thread;
-    struct clone_args cargs;
-    thread_context_t* context = (thread_context_t*) cr_malloc(sizeof(thread_context_t));
+    void* restore_tdata = cr_malloc(sizeof(thread_context_t) + sizeof(struct clone_args));
 
-    if (context == NULL) {
-        err("error: failed to alloc thread context\n");
+    if (restore_tdata == NULL) {
+        err("error: failed to alloc thread data\n");
         return;
     }
 
-    if (read(meta_snap_fd, context, sizeof(thread_context_t)) != sizeof(thread_context_t)) {
+    if (read(meta_snap_fd, restore_tdata, sizeof(thread_context_t)) != sizeof(thread_context_t)) {
         perror("error: failed to deserialize thread context");
         return;
     }
 
-    if (read(meta_snap_fd, &cargs, sizeof(struct clone_args)) != sizeof(struct clone_args)) {
+    if (read(meta_snap_fd, restore_tdata + sizeof(thread_context_t), sizeof(struct clone_args)) != sizeof(struct clone_args)) {
         perror("error: failed to deserialize clone args");
         return;
     }
@@ -409,7 +416,7 @@ void restore_thread(int meta_snap_fd) {
     // TODO - use clone3 instead of relying on pthread. This will require some work.
     // See here on how to create a clone3 wrapper: https://nullprogram.com/blog/2023/03/23/
     // Once we use clone, we can set the TLS right away.
-    if (pthread_create(&thread, NULL, restore_thread_internal, context) != 0) {
+    if (pthread_create(&thread, NULL, restore_thread_internal, restore_tdata) != 0) {
         perror("error: failed to create restoring thread");
         return;
     }

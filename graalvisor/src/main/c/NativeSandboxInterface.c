@@ -162,9 +162,12 @@ JNIEXPORT long JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 
 JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmEntrypoint(
         JNIEnv *env, jobject thisObj, jint svmid, long isolatethread, jstring fin) {
-    char fout[256];
+    graal_isolatethread_t* ithread = (graal_isolatethread_t*) isolatethread;
     const char* fin_str = (*env)->GetStringUTFChars(env, fin, 0);
-    run_entrypoint(&(abis[svmid]), isolates[svmid], (graal_isolatethread_t*) isolatethread, 1, 1, fin_str, fout, 256);
+    char fout[256];
+    fprintf(stderr, "GOING INTO RUN_ENTRYPOINT (tid = %d)\n", gettid());
+    abis[svmid].entrypoint(ithread, fin_str, fout, 256);
+    fprintf(stderr, "COMING OUT FROM ENTRYPOINT\n");
     (*env)->ReleaseStringUTFChars(env, fin, fin_str);
     return (*env)->NewStringUTF(env, fout);
 }

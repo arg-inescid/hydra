@@ -13,6 +13,8 @@
 #app = "$(shell pwd)/test8-cthreads-syscall/libhello.so"
 #app = "$(shell pwd)/test9-cthreads-futex/libhello.so"
 #app = "$(shell pwd)/test10-malloc/libhello.so"
+#app = "$(shell pwd)/test11-cthreads-mmap/libhello.so"
+#app = "$(shell pwd)/test12-svm-http/libhello.so"
 #app="${ARGO_HOME}/benchmarks/src/java/gv-hello-world/build/libhelloworld.so"
 #app="${ARGO_HOME}/benchmarks/src/javascript/gv-hello-world/build/libhelloworld.so"
 #app="${ARGO_HOME}/benchmarks/src/python/gv-hello-world/build/libhelloworld.so"
@@ -47,6 +49,8 @@ tests: all
 	make -C test7-svm-truffle-function-py test
 	make -C test8-cthreads-syscall test
 	make -C test9-cthreads-futex test
+	make -C test11-cthreads-mmap test
+	make -C test12-svm-http test
 
 benchmarks: all
 	$(MAKE) app="${ARGO_HOME}/benchmarks/src/java/gv-hello-world/build/libhelloworld.so" run

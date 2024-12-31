@@ -67,7 +67,7 @@ public class PolyglotHostAccess {
             conn.setRequestProperty("Content-Type", "image/png");
             conn.setRequestProperty("charset", "utf-8");
             conn.setRequestProperty("Content-Length", Integer.toString(postDataLength));
-            try( DataOutputStream wr = new DataOutputStream( conn.getOutputStream())) {
+            try(DataOutputStream wr = new DataOutputStream( conn.getOutputStream())) {
                 wr.write(bytes);
              } catch (IOException e) {
                  e.printStackTrace();

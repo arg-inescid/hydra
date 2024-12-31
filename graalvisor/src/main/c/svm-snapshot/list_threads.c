@@ -38,6 +38,8 @@ void background_threads_handler(int signum, siginfo_t* sigingo, void* ctx) {
         err("failed to get tls for thread tid = %d\n", tid);
     }
 
+    // TODO - check if the TLS is different from what the cargs thinks it is.
+
     // Saving ucontext_t and fpregs.
     memcpy(&(thread->context.ctx), ctx, sizeof(ucontext_t));
     memcpy(&(thread->context.fpstate), thread->context.ctx.uc_mcontext.fpregs, sizeof(struct _libc_fpstate));

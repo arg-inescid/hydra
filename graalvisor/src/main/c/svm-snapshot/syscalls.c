@@ -291,6 +291,67 @@ void handle_exit(int meta_snap_fd, thread_t* threads, pid_t pid) {
 #endif
 }
 
+
+void* allow_syscalls(void* args) {
+    int seccomp_fd = *((int*) args);
+    struct seccomp_notif_sizes sizes;
+    if (syscall(SYS_seccomp, SECCOMP_GET_NOTIF_SIZES, 0, &sizes) < 0) {
+        err("error: failed to seccomp(SECCOMP_GET_NOTIF_SIZES)");
+        return NULL;
+    }
+
+    struct seccomp_notif *req = (struct seccomp_notif*)cr_malloc(sizes.seccomp_notif);
+    struct seccomp_notif_resp *resp = (struct seccomp_notif_resp*)cr_malloc(sizes.seccomp_notif_resp);
+    struct pollfd fds[1] = {
+        {
+            .fd  = seccomp_fd,
+            .events = POLLIN,
+        },
+    };
+
+    fprintf(stderr, "HEY seccomp fd %d\n", seccomp_fd);
+
+    for (;;) { // TODO - when to terminate?
+
+        // Wait for a notification
+        int events = poll(fds, 1, -1);
+        if (events < 0) {
+            err("error: failed to pool for events");
+            continue;
+        } else if (fds[0].revents & POLLNVAL) {
+            break;
+        } else if (events > 1) {
+            err("warning: received multiple events at once!\n");
+        }
+
+        // Receive notification
+        memset(req, 0, sizes.seccomp_notif);
+        memset(resp, 0, sizes.seccomp_notif_resp);
+        if (ioctl(seccomp_fd, SECCOMP_IOCTL_NOTIF_RECV, req) == -1) {
+            perror("error: failed to ioctl(SECCOMP_IOCTL_NOTIF_RECV)");
+            continue;
+        }
+
+        // Validate notification
+        if (ioctl(seccomp_fd, SECCOMP_IOCTL_NOTIF_ID_VALID, &req->id) == -1 ) {
+            perror("error: failed to ioctl(SECCOMP_IOCTL_NOTIF_ID_VALID)");
+            continue;
+        }
+
+        fprintf(stderr, "SYSCALL\n");
+        // TODO - if number of threads falls to zero, terminate?
+
+        // Send response
+        resp->id = req->id;
+        resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
+        if (ioctl(seccomp_fd, SECCOMP_IOCTL_NOTIF_SEND, resp) == -1) {
+            perror("error: failed to ioctl(SECCOMP_IOCTL_NOTIF_SEND)");
+            continue;
+        }
+    }
+    return NULL;
+}
+
 void handle_syscalls(size_t seed, int seccomp_fd, int* finished, int meta_snap_fd, mapping_t* mappings, thread_t* threads) {
     // Base for memory mappings. Each seed value is 16TB apart.
     size_t mem_base = 0xA00000000000 + 0x100000000000 * seed; // TODO - use a smaller gap (32 GB?) since we only have 48 usable bits.
@@ -315,7 +376,7 @@ void handle_syscalls(size_t seed, int seccomp_fd, int* finished, int meta_snap_f
     while (active_threads) {
 
         // Wait for a notification
-        int events = poll(fds, 1, 1000);
+        int events = poll(fds, 1, 100);
         if (events < 0) {
             err("error: failed to pool for events");
             continue;
@@ -413,7 +474,7 @@ void handle_syscalls(size_t seed, int seccomp_fd, int* finished, int meta_snap_f
                     args[1] = args[1] + padding;
                 }
                 // If the address is not defined, move into sandbox.
-                if ((void*)args[0] == NULL) {
+                if ((void*)args[0] == NULL && mem_base != 0) {
                     // Set top of the sandbox.
                     args[0] = mem_base;
                     // Update base for next time.
@@ -458,7 +519,6 @@ void handle_syscalls(size_t seed, int seccomp_fd, int* finished, int meta_snap_f
         }
     }
 
-    close(seccomp_fd);
     cr_free(req);
     cr_free(resp);
 }
