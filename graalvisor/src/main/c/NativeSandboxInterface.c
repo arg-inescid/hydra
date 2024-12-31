@@ -165,9 +165,7 @@ JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSand
     graal_isolatethread_t* ithread = (graal_isolatethread_t*) isolatethread;
     const char* fin_str = (*env)->GetStringUTFChars(env, fin, 0);
     char fout[256];
-    fprintf(stderr, "GOING INTO RUN_ENTRYPOINT (tid = %d)\n", gettid());
     abis[svmid].entrypoint(ithread, fin_str, fout, 256);
-    fprintf(stderr, "COMING OUT FROM ENTRYPOINT\n");
     (*env)->ReleaseStringUTFChars(env, fin, fin_str);
     return (*env)->NewStringUTF(env, fout);
 }

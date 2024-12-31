@@ -309,8 +309,6 @@ void* allow_syscalls(void* args) {
         },
     };
 
-    fprintf(stderr, "HEY seccomp fd %d\n", seccomp_fd);
-
     for (;;) { // TODO - when to terminate?
 
         // Wait for a notification
@@ -338,7 +336,6 @@ void* allow_syscalls(void* args) {
             continue;
         }
 
-        fprintf(stderr, "SYSCALL\n");
         // TODO - if number of threads falls to zero, terminate?
 
         // Send response
