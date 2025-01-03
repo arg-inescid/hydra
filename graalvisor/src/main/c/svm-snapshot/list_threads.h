@@ -23,7 +23,7 @@ typedef struct thread {
     struct clone_args cargs;
 
     // Thread context includes a tls and ucontext.
-    thread_context_t context; // TODO - replace by ctx and fpstate?
+    thread_context_t context;
 
     // Pointer to the next list entry.
     struct thread* next;
