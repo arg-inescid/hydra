@@ -384,9 +384,10 @@ void* restore_thread_internal(void* tdata) {
     // Note 2: set tid always succeeds (man 2 set_tid_address)!
     syscall(SYS_set_tid_address, cargs.child_tid);
 
-    dbg("restoring thread ip = %p sp = %p tls = %p tidptr = %p\n",
+    dbg("restoring thread ip = %p sp = %p fpstate = %p tls = %p tidptr = %p\n",
         (void*) context.ctx.uc_mcontext.gregs[REG_RIP],
         (void*) context.ctx.uc_mcontext.gregs[REG_RSP],
+        (void*) &context.fpstate,
         cargs.tls,
         cargs.child_tid);
 
@@ -396,7 +397,7 @@ void* restore_thread_internal(void* tdata) {
 
 void restore_thread(int meta_snap_fd) {
     pthread_t thread;
-    void* restore_tdata = cr_malloc(sizeof(thread_context_t) + sizeof(struct clone_args));
+    char* restore_tdata = cr_malloc(sizeof(thread_context_t) + sizeof(struct clone_args));
 
     if (restore_tdata == NULL) {
         err("error: failed to alloc thread data\n");

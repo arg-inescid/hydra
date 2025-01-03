@@ -5,13 +5,12 @@
 #include <ucontext.h>
 
 typedef struct thread_context {
-    int* garbage; // TODO - check why this is needed here.
+    // fpstate structed pointed by mcontext. Note: this is the first item in the struct as it is
+    // sentive to being aligned.
+    struct _libc_fpstate fpstate;
 
     // Thread context when checkpointing.
     ucontext_t ctx;
-
-    // fpstate structed pointed by mcontext.
-    struct _libc_fpstate fpstate;
 } thread_context_t;
 
 // Basic entry of a thread list.

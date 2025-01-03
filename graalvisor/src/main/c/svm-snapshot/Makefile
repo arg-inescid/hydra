@@ -59,7 +59,6 @@ benchmarks: all
 	$(MAKE) app="${ARGO_HOME}/benchmarks/src/java/gv-httprequest/build/libhttprequest.so" run
 # TODO - videoprocessing (process)
 	$(MAKE) app="${ARGO_HOME}/benchmarks/src/javascript/gv-hello-world/build/libhelloworld.so" run
-# TODO - sometimes is hangs with high concurrency due to network connections.
 	$(MAKE) app="${ARGO_HOME}/benchmarks/src/javascript/gv-dynamic-html/build/libdynamichtml.so" run
 # TODO - thumbnail calls native code and it also leaves files behind. We do not support that.
 	$(MAKE) app="${ARGO_HOME}/benchmarks/src/javascript/gv-thumbnail/build/libthumbnail.so" run
