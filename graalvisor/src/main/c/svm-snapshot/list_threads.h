@@ -5,8 +5,7 @@
 #include <ucontext.h>
 
 typedef struct thread_context {
-    // Pointer to thread local storage (it is not captured in the ucontext).
-    void* tls;
+    int* garbage; // TODO - check why this is needed here.
 
     // Thread context when checkpointing.
     ucontext_t ctx;
@@ -19,13 +18,13 @@ typedef struct thread_context {
 // This list is used to keep track of child threads that should be checkpoint/restored.
 typedef struct thread {
     // Pid of the target thread.
-    pid_t* tid; // TODO - this could be removed (holds the same value as child_tid).
+    pid_t* tid;
 
     // clone3 (and clone) arguments:
     struct clone_args cargs;
 
     // Thread context includes a tls and ucontext.
-    thread_context_t context;
+    thread_context_t context; // TODO - replace by ctx and fpstate?
 
     // Pointer to the next list entry.
     struct thread* next;

@@ -309,7 +309,7 @@ void* allow_syscalls(void* args) {
         },
     };
 
-    for (;;) { // TODO - when to terminate?
+    for (;;) {
 
         // Wait for a notification
         int events = poll(fds, 1, -1);
@@ -336,7 +336,7 @@ void* allow_syscalls(void* args) {
             continue;
         }
 
-        // TODO - if number of threads falls to zero, terminate?
+        // TODO - terminate if the number of monitored threads falls to zero.
 
         // Send response
         resp->id = req->id;
@@ -350,8 +350,8 @@ void* allow_syscalls(void* args) {
 }
 
 void handle_syscalls(size_t seed, int seccomp_fd, int* finished, int meta_snap_fd, mapping_t* mappings, thread_t* threads) {
-    // Base for memory mappings. Each seed value is 16TB apart.
-    size_t mem_base = 0xA00000000000 + 0x100000000000 * seed; // TODO - use a smaller gap (32 GB?) since we only have 48 usable bits.
+    // Base for memory mappings. Each seed value is 64GB apart (36 bits used out of 48 usable bits).
+    size_t mem_base = 0xA00000000000 + 0x1000000000 * seed;
     // This number represents the number of threads that are initially running in the sandbox.
     int active_threads = 1;
     int pagesize = getpagesize();

@@ -253,16 +253,16 @@ void checkpoint_svm(
     log("checkpoint took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
 #endif
 
+    // Join thread after checkpoint (this glibc may free memory right before we checkpoint).
+    // Glibc is tricky as it has internal state. We should avoid it at all cost.
+    pthread_join(worker, NULL);
+
     if (!list_threads_empty(&threads)) {
         // Starting monitor thread to allow syscalls from the background threads.
         pthread_create(&allower, NULL, allow_syscalls, &(wargs.seccomp_fd));
         // Resume background threads before checkpointing.
         resume_background_threads(&threads);
     }
-
-    // Join thread after checkpoint (this glibc may free memory right before we checkpoint).
-    // Glibc is tricky as it has internal state. We should avoid it at all cost.
-    pthread_join(worker, NULL); // TODO - move to before we resume threads?
 
     // Close meta and mem fds.
     close(meta_snap_fd);

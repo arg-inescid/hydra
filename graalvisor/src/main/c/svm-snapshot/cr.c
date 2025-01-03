@@ -341,7 +341,7 @@ void checkpoint_threads(int meta_snap_fd, thread_t* threads) {
         dbg("checkpointing thread ip = %p sp = %p tls = %p\n",
             (void*) current->context.ctx.uc_mcontext.gregs[REG_RIP],
             (void*) current->context.ctx.uc_mcontext.gregs[REG_RSP],
-            current->context.tls);
+            (void*) current->cargs.tls);
         if (write(meta_snap_fd, &tag, sizeof(int)) != sizeof(int)) {
             perror("error: failed to serialize thread tag");
         }

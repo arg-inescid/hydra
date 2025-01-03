@@ -26,6 +26,7 @@ pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 // Background thread handler used to pause threads during checkpointing.
 void background_threads_handler(int signum, siginfo_t* sigingo, void* ctx) {
     pid_t tid = gettid();
+    void* tls;
     thread_t* thread = list_threads_find(background_threads, &tid);
 
     if (thread == NULL) {
@@ -34,11 +35,13 @@ void background_threads_handler(int signum, siginfo_t* sigingo, void* ctx) {
     }
 
     // Saving tls location.
-    if (syscall(SYS_arch_prctl, ARCH_GET_FS, &(thread->context.tls))) {
+    if (syscall(SYS_arch_prctl, ARCH_GET_FS, &tls)) {
         err("failed to get tls for thread tid = %d\n", tid);
     }
 
-    // TODO - check if the TLS is different from what the cargs thinks it is.
+    if (tls != (void*) thread->cargs.tls) {
+        err("thread tls was changed from %p to %p in thread tid = %d\n", thread->cargs.tls, tls, tid);
+    }
 
     // Saving ucontext_t and fpregs.
     memcpy(&(thread->context.ctx), ctx, sizeof(ucontext_t));
@@ -166,10 +169,9 @@ void print_thread_cargs(struct clone_args* cargs) {
 }
 
 void print_thread_context(thread_context_t* context) {
-    log("thread context: rsp = %p rip = %p tls = %p\n",
+    log("thread context: rsp = %p rip = %p\n",
         (void*) context->ctx.uc_mcontext.gregs[REG_RSP],
-        (void*) context->ctx.uc_mcontext.gregs[REG_RIP],
-        context->tls);
+        (void*) context->ctx.uc_mcontext.gregs[REG_RIP]);
 }
 
 void print_thread(thread_t * thread) {
