@@ -70,8 +70,8 @@ public class SnapshotSandboxProvider extends SandboxProvider {
     @Override
     public synchronized SandboxHandle createSandbox() throws IOException {
         // TODO - throw Exception if provider is not warmup yet.
-        // TODO - for Truffle functions we attached because we want to create a new context inside the same isolate.
-        // But for Java functions we could create a new isolate.
+        // TODO - for Truffle functions we attached because we want to create a new context inside
+        // the same isolate. But for Java functions we could create a new isolate.
         long isolateThread = NativeSandboxInterface.svmAttachThread(svmID);
         return new SnapshotSandboxHandle(this, isolateThread);
     }
