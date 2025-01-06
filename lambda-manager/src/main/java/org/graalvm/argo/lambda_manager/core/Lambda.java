@@ -154,7 +154,7 @@ public class Lambda {
     }
 
     public boolean tryRegisterInLambda(Function function) {
-        boolean lambdaAvailable = allocateMemory(function);
+        boolean lambdaAvailable = allocateMemory(function); // TODO (flex containers):  don't use fixed memory pools
         if (lambdaAvailable) {
             // We need the synchronized block to avoid double-registration in collocatable lambdas.
             // The race condition happens because we first test if we can register, and then set registered.

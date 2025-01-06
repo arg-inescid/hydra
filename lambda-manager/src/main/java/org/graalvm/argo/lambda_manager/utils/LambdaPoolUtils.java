@@ -251,6 +251,14 @@ public class LambdaPoolUtils {
             }
         }
 
+        // TODO (flex containers): we can assume that sandboxes are ephemeral and will be disposed of right after invocation.
+        // Therefore, it's correct to assume that a lambda with no concurrent requests is a lambda with 0 sandboxes -> can be
+        // safely terminated if there is the need for a different lambda (for a different user). Upstream top-level scheduler
+        // does not issue more than 104 concurrent requests, so our lambdas can grow indefinitely (e.g., 1 lambda with 104)
+        // sandboxes. In case another user wants to issue a request, a new lambda will be taken from the lambda pool. So, we
+        // will have 2 lambdas, one is very busy (100-104 cinv), and another is not so busy. Even if for some brief period of
+        // time we have >104 physical isolates (or even cinv), it's not a big deal, as overall we assume that our sandboxes
+        // are disposed of right after the invocation finishes, and the upstream top-level scheduler does not send >104 cinv.
         private void reclaim(LambdaExecutionMode mode, ConcurrentLinkedQueue<Lambda> lambdas) {
             int total = maxLambdas.get(mode);
             int minimalThreshold = (int) (total * Configuration.argumentStorage.getReclamationThreshold());

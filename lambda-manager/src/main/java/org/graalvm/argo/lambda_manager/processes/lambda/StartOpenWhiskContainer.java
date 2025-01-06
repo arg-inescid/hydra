@@ -12,6 +12,7 @@ public class StartOpenWhiskContainer extends StartContainer {
 
     @Override
     protected List<String> makeCommand() {
+        // TODO (flex containers): Perhaps only set memory limits for OW lambdas.
         return prepareCommand(lambda.getExecutionMode().getOpenWhiskContainerImage());
     }
 }
