@@ -13,6 +13,8 @@
 #app = "$(shell pwd)/test8-cthreads-syscall/libhello.so"
 #app = "$(shell pwd)/test9-cthreads-futex/libhello.so"
 #app = "$(shell pwd)/test10-malloc/libhello.so"
+#app = "$(shell pwd)/test11-cthreads-mmap/libhello.so"
+#app = "$(shell pwd)/test12-svm-http/libhello.so"
 #app="${ARGO_HOME}/benchmarks/src/java/gv-hello-world/build/libhelloworld.so"
 #app="${ARGO_HOME}/benchmarks/src/javascript/gv-hello-world/build/libhelloworld.so"
 #app="${ARGO_HOME}/benchmarks/src/python/gv-hello-world/build/libhelloworld.so"
@@ -47,6 +49,8 @@ tests: all
 	make -C test7-svm-truffle-function-py test
 	make -C test8-cthreads-syscall test
 	make -C test9-cthreads-futex test
+	make -C test11-cthreads-mmap test
+	make -C test12-svm-http test
 
 benchmarks: all
 	$(MAKE) app="${ARGO_HOME}/benchmarks/src/java/gv-hello-world/build/libhelloworld.so" run
@@ -55,7 +59,6 @@ benchmarks: all
 	$(MAKE) app="${ARGO_HOME}/benchmarks/src/java/gv-httprequest/build/libhttprequest.so" run
 # TODO - videoprocessing (process)
 	$(MAKE) app="${ARGO_HOME}/benchmarks/src/javascript/gv-hello-world/build/libhelloworld.so" run
-# TODO - sometimes is hangs with high concurrency due to network connections.
 	$(MAKE) app="${ARGO_HOME}/benchmarks/src/javascript/gv-dynamic-html/build/libdynamichtml.so" run
 # TODO - thumbnail calls native code and it also leaves files behind. We do not support that.
 	$(MAKE) app="${ARGO_HOME}/benchmarks/src/javascript/gv-thumbnail/build/libthumbnail.so" run

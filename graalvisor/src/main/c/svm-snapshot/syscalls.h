@@ -45,6 +45,9 @@ void handle_openat(int meta_snap_fd, long long unsigned int* args, int ret);
 void handle_close(int meta_snap_fd, long long unsigned int* args, int ret);
 void handle_exit(int meta_snap_fd, thread_t* threads, pid_t pid);
 
+// Function that allows all system calls to continue.
+void* allow_syscalls(void* args);
+
 // Function that listens to seccomp notifications an invokes syscalls.
 void handle_syscalls(size_t seed, int seccomp_fd, int* finished, int meta_snap_fd, mapping_t* mappings, thread_t* threads);
 

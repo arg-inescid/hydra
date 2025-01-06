@@ -5,21 +5,19 @@
 #include <ucontext.h>
 
 typedef struct thread_context {
-    // Pointer to thread local storage (it is not captured in the ucontext).
-    void* tls;
+    // fpstate structed pointed by mcontext. Note: this is the first item in the struct as it is
+    // sentive to being aligned.
+    struct _libc_fpstate fpstate;
 
     // Thread context when checkpointing.
     ucontext_t ctx;
-
-    // fpstate structed pointed by mcontext.
-    struct _libc_fpstate fpstate;
 } thread_context_t;
 
 // Basic entry of a thread list.
 // This list is used to keep track of child threads that should be checkpoint/restored.
 typedef struct thread {
     // Pid of the target thread.
-    pid_t* tid; // TODO - this could be removed (holds the same value as child_tid).
+    pid_t* tid;
 
     // clone3 (and clone) arguments:
     struct clone_args cargs;
