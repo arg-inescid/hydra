@@ -39,8 +39,6 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
         } catch (InterruptedException interruptedException) {
             Logger.log(Level.WARNING, Messages.ERROR_TAP_REMOVAL, interruptedException);
         }
-
-        lambda.getMemoryPool().reset();
     }
 
 }

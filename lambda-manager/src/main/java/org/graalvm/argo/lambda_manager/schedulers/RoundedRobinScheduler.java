@@ -57,8 +57,6 @@ public class RoundedRobinScheduler implements Scheduler {
                     Logger.log(Level.FINE, String.format("[function=%s, mode=%s]: The lambda pool is currently empty, waiting.", function.getName(), targetMode));
                 }
             } else {
-                // Cancel the lambda timeout timer and increment the open request count.
-                lambda.incOpenRequests();
                 // We found a lambda, exit the loop.
                 break;
             }
@@ -99,6 +97,5 @@ public class RoundedRobinScheduler implements Scheduler {
     public void reschedule(Lambda lambda, Function function) {
         // Decrement the open request count and reset the lambda timeout timer.
         lambda.decOpenRequests();
-        lambda.deallocateMemory(function);
     }
 }

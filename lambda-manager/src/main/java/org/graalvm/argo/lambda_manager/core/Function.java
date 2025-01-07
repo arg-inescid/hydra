@@ -181,7 +181,7 @@ public class Function {
         // runtime and back throughout the function lifetime as the function might go
         // through the build pipeline and fallback.
         LambdaExecutionMode mode = getLambdaExecutionMode();
-        if (mode == LambdaExecutionMode.HOTSPOT_W_AGENT || mode == LambdaExecutionMode.HOTSPOT) {
+        if (mode == LambdaExecutionMode.HOTSPOT_W_AGENT || mode == LambdaExecutionMode.HOTSPOT || mode.isCustom()) {
             return false;
         }
         return !Configuration.argumentStorage.isSnapshotEnabled() && this.invocationCollocation;

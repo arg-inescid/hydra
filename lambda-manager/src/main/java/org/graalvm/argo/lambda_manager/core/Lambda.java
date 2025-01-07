@@ -1,7 +1,5 @@
 package org.graalvm.argo.lambda_manager.core;
 
-import org.graalvm.argo.lambda_manager.memory.FixedMemoryPool;
-import org.graalvm.argo.lambda_manager.memory.MemoryPool;
 import org.graalvm.argo.lambda_manager.optimizers.FunctionStatus;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
@@ -38,9 +36,6 @@ public class Lambda {
 	/** Indicates whether this lambda should be used for future requests. */
 	private boolean decommissioned;
 
-	/** Memory pool that registers the memory utilized by the lambda. */
-	private final MemoryPool memoryPool;
-
 	/** Functions that need to be uploaded to this lambda. */
 	private final Set<Function> requiresFunctionUpload;
 
@@ -49,7 +44,6 @@ public class Lambda {
         this.executionMode = executionMode;
         this.registeredFunctions = new ConcurrentHashMap<>();
         this.requiresFunctionUpload = ConcurrentHashMap.newKeySet();
-        this.memoryPool = new FixedMemoryPool(Configuration.argumentStorage.getMaxMemory(), Configuration.argumentStorage.getMaxMemory());
     }
 
 	public long setLambdaID(long lid) {
@@ -59,11 +53,6 @@ public class Lambda {
 	public long getLambdaID() {
 		return this.lid;
 	}
-
-    public void incOpenRequests() {
-        timer.cancel();
-        openRequestCount.incrementAndGet();
-    }
 
     public void decOpenRequests() {
         if (openRequestCount.decrementAndGet() == 0) {
@@ -154,7 +143,7 @@ public class Lambda {
     }
 
     public boolean tryRegisterInLambda(Function function) {
-        boolean lambdaAvailable = allocateMemory(function); // TODO (flex containers):  don't use fixed memory pools
+        boolean lambdaAvailable = tryBookLambda(function);
         if (lambdaAvailable) {
             // We need the synchronized block to avoid double-registration in collocatable lambdas.
             // The race condition happens because we first test if we can register, and then set registered.
@@ -168,8 +157,8 @@ public class Lambda {
                     }
                     return true;
                 } else {
-                    // Deallocate lambda resources as we cannot use it for this request.
-                    deallocateMemory(function);
+                    // Decrement open requests as we cannot use the lambda for this request.
+                    decOpenRequests();
                 }
             }
         }
@@ -184,10 +173,6 @@ public class Lambda {
 		for (Function function : registeredFunctions.values()) {
 			resetRegisteredInLambda(function);
 		}
-	}
-
-	public MemoryPool getMemoryPool() {
-		return memoryPool;
 	}
 
 	public String getUsername() {
@@ -228,15 +213,13 @@ public class Lambda {
         return !decommissioned && username == null && requiresFunctionUpload.isEmpty();
     }
 
-    public boolean allocateMemory(Function function) {
-        return function.canCollocateInvocation()
-                ? memoryPool.allocateMemoryLambda(function.getMemory())
-                : memoryPool.allocateMemoryLambda(memoryPool.getMaxMemory());
-    }
-
-    public boolean deallocateMemory(Function function) {
-        return function.canCollocateInvocation()
-                ? memoryPool.deallocateMemoryLambda(function.getMemory())
-                : memoryPool.deallocateMemoryLambda(memoryPool.getMaxMemory());
+    // Booking a lambda primarily matters for non-collocatable modes.
+    public boolean tryBookLambda(Function function) {
+        // Increment the open request count and cancel the lambda timeout timer if available (replaces incOpenRequests).
+        boolean available = function.canCollocateInvocation() ? openRequestCount.incrementAndGet() > 0 : openRequestCount.compareAndSet(0, 1);
+        if (available) {
+            timer.cancel();
+        }
+        return available;
     }
 }
