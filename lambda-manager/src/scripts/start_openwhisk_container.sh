@@ -22,8 +22,20 @@ if [ -z "$CONTAINER_IMAGE" ]; then
   exit 1
 fi
 
+LAMBDA_MEMORY=$4
+if [ -z "$LAMBDA_MEMORY" ]; then
+  echo "Lambda memory is not present."
+  exit 1
+fi
+
+LAMBDA_CPU_QUOTA=$5
+if [ -z "$LAMBDA_CPU_QUOTA" ]; then
+  echo "Lambda CPU quota is not present."
+  exit 1
+fi
+
 # To set up such tags as lambda_port, lambda_timestamp, and LD_LIBRARY_PATH.
-TAGS=( "${@:4}" )
+TAGS=( "${@:6}" )
 TAGS=( "${TAGS[@]/#/'-e '}" )
 TAGS+=( "-e app_dir=/codebase/" )
 
@@ -47,6 +59,9 @@ docker run --privileged --rm --name="$LAMBDA_NAME" \
   --privileged \
   -p "$LAMBDA_PORT":"$PROXY_PORT" \
   -v "$ARGO_HOME"/benchmarks/data/apps:/codebase \
+  --memory "$LAMBDA_MEMORY" \
+  --cpu-period="$CGROUPS_CPU_PERIOD" \
+  --cpu-quota="$LAMBDA_CPU_QUOTA" \
   "$CONTAINER_IMAGE" &
 
 # Writes PID of the init process.
