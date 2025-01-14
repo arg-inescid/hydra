@@ -28,6 +28,8 @@
 int next_reserved_fd = RESERVED_FDS;
 
 // Tags used in the meta snapshot fd.
+#define MSPACE_TAG  -6
+#define MTABLE_TAG -5
 #define THREAD_TAG  -4
 #define MEMORY_TAG  -3
 #define ABI_TAG     -2
@@ -519,6 +521,72 @@ void restore_abi(int meta_snap_fd, isolate_abi_t* abi) {
     print_abi(abi);
 }
 
+void print_mspace(mstate mspace){
+    dbg("**PRINT_MSPACE**\n");
+    dbg("mspace->smallmap:    		%u\n", mspace->smallmap);
+    dbg("mspace->treemap:    		%u\n", mspace->smallmap);
+    dbg("mspace->dvsize:    		%zu\n", mspace->dvsize);
+    dbg("mspace->topsize:    		%zu\n", mspace->topsize);
+    dbg("mspace->dv:			%16p\n", mspace->dv);
+    dbg("mspace->top:    		%16p\n", mspace->top);
+    dbg("mspace->trim_check:		%u\n", mspace->trim_check);
+    dbg("mspace->release_checks:    	%u\n", mspace->release_checks);
+    dbg("mspace->magic:    		%u\n", mspace->magic);
+    dbg("mspace->smallbins[0]:		%16p\n", mspace->smallbins[0]);
+    dbg("mspace->treebins[0]:		%16p\n", mspace->treebins[0]);
+    dbg("mspace->footprint:    		%u\n", mspace->footprint);
+    dbg("mspace->max_footprint:    	%u\n", mspace->max_footprint);
+    dbg("mspace->footprint_limit:    	%u\n", mspace->footprint_limit);
+    dbg("mspace->mflags:    		%u\n", mspace->mflags);
+    dbg("mspace->seg.base:    		%16p\n", mspace->seg.base);
+    dbg("mspace->seg (end):    		%16p\n", (mspace->seg.base) + mspace->seg.size);
+    dbg("mspace->extp:			%16p\n", mspace->extp);
+    dbg("mspace->exts:    		%u\n", mspace->exts);
+    dbg("\n");
+}
+
+void checkpoint_mspace_mappings(int meta_snap_fd, mspace_mapping_t* mapping){
+    int tag = MTABLE_TAG;
+    if (write(meta_snap_fd, &tag, sizeof(int)) != sizeof(int)) {
+        perror("error: failed to serialize mspace tag");
+    }
+    dbg("now checkpointing mspace_mapping\n");
+    // TODO: write_size = get_mapping_count()
+    if (write(meta_snap_fd, mapping, sizeof(mspace_mapping_t) * 10) != sizeof(mspace_mapping_t) * 10) {
+        perror("error: failed to serialize mspace mapping");
+    }
+}
+
+
+void checkpoint_mem_allocator(int meta_snap_fd, mstate mspace){
+    int tag = MSPACE_TAG;
+    print_mspace((struct malloc_state*) get_mspace());
+    if (write(meta_snap_fd, &tag, sizeof(int)) != sizeof(int)) {
+        perror("error: failed to serialize mspace tag");
+    }
+    if (write(meta_snap_fd, mspace, sizeof(struct malloc_state)) != sizeof(struct malloc_state)) {
+        perror("error: failed to serialize mspace struct");
+    }
+}
+
+void restore_mspace_mappings(int meta_snap_fd, mspace_mapping_t* mapping) {
+    dbg("now restoring mspace_mapping\n");
+    // TODO: read_size = get_mapping_count()
+    if (read(meta_snap_fd, mapping, sizeof(mspace_mapping_t) * 10) != sizeof(mspace_mapping_t) * 10) {
+        perror("error: failed to deserialize mspace mapping");
+    }
+}
+
+void restore_mem_allocator(int meta_snap_fd, mstate mspace) {
+    print_mspace((struct malloc_state*) get_mspace());
+    dbg("now restoring mem allocator\n");
+    if (read(meta_snap_fd, mspace, sizeof(struct malloc_state)) != sizeof(struct malloc_state)) {
+        perror("error: failed to deserialize mspace struct");
+        return;
+    }
+    print_mspace((struct malloc_state*) get_mspace());
+}
+
 void checkpoint_syscall(int meta_snap_fd, int tag, void* syscall_args, size_t size) {
     if (write(meta_snap_fd, &tag, sizeof(int)) != sizeof(int)) {
         perror("error: failed to serialize syscall tag");
@@ -667,6 +735,8 @@ void restore_close(int meta_snap_fd) {
 
 void checkpoint(int meta_snap_fd, int mem_snap_fd, mapping_t* mappings, thread_t* threads, isolate_abi_t* abi, graal_isolate_t* isolate) {
     checkpoint_mappings(meta_snap_fd, mem_snap_fd, mappings);
+    checkpoint_mspace_mappings(meta_snap_fd, get_mspace_mapping());
+    checkpoint_mem_allocator(meta_snap_fd, (struct malloc_state*) get_mspace());
     checkpoint_abi(meta_snap_fd, abi);
     checkpoint_isolate(meta_snap_fd, isolate);
     if (!list_threads_empty(threads)) {
@@ -745,6 +815,13 @@ void restore(const char* meta_snap_path, const char* mem_snap_path, isolate_abi_
             break;
         case ABI_TAG:
             restore_abi(meta_snap_fd, abi);
+            break;
+        case MSPACE_TAG:
+            // TODO: get_mspace currently returns FIXED mspace
+            restore_mem_allocator(meta_snap_fd, (struct malloc_state*) get_mspace());
+            break;
+        case MTABLE_TAG:
+            restore_mspace_mappings(meta_snap_fd, get_mspace_mapping());
             break;
         case MEMORY_TAG:
             restore_memory(meta_snap_fd, mem_snap_fd);

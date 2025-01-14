@@ -163,7 +163,10 @@ void* checkpoint_worker(void* args) {
     }
 
     // Prepare and run function.
+    enter_mspace();
     run_svm(wargs->fpath, wargs->concurrency, wargs->requests, svm->fin, svm->fout, svm->abi, &(svm->isolate));
+    // TODO: leave_mspace
+
     // Mark execution as finished (will alert the seccomp monitor to quit).
     wargs->finished = 1;
 
@@ -365,7 +368,9 @@ svm_sandbox_t* restore_svm(
         struct timeval st, et;
         gettimeofday(&st, NULL);
 #endif
+	    enter_mspace();
         restore(meta_snap_path, mem_snap_path, abi, isolate);
+        // TODO: leave_mspace
 #ifdef PERF
         gettimeofday(&et, NULL);
         log("restore took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
