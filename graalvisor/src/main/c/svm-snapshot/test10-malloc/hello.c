@@ -3,8 +3,6 @@
 #include "../graal_isolate.h"
 #include <string.h>
 
-#include <sys/syscall.h> // for calling gettid
-
 void* buff = NULL;
 
 int graal_create_isolate (graal_create_isolate_params_t* params, graal_isolate_t** isolate, graal_isolatethread_t** thread) {
@@ -51,7 +49,6 @@ void entrypoint(graal_isolatethread_t* thread, const char* fin, const char* fout
 int graal_detach_thread(graal_isolatethread_t* thread) {
     return 0;
 }
-
 
 int graal_attach_thread(graal_isolate_t* isolate, graal_isolatethread_t** thread) {
     *thread = NULL;
