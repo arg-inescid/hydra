@@ -29,7 +29,7 @@ int next_reserved_fd = RESERVED_FDS;
 
 // Tags used in the meta snapshot fd.
 #define MSPACE_TAG  -6
-#define MTABLE_TAG -5
+#define MTABLE_TAG  -5
 #define THREAD_TAG  -4
 #define MEMORY_TAG  -3
 #define ABI_TAG     -2
@@ -556,7 +556,6 @@ void checkpoint_mspace_mappings(int meta_snap_fd, mspace_mapping_t* mapping){
         perror("error: failed to serialize mspace mapping");
     }
 }
-
 
 void checkpoint_mem_allocator(int meta_snap_fd, mstate mspace){
     int tag = MSPACE_TAG;
