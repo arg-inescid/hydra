@@ -28,8 +28,7 @@
 int next_reserved_fd = RESERVED_FDS;
 
 // Tags used in the meta snapshot fd.
-#define MSPACE_TAG  -6
-#define MTABLE_TAG  -5
+#define MSPACE_TAG  -5
 #define THREAD_TAG  -4
 #define MEMORY_TAG  -3
 #define ABI_TAG     -2
@@ -545,8 +544,8 @@ void print_mspace(mstate mspace){
     dbg("\n");
 }
 
-void checkpoint_mspace_mappings(int meta_snap_fd, mspace_mapping_t* mapping){
-    int tag = MTABLE_TAG;
+void checkpoint_mem_allocator(int meta_snap_fd, mspace_mapping_t* mapping, struct malloc_state* mspace){
+    int tag = MSPACE_TAG;
     if (write(meta_snap_fd, &tag, sizeof(int)) != sizeof(int)) {
         perror("error: failed to serialize mspace tag");
     }
@@ -555,30 +554,20 @@ void checkpoint_mspace_mappings(int meta_snap_fd, mspace_mapping_t* mapping){
     if (write(meta_snap_fd, mapping, sizeof(mspace_mapping_t) * 10) != sizeof(mspace_mapping_t) * 10) {
         perror("error: failed to serialize mspace mapping");
     }
-}
-
-void checkpoint_mem_allocator(int meta_snap_fd, mstate mspace){
-    int tag = MSPACE_TAG;
-    print_mspace((struct malloc_state*) cr_get_mspace());
-    if (write(meta_snap_fd, &tag, sizeof(int)) != sizeof(int)) {
-        perror("error: failed to serialize mspace tag");
-    }
+    // checkpoint individual mspace
+    print_mspace(mspace);
     if (write(meta_snap_fd, mspace, sizeof(struct malloc_state)) != sizeof(struct malloc_state)) {
         perror("error: failed to serialize mspace struct");
     }
 }
 
-void restore_mspace_mappings(int meta_snap_fd, mspace_mapping_t* mapping) {
+void restore_mem_allocator(int meta_snap_fd, mspace_mapping_t* mapping, struct malloc_state* mspace) {
     dbg("now restoring mspace_mapping\n");
     // TODO: read_size = get_mapping_count()
     if (read(meta_snap_fd, mapping, sizeof(mspace_mapping_t) * 10) != sizeof(mspace_mapping_t) * 10) {
         perror("error: failed to deserialize mspace mapping");
     }
-}
 
-void restore_mem_allocator(int meta_snap_fd, mstate mspace) {
-    print_mspace((struct malloc_state*) cr_get_mspace());
-    dbg("now restoring mem allocator\n");
     if (read(meta_snap_fd, mspace, sizeof(struct malloc_state)) != sizeof(struct malloc_state)) {
         perror("error: failed to deserialize mspace struct");
         return;
@@ -735,8 +724,7 @@ void restore_close(int meta_snap_fd) {
 void checkpoint(int meta_snap_fd, int mem_snap_fd, mapping_t* mappings, thread_t* threads, isolate_abi_t* abi, graal_isolate_t* isolate) {
     checkpoint_mappings(meta_snap_fd, mem_snap_fd, mappings);
     #ifdef USE_DLMALLOC
-        checkpoint_mspace_mappings(meta_snap_fd, get_mspace_mapping());
-        checkpoint_mem_allocator(meta_snap_fd, (struct malloc_state*) cr_get_mspace());
+        checkpoint_mem_allocator(meta_snap_fd, get_mspace_mapping(), (struct malloc_state*) cr_get_mspace());
     #endif /* USE_DLMALLOC */
     checkpoint_abi(meta_snap_fd, abi);
     checkpoint_isolate(meta_snap_fd, isolate);
@@ -820,10 +808,7 @@ void restore(const char* meta_snap_path, const char* mem_snap_path, isolate_abi_
 #ifdef USE_DLMALLOC
         case MSPACE_TAG:
             // TODO: get_mspace currently returns FIXED mspace
-            restore_mem_allocator(meta_snap_fd, (struct malloc_state*) cr_get_mspace());
-            break;
-        case MTABLE_TAG:
-            restore_mspace_mappings(meta_snap_fd, get_mspace_mapping());
+            restore_mem_allocator(meta_snap_fd, get_mspace_mapping(), (struct malloc_state*) cr_get_mspace());
             break;
 #endif /* USE_DLMALLOC */
         case MEMORY_TAG:
