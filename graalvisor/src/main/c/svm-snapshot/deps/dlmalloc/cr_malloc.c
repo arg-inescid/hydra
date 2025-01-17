@@ -8,18 +8,22 @@
 // Global memory pool.
 static mspace global = NULL;
 // Thread local reference to the memory pool that the thread should use (it can point to global).
+// TODO: use local for optimization
 static __thread mspace local = NULL;
-// This global space
+static __thread int id = UNINITIALIZED;
 
+// mapping of TID to mspace.
 static mspace_mapping_t mspace_table[1024];
+// circular buffer containing notifications to add TID to parent's mspace.
 static family_t circular_notif_queue[MAX_NOTIFS];
+// counter to denote next position to save/obtain notification.
 static int producer_counter = 0;
 static int consumer_counter = 0;
+// counter to number of existing mspaces
+// TODO: set to 0
 static int mspace_counter = 5;
+// helper variable to determine first usage of mspace and creating global mspace
 static int first_entry = 1;
-static int count = 0;
-
-__thread int id = UNINITIALIZED;
 
 mspace_mapping_t* get_mspace_mapping() {
     return mspace_table;
@@ -32,6 +36,7 @@ mspace get_mspace() {
 
 void join_mspace_when_inited(pid_t *future_child, pid_t parent) {
     family_t family = {future_child, parent};
+    // TODO: if wraps around -> error
     int position = producer_counter++ % MAX_NOTIFS;
     circular_notif_queue[position] = family;
 }
@@ -40,6 +45,7 @@ void inherit_mspace(pid_t child, pid_t parent) {
     // TODO: get_id_from_tid(tid)
     int found_id = 5;
     mspace_mapping_t mapping = {child, mspace_table[found_id].mspace};
+    // TODO: check if mspace_counter > MAX_MSPACE = 1024
     mspace_table[mspace_counter++] = mapping;
     // mspace cur = mspace_table[found_id].mspace;
     // cr_printf(STDOUT_FILENO, "share_mspace with mspace = %p found_id = %d\n", cur, found_id);
@@ -134,29 +140,4 @@ void* realloc(void* ptr, size_t size){
     void* ret = mspace_realloc(find_mspace(), ptr, size);
     cr_printf(STDOUT_FILENO, "realloc %p to have %d size -> %p\n", ptr, size, ret);
     return ret;
-}
-
-void dumper(void* base, size_t size, unsigned int flags) {
-    void* limit = ((char*)base) + size;
-    cr_printf(STDOUT_FILENO, "segment %p - %p (len %lu) flags %d\n", base, limit, size, flags);
-
-}
-
-void count_chunks(void* start, void* end, size_t used, void* arg) {
-    if (used >= 100) ++count;
-}
-
-void inspect_chunks() {
-    // inspects all chunks, allocated and free)
-    mspace_inspect_all(global, count_chunks, NULL);
-    cr_printf(STDOUT_FILENO, "number of chunks: %d\n", count);
-    count = 0;
-}
-
-void checkpoint_mspace() {
-    mspace_inspect_segments(global, dumper);
-}
-
-void restore_mspace() {
-    // TODO - implement!
 }
