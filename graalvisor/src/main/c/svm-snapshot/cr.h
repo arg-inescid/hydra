@@ -48,6 +48,12 @@
 #endif
 #define err(format, args...) do { cr_printf(STDERR_FILENO, format, ## args); } while(0)
 
+#ifdef USE_DLMALLOC
+    #define cr_get_mspace() get_mspace()
+#else
+    #define cr_get_mspace() NULL
+#endif
+
 // Goes through process memory maps and prints it to a file while validating our maps.
 void check_proc_maps(char* filename, mapping_t * head);
 

@@ -163,8 +163,10 @@ void* checkpoint_worker(void* args) {
     }
 
     // Prepare and run function.
+#ifdef USE_DLMALLOC
     enter_mspace();
     run_svm(wargs->fpath, wargs->concurrency, wargs->requests, svm->fin, svm->fout, svm->abi, &(svm->isolate));
+#endif
     // TODO: leave_mspace
 
     // Mark execution as finished (will alert the seccomp monitor to quit).
@@ -368,7 +370,10 @@ svm_sandbox_t* restore_svm(
         struct timeval st, et;
         gettimeofday(&st, NULL);
 #endif
-	    enter_mspace();
+
+#ifdef USE_DLMALLOC
+        enter_mspace();
+#endif
         restore(meta_snap_path, mem_snap_path, abi, isolate);
         // TODO: leave_mspace
 #ifdef PERF
