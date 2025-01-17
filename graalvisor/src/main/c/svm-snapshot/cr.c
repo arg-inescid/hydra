@@ -521,27 +521,7 @@ void restore_abi(int meta_snap_fd, isolate_abi_t* abi) {
 }
 
 void print_mspace(mstate mspace){
-    dbg("**PRINT_MSPACE**\n");
-    dbg("mspace->smallmap:    		%u\n", mspace->smallmap);
-    dbg("mspace->treemap:    		%u\n", mspace->smallmap);
-    dbg("mspace->dvsize:    		%zu\n", mspace->dvsize);
-    dbg("mspace->topsize:    		%zu\n", mspace->topsize);
-    dbg("mspace->dv:			%16p\n", mspace->dv);
-    dbg("mspace->top:    		%16p\n", mspace->top);
-    dbg("mspace->trim_check:		%u\n", mspace->trim_check);
-    dbg("mspace->release_checks:    	%u\n", mspace->release_checks);
-    dbg("mspace->magic:    		%u\n", mspace->magic);
-    dbg("mspace->smallbins[0]:		%16p\n", mspace->smallbins[0]);
-    dbg("mspace->treebins[0]:		%16p\n", mspace->treebins[0]);
-    dbg("mspace->footprint:    		%u\n", mspace->footprint);
-    dbg("mspace->max_footprint:    	%u\n", mspace->max_footprint);
-    dbg("mspace->footprint_limit:    	%u\n", mspace->footprint_limit);
-    dbg("mspace->mflags:    		%u\n", mspace->mflags);
-    dbg("mspace->seg.base:    		%16p\n", mspace->seg.base);
-    dbg("mspace->seg (end):    		%16p\n", (mspace->seg.base) + mspace->seg.size);
-    dbg("mspace->extp:			%16p\n", mspace->extp);
-    dbg("mspace->exts:    		%u\n", mspace->exts);
-    dbg("\n");
+    dbg("seg.base @ %16p, dv @ %16p with size %zu\n", mspace->seg.base, mspace->dv, mspace->dvsize);
 }
 
 void checkpoint_mem_allocator(int meta_snap_fd, mspace_mapping_t* mapping, struct malloc_state* mspace){
