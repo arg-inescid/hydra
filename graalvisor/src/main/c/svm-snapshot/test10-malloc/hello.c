@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "../graal_isolate.h"
 #include <string.h>
+#include <stddef.h>
 
 void* buff = NULL;
 
@@ -23,6 +24,8 @@ void entrypoint(graal_isolatethread_t* thread, const char* fin, const char* fout
         printf("It's contents are: %s\n", (char *) buff);
 
         void* temp = malloc(300);
+        ptrdiff_t dif = (char*) temp - (char*) buff;
+        printf("Difference between pointers: %td\n", dif);
         printf("freeing buff = %p\n", buff);
         free(buff);
 
