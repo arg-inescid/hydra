@@ -370,7 +370,7 @@ void* restore_thread_internal(void* tdata) {
     // Note: we need to perform this copy because the cpy verson was allocated by the caller.
     memcpy(&context, tdata, sizeof(thread_context_t));
     memcpy(&cargs, ((char*)tdata) + sizeof(thread_context_t), sizeof(struct clone_args));
-    cr_free(tdata);
+    free(tdata);
 
     // Note: this line reconstructs the deep-copied data structure.
     context.ctx.uc_mcontext.fpregs = &(context.fpstate);

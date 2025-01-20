@@ -36,10 +36,6 @@
 // If defined, enables performance optimizations.
 #define OPT
 
-// Forward declarations for our custom memory allocator (Doug Lea's).
-#define cr_malloc malloc
-#define cr_free   free
-
 #define log(format, args...) do { cr_printf(STDOUT_FILENO, format, ## args); } while(0)
 #ifdef DEBUG
     #define dbg(format, args...) do { cr_printf(STDOUT_FILENO, format, ## args); } while(0)
