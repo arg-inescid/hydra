@@ -5498,26 +5498,6 @@ size_t destroy_mspace(mspace msp) {
   return freed;
 }
 
-size_t mspace_inspect_segments(mspace msp, void(*handler)(void *, size_t, unsigned int)) {
-  size_t dumped = 0;
-  mstate ms = (mstate)msp;
-  if (ok_magic(ms)) {
-    msegmentptr sp = &ms->seg;
-    while (sp != 0) {
-      char* base = sp->base;
-      size_t size = sp->size;
-      flag_t flag = sp->sflags;
-      handler(base, size, flag);
-      sp = sp->next;
-      dumped += size;
-    }
-  }
-  else {
-    USAGE_ERROR_ACTION(ms,ms);
-  }
-  return dumped;
-}
-
 /*
   mspace versions of routines are near-clones of the global
   versions. This is not so nice but better than the alternatives.
