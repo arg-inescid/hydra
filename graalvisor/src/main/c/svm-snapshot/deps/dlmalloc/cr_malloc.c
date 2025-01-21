@@ -129,6 +129,14 @@ mspace find_mspace() {
     return global;
 }
 
+void leave_mspace() {
+    if (global) {
+        id = 0;
+    } else {
+        id = UNINITIALIZED;
+    }
+}
+
 void* malloc(size_t bytes) {
     void* ret = mspace_malloc(find_mspace(), bytes);
     cr_printf(STDOUT_FILENO, "malloc %d -> %p\n", bytes, ret);

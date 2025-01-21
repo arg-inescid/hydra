@@ -25,5 +25,6 @@ mspace_mapping_t* get_mspace_mapping();
 mspace get_mspace();
 void enter_mspace();
 void join_mspace_when_inited(pid_t*, pid_t);
+void leave_mspace();
 
 #endif

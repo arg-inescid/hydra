@@ -69,6 +69,9 @@ void run_serial_entrypoint(isolate_abi_t* abi, graal_isolatethread_t *isolatethr
         gettimeofday(&st, NULL);
 #endif
         abi->entrypoint(isolatethread, fin, fout, FOUT_LEN);
+#ifdef USE_DLMALLOC
+        leave_mspace();
+#endif
 #ifdef PERF
         gettimeofday(&et, NULL);
         log("entrypoint took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
@@ -127,6 +130,10 @@ void run_svm(
         isolate_abi_t* abi,
         graal_isolate_t** isolate) {
     graal_isolatethread_t *isolatethread = NULL;
+
+#ifdef USE_DLMALLOC
+    enter_mspace();
+#endif
 
     // Load function and initialize abi.
     if (load_function(fpath, abi)) {
@@ -375,7 +382,6 @@ svm_sandbox_t* restore_svm(
         enter_mspace();
 #endif
         restore(meta_snap_path, mem_snap_path, abi, isolate);
-        // TODO: leave_mspace
 #ifdef PERF
         gettimeofday(&et, NULL);
         log("restore took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
