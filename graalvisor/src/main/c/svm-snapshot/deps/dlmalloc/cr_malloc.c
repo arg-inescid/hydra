@@ -11,6 +11,7 @@ static mspace global = NULL;
 // TODO: use local for optimization
 static __thread mspace local = NULL;
 static __thread int id = UNINITIALIZED;
+static __thread pid_t current_tid = 0;
 
 // mapping of TID to mspace.
 static mspace_mapping_t mspace_table[1024];
@@ -24,6 +25,7 @@ static int consumer_counter = 0;
 static int mspace_counter = 5;
 // helper variable to determine first usage of mspace and creating global mspace
 static int first_entry = 1;
+static pid_t base_tid = 0;
 
 mspace_mapping_t* get_mspace_mapping() {
     return mspace_table;
@@ -76,8 +78,8 @@ void enter_mspace() {
     mspace m = create_mspace(0, 0);
     // TODO: use SEED to check if mspace for sandbox has already been created
 
-    int my_tid = syscall(__NR_gettid);
-    mspace_mapping_t mapping = {my_tid, m};
+    current_tid = syscall(__NR_gettid);
+    mspace_mapping_t mapping = {current_tid, m};
     mspace_table[id] = mapping;
     // cr_printf(STDOUT_FILENO, "enter_mspace id=%d has mspace=%p\n", id, mspace_table[id].mspace);
 }
@@ -90,14 +92,22 @@ mspace find_mspace() {
         consume_notif();
     }
 
-    if (first_entry == 1) {
-	    cr_printf(STDOUT_FILENO, "global == NULL !!!! \n");
-        init_global_mspace();
-        id = 0;
-        first_entry = 0;
-	    return global;
+    if (!base_tid) {
+        base_tid = syscall(__NR_gettid);
     }
 
+    if (!current_tid) {
+        current_tid = syscall(__NR_gettid);
+    }
+
+    // id not set && main thread
+    if (id == UNINITIALIZED && current_tid == base_tid) {
+        init_global_mspace();
+        id = 0;
+        return global;
+    }
+
+    // id not set && not main thread
     if (id == UNINITIALIZED) {
         // TODO: get_id_from_tid(tid);
         int result = 6;
@@ -107,7 +117,7 @@ mspace find_mspace() {
 	    // cr_printf(STDOUT_FILENO, "cur.tid = %d cur.mspace = %p\n", cur.tid, cur.mspace);
         return mspace_table[id].mspace;
 
-    } else if (id == 0 && global != NULL) {
+    } else if (id == 0) {
         // cr_printf(STDOUT_FILENO, "id=0 and global != NULL\n", id);
 	    return global;
 
