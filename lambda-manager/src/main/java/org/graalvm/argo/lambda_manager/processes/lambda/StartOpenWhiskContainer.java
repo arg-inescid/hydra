@@ -15,18 +15,7 @@ public class StartOpenWhiskContainer extends StartContainer {
 
     @Override
     protected List<String> makeCommand() {
-        List<String> command = new ArrayList<>();
-        LambdaConnection connection = lambda.getConnection();
-
-        command.add("/usr/bin/time");
-        command.add("--append");
-        command.add(String.format("--output=%s", memoryFilename()));
-        command.add("-v");
-        command.add("bash");
-        command.add("src/scripts/start_openwhisk_container.sh");
-        command.add(String.valueOf(connection.port));
-        command.add(lambda.getLambdaName());
-        command.add(lambda.getExecutionMode().getOpenWhiskContainerImage());
+        List<String> command = prepareCommand(lambda.getExecutionMode().getOpenWhiskContainerImage());
         // Convert memory to bytes for the "docker run --memory ..." option.
         command.add(String.valueOf(Configuration.argumentStorage.getMaxMemory() * 1024l * 1024l));
         command.add(String.valueOf(Configuration.argumentStorage.getCpuQuota()));
