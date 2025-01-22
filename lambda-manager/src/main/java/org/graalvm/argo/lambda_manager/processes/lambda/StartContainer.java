@@ -23,9 +23,6 @@ public abstract class StartContainer extends StartLambda {
         command.add("-v");
         command.add("bash");
         command.add("src/scripts/start_container.sh");
-        // Convert memory to bytes for the "docker run --memory ..." option.
-        command.add(String.valueOf(Configuration.argumentStorage.getMaxMemory() * 1024l * 1024l));
-        command.add(String.valueOf(Configuration.argumentStorage.getCpuQuota()));
         command.add(String.valueOf(connection.port));
         command.add(lambda.getLambdaName());
         command.add(imageName);

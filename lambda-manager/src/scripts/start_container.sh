@@ -4,43 +4,55 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 
 source "$DIR"/environment.sh
 
-LAMBDA_MEMORY=$1
-if [ -z "$LAMBDA_MEMORY" ]; then
-  echo "Lambda memory is not present."
-  exit 1
-fi
-
-LAMBDA_CPU_QUOTA=$2
-if [ -z "$LAMBDA_CPU_QUOTA" ]; then
-  echo "Lambda CPU quota is not present."
-  exit 1
-fi
-
-LAMBDA_PORT=$3
+LAMBDA_PORT=$1
 if [ -z "$LAMBDA_PORT" ]; then
   echo "Lambda port is not present."
   exit 1
 fi
 
-LAMBDA_NAME=$4
+LAMBDA_NAME=$2
 if [ -z "$LAMBDA_NAME" ]; then
   echo "Lambda name is not present."
   exit 1
 fi
 
-CONTAINER_IMAGE=$5
+CONTAINER_IMAGE=$3
 if [ -z "$CONTAINER_IMAGE" ]; then
   echo "Container image is not present."
   exit 1
 fi
 
+CONTAINER_SIZE_OPTIONS=
+
+# Only limit memory and CPU quota for OpenWhisk instances.
+if [[ $CONTAINER_IMAGE == openwhisk* ]]; then
+  LAMBDA_MEMORY=$4
+  if [ -z "$LAMBDA_MEMORY" ]; then
+    echo "Lambda memory is not present."
+    exit 1
+  fi
+
+  LAMBDA_CPU_QUOTA=$5
+  if [ -z "$LAMBDA_CPU_QUOTA" ]; then
+    echo "Lambda CPU quota is not present."
+    exit 1
+  fi
+
+  TAGS=( "${@:6}" )
+
+  # The default value. Source: https://docs.docker.com/config/containers/resource_constraints/#configure-the-default-cfs-scheduler
+  CGROUPS_CPU_PERIOD="100000"
+  CONTAINER_SIZE_OPTIONS="--memory=$LAMBDA_MEMORY"
+  CONTAINER_SIZE_OPTIONS="$CONTAINER_SIZE_OPTIONS --cpu-period=$CGROUPS_CPU_PERIOD"
+  CONTAINER_SIZE_OPTIONS="$CONTAINER_SIZE_OPTIONS --cpu-quota=$LAMBDA_CPU_QUOTA"
+else
+  TAGS=( "${@:4}" )
+fi
+
 # To set up such tags as lambda_port, lambda_timestamp, and LD_LIBRARY_PATH.
-TAGS=( "${@:6}" )
 TAGS=( "${TAGS[@]/#/'-e '}" )
 TAGS+=( "-e app_dir=/codebase/" )
 
-# The default value. Source: https://docs.docker.com/config/containers/resource_constraints/#configure-the-default-cfs-scheduler
-CGROUPS_CPU_PERIOD="100000"
 # The default value for Graalvisor and OpenWhisk.
 PROXY_PORT="8080"
 
@@ -59,9 +71,7 @@ docker run --privileged --rm --name="$LAMBDA_NAME" \
   --privileged \
   -p "$LAMBDA_PORT":"$PROXY_PORT" \
   -v "$ARGO_HOME"/benchmarks/data/apps:/codebase \
-  --memory "$LAMBDA_MEMORY" \
-  --cpu-period="$CGROUPS_CPU_PERIOD" \
-  --cpu-quota="$LAMBDA_CPU_QUOTA" \
+  $CONTAINER_SIZE_OPTIONS \
   "$CONTAINER_IMAGE" &
 
 # Writes PID of the init process.

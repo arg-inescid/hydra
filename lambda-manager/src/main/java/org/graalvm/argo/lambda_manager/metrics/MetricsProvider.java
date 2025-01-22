@@ -23,7 +23,7 @@ public class MetricsProvider {
             + "\"lambda_pool_lambdas\":%d, \"active_users\":%d, \"throughput\":%d, \"cinv\":%d, "
             + "\"lambdas_memory_pool\":[%s], \"graalos_individual_memory\":[%s]}";
 
-    private static final String LAMBDA_OBJECT = "{\"name\":\"%s\",\"pool_free\":%d,\"running\":%d},";
+    private static final String LAMBDA_OBJECT = "{\"name\":\"%s\",\"running\":%d},";
 
     public static String getMetricsRecord() {
         long timestamp = ElapseTimer.elapsedTime();
@@ -49,7 +49,7 @@ public class MetricsProvider {
             }
             activeUsers.add(lambda.getUsername());
 
-            sb.append(String.format(LAMBDA_OBJECT, lambda.getLambdaName(), lambda.getMemoryPool().getFreeMemory(), lambdaOpenRequests));
+            sb.append(String.format(LAMBDA_OBJECT, lambda.getLambdaName(), lambdaOpenRequests));
         }
         for (ConcurrentLinkedQueue<Lambda> lambdas : Configuration.argumentStorage.getLambdaPool().lambdaPool.values()) {
             lambdaPoolLambdas += lambdas.size();

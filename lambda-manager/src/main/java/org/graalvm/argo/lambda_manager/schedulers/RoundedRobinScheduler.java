@@ -37,6 +37,7 @@ public class RoundedRobinScheduler implements Scheduler {
         Lambda lambda = null;
         String username = Configuration.coder.decodeUsername(function.getName());
         boolean obtainedLambda = false;
+        boolean coldStart = false;
 
         while (Environment.notShutdownHookActive()) {
 
@@ -55,10 +56,9 @@ public class RoundedRobinScheduler implements Scheduler {
                     obtainedLambda = true;
                 } else {
                     Logger.log(Level.FINE, String.format("[function=%s, mode=%s]: The lambda pool is currently empty, waiting.", function.getName(), targetMode));
+                    coldStart = true;
                 }
             } else {
-                // Cancel the lambda timeout timer and increment the open request count.
-                lambda.incOpenRequests();
                 // We found a lambda, exit the loop.
                 break;
             }
@@ -91,7 +91,7 @@ public class RoundedRobinScheduler implements Scheduler {
             }
         }
 
-        Logger.log(Level.INFO, String.format("Found lambda %d.", lambda.getLambdaID()));
+        Logger.log(Level.INFO, String.format("Found lambda %d%s.", lambda.getLambdaID(), coldStart ? " (cold start)" : ""));
         return lambda;
     }
 
@@ -99,6 +99,5 @@ public class RoundedRobinScheduler implements Scheduler {
     public void reschedule(Lambda lambda, Function function) {
         // Decrement the open request count and reset the lambda timeout timer.
         lambda.decOpenRequests();
-        lambda.deallocateMemory(function);
     }
 }
