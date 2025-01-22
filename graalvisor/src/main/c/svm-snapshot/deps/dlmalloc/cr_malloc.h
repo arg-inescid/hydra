@@ -6,6 +6,7 @@
 #include "malloc_internal.h"
 #include <sys/types.h>    //NOTE: Added
 
+#define MAX_MSPACE 1024
 #define MAX_NOTIFS 64
 #define UNINITIALIZED -1
 

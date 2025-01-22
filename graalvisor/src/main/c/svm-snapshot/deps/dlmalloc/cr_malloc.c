@@ -4,6 +4,7 @@
 #include <stdarg.h>
 #include <unistd.h>
 #include <sys/syscall.h> /* for syscall(__NR_gettid) */
+#include <err.h>
 
 // Global memory pool.
 static mspace global = NULL;
@@ -14,40 +15,44 @@ static __thread int id = UNINITIALIZED;
 static __thread pid_t current_tid = 0;
 
 // mapping of TID to mspace.
-static mspace_mapping_t mspace_table[1024];
+static mspace_mapping_t mspace_table[MAX_MSPACE] = {0};
 // circular buffer containing notifications to add TID to parent's mspace.
 static family_t circular_notif_queue[MAX_NOTIFS];
 // counter to denote next position to save/obtain notification.
 static int producer_counter = 0;
 static int consumer_counter = 0;
 // counter to number of existing mspaces
-// TODO: set to 0
-static int mspace_counter = 5;
+static int mspace_counter = 1;
 // helper variable to determine first usage of mspace and creating global mspace
-static int first_entry = 1;
 static pid_t base_tid = 0;
 
 mspace_mapping_t* get_mspace_mapping() {
     return mspace_table;
 }
 
+// NOT USED ANYMORE
 mspace get_mspace() {
     // TODO: add seed as argument to return correct mspace
-    return mspace_table[5].mspace;
+    return mspace_table[1].mspace;
 }
 
 void join_mspace_when_inited(pid_t *future_child, pid_t parent) {
     family_t family = {future_child, parent};
-    // TODO: if wraps around -> error
     int position = producer_counter++ % MAX_NOTIFS;
+    // if producer wraps around and reaches consumer
+    if (position == consumer_counter % MAX_NOTIFS) {
+        err(1, "Full notifications queue, increase maximum notification amount");
+    }
     circular_notif_queue[position] = family;
 }
 
 void inherit_mspace(pid_t child, pid_t parent) {
     // TODO: get_id_from_tid(tid)
-    int found_id = 5;
+    int found_id = 1;
     mspace_mapping_t mapping = {child, mspace_table[found_id].mspace};
-    // TODO: check if mspace_counter > MAX_MSPACE = 1024
+    if (mspace_counter == MAX_MSPACE) {
+        err(1, "Full mspace table, increase maximum mspace_mapping amount");
+    }
     mspace_table[mspace_counter++] = mapping;
     // mspace cur = mspace_table[found_id].mspace;
     // cr_printf(STDOUT_FILENO, "share_mspace with mspace = %p found_id = %d\n", cur, found_id);
@@ -70,6 +75,8 @@ void init_global_mspace() {
         cr_printf(STDOUT_FILENO, "new global mspace -> %p\n", global);
         mspace_track_large_chunks(global, 1);
     }
+    mspace_mapping_t mapping = {current_tid, global};
+    mspace_table[0] = mapping;
 }
 
 void enter_mspace() {
@@ -81,11 +88,9 @@ void enter_mspace() {
     current_tid = syscall(__NR_gettid);
     mspace_mapping_t mapping = {current_tid, m};
     mspace_table[id] = mapping;
-    // cr_printf(STDOUT_FILENO, "enter_mspace id=%d has mspace=%p\n", id, mspace_table[id].mspace);
 }
 
 mspace find_mspace() {
-    // cr_printf(STDOUT_FILENO, "entered find_mspace() with id=%d global=%p\n", id, global);
 
     // if there are notifs to handle
     while (consumer_counter != producer_counter) {
@@ -110,7 +115,7 @@ mspace find_mspace() {
     // id not set && not main thread
     if (id == UNINITIALIZED) {
         // TODO: get_id_from_tid(tid);
-        int result = 6;
+        int result = 2;
         id = result;
         // mspace_mapping_t cur = mspace_table[id];
         // cr_printf(STDOUT_FILENO, "id changed from -1 to %d\n", id);
