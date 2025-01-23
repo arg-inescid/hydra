@@ -76,6 +76,11 @@ public class ArgumentStorage {
      */
     private MetricsScraper metricsScraper;
 
+    /**
+     * Task that terminates lambdas after they time out.
+     */
+    private LambdaKeepAliveTask lambdaKeepAliveTask;
+
     /* Private constructor. */
     private ArgumentStorage() { }
 
@@ -200,7 +205,10 @@ public class ArgumentStorage {
 
         ElapseTimer.init(); // Start internal timer.
 
+        // Initialize the lambda pool and start the reclaiming task.
         this.lambdaPool.setUp(lambdaPort, lambdaManagerConfiguration.getGateway(), lambdaManagerConfiguration.getLambdaPool());
+        // Initialize the lambda keep alive task that terminates the timed out lambdas.
+        this.lambdaKeepAliveTask = LambdaKeepAliveTask.createAndInit(Configuration.argumentStorage.getTimeout());
     }
 
     private void initErrorHandler() {
@@ -333,5 +341,9 @@ public class ArgumentStorage {
 
     public float getReclamationPercentage() {
         return reclamationPercentage;
+    }
+
+    public void tearDownLambdaKeepAliveTask() {
+        lambdaKeepAliveTask.close();
     }
 }

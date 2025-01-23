@@ -8,8 +8,7 @@ import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 import java.util.TimerTask;
 import java.util.logging.Level;
 
-
-public class DefaultLambdaShutdownHandler extends TimerTask {
+public class DefaultLambdaShutdownHandler implements Runnable {
 
     private final Lambda lambda;
     private final String reason;
@@ -25,20 +24,11 @@ public class DefaultLambdaShutdownHandler extends TimerTask {
         // Remove lambda from global state.
         LambdaManager.lambdas.remove(lambda);
 
-        // Reset the auto-shutdown timer.
-        if (lambda.getTimer() != null) {
-            lambda.getTimer().cancel();
-        }
-
         // Reset request counts.
         lambda.resetClosedRequestCount();
 
         // Shutdown lambda and replenish the lambda pool.
-        try {
-            Configuration.argumentStorage.getLambdaPool().disposeLambda(lambda);
-        } catch (InterruptedException interruptedException) {
-            Logger.log(Level.WARNING, Messages.ERROR_TAP_REMOVAL, interruptedException);
-        }
+        Configuration.argumentStorage.getLambdaPool().disposeLambda(lambda);
     }
 
 }

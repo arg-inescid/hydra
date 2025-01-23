@@ -68,17 +68,17 @@ public class LambdaPool {
 
     /**
      * Dispose the used lambda and replenish the pool with a new lambda.
-     * @throws InterruptedException
      */
-    public void disposeLambda(Lambda lambda) throws InterruptedException {
+    public void disposeLambda(Lambda lambda) {
         if (lambda.isIntact() && Environment.notShutdownHookActive()) {
             // The lambda was not used, we can add it to the pool right away.
             lambdaPool.get(lambda.getExecutionMode()).add(lambda);
         } else {
-            LambdaPoolUtils.shutdownLambda(lambda, lambdaType);
+            boolean success = LambdaPoolUtils.shutdownLambda(lambda, lambdaType);
             connectionPool.add(lambda.getConnection());
             // To avoid deadlock when new lambdas are forcefully terminated and created again.
-            if (Environment.notShutdownHookActive()) {
+            // Only replenish if managed to terminate the previous lambda successfully.
+            if (success && Environment.notShutdownHookActive()) {
                 Lambda newLambda = new Lambda(lambda.getExecutionMode());
                 LambdaPoolUtils.startLambda(lambdaPool, newLambda, lambda.getExecutionMode());
             }

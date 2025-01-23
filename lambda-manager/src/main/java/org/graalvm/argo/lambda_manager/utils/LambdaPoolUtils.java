@@ -148,25 +148,33 @@ public class LambdaPoolUtils {
         }
     }
 
-    public static void shutdownLambda(Lambda lambda, LambdaType lambdaType) throws InterruptedException {
+    public static boolean shutdownLambda(Lambda lambda, LambdaType lambdaType) {
+        boolean success;
         try {
             if (lambdaType == LambdaType.CONTAINER || lambdaType == LambdaType.CONTAINER_DEBUG) {
-                shutdownContainerLambda(lambda, Environment.CODEBASE + "/" + lambda.getLambdaName());
+                success = shutdownContainerLambda(lambda, Environment.CODEBASE + "/" + lambda.getLambdaName());
             } else if (lambdaType == LambdaType.VM_FIRECRACKER || lambdaType == LambdaType.VM_FIRECRACKER_SNAPSHOT) {
-                shutdownFirecrackerLambda(lambda, Environment.CODEBASE + "/" + lambda.getLambdaName(), lambdaType);
+                success = shutdownFirecrackerLambda(lambda, Environment.CODEBASE + "/" + lambda.getLambdaName(), lambdaType);
             } else if (lambdaType == LambdaType.GRAALOS_NATIVE) {
-                shutdownNativeLambda(lambda, Environment.CODEBASE + "/" + lambda.getLambdaName());
+                success = shutdownNativeLambda(lambda, Environment.CODEBASE + "/" + lambda.getLambdaName());
             } else {
                 Logger.log(Level.WARNING, String.format("Lambda ID=%d has no known execution mode: %s", lambda.getLambdaID(), lambda.getExecutionMode()));
+                success = false;
             }
         } catch (Throwable t) {
             Logger.log(Level.SEVERE, String.format("Lambda ID=%d failed to shutdown: %s", lambda.getLambdaID(), t.getMessage()));
             t.printStackTrace();
+            success = false;
         }
 
         if (lambdaType.isVM()) {
-            NetworkConfigurationUtils.removeTap(lambda.getConnection().tap);
+            try {
+                NetworkConfigurationUtils.removeTap(lambda.getConnection().tap);
+            } catch (InterruptedException e) {
+                Logger.log(Level.WARNING, Messages.ERROR_TAP_REMOVAL, e);
+            }
         }
+        return success;
     }
 
     private static void printStream(Level level, InputStream stream) throws IOException {
@@ -178,7 +186,7 @@ public class LambdaPoolUtils {
         }
     }
 
-    private static void shutdownFirecrackerLambda(Lambda lambda, String lambdaPath, LambdaType lambdaType) throws Throwable {
+    private static boolean shutdownFirecrackerLambda(Lambda lambda, String lambdaPath, LambdaType lambdaType) throws Throwable {
         String lambdaMode = lambda.getExecutionMode().toString();
         // Append lambda ID to command only if lambda was restored from snapshot (to terminate it properly).
         String lambdaId = lambdaType == LambdaType.VM_FIRECRACKER_SNAPSHOT ? String.valueOf(lambda.getLambdaID()) : "";
@@ -188,10 +196,12 @@ public class LambdaPoolUtils {
         if (p.exitValue() != 0) {
             Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", lambda.getLambdaID()));
             printStream(Level.WARNING, p.getErrorStream());
+            return false;
         }
+        return true;
     }
 
-    private static void shutdownContainerLambda(Lambda lambda, String lambdaPath) throws Throwable {
+    private static boolean shutdownContainerLambda(Lambda lambda, String lambdaPath) throws Throwable {
         String lambdaMode = lambda.getExecutionMode().toString();
         Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_container.sh", lambdaPath, lambdaMode,
                 lambda.getConnection().ip, String.valueOf(lambda.getConnection().port), lambda.getLambdaName()).start();
@@ -199,17 +209,21 @@ public class LambdaPoolUtils {
         if (p.exitValue() != 0) {
             Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", lambda.getLambdaID()));
             printStream(Level.WARNING, p.getErrorStream());
+            return false;
         }
+        return true;
     }
 
-    private static void shutdownNativeLambda(Lambda lambda, String lambdaPath) throws Throwable {
+    private static boolean shutdownNativeLambda(Lambda lambda, String lambdaPath) throws Throwable {
         File f = new File(Environment.LAMBDA_LOGS + "/" + lambda.getLambdaName() + "/terminate.log");
         Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_graalos_native.sh", lambdaPath, String.valueOf(lambda.getConnection().port)).redirectOutput(f).redirectError(f).start();
         p.waitFor();
         if (p.exitValue() != 0) {
             Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", lambda.getLambdaID()));
             printStream(Level.WARNING, p.getErrorStream());
+            return false;
         }
+        return true;
     }
 
     public static void startLambdaReclaimingDaemon(Map<LambdaExecutionMode, ConcurrentLinkedQueue<Lambda>> lambdaPool, LambdaManagerPool poolConfiguration) {
@@ -259,13 +273,13 @@ public class LambdaPoolUtils {
                 // Use Math.ceil to always reclaim at least one lambda.
                 int lambdasToReclaim = (int) Math.ceil(total * Configuration.argumentStorage.getReclamationPercentage());
                 long ts = System.currentTimeMillis();
-                LambdaManager.lambdas.stream().filter(l -> l.getExecutionMode() == mode && l.getOpenRequestCount() <= 0 && ts - l.getTimerTimestamp() > Configuration.argumentStorage.getLruReclamationPeriod()).sorted(this::compare)
+                LambdaManager.lambdas.stream().filter(l -> l.getExecutionMode() == mode && l.getOpenRequestCount() <= 0 && ts - l.getLastUsedTimestamp() > Configuration.argumentStorage.getLruReclamationPeriod()).sorted(this::compare)
                         .limit(lambdasToReclaim).parallel().forEach(l -> new DefaultLambdaShutdownHandler(l, "reclaiming").run());
             }
         }
 
         private int compare(Lambda l1, Lambda l2) {
-            return (int) (l1.getTimerTimestamp() - l2.getTimerTimestamp());
+            return (int) (l1.getLastUsedTimestamp() - l2.getLastUsedTimestamp());
         }
     }
 }
