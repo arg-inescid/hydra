@@ -17,7 +17,7 @@ static __thread pid_t current_tid = 0;
 // mapping of TID to mspace.
 static mspace_mapping_t mspace_table[MAX_MSPACE] = {0};
 // circular buffer containing notifications to add TID to parent's mspace.
-static family_t circular_notif_queue[MAX_NOTIFS];
+static notif_t circular_notif_queue[MAX_NOTIFS];
 // counter to denote next position to save/obtain notification.
 static int producer_counter = 0;
 static int consumer_counter = 0;
@@ -36,19 +36,33 @@ mspace get_mspace() {
     return mspace_table[1].mspace;
 }
 
-void join_mspace_when_inited(pid_t *future_child, pid_t parent) {
-    family_t family = {future_child, parent};
-    int position = producer_counter++ % MAX_NOTIFS;
-    // if producer wraps around and reaches consumer
-    if (position == consumer_counter % MAX_NOTIFS) {
-        err(1, "Full notifications queue, increase maximum notification amount");
+int get_id(pid_t tid) {
+    // cr_printf(STDOUT_FILENO, "inside get_id for tid=%d\n", tid);
+    for (int i = 0; i <= mspace_counter; i++) {
+        cr_printf(STDOUT_FILENO, "comparing tid=%d with table[i].tid=%d\n", tid, mspace_table[i].tid);
+        if (tid == mspace_table[i].tid) {
+            return i;
+        }
     }
-    circular_notif_queue[position] = family;
+    return -1;
 }
 
-void inherit_mspace(pid_t child, pid_t parent) {
-    // TODO: get_id_from_tid(tid)
-    int found_id = 1;
+void join_mspace_when_inited(pid_t *future_child, unsigned int mspace_id) {
+    notif_t child_notif = {future_child, mspace_id};
+    int position = producer_counter++ % MAX_NOTIFS;
+    // cr_printf(STDOUT_FILENO, "adding notif %p, %lu\n", future_child, mspace_id);
+    // if producer wraps around and reaches consumer
+    if (position == (consumer_counter - 1) % MAX_NOTIFS) {
+        err(1, "Full notifications queue, increase maximum notification amount");
+    }
+    circular_notif_queue[position] = child_notif;
+}
+
+void inherit_mspace(pid_t child, unsigned int mspace_id) {
+    int found_id = mspace_id + 1;
+    // int found_id = parent - base_tid + 1;
+    // cr_printf(STDOUT_FILENO, "inside inherit_mspace, found_id=%d, mspace_id=%u, current_tid=%d, mspace_counter=%d\n", found_id, mspace_id, current_tid, mspace_counter);
+
     mspace_mapping_t mapping = {child, mspace_table[found_id].mspace};
     if (mspace_counter == MAX_MSPACE) {
         err(1, "Full mspace table, increase maximum mspace_mapping amount");
@@ -58,12 +72,17 @@ void inherit_mspace(pid_t child, pid_t parent) {
     // cr_printf(STDOUT_FILENO, "share_mspace with mspace = %p found_id = %d\n", cur, found_id);
 }
 
-void consume_notif() {
-    int position = consumer_counter++ % MAX_NOTIFS;
-    family_t family = circular_notif_queue[position];
-    // int my_tid = syscall(__NR_gettid);
-    // cr_printf(STDOUT_FILENO, "consume_notif child tid = %d parent tid = %d @ MY_TID = %d\n", *family.child, family.parent, my_tid);
-    inherit_mspace(*family.child, family.parent);
+int consume_notif() {
+    int position = consumer_counter % MAX_NOTIFS;
+    notif_t notif = circular_notif_queue[position];
+    // cr_printf(STDOUT_FILENO, "consume_notif child tid = %d mspace_id = %lu @ current_tid = %d\n", *notif.child, notif.mspace_id, current_tid);
+    // cr_printf(STDOUT_FILENO, "consume_notif child=%p\n", notif.child);
+    if (!*notif.child) {
+        return 0;
+    }
+    consumer_counter++;
+    inherit_mspace(*notif.child, notif.mspace_id);
+    return 1;
 }
 
 void init_global_mspace() {
@@ -75,15 +94,19 @@ void init_global_mspace() {
         cr_printf(STDOUT_FILENO, "new global mspace -> %p\n", global);
         mspace_track_large_chunks(global, 1);
     }
-    mspace_mapping_t mapping = {current_tid, global};
-    mspace_table[0] = mapping;
 }
 
-void enter_mspace() {
+void enter_mspace(int mspace_id) {
+
+    cr_printf(STDOUT_FILENO, "enter_mspace\n");
+    if (!base_tid) {
+        base_tid = syscall(__NR_gettid);
+    }
+
     id = mspace_counter++;
+    // id = mspace_id + 1;
     // if mspace for sandbox doesnt exist
     mspace m = create_mspace(0, 0);
-    // TODO: use SEED to check if mspace for sandbox has already been created
 
     current_tid = syscall(__NR_gettid);
     mspace_mapping_t mapping = {current_tid, m};
@@ -94,11 +117,11 @@ mspace find_mspace() {
 
     // if there are notifs to handle
     while (consumer_counter != producer_counter) {
-        consume_notif();
-    }
-
-    if (!base_tid) {
-        base_tid = syscall(__NR_gettid);
+        int consumed = consume_notif();
+        // if next thread in notifs hasn't been created yet, stop consuming notifs
+        if (!consumed) {
+            break;
+        }
     }
 
     if (!current_tid) {
@@ -106,23 +129,33 @@ mspace find_mspace() {
     }
 
     // id not set && main thread
-    if (id == UNINITIALIZED && current_tid == base_tid) {
+    if (id == UNINITIALIZED && ((!base_tid) || (current_tid < base_tid))) {
         init_global_mspace();
-        id = 0;
+        id = GLOBAL;
         return global;
     }
 
     // id not set && not main thread
     if (id == UNINITIALIZED) {
+        cr_printf(STDOUT_FILENO, "inside id == UNINITIALIZED with tid=%d\n", current_tid);
         // TODO: get_id_from_tid(tid);
-        int result = 2;
+        int result = get_id(current_tid);
         id = result;
+
+        // if CURRENT_MODE == RESTORE we won't find the newly created TIDS
+        if (result == -1) {
+            cr_printf(STDOUT_FILENO, "get_id returned -1 lol\n");
+            // TODO: this doesn't garantee the correct id if more apps are running. use mspace counter..?
+            id = current_tid - base_tid;
+
+        }
+        cr_printf(STDOUT_FILENO, "result id = %d\n", id);
         // mspace_mapping_t cur = mspace_table[id];
         // cr_printf(STDOUT_FILENO, "id changed from -1 to %d\n", id);
 	    // cr_printf(STDOUT_FILENO, "cur.tid = %d cur.mspace = %p\n", cur.tid, cur.mspace);
         return mspace_table[id].mspace;
 
-    } else if (id == 0) {
+    } else if (id == GLOBAL) {
         // cr_printf(STDOUT_FILENO, "id=0 and global != NULL\n", id);
 	    return global;
 
@@ -136,7 +169,7 @@ mspace find_mspace() {
 
 void leave_mspace() {
     if (global) {
-        id = 0;
+        id = GLOBAL;
     } else {
         id = UNINITIALIZED;
     }

@@ -276,11 +276,11 @@ void handle_clone(int meta_snap_fd, thread_t* threads, long long unsigned int* a
 #endif
 }
 
-void handle_clone3(int meta_snap_fd, thread_t* threads, struct clone_args *cargs, unsigned int requester_tid) {
+void handle_clone3(int meta_snap_fd, thread_t* threads, struct clone_args *cargs, unsigned int seed) {
     // parent_tid is the address on the parent where the child's tid will be saved (thread hasnt been created yet)
     // requester_tid is the tid of the __NR_clone3 caller
 #ifdef USE_DLMALLOC
-    join_mspace_when_inited((pid_t *) cargs->parent_tid, requester_tid); 
+    join_mspace_when_inited((pid_t *) cargs->parent_tid, seed);
 #endif
     print_clone3(cargs);
 #ifdef THREADS
@@ -459,7 +459,7 @@ void handle_syscalls(size_t seed, int seccomp_fd, int* finished, int meta_snap_f
                 struct clone_args* cargs = (struct clone_args*) args[0];
                 if (should_follow_clone3(cargs, (size_t) args[1])) {
                     unsigned int requester_tid = req->pid;
-                    handle_clone3(meta_snap_fd, threads, cargs, requester_tid);
+                    handle_clone3(meta_snap_fd, threads, cargs, seed);
                     active_threads++;
                     resp->flags = SECCOMP_USER_NOTIF_FLAG_CONTINUE;
                 } else {

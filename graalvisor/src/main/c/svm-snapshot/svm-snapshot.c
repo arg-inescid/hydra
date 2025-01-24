@@ -38,6 +38,8 @@ typedef struct {
     int requests;
     // Integer used as a boolean to decide if the function has terminated.
     int finished;
+    // The seed is used to pass the mspace id.
+    unsigned int seed;
 } checkpoint_worker_args_t;
 
 typedef struct {
@@ -128,11 +130,12 @@ void run_svm(
         const char* fin,
         char* fout,
         isolate_abi_t* abi,
-        graal_isolate_t** isolate) {
+        graal_isolate_t** isolate,
+        unsigned int seed) {
     graal_isolatethread_t *isolatethread = NULL;
 
 #ifdef USE_DLMALLOC
-    enter_mspace();
+    enter_mspace(seed);
 #endif
 
     // Load function and initialize abi.
@@ -172,7 +175,7 @@ void* checkpoint_worker(void* args) {
     // Prepare and run function.
 #ifdef USE_DLMALLOC
     enter_mspace();
-    run_svm(wargs->fpath, wargs->concurrency, wargs->requests, svm->fin, svm->fout, svm->abi, &(svm->isolate));
+    run_svm(wargs->fpath, wargs->concurrency, wargs->requests, svm->fin, svm->fout, svm->abi, &(svm->isolate), wargs->seed);
 #endif
     // TODO: leave_mspace
 
@@ -277,6 +280,7 @@ svm_sandbox_t* checkpoint_svm(
     wargs->fpath = fpath;
     wargs->concurrency = concurrency;
     wargs->requests = requests;
+    wargs.seed = seed;
 
     if (set_next_pid(1000*(seed+1)) == -1) {
         err("set_next_pid");
@@ -379,7 +383,7 @@ svm_sandbox_t* restore_svm(
 #endif
 
 #ifdef USE_DLMALLOC
-        enter_mspace();
+        enter_mspace(seed);
 #endif
         restore(meta_snap_path, mem_snap_path, abi, isolate);
 #ifdef PERF

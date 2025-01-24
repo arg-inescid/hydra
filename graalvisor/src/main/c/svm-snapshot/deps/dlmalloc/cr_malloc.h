@@ -9,23 +9,25 @@
 #define MAX_MSPACE 1024
 #define MAX_NOTIFS 64
 #define UNINITIALIZED -1
+#define GLOBAL -2
 
 typedef struct mspace_mapping {
     pid_t tid; // TODO - what to use here is not clear.
     mspace mspace;
 } mspace_mapping_t;
 
-typedef struct family {
+// Notification with future thread id and corresponding mspace_id
+typedef struct notif {
     pid_t *child;
-    pid_t parent;
-} family_t;
+    unsigned int mspace_id;
+} notif_t;
 
 // TODO - add the other memory allocated functions.
 
 mspace_mapping_t* get_mspace_mapping();
 mspace get_mspace();
 void enter_mspace();
-void join_mspace_when_inited(pid_t*, pid_t);
+void join_mspace_when_inited(pid_t*, unsigned int);
 void leave_mspace();
 
 #endif

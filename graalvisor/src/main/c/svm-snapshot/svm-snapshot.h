@@ -84,11 +84,24 @@ svm_sandbox_t* restore_svm(
     const char* meta_snap_path,
     // Path where to store memory dumps.
     const char* mem_snap_path,
+    // Pointer to the abi structure where the function pointers will be stored.
+    isolate_abi_t* abi,
+    // Output argument used to save the pointer to the restored isolate.
+    graal_isolate_t** isolate,
     // The seed is used to control which virtual memory ranges the svm instance
     // will used. Each seed value represents a 16TB virtual memory range. When
     // calling restore, the user must make sure there is no restoredsvm instance
     // using the same range.
-    unsigned long seed,
+    unsigned long seed);
+
+// Runs the abi entrypoint in an already loaded substrate vm instance.
+void run_entrypoint(
+    // Pointed to the abi data structure.
+    isolate_abi_t* abi,
+    // Pointer to the target isolate.
+    graal_isolate_t* isolate,
+    // Pointer to the target isolate thread.
+    graal_isolatethread_t* isolatethread,
     // Number of concurrent threads that will invoke the function code.
     unsigned int concurrency,
     // Number of invocations each thread will perform.
@@ -127,6 +140,7 @@ void run_svm(
     // Pointer to the abi structure where the function pointers will be stored.
     isolate_abi_t* abi,
     // Output argument used to save the pointer to the restored isolate.
-    graal_isolate_t** isolate);
-
+    graal_isolate_t** isolate,
+    // Seed represents mspace_id used in cr_malloc.
+    unsigned long seed);
 #endif
