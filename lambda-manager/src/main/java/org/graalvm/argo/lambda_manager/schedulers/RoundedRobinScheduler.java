@@ -97,7 +97,7 @@ public class RoundedRobinScheduler implements Scheduler {
 
     @Override
     public void reschedule(Lambda lambda, Function function) {
-        // Decrement the open request count and reset the lambda timeout timer.
+        // Decrement the open request count.
         lambda.decOpenRequests();
     }
 }
