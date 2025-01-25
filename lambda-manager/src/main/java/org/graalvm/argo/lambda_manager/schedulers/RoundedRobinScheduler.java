@@ -48,7 +48,7 @@ public class RoundedRobinScheduler implements Scheduler {
                 Lambda newLambda = Configuration.argumentStorage.getLambdaPool().getLambda(targetMode);
                 if (newLambda != null) {
                     Logger.log(Level.INFO, "Obtained a new lambda from the pool.");
-                    newLambda.resetTimer();
+                    newLambda.updateLastUsed();
                     LambdaManager.lambdas.add(newLambda);
                     if (Configuration.argumentStorage.isOptimizationPipelineEnabled()) {
                         function.updateStatus(targetMode);
@@ -97,7 +97,7 @@ public class RoundedRobinScheduler implements Scheduler {
 
     @Override
     public void reschedule(Lambda lambda, Function function) {
-        // Decrement the open request count and reset the lambda timeout timer.
+        // Decrement the open request count.
         lambda.decOpenRequests();
     }
 }

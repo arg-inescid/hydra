@@ -22,7 +22,7 @@ public class ShutdownHook extends Thread {
     private void shutdownLambdas() {
         ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         for (Lambda lambda : LambdaManager.lambdas) {
-            executor.execute(new DefaultLambdaShutdownHandler(lambda, "LM shutdown (active lambdas)")::run);
+            executor.execute(new DefaultLambdaShutdownHandler(lambda, "LM shutdown (active lambdas)"));
         }
         LambdaManager.lambdas.clear();
         executor.shutdown();
@@ -45,6 +45,7 @@ public class ShutdownHook extends Thread {
                 shutdownLambdas();
                 Configuration.argumentStorage.getLambdaPool().tearDown();
                 Configuration.argumentStorage.tearDownMetricsScraper();
+                Configuration.argumentStorage.tearDownLambdaKeepAliveTask();
                 LambdaType lambdaType = Configuration.argumentStorage.getLambdaType();
                 if (lambdaType == LambdaType.VM_FIRECRACKER || lambdaType == LambdaType.VM_FIRECRACKER_SNAPSHOT) {
                     deleteDevmapperBase();

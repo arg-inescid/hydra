@@ -3,11 +3,9 @@ package org.graalvm.argo.lambda_manager.core;
 import org.graalvm.argo.lambda_manager.optimizers.FunctionStatus;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
-import org.graalvm.argo.lambda_manager.processes.lambda.DefaultLambdaShutdownHandler;
 
 import java.util.Iterator;
 import java.util.Set;
-import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -28,8 +26,7 @@ public class Lambda {
 	/** Name of the owner of this lambda. */
 	private String username;
 
-	private Timer timer;
-	private long timerTimestamp;
+	private long lastUsedTimestamp;
 	private LambdaConnection connection;
 	private final LambdaExecutionMode executionMode;
 
@@ -56,7 +53,7 @@ public class Lambda {
 
     public void decOpenRequests() {
         if (openRequestCount.decrementAndGet() == 0) {
-            resetTimer();
+            updateLastUsed();
         }
         ++closedRequestCount;
     }
@@ -73,20 +70,8 @@ public class Lambda {
 		return openRequestCount.get();
 	}
 
-	public Timer getTimer() {
-		return timer;
-	}
-
-	public void resetTimer() {
-		Timer oldTimer = timer;
-		Timer newTimer = new Timer();
-		newTimer.schedule(new DefaultLambdaShutdownHandler(this, "timer"), Configuration.argumentStorage.getTimeout()
-				+ (int) (Configuration.argumentStorage.getTimeout() * Math.random()));
-		timer = newTimer;
-		timerTimestamp = System.currentTimeMillis();
-		if (oldTimer != null) {
-			oldTimer.cancel();
-		}
+	public void updateLastUsed() {
+		lastUsedTimestamp = System.currentTimeMillis();
 	}
 
 	public LambdaConnection getConnection() {
@@ -179,8 +164,8 @@ public class Lambda {
 	    return username;
 	}
 
-    public long getTimerTimestamp() {
-        return timerTimestamp;
+    public long getLastUsedTimestamp() {
+        return lastUsedTimestamp;
     }
 
     private void setRequiresFunctionUpload(Function function) {
@@ -215,11 +200,7 @@ public class Lambda {
 
     // Booking a lambda primarily matters for non-collocatable modes.
     public boolean tryBookLambda(Function function) {
-        // Increment the open request count and cancel the lambda timeout timer if available (replaces incOpenRequests).
-        boolean available = function.canCollocateInvocation() ? openRequestCount.incrementAndGet() > 0 : openRequestCount.compareAndSet(0, 1);
-        if (available) {
-            timer.cancel();
-        }
-        return available;
+        // Increment the open request count (replaces incOpenRequests).
+        return function.canCollocateInvocation() ? openRequestCount.incrementAndGet() > 0 : openRequestCount.compareAndSet(0, 1);
     }
 }

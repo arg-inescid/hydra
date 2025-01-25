@@ -46,7 +46,7 @@ public class LambdaManagerConfiguration implements Serializable {
      * @param gateway - The default PC's gateway address.
      * @param maxMemory - Maximum memory that can be used by lambdas in total (MBs).
      * @param maxTaps- Maximum number of taps available for lambdas.
-     * @param timeout - Time during which lambda can stay inactive.
+     * @param timeout - Time during which lambda can stay inactive (in seconds).
      * @param healthCheck - Lambda's health will be checked in this time-span, after the first
      *            health response, no more checks are made.
      * @param lambdaPort - In which port the lambda will receive its requests.
