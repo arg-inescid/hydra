@@ -83,6 +83,7 @@ int main(int argc, char** argv) {
 
     // If in restore mode, start by restoring from the snapshot.
     if (CURRENT_MODE == RESTORE) {
+        // modify to create thread and move to svm-snapshot.c
         graal_isolate_t* isolate;
         graal_isolatethread_t *isolatethread = NULL;
         isolate_abi_t abi;
