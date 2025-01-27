@@ -36,7 +36,7 @@ void checkpoint_svm(
     // restored isolate.
     graal_isolate_t** isolate);
 
-// Loads a checkpointed substrate vm instance.
+// Loads a checkpointed substrate vm instance and then runs it.
 void restore_svm(
     // Path of the function library that will be dlopened.
     const char* fpath,
@@ -44,6 +44,24 @@ void restore_svm(
     const char* meta_snap_path,
     // Path where to store memory dumps.
     const char* mem_snap_path,
+    // The seed is used to control which virtual memory ranges the svm instance
+    // will used. Each seed value represents a 16TB virtual memory range. When
+    // calling restore, the user must make sure there is no restoredsvm instance
+    // using the same range.
+    unsigned long seed,
+    // Number of concurrent threads that will invoke the function code.
+    unsigned int concurrency,
+    // Number of invocations each thread will perform.
+    unsigned int requests,
+    // Arguments passed to the function upon each invocation.
+    const char* fin,
+    // Output buffer where the output of the invocation will be placed.
+    // Note that if multiple invocations are performed (as a result of concurrency
+    // or requests), only the output of the first request will be saved.
+    char* fout,
+    // Length of the output buffer. If the output string is larger, a warning
+    // is printed to stdout and a '\0' is placed at outbuf[outbuf_len - 1].
+    unsigned long fout_len,
     // Pointer to the abi structure where the function pointers will be stored.
     isolate_abi_t* abi,
     // Output argument used to save the pointer to the restored isolate.

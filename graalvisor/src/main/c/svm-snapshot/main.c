@@ -72,6 +72,10 @@ void init_args(int argc, char** argv) {
 }
 
 int main(int argc, char** argv) {
+    isolate_abi_t abi;
+    graal_isolate_t* isolate = NULL;
+    
+    // INput and OUTput for function ran by isolate
     const char* fin = "(null)";
     char  fout[FOUT_LEN];
 
@@ -81,24 +85,11 @@ int main(int argc, char** argv) {
     // Disable buffering for stdout.
     setvbuf(stdout, NULL, _IONBF, 0);
 
-    // If in restore mode, start by restoring from the snapshot.
     if (CURRENT_MODE == RESTORE) {
-        // modify to create thread and move to svm-snapshot.c
-        graal_isolate_t* isolate;
-        graal_isolatethread_t *isolatethread = NULL;
-        isolate_abi_t abi;
-        restore_svm(FPATH, "metadata.snap", "memory.snap", &abi, &isolate);
-        abi.graal_attach_thread(isolate, &isolatethread);
-        run_entrypoint(&abi, isolate, isolatethread, CONC, ITERS, fin, fout, FOUT_LEN);
-        // Note: from manual (https://www.graalvm.org/22.1/reference-manual/native-image/C-API/):
-        // 'no code may still be executing in the isolate thread's context.' Since we cannot
-        // guarantee that threads may be left behind, it is not safe to detach.
-        //abi.graal_detach_thread(isolatethread);
+        restore_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, FOUT_LEN, &abi, &isolate);
     } else if (CURRENT_MODE == CHECKPOINT) {
         checkpoint_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, FOUT_LEN, NULL, NULL);
     } else {
-        graal_isolate_t* isolate;
-        isolate_abi_t abi;
         run_svm(FPATH, CONC, ITERS, fin, fout, FOUT_LEN, &abi, &isolate);
     }
 

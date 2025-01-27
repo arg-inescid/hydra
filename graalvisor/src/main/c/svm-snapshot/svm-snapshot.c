@@ -277,7 +277,21 @@ void checkpoint_svm(
     }
 }
 
-void restore_svm(const char* fpath, const char* meta_snap_path, const char* mem_snap_path, isolate_abi_t* abi, graal_isolate_t** isolate) {
+void restore_svm(
+        const char* fpath,
+        const char* meta_snap_path,
+        const char* mem_snap_path,
+        size_t seed,
+        unsigned int concurrency,
+        unsigned int requests,
+        const char* fin,
+        char* fout,
+        size_t fout_len,
+        isolate_abi_t* abi,
+        graal_isolate_t** isolate) {
+
+    graal_isolatethread_t *isolatethread = NULL;
+
 #ifdef PERF
         struct timeval st, et;
         gettimeofday(&st, NULL);
@@ -290,4 +304,11 @@ void restore_svm(const char* fpath, const char* meta_snap_path, const char* mem_
 #ifdef DEBUG
         check_proc_maps("after_restore.log", NULL);
 #endif
+
+    abi->graal_attach_thread(*isolate, &isolatethread);
+    run_entrypoint(abi, *isolate, isolatethread, concurrency, requests, fin, fout, fout_len);
+    // Note: from manual (https://www.graalvm.org/22.1/reference-manual/native-image/C-API/):
+    // 'no code may still be executing in the isolate thread's context.' Since we cannot
+    // guarantee that threads may be left behind, it is not safe to detach.
+    //abi.graal_detach_thread(isolatethread);
 }
