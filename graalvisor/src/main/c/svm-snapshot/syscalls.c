@@ -277,6 +277,8 @@ void handle_clone(int meta_snap_fd, thread_t* threads, long long unsigned int* a
 }
 
 void handle_clone3(int meta_snap_fd, thread_t* threads, struct clone_args *cargs) {
+    // parent_tid is the address on the parent where the child's tid will be saved (thread hasnt been created yet)
+    // requester_tid is the tid of the __NR_clone3 caller
     print_clone3(cargs);
 #ifdef THREADS
     list_threads_push(threads, (pid_t *) cargs->child_tid, cargs);
@@ -300,8 +302,8 @@ void* allow_syscalls(void* args) {
         return NULL;
     }
 
-    struct seccomp_notif *req = (struct seccomp_notif*)cr_malloc(sizes.seccomp_notif);
-    struct seccomp_notif_resp *resp = (struct seccomp_notif_resp*)cr_malloc(sizes.seccomp_notif_resp);
+    struct seccomp_notif *req = (struct seccomp_notif*)malloc(sizes.seccomp_notif);
+    struct seccomp_notif_resp *resp = (struct seccomp_notif_resp*)malloc(sizes.seccomp_notif_resp);
     struct pollfd fds[1] = {
         {
             .fd  = seccomp_fd,
@@ -361,8 +363,8 @@ void handle_syscalls(size_t seed, int seccomp_fd, int* finished, int meta_snap_f
         return;
     }
 
-    struct seccomp_notif *req = (struct seccomp_notif*)cr_malloc(sizes.seccomp_notif);
-    struct seccomp_notif_resp *resp = (struct seccomp_notif_resp*)cr_malloc(sizes.seccomp_notif_resp);
+    struct seccomp_notif *req = (struct seccomp_notif*)malloc(sizes.seccomp_notif);
+    struct seccomp_notif_resp *resp = (struct seccomp_notif_resp*)malloc(sizes.seccomp_notif_resp);
     struct pollfd fds[1] = {
         {
             .fd  = seccomp_fd,
@@ -516,8 +518,8 @@ void handle_syscalls(size_t seed, int seccomp_fd, int* finished, int meta_snap_f
         }
     }
 
-    cr_free(req);
-    cr_free(resp);
+    free(req);
+    free(resp);
 }
 
 int install_seccomp_filter() {

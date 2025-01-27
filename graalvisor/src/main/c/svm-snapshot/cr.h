@@ -6,6 +6,7 @@
 #include "svm-snapshot.h"
 #include "list_mappings.h"
 #include "list_threads.h"
+#include "deps/dlmalloc/cr_malloc.h"
 
 /*
  * Limitations:
@@ -35,13 +36,6 @@
 // If defined, enables performance optimizations.
 #define OPT
 
-// Forward declarations for our custom memory allocator (Doug Lea's).
-void* dlmalloc(size_t);
-void  dlfree(void*);
-
-#define cr_malloc dlmalloc
-#define cr_free   dlfree
-
 #define log(format, args...) do { cr_printf(STDOUT_FILENO, format, ## args); } while(0)
 #ifdef DEBUG
     #define dbg(format, args...) do { cr_printf(STDOUT_FILENO, format, ## args); } while(0)
@@ -49,6 +43,12 @@ void  dlfree(void*);
     #define dbg(format, args...) do { } while(0)
 #endif
 #define err(format, args...) do { cr_printf(STDERR_FILENO, format, ## args); } while(0)
+
+#ifdef USE_DLMALLOC
+    #define cr_get_mspace_count() get_mspace_count()
+#else
+    #define cr_get_mspace_count() NULL
+#endif
 
 // Goes through process memory maps and prints it to a file while validating our maps.
 void check_proc_maps(char* filename, mapping_t * head);

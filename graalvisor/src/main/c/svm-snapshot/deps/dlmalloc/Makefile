@@ -1,7 +1,12 @@
-dlflags = -DHAVE_MORECORE=0 -DUSE_DL_PREFIX
+dlflags = -DHAVE_MORECORE=0 -DUSE_DL_PREFIX -DONLY_MSPACES -DMALLOC_INSPECT_ALL=1 # for mspace_inspect_all
 
-all: malloc.c
-	gcc -O3 -Wall $(dlflags) -Wno-maybe-uninitialized  -c malloc.c
+all: malloc.c malloc.h
+	gcc -O0 -g3 -Wall $(dlflags) -Wno-maybe-uninitialized  -c malloc.c
+	gcc -O0 -g3 -Wall $(dlflags) -Wno-maybe-uninitialized  -c cr_malloc.c
+
+test: all cr_malloc.c cr_malloc.h main.c
+	gcc -O0 -g3 -Wall $(dlflags) -Wno-maybe-uninitialized  -c main.c
+	gcc -O0 -g3 -Wall -o main main.o cr_malloc.o malloc.o ../printf/printf.o ../../cr_logger.o
 
 clean:
-	rm -f *.o
+	rm -f *.o main

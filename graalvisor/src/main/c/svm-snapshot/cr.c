@@ -28,6 +28,7 @@
 int next_reserved_fd = RESERVED_FDS;
 
 // Tags used in the meta snapshot fd.
+#define MSPACE_TAG  -5
 #define THREAD_TAG  -4
 #define MEMORY_TAG  -3
 #define ABI_TAG     -2
@@ -369,7 +370,8 @@ void* restore_thread_internal(void* tdata) {
     // Note: we need to perform this copy because the cpy verson was allocated by the caller.
     memcpy(&context, tdata, sizeof(thread_context_t));
     memcpy(&cargs, ((char*)tdata) + sizeof(thread_context_t), sizeof(struct clone_args));
-    cr_free(tdata);
+    // Note: we dont free this on purpouse. This memory is allocated in another mspace
+    // free(tdata);
 
     // Note: this line reconstructs the deep-copied data structure.
     context.ctx.uc_mcontext.fpregs = &(context.fpstate);
@@ -399,7 +401,7 @@ void restore_thread(int meta_snap_fd) {
     pthread_t thread;
     struct clone_args* cargs;
     pid_t* child_ptr;
-    char* restore_tdata = cr_malloc(sizeof(thread_context_t) + sizeof(struct clone_args));
+    char* restore_tdata = malloc(sizeof(thread_context_t) + sizeof(struct clone_args));
 
     if (restore_tdata == NULL) {
         err("error: failed to alloc thread data\n");
@@ -517,6 +519,39 @@ void restore_abi(int meta_snap_fd, isolate_abi_t* abi) {
         return;
     }
     print_abi(abi);
+}
+
+void print_mspace(mstate mspace){
+    dbg("seg.base @ %16p, dv @ %16p with size %zu\n", mspace->seg.base, mspace->dv, mspace->dvsize);
+}
+
+void checkpoint_mem_allocator(int meta_snap_fd, mspace* mapping){
+    int tag = MSPACE_TAG;
+    int mspace_count = 0;
+    if (write(meta_snap_fd, &tag, sizeof(int)) != sizeof(int)) {
+        perror("error: failed to serialize mspace tag");
+    }
+#ifdef USE_DLMALLOC
+    mspace_count = get_mspace_count();
+    if (write(meta_snap_fd, &mspace_count, sizeof(int)) != sizeof(int)) {
+        perror("error: failed to serialize mspace count");
+    }
+#endif /* USE_DLMALLOC */
+    dbg("now checkpointing mspace_mapping\n");
+    if (write(meta_snap_fd, mapping, sizeof(mspace) * mspace_count) != sizeof(mspace) * mspace_count) {
+        perror("error: failed to serialize mspace mapping");
+    }
+}
+
+void restore_mem_allocator(int meta_snap_fd, mspace* mapping) {
+    int mspace_count;
+    if (read(meta_snap_fd, &mspace_count, sizeof(int)) != sizeof(int)) {
+        perror("error: failed to deserialize mspace count");
+    }
+    dbg("now restoring mspace_mapping\n");
+    if (read(meta_snap_fd, mapping, sizeof(mspace) * mspace_count) != sizeof(mspace) * mspace_count) {
+        perror("error: failed to deserialize mspace mapping");
+    }
 }
 
 void checkpoint_syscall(int meta_snap_fd, int tag, void* syscall_args, size_t size) {
@@ -667,6 +702,9 @@ void restore_close(int meta_snap_fd) {
 
 void checkpoint(int meta_snap_fd, int mem_snap_fd, mapping_t* mappings, thread_t* threads, isolate_abi_t* abi, graal_isolate_t* isolate) {
     checkpoint_mappings(meta_snap_fd, mem_snap_fd, mappings);
+    #ifdef USE_DLMALLOC
+        checkpoint_mem_allocator(meta_snap_fd, get_mspace_mapping());
+    #endif /* USE_DLMALLOC */
     checkpoint_abi(meta_snap_fd, abi);
     checkpoint_isolate(meta_snap_fd, isolate);
     if (!list_threads_empty(threads)) {
@@ -746,6 +784,11 @@ void restore(const char* meta_snap_path, const char* mem_snap_path, isolate_abi_
         case ABI_TAG:
             restore_abi(meta_snap_fd, abi);
             break;
+#ifdef USE_DLMALLOC
+        case MSPACE_TAG:
+            restore_mem_allocator(meta_snap_fd, get_mspace_mapping());
+            break;
+#endif /* USE_DLMALLOC */
         case MEMORY_TAG:
             restore_memory(meta_snap_fd, mem_snap_fd);
             break;

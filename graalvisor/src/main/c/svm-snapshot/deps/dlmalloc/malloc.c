@@ -2528,7 +2528,7 @@ typedef struct malloc_segment* msegmentptr;
 
   Bin maps
     There is one bit map for small bins ("smallmap") and one for
-    treebins ("treemap).  Each bin sets its bit when non-empty, and
+    treebins ("treemap"). Each bin sets its bit when non-empty, and
     clears the bit when empty.  Bit operations are then used to avoid
     bin-by-bin searching -- nearly all "search" is done without ever
     looking at bins that won't be selected.  The bit maps
