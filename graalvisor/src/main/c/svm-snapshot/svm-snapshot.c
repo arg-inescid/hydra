@@ -49,6 +49,23 @@ typedef struct {
 } checkpoint_worker_args_t;
 
 typedef struct {
+    // ABI to create, invoke, destroy isolates.
+    isolate_abi_t abi;
+    // Pointer to the isolate.
+    graal_isolate_t* isolate;
+    // Path of the function library.
+    const char* fin;
+    // Return string from function invocation.
+    char* fout;
+    // Length of the output buffer.
+    size_t fout_len;
+    // Number of parallel threads handling requests.
+    int concurrency;
+    // Number of requests to perform.
+    int requests;
+} restore_worker_args_t;
+
+typedef struct {
      // ABI to create, invoke, destroy isolates.
     isolate_abi_t* abi;
     // Pointer to the isolate.
@@ -173,6 +190,16 @@ void* checkpoint_worker(void* args) {
     return NULL;
 }
 
+void* restore_worker(void* args) {
+    restore_worker_args_t* wargs = (restore_worker_args_t*) args;
+    graal_isolatethread_t *isolatethread = NULL;
+
+    (wargs->abi).graal_attach_thread(wargs->isolate, &isolatethread);
+    // Prepare and run function.
+    run_entrypoint(&(wargs->abi), wargs->isolate, isolatethread, wargs->concurrency, wargs->requests, wargs->fin, wargs->fout, wargs->fout_len);
+    return NULL;
+}
+
 void checkpoint_svm(
         const char* fpath,
         const char* meta_snap_path,
@@ -290,7 +317,8 @@ void restore_svm(
         isolate_abi_t* abi,
         graal_isolate_t** isolate) {
 
-    graal_isolatethread_t *isolatethread = NULL;
+    pthread_t worker;
+    restore_worker_args_t wargs;
 
 #ifdef PERF
         struct timeval st, et;
@@ -305,8 +333,19 @@ void restore_svm(
         check_proc_maps("after_restore.log", NULL);
 #endif
 
-    abi->graal_attach_thread(*isolate, &isolatethread);
-    run_entrypoint(abi, *isolate, isolatethread, concurrency, requests, fin, fout, fout_len);
+    memset(&wargs, 0, sizeof(restore_worker_args_t));
+    wargs.abi = *abi;
+    wargs.isolate = *isolate;
+    wargs.fin = fin;
+    wargs.fout = fout;
+    wargs.fout_len = fout_len;
+    wargs.concurrency = concurrency;
+    wargs.requests = requests;
+
+    // Launch worker thread and wait for it to finish.
+    pthread_create(&worker, NULL, restore_worker, &wargs);
+    pthread_join(worker, NULL);
+
     // Note: from manual (https://www.graalvm.org/22.1/reference-manual/native-image/C-API/):
     // 'no code may still be executing in the isolate thread's context.' Since we cannot
     // guarantee that threads may be left behind, it is not safe to detach.
