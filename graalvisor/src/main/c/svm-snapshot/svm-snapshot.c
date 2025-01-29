@@ -342,6 +342,10 @@ void restore_svm(
     wargs.concurrency = concurrency;
     wargs.requests = requests;
 
+    if (set_next_pid(1000) == -1) {
+        return;
+    }
+
     // Launch worker thread and wait for it to finish.
     pthread_create(&worker, NULL, restore_worker, &wargs);
     pthread_join(worker, NULL);

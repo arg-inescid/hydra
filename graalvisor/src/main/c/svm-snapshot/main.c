@@ -2,8 +2,10 @@
 #define _GNU_SOURCE
 
 #include "svm-snapshot.h"
+#include "cr.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/prctl.h>
 
 // Maximum number of characters to receive from a function invocation.
 #define FOUT_LEN 256
@@ -74,7 +76,19 @@ void init_args(int argc, char** argv) {
 int main(int argc, char** argv) {
     isolate_abi_t abi;
     graal_isolate_t* isolate = NULL;
-    
+
+    // Enable unshare() and access to /proc/sys/kernel/ns_last_pid
+    if (prctl(PR_CAP_AMBIENT, PR_CAP_AMBIENT_RAISE, 21, 0, 0) == -1) {
+        perror("prctl CAP_SYS_ADMIN");
+        return 1;
+    }
+
+    // Lock process privileges
+    if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) == -1) {
+        perror("prctl NO_NEW_PRIVS");
+        return 1;
+    }
+
     // INput and OUTput for function ran by isolate
     const char* fin = "(null)";
     char  fout[FOUT_LEN];
@@ -88,6 +102,10 @@ int main(int argc, char** argv) {
     if (CURRENT_MODE == RESTORE) {
         restore_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, FOUT_LEN, &abi, &isolate);
     } else if (CURRENT_MODE == CHECKPOINT) {
+        if (set_next_pid(1000*(SEED+1)) == -1) {
+            perror("set_next_pid");
+            return 1;
+        }
         checkpoint_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, FOUT_LEN, NULL, NULL);
     } else {
         run_svm(FPATH, CONC, ITERS, fin, fout, FOUT_LEN, &abi, &isolate);
