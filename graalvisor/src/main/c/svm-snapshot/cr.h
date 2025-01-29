@@ -62,8 +62,10 @@ void checkpoint(int meta_snap_fd, int mem_snap_fd, mapping_t* mappings, thread_t
 // Restores a substrace vm instance.
 void restore(const char* meta_snap_path, const char* mem_snap_path, isolate_abi_t* abi, graal_isolate_t** isolate);
 
-// Define pid for next process to be created
+// Define pid for next process to be created.
 int set_next_pid(pid_t start_pid);
+// Get pid of the next process to be created.
+int get_next_pid();
 
 // Using dup (or similar syscall), moves oldfd into a reserved fd.
 // Note: this function closes the oldfd.

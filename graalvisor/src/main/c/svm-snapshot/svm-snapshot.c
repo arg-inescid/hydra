@@ -319,6 +319,7 @@ void restore_svm(
 
     pthread_t worker;
     restore_worker_args_t wargs;
+    int last_pid;
 
 #ifdef PERF
         struct timeval st, et;
@@ -342,12 +343,25 @@ void restore_svm(
     wargs.concurrency = concurrency;
     wargs.requests = requests;
 
-    if (set_next_pid(1000) == -1) {
+    if ((last_pid = get_next_pid()) == -1) {
+        err("error: failed to get next pid\n");
+        return;
+    }
+    printf("last_pid = %d\n", last_pid);
+
+    if (set_next_pid(1000*(seed+1)) == -1) {
+        err("error: failed to set next pid\n");
         return;
     }
 
+
+
     // Launch worker thread and wait for it to finish.
     pthread_create(&worker, NULL, restore_worker, &wargs);
+    if (set_next_pid(last_pid) == -1) {
+        err("error: failed to set next pid\n");
+        return;
+    }
     pthread_join(worker, NULL);
 
     // Note: from manual (https://www.graalvm.org/22.1/reference-manual/native-image/C-API/):

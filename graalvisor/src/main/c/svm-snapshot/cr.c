@@ -414,12 +414,13 @@ void restore_thread(int meta_snap_fd) {
         return;
     }
 
+    struct clone_args* temp = (struct clone_args *) (restore_tdata + sizeof(thread_context_t));
+    pid_t* child_ptr = (pid_t *) temp->child_tid;
+    set_next_pid(*child_ptr);
+
     // TODO - use clone3 instead of relying on pthread. This will require some work.
     // See here on how to create a clone3 wrapper: https://nullprogram.com/blog/2023/03/23/
     // Once we use clone, we can set the TLS right away.
-
-    // TODO: pid_t saved_pid = *thread.pid;
-    set_next_pid(1000+1);
 
     if (pthread_create(&thread, NULL, restore_thread_internal, restore_tdata) != 0) {
         perror("error: failed to create restoring thread");
@@ -447,6 +448,28 @@ int set_next_pid(pid_t start_pid) {
 
     close(fd);
     return 0;
+}
+
+int get_next_pid() {
+    int fd;
+    char buffer[16];
+    ssize_t bytes_read;
+
+    fd = open("/proc/sys/kernel/ns_last_pid", O_RDONLY);
+    if (fd == -1) {
+        return -1;
+    }
+
+    bytes_read = read(fd, buffer, sizeof(buffer) - 1);
+    if (bytes_read <= 0) {
+        close(fd);
+        return -1;
+    }
+
+    buffer[bytes_read] = '\0';
+    close(fd);
+
+    return atoi(buffer);
 }
 
 void checkpoint_isolate(int meta_snap_fd, graal_isolate_t* isolate) {
