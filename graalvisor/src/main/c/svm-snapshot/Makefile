@@ -52,6 +52,24 @@ tests: all
 	make -C test11-cthreads-mmap test
 	make -C test12-svm-http test
 
+tests-unshare: all
+	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test0-clib test
+	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test1-staticvar test
+	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test2-svm test
+	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test2-svm-jar test
+	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test2-svm-gradle test
+	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test3-svm-truffle-js test
+	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test3-svm-truffle-py test
+	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test4-svm-exception test
+	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test5-svm-truffle-cached-js test
+	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test5-svm-truffle-cached-py test
+	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test6-cthreads test
+	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test7-svm-truffle-function-py test
+	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test8-cthreads-syscall test
+	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test9-cthreads-futex test
+	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test11-cthreads-mmap test
+	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test12-svm-http test
+
 benchmarks: all
 	$(MAKE) app="${ARGO_HOME}/benchmarks/src/java/gv-hello-world/build/libhelloworld.so" run
 	$(MAKE) app="${ARGO_HOME}/benchmarks/src/java/gv-file-hashing/build/libfilehashing.so" run
