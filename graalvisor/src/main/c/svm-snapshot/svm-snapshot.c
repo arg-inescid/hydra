@@ -235,6 +235,11 @@ void checkpoint_svm(
      wargs.concurrency = concurrency;
      wargs.requests = requests;
 
+    if (set_next_pid(1000*(seed+1)) == -1) {
+        perror("set_next_pid");
+        return;
+    }
+
     // If in checkpoint mode, open metadata file, wait for seccomp to be ready and handle notifications.
     int meta_snap_fd = move_to_reserved_fd(open(meta_snap_path,  O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR));
     int mem_snap_fd = move_to_reserved_fd(open(mem_snap_path,  O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR));
@@ -353,8 +358,6 @@ void restore_svm(
         err("error: failed to set next pid\n");
         return;
     }
-
-
 
     // Launch worker thread and wait for it to finish.
     pthread_create(&worker, NULL, restore_worker, &wargs);

@@ -397,6 +397,8 @@ void* restore_thread_internal(void* tdata) {
 
 void restore_thread(int meta_snap_fd) {
     pthread_t thread;
+    struct clone_args* cargs;
+    pid_t* child_ptr;
     char* restore_tdata = cr_malloc(sizeof(thread_context_t) + sizeof(struct clone_args));
 
     if (restore_tdata == NULL) {
@@ -414,14 +416,13 @@ void restore_thread(int meta_snap_fd) {
         return;
     }
 
-    struct clone_args* temp = (struct clone_args *) (restore_tdata + sizeof(thread_context_t));
-    pid_t* child_ptr = (pid_t *) temp->child_tid;
+    cargs = (struct clone_args *) (restore_tdata + sizeof(thread_context_t));
+    child_ptr = (pid_t *) cargs->child_tid;
     set_next_pid(*child_ptr);
 
     // TODO - use clone3 instead of relying on pthread. This will require some work.
     // See here on how to create a clone3 wrapper: https://nullprogram.com/blog/2023/03/23/
     // Once we use clone, we can set the TLS right away.
-
     if (pthread_create(&thread, NULL, restore_thread_internal, restore_tdata) != 0) {
         perror("error: failed to create restoring thread");
         return;

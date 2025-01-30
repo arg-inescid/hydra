@@ -2,7 +2,6 @@
 #define _GNU_SOURCE
 
 #include "svm-snapshot.h"
-#include "cr.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/prctl.h>
@@ -102,10 +101,6 @@ int main(int argc, char** argv) {
     if (CURRENT_MODE == RESTORE) {
         restore_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, FOUT_LEN, &abi, &isolate);
     } else if (CURRENT_MODE == CHECKPOINT) {
-        if (set_next_pid(1000*(SEED+1)) == -1) {
-            perror("set_next_pid");
-            return 1;
-        }
         checkpoint_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, FOUT_LEN, NULL, NULL);
     } else {
         run_svm(FPATH, CONC, ITERS, fin, fout, FOUT_LEN, &abi, &isolate);
