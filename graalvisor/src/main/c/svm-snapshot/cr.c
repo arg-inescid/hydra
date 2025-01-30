@@ -433,7 +433,7 @@ int set_next_pid(pid_t start_pid) {
     int fd;
     char pid_str[16];
 
-    snprintf(pid_str, sizeof(pid_str), "%d", start_pid - 1);
+    cr_snprintf(pid_str, sizeof(pid_str), "%d", start_pid - 1);
 
     fd = open("/proc/sys/kernel/ns_last_pid", O_WRONLY);
     if (fd == -1) {

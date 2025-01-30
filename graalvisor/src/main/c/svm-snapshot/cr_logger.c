@@ -1,7 +1,8 @@
-#include "cr_logger.h"
+#include <stddef.h>
 #include <errno.h>
 #include <stdarg.h>
 #include <unistd.h>
+#include "cr_logger.h"
 
 // CR printf (stack-allocated) buffer.
 #define PRINTF_BUF_SZ 1024
@@ -39,6 +40,14 @@ void cr_printf(int fd, const char* restrict fmt, ...) {
     }
 
     safe_write(fd, buffer, chars);
+}
+
+// Malloc-free snprintf.
+void cr_snprintf(char* buffer, size_t count, const char* fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf_(buffer, count, fmt, ap);
+    va_end(ap);
 }
 
 // printf.h requires this method to be implemented, even if we don't need it.
