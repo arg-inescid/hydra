@@ -8,7 +8,7 @@
 #app = "$(shell pwd)/test4-svm-exception/libhello.so"
 #app = "$(shell pwd)/test5-svm-truffle-cached-js/libhello.so"
 #app = "$(shell pwd)/test5-svm-truffle-cached-py/libhello.so"
-app = "$(shell pwd)/test6-cthreads/libhello.so"
+#app = "$(shell pwd)/test6-cthreads/libhello.so"
 #app = "$(shell pwd)/test7-svm-truffle-function-py/libcompression.so"
 #app = "$(shell pwd)/test8-cthreads-syscall/libhello.so"
 #app = "$(shell pwd)/test9-cthreads-futex/libhello.so"
@@ -18,7 +18,7 @@ app = "$(shell pwd)/test6-cthreads/libhello.so"
 #app="${ARGO_HOME}/benchmarks/src/java/gv-hello-world/build/libhelloworld.so"
 #app="${ARGO_HOME}/benchmarks/src/javascript/gv-hello-world/build/libhelloworld.so"
 #app="${ARGO_HOME}/benchmarks/src/python/gv-hello-world/build/libhelloworld.so"
-#app="${ARGO_HOME}/benchmarks/src/python/gv-dynamic-html/build/libdynamichtml.so"
+app="${ARGO_HOME}/benchmarks/src/python/gv-dynamic-html/build/libdynamichtml.so"
 
 ifndef ARGO_HOME
 $(error ARGO_HOME is not set (needed to run benchmarks)!)
@@ -31,8 +31,8 @@ debug = -O0 -g3
 all: *.h *.c
 	make -C deps/printf
 	make -C deps/dlmalloc
-	gcc-11 $(debug) -Wall -c *.c
-	gcc-11 $(debug) -Wall -o main *.o deps/printf/printf.o deps/dlmalloc/malloc.o
+	gcc $(debug) -Wall -c *.c
+	gcc $(debug) -Wall -o main *.o deps/printf/printf.o deps/dlmalloc/malloc.o
 
 tests: all
 	make -C test0-clib test
@@ -132,7 +132,7 @@ run-perf: all
 	setarch -R /bin/time -v ./main restore $(app) 2>&1 | tee restore.log
 
 gdb-restore: all
-	setarch -R ~/gdb-13/gdb-13.2/gdb/gdb $(gcommands) --args ./main restore $(app)
+	setarch -R gdb $(gcommands) --args ./main restore $(app)
 
 strace-restore: all
 	setarch -R strace -f ./main restore $(app) 2>&1 | tee strace-restore.log
