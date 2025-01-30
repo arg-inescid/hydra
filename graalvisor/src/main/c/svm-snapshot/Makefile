@@ -8,7 +8,7 @@
 #app = "$(shell pwd)/test4-svm-exception/libhello.so"
 #app = "$(shell pwd)/test5-svm-truffle-cached-js/libhello.so"
 #app = "$(shell pwd)/test5-svm-truffle-cached-py/libhello.so"
-#app = "$(shell pwd)/test6-cthreads/libhello.so"
+app = "$(shell pwd)/test6-cthreads/libhello.so"
 #app = "$(shell pwd)/test7-svm-truffle-function-py/libcompression.so"
 #app = "$(shell pwd)/test8-cthreads-syscall/libhello.so"
 #app = "$(shell pwd)/test9-cthreads-futex/libhello.so"
@@ -18,7 +18,7 @@
 #app="${ARGO_HOME}/benchmarks/src/java/gv-hello-world/build/libhelloworld.so"
 #app="${ARGO_HOME}/benchmarks/src/javascript/gv-hello-world/build/libhelloworld.so"
 #app="${ARGO_HOME}/benchmarks/src/python/gv-hello-world/build/libhelloworld.so"
-app="${ARGO_HOME}/benchmarks/src/python/gv-dynamic-html/build/libdynamichtml.so"
+#app="${ARGO_HOME}/benchmarks/src/python/gv-dynamic-html/build/libdynamichtml.so"
 
 ifndef ARGO_HOME
 $(error ARGO_HOME is not set (needed to run benchmarks)!)
@@ -31,8 +31,8 @@ debug = -O0 -g3
 all: *.h *.c
 	make -C deps/printf
 	make -C deps/dlmalloc
-	gcc $(debug) -Wall -c *.c
-	gcc $(debug) -Wall -o main *.o deps/printf/printf.o deps/dlmalloc/malloc.o
+	gcc-11 $(debug) -Wall -c *.c
+	gcc-11 $(debug) -Wall -o main *.o deps/printf/printf.o deps/dlmalloc/malloc.o
 
 tests: all
 	make -C test0-clib test
@@ -53,22 +53,22 @@ tests: all
 	make -C test12-svm-http test
 
 tests-unshare: all
-	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test0-clib test
-	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test1-staticvar test
-	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test2-svm test
-	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test2-svm-jar test
-	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test2-svm-gradle test
-	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test3-svm-truffle-js test
-	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test3-svm-truffle-py test
-	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test4-svm-exception test
-	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test5-svm-truffle-cached-js test
-	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test5-svm-truffle-cached-py test
-	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test6-cthreads test
-	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test7-svm-truffle-function-py test
-	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test8-cthreads-syscall test
-	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test9-cthreads-futex test
-	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test11-cthreads-mmap test
-	unshare --map-root-user --keep-caps --mount-proc -f -p make -C test12-svm-http test
+	./run-env.sh make -C test0-clib test
+	./run-env.sh make -C test1-staticvar test
+	./run-env.sh make -C test2-svm test
+	./run-env.sh make -C test2-svm-jar test
+	./run-env.sh make -C test2-svm-gradle test
+	./run-env.sh make -C test3-svm-truffle-js test
+	./run-env.sh make -C test3-svm-truffle-py test
+	./run-env.sh make -C test4-svm-exception test
+	./run-env.sh make -C test5-svm-truffle-cached-js test
+	./run-env.sh make -C test5-svm-truffle-cached-py test
+	./run-env.sh make -C test6-cthreads test
+	./run-env.sh make -C test7-svm-truffle-function-py test
+	./run-env.sh make -C test8-cthreads-syscall test
+	./run-env.sh make -C test9-cthreads-futex test
+	./run-env.sh make -C test11-cthreads-mmap test
+	./run-env.sh make -C test12-svm-http test
 
 benchmarks: all
 	$(MAKE) app="${ARGO_HOME}/benchmarks/src/java/gv-hello-world/build/libhelloworld.so" run
@@ -132,7 +132,7 @@ run-perf: all
 	setarch -R /bin/time -v ./main restore $(app) 2>&1 | tee restore.log
 
 gdb-restore: all
-	setarch -R gdb $(gcommands) --args ./main restore $(app)
+	setarch -R ~/gdb-13/gdb-13.2/gdb/gdb $(gcommands) --args ./main restore $(app)
 
 strace-restore: all
 	setarch -R strace -f ./main restore $(app) 2>&1 | tee strace-restore.log
