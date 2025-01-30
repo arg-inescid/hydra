@@ -52,24 +52,6 @@ tests: all
 	make -C test11-cthreads-mmap test
 	make -C test12-svm-http test
 
-tests-unshare: all
-	./run-env.sh make -C test0-clib test
-	./run-env.sh make -C test1-staticvar test
-	./run-env.sh make -C test2-svm test
-	./run-env.sh make -C test2-svm-jar test
-	./run-env.sh make -C test2-svm-gradle test
-	./run-env.sh make -C test3-svm-truffle-js test
-	./run-env.sh make -C test3-svm-truffle-py test
-	./run-env.sh make -C test4-svm-exception test
-	./run-env.sh make -C test5-svm-truffle-cached-js test
-	./run-env.sh make -C test5-svm-truffle-cached-py test
-	./run-env.sh make -C test6-cthreads test
-	./run-env.sh make -C test7-svm-truffle-function-py test
-	./run-env.sh make -C test8-cthreads-syscall test
-	./run-env.sh make -C test9-cthreads-futex test
-	./run-env.sh make -C test11-cthreads-mmap test
-	./run-env.sh make -C test12-svm-http test
-
 benchmarks: all
 	$(MAKE) app="${ARGO_HOME}/benchmarks/src/java/gv-hello-world/build/libhelloworld.so" run
 	$(MAKE) app="${ARGO_HOME}/benchmarks/src/java/gv-file-hashing/build/libfilehashing.so" run
@@ -98,44 +80,44 @@ benchmarks: all
 # TODO - gv_python_videoprocessing (process)
 
 run-normal: all
-	setarch -R ./main normal $(app) 2>&1 | tee normal.log
+	./run-env.sh ./main normal $(app) 2>&1 | tee normal.log
 
 strace-normal: all
-	setarch -R strace -f ./main normal $(app) 2>&1 | tee strace-normal.log
+	./run-env.sh strace -f ./main normal $(app) 2>&1 | tee strace-normal.log
 
 gdb-normal: all
-	setarch -R gdb $(gcommands) --args ./main normal $(app)
+	./run-env.sh gdb $(gcommands) --args ./main normal $(app)
 
 gdb-checkpoint: all
-	setarch -R gdb $(gcommands) --args ./main checkpoint $(app) | tee gdb-checkpoint.log
+	./run-env.sh gdb $(gcommands) --args ./main checkpoint $(app) | tee gdb-checkpoint.log
 
 run-checkpoint: all
 	rm -f snapshot.mem
 	rm -f snapshot.meta
-	setarch -R ./main checkpoint $(app) 2>&1 | tee checkpoint.log
+	./run-env.sh ./main checkpoint $(app) 2>&1 | tee checkpoint.log
 
 strace-checkpoint: all
 	rm -f snapshot.mem
 	rm -f snapshot.meta
-	setarch -R strace  -f ./main checkpoint $(app) 2>&1 | tee strace-checkpoint.log
+	./run-env.sh strace  -f ./main checkpoint $(app) 2>&1 | tee strace-checkpoint.log
 
 run-restore: all
-	setarch -R ./main restore $(app) 2>&1 | tee restore.log
+	./run-env.sh ./main restore $(app) 2>&1 | tee restore.log
 
 run: run-checkpoint run-restore
 
 run-perf: all
 	rm -f snapshot.mem
 	rm -f snapshot.meta
-	setarch -R /bin/time -v ./main normal $(app) 2>&1 | tee normal.log
-	setarch -R /bin/time -v ./main checkpoint $(app) 2>&1 | tee checkpoint.log
-	setarch -R /bin/time -v ./main restore $(app) 2>&1 | tee restore.log
+	./run-env.sh /bin/time -v ./main normal $(app) 2>&1 | tee normal.log
+	./run-env.sh /bin/time -v ./main checkpoint $(app) 2>&1 | tee checkpoint.log
+	./run-env.sh /bin/time -v ./main restore $(app) 2>&1 | tee restore.log
 
 gdb-restore: all
-	setarch -R gdb $(gcommands) --args ./main restore $(app)
+	./run-env.sh gdb $(gcommands) --args ./main restore $(app)
 
 strace-restore: all
-	setarch -R strace -f ./main restore $(app) 2>&1 | tee strace-restore.log
+	./run-env.sh strace -f ./main restore $(app) 2>&1 | tee strace-restore.log
 
 clean:
 	rm -f *.o main *.snap *.log

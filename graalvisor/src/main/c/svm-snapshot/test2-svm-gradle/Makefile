@@ -16,10 +16,10 @@ all: libhello.so
 run-checkpoint:
 	rm -f snapshot.mem
 	rm -f snapshot.meta
-	setarch -R ../main checkpoint $(app) > checkpoint.log 2>&1
+	../run-env.sh ../main checkpoint $(app) > checkpoint.log 2>&1
 
 run-restore:
-	setarch -R ../main restore $(app) > restore.log 2>&1
+	../run-env.sh ../main restore $(app) > restore.log 2>&1
 
 run: all run-checkpoint run-restore
 
