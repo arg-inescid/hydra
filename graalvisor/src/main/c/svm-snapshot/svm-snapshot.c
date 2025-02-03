@@ -80,6 +80,10 @@ typedef struct {
     size_t fout_len;
 } entrypoint_worker_args_t;
 
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t completed_request = PTHREAD_COND_INITIALIZER;
+int processing = 1;
+
 void run_serial_entrypoint(isolate_abi_t* abi, graal_isolatethread_t *isolatethread, int requests, const char* fin, char* fout, size_t fout_len) {
      for (int i = 0; i < requests; i++) {
 #ifdef PERF
@@ -196,8 +200,31 @@ void* restore_worker(void* args) {
 
     (wargs->abi).graal_attach_thread(wargs->isolate, &isolatethread);
     // Prepare and run function.
-    run_entrypoint(&(wargs->abi), wargs->isolate, isolatethread, wargs->concurrency, wargs->requests, wargs->fin, wargs->fout, wargs->fout_len);
+    for (;;) {
+        run_entrypoint(&(wargs->abi), wargs->isolate, isolatethread, wargs->concurrency, wargs->requests, wargs->fin, wargs->fout, wargs->fout_len);
+
+        pthread_mutex_lock(&mutex);
+        // set processing to finished
+        processing = 0;
+        pthread_cond_signal(&completed_request);
+        while (processing == 0) {
+            pthread_cond_wait(&completed_request, &mutex);
+        }
+        pthread_mutex_unlock(&mutex);
+    }
     return NULL;
+}
+
+
+void invoke_svm() {
+
+    pthread_mutex_lock(&mutex);
+    processing = 1;
+    pthread_cond_signal(&completed_request);
+    while (processing == 1) {
+        pthread_cond_wait(&completed_request, &mutex);
+    }
+    pthread_mutex_unlock(&mutex);
 }
 
 void checkpoint_svm(
@@ -365,7 +392,12 @@ void restore_svm(
         err("error: failed to set next pid\n");
         return;
     }
-    pthread_join(worker, NULL);
+
+    pthread_mutex_lock(&mutex);
+    while (processing == 1) {
+        pthread_cond_wait(&completed_request, &mutex);
+    }
+    pthread_mutex_unlock(&mutex);
 
     // Note: from manual (https://www.graalvm.org/22.1/reference-manual/native-image/C-API/):
     // 'no code may still be executing in the isolate thread's context.' Since we cannot

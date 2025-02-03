@@ -68,7 +68,7 @@ void restore_svm(
     graal_isolate_t** isolate);
 
 // Runs the abi entrypoint in an already loaded substrate vm instance.
-void run_entrypoint(
+void run_entrypoint( // TODO - remove.
     // Pointed to the abi data structure.
     isolate_abi_t* abi,
     // Pointer to the target isolate.
@@ -110,4 +110,6 @@ void run_svm(
     isolate_abi_t* abi,
     // Output argument used to save the pointer to the restored isolate.
     graal_isolate_t** isolate);
+
+void invoke_svm(); // TODO: write description
 #endif

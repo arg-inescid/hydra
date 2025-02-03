@@ -100,6 +100,10 @@ int main(int argc, char** argv) {
 
     if (CURRENT_MODE == RESTORE) {
         restore_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, FOUT_LEN, &abi, &isolate);
+        invoke_svm();
+        invoke_svm();
+        invoke_svm();
+
     } else if (CURRENT_MODE == CHECKPOINT) {
         checkpoint_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, FOUT_LEN, NULL, NULL);
     } else {
