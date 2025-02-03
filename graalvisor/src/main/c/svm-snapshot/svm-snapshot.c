@@ -212,6 +212,7 @@ void* restore_worker(void* args) {
         }
         pthread_mutex_unlock(&mutex);
     }
+    free(wargs);
     return NULL;
 }
 
@@ -350,7 +351,7 @@ void restore_svm(
         graal_isolate_t** isolate) {
 
     pthread_t worker;
-    restore_worker_args_t wargs;
+    restore_worker_args_t* wargs = malloc(sizeof(restore_worker_args_t));
     int last_pid;
 
 #ifdef PERF
@@ -366,14 +367,14 @@ void restore_svm(
         check_proc_maps("after_restore.log", NULL);
 #endif
 
-    memset(&wargs, 0, sizeof(restore_worker_args_t));
-    wargs.abi = *abi;
-    wargs.isolate = *isolate;
-    wargs.fin = fin;
-    wargs.fout = fout;
-    wargs.fout_len = fout_len;
-    wargs.concurrency = concurrency;
-    wargs.requests = requests;
+    memset(wargs, 0, sizeof(restore_worker_args_t));
+    wargs->abi = *abi;
+    wargs->isolate = *isolate;
+    wargs->fin = fin;
+    wargs->fout = fout;
+    wargs->fout_len = fout_len;
+    wargs->concurrency = concurrency;
+    wargs->requests = requests;
 
     if ((last_pid = get_next_pid()) == -1) {
         err("error: failed to get next pid\n");
@@ -387,7 +388,7 @@ void restore_svm(
     }
 
     // Launch worker thread and wait for it to finish.
-    pthread_create(&worker, NULL, restore_worker, &wargs);
+    pthread_create(&worker, NULL, restore_worker, wargs);
     if (set_next_pid(last_pid) == -1) {
         err("error: failed to set next pid\n");
         return;
