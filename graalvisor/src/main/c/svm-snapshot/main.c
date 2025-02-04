@@ -76,6 +76,10 @@ int main(int argc, char** argv) {
     isolate_abi_t abi;
     graal_isolate_t* isolate = NULL;
 
+    // INput and OUTput for function ran by isolate
+    const char* fin = "(null)";
+    char  fout[FOUT_LEN];
+
     // Enable unshare() and access to /proc/sys/kernel/ns_last_pid
     if (prctl(PR_CAP_AMBIENT, PR_CAP_AMBIENT_RAISE, 21, 0, 0) == -1) {
         perror("prctl CAP_SYS_ADMIN");
@@ -87,10 +91,6 @@ int main(int argc, char** argv) {
         perror("prctl NO_NEW_PRIVS");
         return 1;
     }
-
-    // INput and OUTput for function ran by isolate
-    const char* fin = "(null)";
-    char  fout[FOUT_LEN];
 
     // Initialize arguments.
     init_args(argc, argv);

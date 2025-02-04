@@ -210,6 +210,33 @@ void invoke_svm(svm_sandbox_t* svm_sandbox) {
     pthread_mutex_unlock(svm_sandbox->mutex);
 }
 
+svm_sandbox_t* create_sandbox(isolate_abi_t* abi, graal_isolate_t** isolate, const char* fin, char* fout, size_t fout_len) {
+    svm_sandbox_t* svm_sandbox = malloc(sizeof(svm_sandbox_t));
+    memset(svm_sandbox, 0, sizeof(svm_sandbox_t));
+
+    svm_sandbox->abi = abi;
+    svm_sandbox->isolate = *isolate;
+    svm_sandbox->fin = fin;
+    svm_sandbox->fout = fout;
+    svm_sandbox->fout_len = fout_len;
+    svm_sandbox->processing = 0;
+    // TODO: should we copy abi isolate fin fout to heap?
+
+    svm_sandbox->mutex = malloc(sizeof(pthread_mutex_t));
+    if (pthread_mutex_init(svm_sandbox->mutex, NULL) != 0) {
+        err("error: failed to init mutex\n");
+        return NULL;
+    }
+
+    svm_sandbox->completed_request = malloc(sizeof(pthread_cond_t));
+    if (pthread_cond_init(svm_sandbox->completed_request, NULL) != 0) {
+        err("error: failed to init cond\n");
+        return NULL;
+    }
+
+    return svm_sandbox;
+}
+
 svm_sandbox_t* checkpoint_svm(
         const char* fpath,
         const char* meta_snap_path,
@@ -237,36 +264,14 @@ svm_sandbox_t* checkpoint_svm(
 
     // Create and initialize the checkpoint worker arguments struct.
     checkpoint_worker_args_t* wargs = malloc(sizeof(checkpoint_worker_args_t));
-    svm_sandbox_t* svm_sandbox = malloc(sizeof(svm_sandbox_t));
-
     memset(wargs, 0, sizeof(checkpoint_worker_args_t));
+
+    svm_sandbox_t* svm_sandbox = create_sandbox(abi, isolate, fin, fout, fout_len);
+
+    wargs->svm_sandbox = svm_sandbox;
     wargs->fpath = fpath;
     wargs->concurrency = concurrency;
     wargs->requests = requests;
-
-    svm_sandbox->abi = abi;
-    svm_sandbox->isolate = *isolate;
-    svm_sandbox->fin = fin;
-    svm_sandbox->fout = fout;
-    svm_sandbox->fout_len = fout_len;
-    svm_sandbox->processing = 0;
-    // TODO: COPY abi isolate fin fout PTRS TO HEAP
-
-    svm_sandbox->mutex = malloc(sizeof(pthread_mutex_t));
-    if (pthread_mutex_init(svm_sandbox->mutex, NULL) != 0) {
-        err("error: failed to init mutex\n");
-        return NULL;
-        // return;
-    }
-
-    svm_sandbox->completed_request = malloc(sizeof(pthread_cond_t));
-    if (pthread_cond_init(svm_sandbox->completed_request, NULL) != 0) {
-        err("error: failed to init cond\n");
-        return NULL;
-        // return;
-    }
-
-    wargs->svm_sandbox = svm_sandbox;
 
     if (set_next_pid(1000*(seed+1)) == -1) {
         perror("set_next_pid");
@@ -359,8 +364,8 @@ svm_sandbox_t* restore_svm(
         graal_isolate_t** isolate) {
 
     pthread_t worker;
-    restore_worker_args_t* wargs = malloc(sizeof(restore_worker_args_t));
-    svm_sandbox_t* svm_sandbox = malloc(sizeof(svm_sandbox_t));
+    svm_sandbox_t* svm_sandbox;
+    restore_worker_args_t* wargs;
     int last_pid;
 
 #ifdef PERF
@@ -376,28 +381,8 @@ svm_sandbox_t* restore_svm(
         check_proc_maps("after_restore.log", NULL);
 #endif
 
-    memset(wargs, 0, sizeof(restore_worker_args_t));
-    memset(svm_sandbox, 0, sizeof(svm_sandbox_t));
-    svm_sandbox->abi = abi;
-    svm_sandbox->isolate = *isolate;
-    svm_sandbox->fin = fin;
-    svm_sandbox->fout = fout;
-    svm_sandbox->fout_len = fout_len;
-    svm_sandbox->processing = 0;
-    // TODO: COPY abi isolate fin fout PTRS TO HEAP
-
-    svm_sandbox->mutex = malloc(sizeof(pthread_mutex_t));
-    if (pthread_mutex_init(svm_sandbox->mutex, NULL) != 0) {
-        err("error: failed to init mutex\n");
-        return NULL;
-    }
-
-    svm_sandbox->completed_request = malloc(sizeof(pthread_cond_t));
-    if (pthread_cond_init(svm_sandbox->completed_request, NULL) != 0) {
-        err("error: failed to init cond\n");
-        return NULL;
-    }
-
+    wargs = malloc(sizeof(restore_worker_args_t));
+    svm_sandbox = create_sandbox(abi, isolate, fin, fout, fout_len);
     wargs->svm_sandbox = svm_sandbox;
     wargs->concurrency = concurrency;
     wargs->requests = requests;
