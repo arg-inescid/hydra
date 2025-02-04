@@ -49,16 +49,8 @@ typedef struct {
 } checkpoint_worker_args_t;
 
 typedef struct {
-    // ABI to create, invoke, destroy isolates.
-    isolate_abi_t abi;
-    // Pointer to the isolate.
-    graal_isolate_t* isolate;
-    // Path of the function library.
-    const char* fin;
-    // Return string from function invocation.
-    char* fout;
-    // Length of the output buffer.
-    size_t fout_len;
+    // Sandbox for executing entrypoints and getting their results.
+    svm_sandbox_t* svm_sandbox;
     // Number of parallel threads handling requests.
     int concurrency;
     // Number of requests to perform.
@@ -196,12 +188,13 @@ void* checkpoint_worker(void* args) {
 
 void* restore_worker(void* args) {
     restore_worker_args_t* wargs = (restore_worker_args_t*) args;
+    svm_sandbox_t* svm = wargs->svm_sandbox;
     graal_isolatethread_t *isolatethread = NULL;
 
-    (wargs->abi).graal_attach_thread(wargs->isolate, &isolatethread);
+    (*svm->abi).graal_attach_thread(svm->isolate, &isolatethread);
     // Prepare and run function.
     for (;;) {
-        run_entrypoint(&(wargs->abi), wargs->isolate, isolatethread, wargs->concurrency, wargs->requests, wargs->fin, wargs->fout, wargs->fout_len);
+        run_entrypoint(svm->abi, svm->isolate, isolatethread, wargs->concurrency, wargs->requests, svm->fin, svm->fout, svm->fout_len);
 
         pthread_mutex_lock(&mutex);
         // set processing to finished
@@ -217,8 +210,7 @@ void* restore_worker(void* args) {
 }
 
 
-void invoke_svm() {
-
+void invoke_svm(svm_sandbox_t* svm_sandbox) {
     pthread_mutex_lock(&mutex);
     processing = 1;
     pthread_cond_signal(&completed_request);
@@ -337,7 +329,7 @@ void checkpoint_svm(
     }
 }
 
-void restore_svm(
+svm_sandbox_t* restore_svm(
         const char* fpath,
         const char* meta_snap_path,
         const char* mem_snap_path,
@@ -352,6 +344,7 @@ void restore_svm(
 
     pthread_t worker;
     restore_worker_args_t* wargs = malloc(sizeof(restore_worker_args_t));
+    svm_sandbox_t* svm_sandbox = malloc(sizeof(svm_sandbox_t));
     int last_pid;
 
 #ifdef PERF
@@ -368,30 +361,35 @@ void restore_svm(
 #endif
 
     memset(wargs, 0, sizeof(restore_worker_args_t));
-    wargs->abi = *abi;
-    wargs->isolate = *isolate;
-    wargs->fin = fin;
-    wargs->fout = fout;
-    wargs->fout_len = fout_len;
+    memset(svm_sandbox, 0, sizeof(svm_sandbox_t));
+    svm_sandbox->abi = abi;
+    svm_sandbox->isolate = *isolate;
+    svm_sandbox->fin = fin;
+    svm_sandbox->fout = fout;
+    svm_sandbox->fout_len = fout_len;
+    // TODO: add mutex cond and pred var
+    // TODO: COPY PTRS TO HEAP ?
+
+    wargs->svm_sandbox = svm_sandbox;
     wargs->concurrency = concurrency;
     wargs->requests = requests;
 
     if ((last_pid = get_next_pid()) == -1) {
         err("error: failed to get next pid\n");
-        return;
+        return NULL;
     }
     printf("last_pid = %d\n", last_pid);
 
     if (set_next_pid(1000*(seed+1)) == -1) {
         err("error: failed to set next pid\n");
-        return;
+        return NULL;
     }
 
     // Launch worker thread and wait for it to finish.
     pthread_create(&worker, NULL, restore_worker, wargs);
     if (set_next_pid(last_pid) == -1) {
         err("error: failed to set next pid\n");
-        return;
+        return NULL;
     }
 
     pthread_mutex_lock(&mutex);
@@ -400,6 +398,7 @@ void restore_svm(
     }
     pthread_mutex_unlock(&mutex);
 
+    return svm_sandbox;
     // Note: from manual (https://www.graalvm.org/22.1/reference-manual/native-image/C-API/):
     // 'no code may still be executing in the isolate thread's context.' Since we cannot
     // guarantee that threads may be left behind, it is not safe to detach.

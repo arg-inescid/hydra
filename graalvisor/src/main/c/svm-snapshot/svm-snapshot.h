@@ -2,6 +2,27 @@
 #define SVM_SHAPSHOT_H
 
 #include "graal_capi.h"
+#include <pthread.h>
+
+// Sandbox for executing entrypoints and getting their results.
+typedef struct {
+    isolate_abi_t*      abi;
+    graal_isolate_t*    isolate;
+    pthread_mutex_t*    mutex; // = PTHREAD_MUTEX_INITIALIZER; // SHOULD WE USE POINTERS HERE???
+    pthread_cond_t*     completed_request; // = PTHREAD_COND_INITIALIZER;
+    int                 processing; // = 1;
+    size_t              fout_len;
+    const char*         fin;
+    char*               fout;
+} svm_sandbox_t;
+
+// Handler for external use of svm_sandbox on related functions.
+typedef svm_sandbox_t* sandbox;
+
+// Executes entrypoint from the provided sandbox.
+void invoke_svm(
+    // Sandbox for executing entrypoints and getting their results.
+    sandbox);
 
 // Loads, runs and then checkpoints a substrate vm instance.
 void checkpoint_svm(
@@ -37,7 +58,7 @@ void checkpoint_svm(
     graal_isolate_t** isolate);
 
 // Loads a checkpointed substrate vm instance and then runs it.
-void restore_svm(
+svm_sandbox_t* restore_svm(
     // Path of the function library that will be dlopened.
     const char* fpath,
     // Path where to store metadata information.
@@ -67,28 +88,6 @@ void restore_svm(
     // Output argument used to save the pointer to the restored isolate.
     graal_isolate_t** isolate);
 
-// Runs the abi entrypoint in an already loaded substrate vm instance.
-void run_entrypoint( // TODO - remove.
-    // Pointed to the abi data structure.
-    isolate_abi_t* abi,
-    // Pointer to the target isolate.
-    graal_isolate_t* isolate,
-    // Pointer to the target isolate thread.
-    graal_isolatethread_t* isolatethread,
-    // Number of concurrent threads that will invoke the function code.
-    unsigned int concurrency,
-    // Number of invocations each thread will perform.
-    unsigned int requests,
-    // Arguments passed to the function upon each invocation.
-    const char* fin,
-    // Output buffer where the output of the invocation will be placed.
-    // Note that if multiple invocations are performed (as a result of concurrency
-    // or requests), only the output of the first request will be saved.
-    char* fout,
-    // Length of the output buffer. If the output string is larger, a warning
-    // is printed to stdout and a '\0' is placed at outbuf[outbuf_len - 1].
-    unsigned long fout_len);
-
 // Loads and runs a substrate vm instance.
 void run_svm(
     // Path of the function library that will be dlopened.
@@ -111,5 +110,4 @@ void run_svm(
     // Output argument used to save the pointer to the restored isolate.
     graal_isolate_t** isolate);
 
-void invoke_svm(); // TODO: write description
 #endif
