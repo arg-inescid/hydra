@@ -6,17 +6,29 @@
 
 // Sandbox for executing entrypoints and getting their results.
 typedef struct {
+    // Pointer to the abi structure where the function pointers will be stored.
     isolate_abi_t*      abi;
+    // Pointer to the isolate where the thread runs.
     graal_isolate_t*    isolate;
-    pthread_mutex_t*    mutex; // = PTHREAD_MUTEX_INITIALIZER; // SHOULD WE USE POINTERS HERE???
-    pthread_cond_t*     completed_request; // = PTHREAD_COND_INITIALIZER;
-    int                 processing; // = 1;
+    // Mutex to have exclusive access between worker and request sender.
+    pthread_mutex_t*    mutex;
+    // Condition variable to signal request status start/finished.
+    pthread_cond_t*     completed_request;
+    // Predicative variable to avoid deadlocks from signal arriving before
+    // other thread started to wait for the signal.
+    int                 processing;
+    // Length of the output buffer. If the output string is larger, a warning
+    // is printed to stdout and a '\0' is placed at outbuf[outbuf_len - 1].
     size_t              fout_len;
+    // Arguments passed to the function upon each invocation.
     const char*         fin;
+    // Output buffer where the output of the invocation will be placed.
+    // Note that if multiple invocations are performed (as a result of concurrency
+    // or requests), only the output of the first request will be saved.
     char*               fout;
 } svm_sandbox_t;
 
-// Handler for external use of svm_sandbox on related functions.
+// Handle for external use of svm_sandbox on related functions.
 typedef svm_sandbox_t* sandbox;
 
 // Executes entrypoint from the provided sandbox.

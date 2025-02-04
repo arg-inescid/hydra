@@ -190,15 +190,15 @@ void* restore_worker(void* args) {
     (*svm->abi).graal_attach_thread(svm->isolate, &isolatethread);
     // Prepare and run function.
     for (;;) {
-        run_entrypoint(svm->abi, svm->isolate, isolatethread, wargs->concurrency, wargs->requests, svm->fin, svm->fout, svm->fout_len);
-
         pthread_mutex_lock(svm->mutex);
-        // set processing to finished
-        svm->processing = 0;
-        pthread_cond_signal(svm->completed_request);
+        // until state is processing or signal to start processing is received, wait.
         while (svm->processing == 0) {
             pthread_cond_wait(svm->completed_request, svm->mutex);
         }
+        run_entrypoint(svm->abi, svm->isolate, isolatethread, wargs->concurrency, wargs->requests, svm->fin, svm->fout, svm->fout_len);
+        // set state to finished
+        svm->processing = 0;
+        pthread_cond_signal(svm->completed_request);
         pthread_mutex_unlock(svm->mutex);
     }
     free(wargs);
@@ -363,7 +363,7 @@ svm_sandbox_t* restore_svm(
     svm_sandbox->fin = fin;
     svm_sandbox->fout = fout;
     svm_sandbox->fout_len = fout_len;
-    svm_sandbox->processing = 1;
+    svm_sandbox->processing = 0;
     // TODO: COPY abi isolate fin fout PTRS TO HEAP
 
     svm_sandbox->mutex = malloc(sizeof(pthread_mutex_t));
@@ -401,6 +401,8 @@ svm_sandbox_t* restore_svm(
     }
 
     pthread_mutex_lock(svm_sandbox->mutex);
+    svm_sandbox->processing = 1;
+    pthread_cond_signal(svm_sandbox->completed_request);
     while (svm_sandbox->processing == 1) {
         pthread_cond_wait(svm_sandbox->completed_request, svm_sandbox->mutex);
     }
