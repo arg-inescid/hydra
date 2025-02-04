@@ -26,26 +26,19 @@
 #include <unistd.h>
 
 typedef struct {
+    // Sandbox for executing entrypoints and getting their results.
+    svm_sandbox_t* svm_sandbox;
     // Path to the function library.
     const void* fpath;
-    // ABI to create, invoke, destroy isolates.
-    isolate_abi_t abi;
-    // Pointer to the isolate.
-    graal_isolate_t* isolate;
     // File descriptor used when installing seccomp.
     int seccomp_fd;
-    // Path of the function library.
-    const char* fin;
-    // Return string from function invocation.
-    char* fout;
-    // Length of the output buffer.
-    size_t fout_len;
     // Number of parallel threads handling requests.
     int concurrency;
     // Number of requests to perform.
     int requests;
     // Integer used as a boolean to decide if the function has terminated.
     int finished;
+    // TODO: remove int finished
 } checkpoint_worker_args_t;
 
 typedef struct {
@@ -166,6 +159,7 @@ void run_svm(
 
 void* checkpoint_worker(void* args) {
     checkpoint_worker_args_t* wargs = (checkpoint_worker_args_t*) args;
+    svm_sandbox_t* svm = wargs->svm_sandbox;
 
     // Install seccomp filter.
     wargs->seccomp_fd = install_seccomp_filter();
@@ -175,10 +169,10 @@ void* checkpoint_worker(void* args) {
     }
 
     // Prepare and run function.
-    run_svm(wargs->fpath, wargs->concurrency, wargs->requests, wargs->fin, wargs->fout, wargs->fout_len, &(wargs->abi), &(wargs->isolate));
-
+    run_svm(wargs->fpath, wargs->concurrency, wargs->requests, svm->fin, svm->fout, svm->fout_len, svm->abi, &(svm->isolate));
     // Mark execution as finished (will alert the seccomp monitor to quit).
     wargs->finished = 1;
+
     return NULL;
 }
 
@@ -216,7 +210,7 @@ void invoke_svm(svm_sandbox_t* svm_sandbox) {
     pthread_mutex_unlock(svm_sandbox->mutex);
 }
 
-void checkpoint_svm(
+svm_sandbox_t* checkpoint_svm(
         const char* fpath,
         const char* meta_snap_path,
         const char* mem_snap_path,
@@ -241,19 +235,42 @@ void checkpoint_svm(
     thread_t threads;
     memset(&threads, 0, sizeof(thread_t));
 
-     // Create and initialize the checkpoint worker arguments struct.
-    checkpoint_worker_args_t wargs;
-    memset(&wargs, 0, sizeof(checkpoint_worker_args_t));
-     wargs.fpath = fpath;
-     wargs.fin = fin;
-     wargs.fout = fout;
-     wargs.fout_len = fout_len;
-     wargs.concurrency = concurrency;
-     wargs.requests = requests;
+    // Create and initialize the checkpoint worker arguments struct.
+    checkpoint_worker_args_t* wargs = malloc(sizeof(checkpoint_worker_args_t));
+    svm_sandbox_t* svm_sandbox = malloc(sizeof(svm_sandbox_t));
+
+    memset(wargs, 0, sizeof(checkpoint_worker_args_t));
+    wargs->fpath = fpath;
+    wargs->concurrency = concurrency;
+    wargs->requests = requests;
+
+    svm_sandbox->abi = abi;
+    svm_sandbox->isolate = *isolate;
+    svm_sandbox->fin = fin;
+    svm_sandbox->fout = fout;
+    svm_sandbox->fout_len = fout_len;
+    svm_sandbox->processing = 0;
+    // TODO: COPY abi isolate fin fout PTRS TO HEAP
+
+    svm_sandbox->mutex = malloc(sizeof(pthread_mutex_t));
+    if (pthread_mutex_init(svm_sandbox->mutex, NULL) != 0) {
+        err("error: failed to init mutex\n");
+        return NULL;
+        // return;
+    }
+
+    svm_sandbox->completed_request = malloc(sizeof(pthread_cond_t));
+    if (pthread_cond_init(svm_sandbox->completed_request, NULL) != 0) {
+        err("error: failed to init cond\n");
+        return NULL;
+        // return;
+    }
+
+    wargs->svm_sandbox = svm_sandbox;
 
     if (set_next_pid(1000*(seed+1)) == -1) {
         perror("set_next_pid");
-        return;
+        return NULL;
     }
 
     // If in checkpoint mode, open metadata file, wait for seccomp to be ready and handle notifications.
@@ -267,16 +284,16 @@ void checkpoint_svm(
     }
 
     // Launch worker thread.
-    pthread_create(&worker, NULL, checkpoint_worker, &wargs);
+    pthread_create(&worker, NULL, checkpoint_worker, wargs);
 
     // Wait while the thread initilizes and installs the seccomp filter.
-    while (!wargs.seccomp_fd) ;
+    while (!wargs->seccomp_fd) ;
 
     // Move seccomp fd to a reserved fd.
-    wargs.seccomp_fd = move_to_reserved_fd(wargs.seccomp_fd);
+    wargs->seccomp_fd = move_to_reserved_fd(wargs->seccomp_fd);
 
     // Keep handling syscall notifications.
-    handle_syscalls(seed, wargs.seccomp_fd, &(wargs.finished), meta_snap_fd, &mappings, &threads);
+    handle_syscalls(seed, wargs->seccomp_fd, &(wargs->finished), meta_snap_fd, &mappings, &threads);
 
     if (!list_threads_empty(&threads)) {
         // Pause background threads before checkpointing.
@@ -295,7 +312,7 @@ void checkpoint_svm(
     struct timeval st, et;
     gettimeofday(&st, NULL);
 #endif
-    checkpoint(meta_snap_fd, mem_snap_fd, &mappings, &threads, &(wargs.abi), wargs.isolate);
+    checkpoint(meta_snap_fd, mem_snap_fd, &mappings, &threads, svm_sandbox->abi, svm_sandbox->isolate);
 #ifdef PERF
     gettimeofday(&et, NULL);
     log("checkpoint took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
@@ -307,22 +324,25 @@ void checkpoint_svm(
 
     if (!list_threads_empty(&threads)) {
         // Starting monitor thread to allow syscalls from the background threads.
-        pthread_create(&allower, NULL, allow_syscalls, &(wargs.seccomp_fd));
+        pthread_create(&allower, NULL, allow_syscalls, &(wargs->seccomp_fd));
         // Resume background threads before checkpointing.
         resume_background_threads(&threads);
     }
+
+    // Launch worker thread and wait for it to finish.
+    restore_worker_args_t* restore_wargs = malloc(sizeof(restore_worker_args_t));
+    restore_wargs->svm_sandbox = wargs->svm_sandbox;
+    restore_wargs->concurrency = wargs->concurrency;
+    restore_wargs->requests = wargs->requests;
+
+    pthread_t loop_worker;
+    pthread_create(&loop_worker, NULL, restore_worker, restore_wargs);
 
     // Close meta and mem fds.
     close(meta_snap_fd);
     close(mem_snap_fd);
 
-    // Copy output arguments.
-    if (abi != NULL) {
-        memcpy(abi, &(wargs.abi), sizeof(isolate_abi_t));
-    }
-    if (isolate != NULL) {
-        memcpy(isolate, &(wargs.isolate), sizeof(graal_isolate_t*));
-    }
+    return svm_sandbox;
 }
 
 svm_sandbox_t* restore_svm(
@@ -399,14 +419,7 @@ svm_sandbox_t* restore_svm(
         err("error: failed to set next pid\n");
         return NULL;
     }
-
-    pthread_mutex_lock(svm_sandbox->mutex);
-    svm_sandbox->processing = 1;
-    pthread_cond_signal(svm_sandbox->completed_request);
-    while (svm_sandbox->processing == 1) {
-        pthread_cond_wait(svm_sandbox->completed_request, svm_sandbox->mutex);
-    }
-    pthread_mutex_unlock(svm_sandbox->mutex);
+    invoke_svm(svm_sandbox);
 
     return svm_sandbox;
     // Note: from manual (https://www.graalvm.org/22.1/reference-manual/native-image/C-API/):

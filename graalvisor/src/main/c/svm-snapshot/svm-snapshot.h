@@ -37,7 +37,8 @@ void invoke_svm(
     sandbox);
 
 // Loads, runs and then checkpoints a substrate vm instance.
-void checkpoint_svm(
+// Returns svm_sandbox_t to be able to invoke more runs.
+svm_sandbox_t* checkpoint_svm(
     // Path of the function library that will be dlopened.
     const char* fpath,
     // Path where to store metadata information.
@@ -70,6 +71,7 @@ void checkpoint_svm(
     graal_isolate_t** isolate);
 
 // Loads a checkpointed substrate vm instance and then runs it.
+// Returns svm_sandbox_t to be able to invoke more runs.
 svm_sandbox_t* restore_svm(
     // Path of the function library that will be dlopened.
     const char* fpath,
