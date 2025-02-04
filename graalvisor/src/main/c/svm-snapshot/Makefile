@@ -86,10 +86,10 @@ strace-normal: all
 	$(CURDIR)/run-env.sh strace -f ./main normal $(app) 2>&1 | tee strace-normal.log
 
 gdb-normal: all
-	$(CURDIR)/run-env.sh gdb $(gcommands) --args ./main normal $(app)
+	gdb $(gcommands) --args bash $(CURDIR)/run-env.sh ./main normal $(app)
 
 gdb-checkpoint: all
-	$(CURDIR)/run-env.sh gdb $(gcommands) --args ./main checkpoint $(app) | tee gdb-checkpoint.log
+	gdb $(gcommands) --args bash $(CURDIR)/run-env.sh ./main checkpoint $(app) | tee gdb-checkpoint.log
 
 run-checkpoint: all
 	rm -f snapshot.mem
@@ -114,7 +114,7 @@ run-perf: all
 	$(CURDIR)/run-env.sh /bin/time -v ./main restore $(app) 2>&1 | tee restore.log
 
 gdb-restore: all
-	$(CURDIR)/run-env.sh gdb $(gcommands) --args ./main restore $(app)
+	gdb $(gcommands) --args bash $(CURDIR)/run-env.sh ./main restore $(app)
 
 strace-restore: all
 	$(CURDIR)/run-env.sh strace -f ./main restore $(app) 2>&1 | tee strace-restore.log

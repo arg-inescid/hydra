@@ -48,7 +48,7 @@ typedef struct {
     int concurrency;
     // Number of requests to perform.
     int requests;
-} restore_worker_args_t;
+} notif_worker_args_t;
 
 typedef struct {
      // ABI to create, invoke, destroy isolates.
@@ -176,8 +176,8 @@ void* checkpoint_worker(void* args) {
     return NULL;
 }
 
-void* restore_worker(void* args) {
-    restore_worker_args_t* wargs = (restore_worker_args_t*) args;
+void* notif_worker(void* args) {
+    notif_worker_args_t* wargs = (notif_worker_args_t*) args;
     svm_sandbox_t* svm = wargs->svm_sandbox;
     graal_isolatethread_t *isolatethread = NULL;
 
@@ -335,13 +335,13 @@ svm_sandbox_t* checkpoint_svm(
     }
 
     // Launch worker thread and wait for it to finish.
-    restore_worker_args_t* restore_wargs = malloc(sizeof(restore_worker_args_t));
+    notif_worker_args_t* restore_wargs = malloc(sizeof(notif_worker_args_t));
     restore_wargs->svm_sandbox = wargs->svm_sandbox;
     restore_wargs->concurrency = wargs->concurrency;
     restore_wargs->requests = wargs->requests;
 
     pthread_t loop_worker;
-    pthread_create(&loop_worker, NULL, restore_worker, restore_wargs);
+    pthread_create(&loop_worker, NULL, notif_worker, restore_wargs);
 
     // Close meta and mem fds.
     close(meta_snap_fd);
@@ -365,7 +365,7 @@ svm_sandbox_t* restore_svm(
 
     pthread_t worker;
     svm_sandbox_t* svm_sandbox;
-    restore_worker_args_t* wargs;
+    notif_worker_args_t* wargs;
     int last_pid;
 
 #ifdef PERF
@@ -381,7 +381,7 @@ svm_sandbox_t* restore_svm(
         check_proc_maps("after_restore.log", NULL);
 #endif
 
-    wargs = malloc(sizeof(restore_worker_args_t));
+    wargs = malloc(sizeof(notif_worker_args_t));
     svm_sandbox = create_sandbox(abi, isolate, fin, fout, fout_len);
     wargs->svm_sandbox = svm_sandbox;
     wargs->concurrency = concurrency;
@@ -399,7 +399,7 @@ svm_sandbox_t* restore_svm(
     }
 
     // Launch worker thread and wait for it to finish.
-    pthread_create(&worker, NULL, restore_worker, wargs);
+    pthread_create(&worker, NULL, notif_worker, wargs);
     if (set_next_pid(last_pid) == -1) {
         err("error: failed to set next pid\n");
         return NULL;
