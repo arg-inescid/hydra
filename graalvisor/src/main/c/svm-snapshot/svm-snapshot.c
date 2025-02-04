@@ -72,10 +72,6 @@ typedef struct {
     size_t fout_len;
 } entrypoint_worker_args_t;
 
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t completed_request = PTHREAD_COND_INITIALIZER;
-int processing = 1;
-
 void run_serial_entrypoint(isolate_abi_t* abi, graal_isolatethread_t *isolatethread, int requests, const char* fin, char* fout, size_t fout_len) {
      for (int i = 0; i < requests; i++) {
 #ifdef PERF
@@ -196,14 +192,14 @@ void* restore_worker(void* args) {
     for (;;) {
         run_entrypoint(svm->abi, svm->isolate, isolatethread, wargs->concurrency, wargs->requests, svm->fin, svm->fout, svm->fout_len);
 
-        pthread_mutex_lock(&mutex);
+        pthread_mutex_lock(svm->mutex);
         // set processing to finished
-        processing = 0;
-        pthread_cond_signal(&completed_request);
-        while (processing == 0) {
-            pthread_cond_wait(&completed_request, &mutex);
+        svm->processing = 0;
+        pthread_cond_signal(svm->completed_request);
+        while (svm->processing == 0) {
+            pthread_cond_wait(svm->completed_request, svm->mutex);
         }
-        pthread_mutex_unlock(&mutex);
+        pthread_mutex_unlock(svm->mutex);
     }
     free(wargs);
     return NULL;
@@ -211,13 +207,13 @@ void* restore_worker(void* args) {
 
 
 void invoke_svm(svm_sandbox_t* svm_sandbox) {
-    pthread_mutex_lock(&mutex);
-    processing = 1;
-    pthread_cond_signal(&completed_request);
-    while (processing == 1) {
-        pthread_cond_wait(&completed_request, &mutex);
+    pthread_mutex_lock(svm_sandbox->mutex);
+    svm_sandbox->processing = 1;
+    pthread_cond_signal(svm_sandbox->completed_request);
+    while (svm_sandbox->processing == 1) {
+        pthread_cond_wait(svm_sandbox->completed_request, svm_sandbox->mutex);
     }
-    pthread_mutex_unlock(&mutex);
+    pthread_mutex_unlock(svm_sandbox->mutex);
 }
 
 void checkpoint_svm(
@@ -367,8 +363,20 @@ svm_sandbox_t* restore_svm(
     svm_sandbox->fin = fin;
     svm_sandbox->fout = fout;
     svm_sandbox->fout_len = fout_len;
-    // TODO: add mutex cond and pred var
-    // TODO: COPY PTRS TO HEAP ?
+    svm_sandbox->processing = 1;
+    // TODO: COPY abi isolate fin fout PTRS TO HEAP
+
+    svm_sandbox->mutex = malloc(sizeof(pthread_mutex_t));
+    if (pthread_mutex_init(svm_sandbox->mutex, NULL) != 0) {
+        err("error: failed to init mutex\n");
+        return NULL;
+    }
+
+    svm_sandbox->completed_request = malloc(sizeof(pthread_cond_t));
+    if (pthread_cond_init(svm_sandbox->completed_request, NULL) != 0) {
+        err("error: failed to init cond\n");
+        return NULL;
+    }
 
     wargs->svm_sandbox = svm_sandbox;
     wargs->concurrency = concurrency;
@@ -392,11 +400,11 @@ svm_sandbox_t* restore_svm(
         return NULL;
     }
 
-    pthread_mutex_lock(&mutex);
-    while (processing == 1) {
-        pthread_cond_wait(&completed_request, &mutex);
+    pthread_mutex_lock(svm_sandbox->mutex);
+    while (svm_sandbox->processing == 1) {
+        pthread_cond_wait(svm_sandbox->completed_request, svm_sandbox->mutex);
     }
-    pthread_mutex_unlock(&mutex);
+    pthread_mutex_unlock(svm_sandbox->mutex);
 
     return svm_sandbox;
     // Note: from manual (https://www.graalvm.org/22.1/reference-manual/native-image/C-API/):
