@@ -99,12 +99,9 @@ int main(int argc, char** argv) {
     setvbuf(stdout, NULL, _IONBF, 0);
 
     if (CURRENT_MODE == RESTORE) {
-        sandbox result = restore_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, FOUT_LEN, &abi, &isolate);
-        invoke_svm(result);
+        restore_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, FOUT_LEN, &abi, &isolate);
     } else if (CURRENT_MODE == CHECKPOINT) {
-        sandbox result = checkpoint_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, FOUT_LEN, &abi, &isolate);
-        invoke_svm(result);
-        invoke_svm(result);
+        checkpoint_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, FOUT_LEN, &abi, &isolate);
     } else {
         run_svm(FPATH, CONC, ITERS, fin, fout, FOUT_LEN, &abi, &isolate);
     }

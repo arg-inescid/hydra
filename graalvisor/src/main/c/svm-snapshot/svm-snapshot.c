@@ -38,7 +38,6 @@ typedef struct {
     int requests;
     // Integer used as a boolean to decide if the function has terminated.
     int finished;
-    // TODO: remove int finished
 } checkpoint_worker_args_t;
 
 typedef struct {
@@ -220,7 +219,6 @@ svm_sandbox_t* create_sandbox(isolate_abi_t* abi, graal_isolate_t** isolate, con
     svm_sandbox->fout = fout;
     svm_sandbox->fout_len = fout_len;
     svm_sandbox->processing = 0;
-    // TODO: should we copy abi isolate fin fout to heap?
 
     svm_sandbox->mutex = malloc(sizeof(pthread_mutex_t));
     if (pthread_mutex_init(svm_sandbox->mutex, NULL) != 0) {
