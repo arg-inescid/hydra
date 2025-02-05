@@ -13,6 +13,8 @@ typedef struct {
     isolate_abi_t*      abi;
     // Pointer to the isolate where the thread runs.
     graal_isolate_t*    isolate;
+    // Pointer to thread running application.
+    pthread_t           thread;
     // Mutex to have exclusive access between worker and request sender.
     pthread_mutex_t*    mutex;
     // Condition variable to signal request status start/finished.
@@ -21,6 +23,7 @@ typedef struct {
     // other thread started to wait for the signal.
     int                 processing;
     // Arguments passed to the function upon each invocation.
+    // Expects null-terminated string with max len FOUT_LEN
     const char*         fin;
     // Output buffer where the output of the invocation will be placed.
     // Note that if multiple invocations are performed (as a result of concurrency
@@ -57,6 +60,7 @@ svm_sandbox_t* checkpoint_svm(
     // Number of invocations each thread will perform.
     unsigned int requests,
     // Arguments passed to the function upon each invocation.
+    // Expects null-terminated string with max len FOUT_LEN
     const char* fin,
     // Output buffer where the output of the invocation will be placed.
     // Note that if multiple invocations are performed (as a result of concurrency
@@ -90,6 +94,7 @@ svm_sandbox_t* restore_svm(
     // Number of invocations each thread will perform.
     unsigned int requests,
     // Arguments passed to the function upon each invocation.
+    // Expects null-terminated string with max len FOUT_LEN
     const char* fin,
     // Output buffer where the output of the invocation will be placed.
     // Note that if multiple invocations are performed (as a result of concurrency
@@ -111,6 +116,7 @@ void run_svm(
     // Number of invocations each thread will perform.
     unsigned int requests,
     // Arguments passed to the function upon each invocation.
+    // Expects null-terminated string with max len FOUT_LEN
     const char* fin,
     // Output buffer where the output of the invocation will be placed.
     // Note that if multiple invocations are performed (as a result of concurrency

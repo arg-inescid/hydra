@@ -242,6 +242,8 @@ svm_sandbox_t* checkpoint_svm(
         graal_isolate_t** isolate) {
     // Thread that will run the sandboxed code.
     pthread_t worker;
+    // Thread that will run the application every time its signaled.
+    pthread_t* loop_worker;
     // Thread that will accept all syscalls after checkpoint.
     pthread_t allower;
 
@@ -331,8 +333,9 @@ svm_sandbox_t* checkpoint_svm(
     restore_wargs->concurrency = wargs->concurrency;
     restore_wargs->requests = wargs->requests;
 
-    pthread_t loop_worker;
-    pthread_create(&loop_worker, NULL, notif_worker, restore_wargs);
+    loop_worker = malloc(sizeof(pthread_t));
+    svm_sandbox->thread = loop_worker;
+    pthread_create(loop_worker, NULL, notif_worker, restore_wargs);
 
     // Close meta and mem fds.
     close(meta_snap_fd);
@@ -353,7 +356,7 @@ svm_sandbox_t* restore_svm(
         isolate_abi_t* abi,
         graal_isolate_t** isolate) {
 
-    pthread_t worker;
+    pthread_t* loop_worker;
     svm_sandbox_t* svm_sandbox;
     notif_worker_args_t* wargs;
     int last_pid;
@@ -390,7 +393,9 @@ svm_sandbox_t* restore_svm(
     }
 
     // Launch worker thread and wait for it to finish.
-    pthread_create(&worker, NULL, notif_worker, wargs);
+    loop_worker = malloc(sizeof(pthread_t));
+    svm_sandbox->thread = loop_worker;
+    pthread_create(loop_worker, NULL, notif_worker, wargs);
     // After launching original application, restore last next_pid for future threads
     if (last_pid != 1) {
         // Threads were restored so we want to change next pid
