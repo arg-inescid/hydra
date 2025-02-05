@@ -6,9 +6,6 @@
 #include <stdlib.h>
 #include <sys/prctl.h>
 
-// Maximum number of characters to receive from a function invocation.
-#define FOUT_LEN 256
-
 enum EXECUTION_MODE { NORMAL, CHECKPOINT, RESTORE };
 
 // Wether we are checkpointing or restoreing.
