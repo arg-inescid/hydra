@@ -99,11 +99,11 @@ int main(int argc, char** argv) {
     setvbuf(stdout, NULL, _IONBF, 0);
 
     if (CURRENT_MODE == RESTORE) {
-        restore_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, FOUT_LEN, &abi, &isolate);
+        restore_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, &abi, &isolate);
     } else if (CURRENT_MODE == CHECKPOINT) {
-        checkpoint_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, FOUT_LEN, &abi, &isolate);
+        checkpoint_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, &abi, &isolate);
     } else {
-        run_svm(FPATH, CONC, ITERS, fin, fout, FOUT_LEN, &abi, &isolate);
+        run_svm(FPATH, CONC, ITERS, fin, fout, &abi, &isolate);
     }
 
     fprintf(stdout, "function(%s) -> %s\n", fin, fout);

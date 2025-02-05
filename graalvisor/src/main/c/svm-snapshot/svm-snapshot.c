@@ -60,17 +60,15 @@ typedef struct {
     const char* fin;
     // Return string from function invocation.
     char* fout;
-    // Length of the output buffer.
-    size_t fout_len;
 } entrypoint_worker_args_t;
 
-void run_serial_entrypoint(isolate_abi_t* abi, graal_isolatethread_t *isolatethread, int requests, const char* fin, char* fout, size_t fout_len) {
+void run_serial_entrypoint(isolate_abi_t* abi, graal_isolatethread_t *isolatethread, int requests, const char* fin, char* fout) {
      for (int i = 0; i < requests; i++) {
 #ifdef PERF
         struct timeval st, et;
         gettimeofday(&st, NULL);
 #endif
-        abi->entrypoint(isolatethread, fin, fout, fout_len);
+        abi->entrypoint(isolatethread, fin, fout, FOUT_LEN);
 #ifdef PERF
         gettimeofday(&et, NULL);
         log("entrypoint took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
@@ -82,7 +80,7 @@ void* entrypoint_worker(void* args) {
     entrypoint_worker_args_t* wargs = (entrypoint_worker_args_t*) args;
     graal_isolatethread_t *isolatethread = NULL;
     wargs->abi->graal_attach_thread(wargs->isolate, &isolatethread);
-    run_serial_entrypoint(wargs->abi, isolatethread, wargs->requests, wargs->fin, wargs->fout, wargs->fout_len);
+    run_serial_entrypoint(wargs->abi, isolatethread, wargs->requests, wargs->fin, wargs->fout);
     // Note: from manual (https://www.graalvm.org/22.1/reference-manual/native-image/C-API/):
     // 'no code may still be executing in the isolate thread's context.' Since we cannot
     // guarantee that threads may be left behind, it is not safe to detach.
@@ -97,10 +95,9 @@ void run_entrypoint(
             unsigned int concurrency,
             unsigned int requests,
             const char* fin,
-            char* fout,
-            size_t fout_len) {
+            char* fout) {
     if (concurrency == 1) {
-        run_serial_entrypoint(abi, isolatethread, requests, fin, fout, fout_len);
+        run_serial_entrypoint(abi, isolatethread, requests, fin, fout);
     } else {
         pthread_t* workers = (pthread_t*) cr_malloc(concurrency * sizeof(pthread_t));
         entrypoint_worker_args_t* wargs = (entrypoint_worker_args_t*) cr_malloc(concurrency * sizeof(entrypoint_worker_args_t));
@@ -111,7 +108,6 @@ void run_entrypoint(
             wargs[i].fin = fin;
             // When multiple threads are launched, the output is taken from the first.
             wargs[i].fout = i == 0 ? fout : NULL;
-            wargs[i].fout_len = i == 0 ? fout_len : 0;
             pthread_create(&(workers[i]), NULL, entrypoint_worker, &(wargs[i]));
         }
         for (int i = 0; i < concurrency; i++) {
@@ -128,7 +124,6 @@ void run_svm(
         unsigned int requests,
         const char* fin,
         char* fout,
-        size_t fout_len,
         isolate_abi_t* abi,
         graal_isolate_t** isolate) {
     graal_isolatethread_t *isolatethread = NULL;
@@ -150,7 +145,7 @@ void run_svm(
     }
 
     // Run user code.
-    run_entrypoint(abi, *isolate, isolatethread, concurrency, requests, fin, fout, fout_len);
+    run_entrypoint(abi, *isolate, isolatethread, concurrency, requests, fin, fout);
 
     // Detach thread function isolate and quit. This is safe since all threads are stopped.
     abi->graal_detach_thread(isolatethread);
@@ -168,7 +163,7 @@ void* checkpoint_worker(void* args) {
     }
 
     // Prepare and run function.
-    run_svm(wargs->fpath, wargs->concurrency, wargs->requests, svm->fin, svm->fout, svm->fout_len, svm->abi, &(svm->isolate));
+    run_svm(wargs->fpath, wargs->concurrency, wargs->requests, svm->fin, svm->fout, svm->abi, &(svm->isolate));
     // Mark execution as finished (will alert the seccomp monitor to quit).
     wargs->finished = 1;
 
@@ -188,7 +183,7 @@ void* notif_worker(void* args) {
         while (svm->processing == 0) {
             pthread_cond_wait(svm->completed_request, svm->mutex);
         }
-        run_entrypoint(svm->abi, svm->isolate, isolatethread, wargs->concurrency, wargs->requests, svm->fin, svm->fout, svm->fout_len);
+        run_entrypoint(svm->abi, svm->isolate, isolatethread, wargs->concurrency, wargs->requests, svm->fin, svm->fout);
         // set state to finished
         svm->processing = 0;
         pthread_cond_signal(svm->completed_request);
@@ -209,7 +204,7 @@ void invoke_svm(svm_sandbox_t* svm_sandbox) {
     pthread_mutex_unlock(svm_sandbox->mutex);
 }
 
-svm_sandbox_t* create_sandbox(isolate_abi_t* abi, graal_isolate_t** isolate, const char* fin, char* fout, size_t fout_len) {
+svm_sandbox_t* create_sandbox(isolate_abi_t* abi, graal_isolate_t** isolate, const char* fin, char* fout) {
     svm_sandbox_t* svm_sandbox = malloc(sizeof(svm_sandbox_t));
     memset(svm_sandbox, 0, sizeof(svm_sandbox_t));
 
@@ -217,7 +212,6 @@ svm_sandbox_t* create_sandbox(isolate_abi_t* abi, graal_isolate_t** isolate, con
     svm_sandbox->isolate = *isolate;
     svm_sandbox->fin = fin;
     svm_sandbox->fout = fout;
-    svm_sandbox->fout_len = fout_len;
     svm_sandbox->processing = 0;
 
     svm_sandbox->mutex = malloc(sizeof(pthread_mutex_t));
@@ -244,7 +238,6 @@ svm_sandbox_t* checkpoint_svm(
         unsigned int requests,
         const char* fin,
         char* fout,
-        size_t fout_len,
         isolate_abi_t* abi,
         graal_isolate_t** isolate) {
     // Thread that will run the sandboxed code.
@@ -264,7 +257,7 @@ svm_sandbox_t* checkpoint_svm(
     checkpoint_worker_args_t* wargs = malloc(sizeof(checkpoint_worker_args_t));
     memset(wargs, 0, sizeof(checkpoint_worker_args_t));
 
-    svm_sandbox_t* svm_sandbox = create_sandbox(abi, isolate, fin, fout, fout_len);
+    svm_sandbox_t* svm_sandbox = create_sandbox(abi, isolate, fin, fout);
 
     wargs->svm_sandbox = svm_sandbox;
     wargs->fpath = fpath;
@@ -357,7 +350,6 @@ svm_sandbox_t* restore_svm(
         unsigned int requests,
         const char* fin,
         char* fout,
-        size_t fout_len,
         isolate_abi_t* abi,
         graal_isolate_t** isolate) {
 
@@ -380,7 +372,7 @@ svm_sandbox_t* restore_svm(
 #endif
 
     wargs = malloc(sizeof(notif_worker_args_t));
-    svm_sandbox = create_sandbox(abi, isolate, fin, fout, fout_len);
+    svm_sandbox = create_sandbox(abi, isolate, fin, fout);
     wargs->svm_sandbox = svm_sandbox;
     wargs->concurrency = concurrency;
     wargs->requests = requests;

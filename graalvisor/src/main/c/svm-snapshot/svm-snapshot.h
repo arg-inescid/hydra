@@ -4,6 +4,9 @@
 #include "graal_capi.h"
 #include <pthread.h>
 
+// Maximum number of characters to receive from a function invocation.
+#define FOUT_LEN 256
+
 // Sandbox for executing entrypoints and getting their results.
 typedef struct {
     // Pointer to the abi structure where the function pointers will be stored.
@@ -17,14 +20,13 @@ typedef struct {
     // Predicative variable to avoid deadlocks from signal arriving before
     // other thread started to wait for the signal.
     int                 processing;
-    // Length of the output buffer. If the output string is larger, a warning
-    // is printed to stdout and a '\0' is placed at outbuf[outbuf_len - 1].
-    size_t              fout_len;
     // Arguments passed to the function upon each invocation.
     const char*         fin;
     // Output buffer where the output of the invocation will be placed.
     // Note that if multiple invocations are performed (as a result of concurrency
     // or requests), only the output of the first request will be saved.
+    // If the output string is larger than FOUT_LEN, a warning
+    // is printed to stdout and a '\0' is placed at outbuf[outbuf_len - 1].
     char*               fout;
 } svm_sandbox_t;
 
@@ -59,10 +61,9 @@ svm_sandbox_t* checkpoint_svm(
     // Output buffer where the output of the invocation will be placed.
     // Note that if multiple invocations are performed (as a result of concurrency
     // or requests), only the output of the first request will be saved.
-    char* fout,
-    // Length of the output buffer. If the output string is larger, a warning
+    // If the output string is larger than FOUT_LEN, a warning
     // is printed to stdout and a '\0' is placed at outbuf[outbuf_len - 1].
-    unsigned long fout_len,
+    char* fout,
     // (optional, could be NULL) Pointer to the abi structure where the function
     // pointers will be stored.
     isolate_abi_t* abi,
@@ -93,10 +94,9 @@ svm_sandbox_t* restore_svm(
     // Output buffer where the output of the invocation will be placed.
     // Note that if multiple invocations are performed (as a result of concurrency
     // or requests), only the output of the first request will be saved.
-    char* fout,
-    // Length of the output buffer. If the output string is larger, a warning
+    // If the output string is larger than FOUT_LEN, a warning
     // is printed to stdout and a '\0' is placed at outbuf[outbuf_len - 1].
-    unsigned long fout_len,
+    char* fout,
     // Pointer to the abi structure where the function pointers will be stored.
     isolate_abi_t* abi,
     // Output argument used to save the pointer to the restored isolate.
@@ -115,10 +115,9 @@ void run_svm(
     // Output buffer where the output of the invocation will be placed.
     // Note that if multiple invocations are performed (as a result of concurrency
     // or requests), only the output of the first request will be saved.
-    char* fout,
-    // Length of the output buffer. If the output string is larger, a warning
+    // If the output string is larger than FOUT_LEN, a warning
     // is printed to stdout and a '\0' is placed at outbuf[outbuf_len - 1].
-    unsigned long fout_len,
+    char* fout,
     // Pointer to the abi structure where the function pointers will be stored.
     isolate_abi_t* abi,
     // Output argument used to save the pointer to the restored isolate.
