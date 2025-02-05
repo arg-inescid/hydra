@@ -274,7 +274,7 @@ svm_sandbox_t* checkpoint_svm(
     wargs->requests = requests;
 
     if (set_next_pid(1000*(seed+1)) == -1) {
-        perror("set_next_pid");
+        err("set_next_pid");
         return NULL;
     }
 
@@ -387,12 +387,13 @@ svm_sandbox_t* restore_svm(
     wargs->concurrency = concurrency;
     wargs->requests = requests;
 
+    // Get pid that will be assigned to next created thread
     if ((last_pid = get_next_pid()) == -1) {
         err("error: failed to get next pid\n");
         return NULL;
     }
     printf("last_pid = %d\n", last_pid);
-
+    // After having restored threads, set next pid to first pid of current sandbox
     if (set_next_pid(1000*(seed+1)) == -1) {
         err("error: failed to set next pid\n");
         return NULL;
@@ -400,9 +401,13 @@ svm_sandbox_t* restore_svm(
 
     // Launch worker thread and wait for it to finish.
     pthread_create(&worker, NULL, notif_worker, wargs);
-    if (set_next_pid(last_pid) == -1) {
-        err("error: failed to set next pid\n");
-        return NULL;
+    // After launching original application, restore last next_pid for future threads
+    if (last_pid != 1) {
+        // Threads were restored so we want to change next pid
+        if (set_next_pid(last_pid) == -1) {
+            err("error: failed to set next pid\n");
+            return NULL;
+        }
     }
     invoke_svm(svm_sandbox);
 
