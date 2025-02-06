@@ -14,7 +14,7 @@ typedef struct {
     // Pointer to the isolate where the thread runs.
     graal_isolate_t*    isolate;
     // Pointer to thread running application.
-    pthread_t           thread;
+    pthread_t*           thread;
     // Mutex to have exclusive access between worker and request sender.
     pthread_mutex_t*    mutex;
     // Condition variable to signal request status start/finished.

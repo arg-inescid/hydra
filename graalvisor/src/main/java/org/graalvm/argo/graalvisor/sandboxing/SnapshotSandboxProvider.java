@@ -50,9 +50,9 @@ public class SnapshotSandboxProvider extends SandboxProvider {
             return invoke(jsonArguments);
         } else if (new File(this.metaSnapPath).exists()) {
             System.out.println(String.format("Found %s, restoring svm.", this.metaSnapPath));
-            NativeSandboxInterface.svmRestore(svmID, functionPath, metaSnapPath, memSnapPath);
+            String output = NativeSandboxInterface.svmRestore(svmID, functionPath, 1, 1, jsonArguments, metaSnapPath, memSnapPath);
             warmedUp = true;
-            return invoke(jsonArguments);
+            return output;
         } else {
             System.out.println(String.format("No snapshot found (%s), checkpointing svm after %d requests on %d concurrent threads.",
                 this.metaSnapPath, requests, concurrency));
