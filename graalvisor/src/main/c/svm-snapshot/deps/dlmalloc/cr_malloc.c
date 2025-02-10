@@ -26,14 +26,18 @@ static int mspace_counter = 1;
 // helper variable to determine first usage of mspace and creating global mspace
 static pid_t base_tid = 0;
 
+mspace find_mspace();
+
 mspace_mapping_t* get_mspace_mapping() {
     return mspace_table;
 }
 
 // NOT USED ANYMORE
-mspace get_mspace() {
+void get_mspace() {
     // TODO: add seed as argument to return correct mspace
-    return mspace_table[1].mspace;
+    // TODO: give correct id
+    id = mspace_counter++;
+    cr_printf(STDOUT_FILENO, "get_mspace id=%d tid=%d mspace=%p\n", id, syscall(__NR_gettid), mspace_table[id].mspace);
 }
 
 int get_id(pid_t tid) {

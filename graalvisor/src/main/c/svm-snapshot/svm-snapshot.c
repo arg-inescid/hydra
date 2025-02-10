@@ -49,6 +49,8 @@ typedef struct {
     int concurrency;
     // Number of requests to perform.
     int requests;
+    // Identifies sandbox.
+    unsigned long seed;
 } notif_worker_args_t;
 
 typedef struct {
@@ -71,9 +73,10 @@ void run_serial_entrypoint(isolate_abi_t* abi, graal_isolatethread_t *isolatethr
         gettimeofday(&st, NULL);
 #endif
         abi->entrypoint(isolatethread, fin, fout, FOUT_LEN);
-#ifdef USE_DLMALLOC
-        leave_mspace();
-#endif
+// TODO REMOVE!! ??
+// #ifdef USE_DLMALLOC
+//         leave_mspace();
+// #endif
 #ifdef PERF
         gettimeofday(&et, NULL);
         log("entrypoint took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
@@ -130,13 +133,12 @@ void run_svm(
         const char* fin,
         char* fout,
         isolate_abi_t* abi,
-        graal_isolate_t** isolate,
-        unsigned int seed) {
+        graal_isolate_t** isolate) {
     graal_isolatethread_t *isolatethread = NULL;
 
-#ifdef USE_DLMALLOC
-    enter_mspace(seed);
-#endif
+// #ifdef USE_DLMALLOC
+//     enter_mspace(wargs->seed);
+// #endif
 
     // Load function and initialize abi.
     if (load_function(fpath, abi)) {
@@ -174,9 +176,9 @@ void* checkpoint_worker(void* args) {
 
     // Prepare and run function.
 #ifdef USE_DLMALLOC
-    enter_mspace();
-    run_svm(wargs->fpath, wargs->concurrency, wargs->requests, svm->fin, svm->fout, svm->abi, &(svm->isolate), wargs->seed);
+    enter_mspace(wargs->seed);
 #endif
+    run_svm(wargs->fpath, wargs->concurrency, wargs->requests, svm->fin, svm->fout, svm->abi, &(svm->isolate));
     // TODO: leave_mspace
 
     // Mark execution as finished (will alert the seccomp monitor to quit).
@@ -191,6 +193,9 @@ void* notif_worker(void* args) {
     graal_isolatethread_t *isolatethread = NULL;
 
     (*svm->abi).graal_attach_thread(svm->isolate, &isolatethread);
+#ifdef USE_DLMALLOC
+        get_mspace();
+#endif
     // Prepare and run function.
     for (;;) {
         pthread_mutex_lock(svm->mutex);
@@ -219,7 +224,7 @@ void invoke_svm(svm_sandbox_t* svm_sandbox) {
     pthread_mutex_unlock(svm_sandbox->mutex);
 }
 
-svm_sandbox_t* create_sandbox(isolate_abi_t* abi, graal_isolate_t** isolate, const char* fin, char* fout) {
+svm_sandbox_t* create_sandbox(isolate_abi_t* abi, graal_isolate_t** isolate, const char* fin, char* fout, unsigned long seed) {
     svm_sandbox_t* svm_sandbox = malloc(sizeof(svm_sandbox_t));
     memset(svm_sandbox, 0, sizeof(svm_sandbox_t));
 
@@ -227,6 +232,7 @@ svm_sandbox_t* create_sandbox(isolate_abi_t* abi, graal_isolate_t** isolate, con
     svm_sandbox->isolate = *isolate;
     svm_sandbox->fin = fin;
     svm_sandbox->fout = fout;
+    svm_sandbox->seed = seed;
     svm_sandbox->processing = 0;
 
     svm_sandbox->mutex = malloc(sizeof(pthread_mutex_t));
@@ -274,13 +280,13 @@ svm_sandbox_t* checkpoint_svm(
     checkpoint_worker_args_t* wargs = malloc(sizeof(checkpoint_worker_args_t));
     memset(wargs, 0, sizeof(checkpoint_worker_args_t));
 
-    svm_sandbox_t* svm_sandbox = create_sandbox(abi, isolate, fin, fout);
+    svm_sandbox_t* svm_sandbox = create_sandbox(abi, isolate, fin, fout, seed);
 
     wargs->svm_sandbox = svm_sandbox;
     wargs->fpath = fpath;
     wargs->concurrency = concurrency;
     wargs->requests = requests;
-    wargs.seed = seed;
+    wargs->seed = seed;
 
     if (set_next_pid(1000*(seed+1)) == -1) {
         err("set_next_pid");
@@ -382,9 +388,6 @@ svm_sandbox_t* restore_svm(
         gettimeofday(&st, NULL);
 #endif
 
-#ifdef USE_DLMALLOC
-        enter_mspace(seed);
-#endif
         restore(meta_snap_path, mem_snap_path, abi, isolate);
 #ifdef PERF
         gettimeofday(&et, NULL);
@@ -395,7 +398,7 @@ svm_sandbox_t* restore_svm(
 #endif
 
     wargs = malloc(sizeof(notif_worker_args_t));
-    svm_sandbox = create_sandbox(abi, isolate, fin, fout);
+    svm_sandbox = create_sandbox(abi, isolate, fin, fout, seed);
     wargs->svm_sandbox = svm_sandbox;
     wargs->concurrency = concurrency;
     wargs->requests = requests;

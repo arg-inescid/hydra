@@ -372,6 +372,8 @@ void* restore_thread_internal(void* tdata) {
     memcpy(&cargs, ((char*)tdata) + sizeof(thread_context_t), sizeof(struct clone_args));
     free(tdata);
 
+    // TODO: add seed?
+    get_mspace();
     // Note: this line reconstructs the deep-copied data structure.
     context.ctx.uc_mcontext.fpregs = &(context.fpstate);
 
@@ -400,7 +402,7 @@ void restore_thread(int meta_snap_fd) {
     pthread_t thread;
     struct clone_args* cargs;
     pid_t* child_ptr;
-    char* restore_tdata = cr_malloc(sizeof(thread_context_t) + sizeof(struct clone_args));
+    char* restore_tdata = malloc(sizeof(thread_context_t) + sizeof(struct clone_args));
 
     if (restore_tdata == NULL) {
         err("error: failed to alloc thread data\n");
