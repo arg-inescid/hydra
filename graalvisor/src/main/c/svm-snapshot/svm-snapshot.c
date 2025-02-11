@@ -26,20 +26,12 @@
 #include <unistd.h>
 
 typedef struct {
+    // Sandbox for executing entrypoints and getting their results.
+    svm_sandbox_t* svm_sandbox;
     // Path to the function library.
     const void* fpath;
-    // ABI to create, invoke, destroy isolates.
-    isolate_abi_t abi;
-    // Pointer to the isolate.
-    graal_isolate_t* isolate;
     // File descriptor used when installing seccomp.
     int seccomp_fd;
-    // Path of the function library.
-    const char* fin;
-    // Return string from function invocation.
-    char* fout;
-    // Length of the output buffer.
-    size_t fout_len;
     // Number of parallel threads handling requests.
     int concurrency;
     // Number of requests to perform.
@@ -47,6 +39,15 @@ typedef struct {
     // Integer used as a boolean to decide if the function has terminated.
     int finished;
 } checkpoint_worker_args_t;
+
+typedef struct {
+    // Sandbox for executing entrypoints and getting their results.
+    svm_sandbox_t* svm_sandbox;
+    // Number of parallel threads handling requests.
+    int concurrency;
+    // Number of requests to perform.
+    int requests;
+} notif_worker_args_t;
 
 typedef struct {
      // ABI to create, invoke, destroy isolates.
@@ -59,17 +60,15 @@ typedef struct {
     const char* fin;
     // Return string from function invocation.
     char* fout;
-    // Length of the output buffer.
-    size_t fout_len;
 } entrypoint_worker_args_t;
 
-void run_serial_entrypoint(isolate_abi_t* abi, graal_isolatethread_t *isolatethread, int requests, const char* fin, char* fout, size_t fout_len) {
+void run_serial_entrypoint(isolate_abi_t* abi, graal_isolatethread_t *isolatethread, int requests, const char* fin, char* fout) {
      for (int i = 0; i < requests; i++) {
 #ifdef PERF
         struct timeval st, et;
         gettimeofday(&st, NULL);
 #endif
-        abi->entrypoint(isolatethread, fin, fout, fout_len);
+        abi->entrypoint(isolatethread, fin, fout, FOUT_LEN);
 #ifdef PERF
         gettimeofday(&et, NULL);
         log("entrypoint took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
@@ -81,7 +80,7 @@ void* entrypoint_worker(void* args) {
     entrypoint_worker_args_t* wargs = (entrypoint_worker_args_t*) args;
     graal_isolatethread_t *isolatethread = NULL;
     wargs->abi->graal_attach_thread(wargs->isolate, &isolatethread);
-    run_serial_entrypoint(wargs->abi, isolatethread, wargs->requests, wargs->fin, wargs->fout, wargs->fout_len);
+    run_serial_entrypoint(wargs->abi, isolatethread, wargs->requests, wargs->fin, wargs->fout);
     // Note: from manual (https://www.graalvm.org/22.1/reference-manual/native-image/C-API/):
     // 'no code may still be executing in the isolate thread's context.' Since we cannot
     // guarantee that threads may be left behind, it is not safe to detach.
@@ -96,10 +95,9 @@ void run_entrypoint(
             unsigned int concurrency,
             unsigned int requests,
             const char* fin,
-            char* fout,
-            size_t fout_len) {
+            char* fout) {
     if (concurrency == 1) {
-        run_serial_entrypoint(abi, isolatethread, requests, fin, fout, fout_len);
+        run_serial_entrypoint(abi, isolatethread, requests, fin, fout);
     } else {
         pthread_t* workers = (pthread_t*) cr_malloc(concurrency * sizeof(pthread_t));
         entrypoint_worker_args_t* wargs = (entrypoint_worker_args_t*) cr_malloc(concurrency * sizeof(entrypoint_worker_args_t));
@@ -110,7 +108,6 @@ void run_entrypoint(
             wargs[i].fin = fin;
             // When multiple threads are launched, the output is taken from the first.
             wargs[i].fout = i == 0 ? fout : NULL;
-            wargs[i].fout_len = i == 0 ? fout_len : 0;
             pthread_create(&(workers[i]), NULL, entrypoint_worker, &(wargs[i]));
         }
         for (int i = 0; i < concurrency; i++) {
@@ -127,7 +124,6 @@ void run_svm(
         unsigned int requests,
         const char* fin,
         char* fout,
-        size_t fout_len,
         isolate_abi_t* abi,
         graal_isolate_t** isolate) {
     graal_isolatethread_t *isolatethread = NULL;
@@ -149,7 +145,7 @@ void run_svm(
     }
 
     // Run user code.
-    run_entrypoint(abi, *isolate, isolatethread, concurrency, requests, fin, fout, fout_len);
+    run_entrypoint(abi, *isolate, isolatethread, concurrency, requests, fin, fout);
 
     // Detach thread function isolate and quit. This is safe since all threads are stopped.
     abi->graal_detach_thread(isolatethread);
@@ -157,6 +153,7 @@ void run_svm(
 
 void* checkpoint_worker(void* args) {
     checkpoint_worker_args_t* wargs = (checkpoint_worker_args_t*) args;
+    svm_sandbox_t* svm = wargs->svm_sandbox;
 
     // Install seccomp filter.
     wargs->seccomp_fd = install_seccomp_filter();
@@ -166,14 +163,73 @@ void* checkpoint_worker(void* args) {
     }
 
     // Prepare and run function.
-    run_svm(wargs->fpath, wargs->concurrency, wargs->requests, wargs->fin, wargs->fout, wargs->fout_len, &(wargs->abi), &(wargs->isolate));
-
+    run_svm(wargs->fpath, wargs->concurrency, wargs->requests, svm->fin, svm->fout, svm->abi, &(svm->isolate));
     // Mark execution as finished (will alert the seccomp monitor to quit).
     wargs->finished = 1;
+
     return NULL;
 }
 
-void checkpoint_svm(
+void* notif_worker(void* args) {
+    notif_worker_args_t* wargs = (notif_worker_args_t*) args;
+    svm_sandbox_t* svm = wargs->svm_sandbox;
+    graal_isolatethread_t *isolatethread = NULL;
+
+    (*svm->abi).graal_attach_thread(svm->isolate, &isolatethread);
+    // Prepare and run function.
+    for (;;) {
+        pthread_mutex_lock(svm->mutex);
+        // until state is processing or signal to start processing is received, wait.
+        while (svm->processing == 0) {
+            pthread_cond_wait(svm->completed_request, svm->mutex);
+        }
+        run_entrypoint(svm->abi, svm->isolate, isolatethread, wargs->concurrency, wargs->requests, svm->fin, svm->fout);
+        // set state to finished
+        svm->processing = 0;
+        pthread_cond_signal(svm->completed_request);
+        pthread_mutex_unlock(svm->mutex);
+    }
+    free(wargs);
+    return NULL;
+}
+
+
+void invoke_svm(svm_sandbox_t* svm_sandbox) {
+    pthread_mutex_lock(svm_sandbox->mutex);
+    svm_sandbox->processing = 1;
+    pthread_cond_signal(svm_sandbox->completed_request);
+    while (svm_sandbox->processing == 1) {
+        pthread_cond_wait(svm_sandbox->completed_request, svm_sandbox->mutex);
+    }
+    pthread_mutex_unlock(svm_sandbox->mutex);
+}
+
+svm_sandbox_t* create_sandbox(isolate_abi_t* abi, graal_isolate_t** isolate, const char* fin, char* fout) {
+    svm_sandbox_t* svm_sandbox = malloc(sizeof(svm_sandbox_t));
+    memset(svm_sandbox, 0, sizeof(svm_sandbox_t));
+
+    svm_sandbox->abi = abi;
+    svm_sandbox->isolate = *isolate;
+    svm_sandbox->fin = fin;
+    svm_sandbox->fout = fout;
+    svm_sandbox->processing = 0;
+
+    svm_sandbox->mutex = malloc(sizeof(pthread_mutex_t));
+    if (pthread_mutex_init(svm_sandbox->mutex, NULL) != 0) {
+        err("error: failed to init mutex\n");
+        return NULL;
+    }
+
+    svm_sandbox->completed_request = malloc(sizeof(pthread_cond_t));
+    if (pthread_cond_init(svm_sandbox->completed_request, NULL) != 0) {
+        err("error: failed to init cond\n");
+        return NULL;
+    }
+
+    return svm_sandbox;
+}
+
+svm_sandbox_t* checkpoint_svm(
         const char* fpath,
         const char* meta_snap_path,
         const char* mem_snap_path,
@@ -182,11 +238,12 @@ void checkpoint_svm(
         unsigned int requests,
         const char* fin,
         char* fout,
-        size_t fout_len,
         isolate_abi_t* abi,
         graal_isolate_t** isolate) {
     // Thread that will run the sandboxed code.
     pthread_t worker;
+    // Thread that will run the application every time its signaled.
+    pthread_t* loop_worker;
     // Thread that will accept all syscalls after checkpoint.
     pthread_t allower;
 
@@ -198,15 +255,21 @@ void checkpoint_svm(
     thread_t threads;
     memset(&threads, 0, sizeof(thread_t));
 
-     // Create and initialize the checkpoint worker arguments struct.
-    checkpoint_worker_args_t wargs;
-    memset(&wargs, 0, sizeof(checkpoint_worker_args_t));
-     wargs.fpath = fpath;
-     wargs.fin = fin;
-     wargs.fout = fout;
-     wargs.fout_len = fout_len;
-     wargs.concurrency = concurrency;
-     wargs.requests = requests;
+    // Create and initialize the checkpoint worker arguments struct.
+    checkpoint_worker_args_t* wargs = malloc(sizeof(checkpoint_worker_args_t));
+    memset(wargs, 0, sizeof(checkpoint_worker_args_t));
+
+    svm_sandbox_t* svm_sandbox = create_sandbox(abi, isolate, fin, fout);
+
+    wargs->svm_sandbox = svm_sandbox;
+    wargs->fpath = fpath;
+    wargs->concurrency = concurrency;
+    wargs->requests = requests;
+
+    if (set_next_pid(1000*(seed+1)) == -1) {
+        err("set_next_pid");
+        return NULL;
+    }
 
     // If in checkpoint mode, open metadata file, wait for seccomp to be ready and handle notifications.
     int meta_snap_fd = move_to_reserved_fd(open(meta_snap_path,  O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR));
@@ -219,16 +282,16 @@ void checkpoint_svm(
     }
 
     // Launch worker thread.
-    pthread_create(&worker, NULL, checkpoint_worker, &wargs);
+    pthread_create(&worker, NULL, checkpoint_worker, wargs);
 
     // Wait while the thread initilizes and installs the seccomp filter.
-    while (!wargs.seccomp_fd) ;
+    while (!wargs->seccomp_fd) ;
 
     // Move seccomp fd to a reserved fd.
-    wargs.seccomp_fd = move_to_reserved_fd(wargs.seccomp_fd);
+    wargs->seccomp_fd = move_to_reserved_fd(wargs->seccomp_fd);
 
     // Keep handling syscall notifications.
-    handle_syscalls(seed, wargs.seccomp_fd, &(wargs.finished), meta_snap_fd, &mappings, &threads);
+    handle_syscalls(seed, wargs->seccomp_fd, &(wargs->finished), meta_snap_fd, &mappings, &threads);
 
     if (!list_threads_empty(&threads)) {
         // Pause background threads before checkpointing.
@@ -247,7 +310,7 @@ void checkpoint_svm(
     struct timeval st, et;
     gettimeofday(&st, NULL);
 #endif
-    checkpoint(meta_snap_fd, mem_snap_fd, &mappings, &threads, &(wargs.abi), wargs.isolate);
+    checkpoint(meta_snap_fd, mem_snap_fd, &mappings, &threads, svm_sandbox->abi, svm_sandbox->isolate);
 #ifdef PERF
     gettimeofday(&et, NULL);
     log("checkpoint took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
@@ -259,25 +322,45 @@ void checkpoint_svm(
 
     if (!list_threads_empty(&threads)) {
         // Starting monitor thread to allow syscalls from the background threads.
-        pthread_create(&allower, NULL, allow_syscalls, &(wargs.seccomp_fd));
+        pthread_create(&allower, NULL, allow_syscalls, &(wargs->seccomp_fd));
         // Resume background threads before checkpointing.
         resume_background_threads(&threads);
     }
+
+    // Launch worker thread and wait for it to finish.
+    notif_worker_args_t* restore_wargs = malloc(sizeof(notif_worker_args_t));
+    restore_wargs->svm_sandbox = wargs->svm_sandbox;
+    restore_wargs->concurrency = wargs->concurrency;
+    restore_wargs->requests = wargs->requests;
+
+    loop_worker = malloc(sizeof(pthread_t));
+    svm_sandbox->thread = loop_worker;
+    pthread_create(loop_worker, NULL, notif_worker, restore_wargs);
 
     // Close meta and mem fds.
     close(meta_snap_fd);
     close(mem_snap_fd);
 
-    // Copy output arguments.
-    if (abi != NULL) {
-        memcpy(abi, &(wargs.abi), sizeof(isolate_abi_t));
-    }
-    if (isolate != NULL) {
-        memcpy(isolate, &(wargs.isolate), sizeof(graal_isolate_t*));
-    }
+    return svm_sandbox;
 }
 
-void restore_svm(const char* fpath, const char* meta_snap_path, const char* mem_snap_path, isolate_abi_t* abi, graal_isolate_t** isolate) {
+svm_sandbox_t* restore_svm(
+        const char* fpath,
+        const char* meta_snap_path,
+        const char* mem_snap_path,
+        size_t seed,
+        unsigned int concurrency,
+        unsigned int requests,
+        const char* fin,
+        char* fout,
+        isolate_abi_t* abi,
+        graal_isolate_t** isolate) {
+
+    pthread_t* loop_worker;
+    svm_sandbox_t* svm_sandbox;
+    notif_worker_args_t* wargs;
+    int last_pid;
+
 #ifdef PERF
         struct timeval st, et;
         gettimeofday(&st, NULL);
@@ -290,4 +373,42 @@ void restore_svm(const char* fpath, const char* meta_snap_path, const char* mem_
 #ifdef DEBUG
         check_proc_maps("after_restore.log", NULL);
 #endif
+
+    wargs = malloc(sizeof(notif_worker_args_t));
+    svm_sandbox = create_sandbox(abi, isolate, fin, fout);
+    wargs->svm_sandbox = svm_sandbox;
+    wargs->concurrency = concurrency;
+    wargs->requests = requests;
+
+    // Get pid that will be assigned to next created thread
+    if ((last_pid = get_next_pid()) == -1) {
+        err("error: failed to get next pid\n");
+        return NULL;
+    }
+    printf("last_pid = %d\n", last_pid);
+    // After having restored threads, set next pid to first pid of current sandbox
+    if (set_next_pid(1000*(seed+1)) == -1) {
+        err("error: failed to set next pid\n");
+        return NULL;
+    }
+
+    // Launch worker thread and wait for it to finish.
+    loop_worker = malloc(sizeof(pthread_t));
+    svm_sandbox->thread = loop_worker;
+    pthread_create(loop_worker, NULL, notif_worker, wargs);
+    // After launching original application, restore last next_pid for future threads
+    if (last_pid != 1) {
+        // Threads were restored so we want to change next pid
+        if (set_next_pid(last_pid) == -1) {
+            err("error: failed to set next pid\n");
+            return NULL;
+        }
+    }
+    invoke_svm(svm_sandbox);
+
+    return svm_sandbox;
+    // Note: from manual (https://www.graalvm.org/22.1/reference-manual/native-image/C-API/):
+    // 'no code may still be executing in the isolate thread's context.' Since we cannot
+    // guarantee that threads may be left behind, it is not safe to detach.
+    //abi.graal_detach_thread(isolatethread);
 }

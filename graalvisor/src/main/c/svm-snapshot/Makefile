@@ -80,44 +80,44 @@ benchmarks: all
 # TODO - gv_python_videoprocessing (process)
 
 run-normal: all
-	setarch -R ./main normal $(app) 2>&1 | tee normal.log
+	$(CURDIR)/run-env.sh ./main normal $(app) 2>&1 | tee normal.log
 
 strace-normal: all
-	setarch -R strace -f ./main normal $(app) 2>&1 | tee strace-normal.log
+	$(CURDIR)/run-env.sh strace -f ./main normal $(app) 2>&1 | tee strace-normal.log
 
 gdb-normal: all
-	setarch -R gdb $(gcommands) --args ./main normal $(app)
+	gdb $(gcommands) --args bash $(CURDIR)/run-env.sh ./main normal $(app)
 
 gdb-checkpoint: all
-	setarch -R gdb $(gcommands) --args ./main checkpoint $(app) | tee gdb-checkpoint.log
+	gdb $(gcommands) --args bash $(CURDIR)/run-env.sh ./main checkpoint $(app) | tee gdb-checkpoint.log
 
 run-checkpoint: all
 	rm -f snapshot.mem
 	rm -f snapshot.meta
-	setarch -R ./main checkpoint $(app) 2>&1 | tee checkpoint.log
+	$(CURDIR)/run-env.sh ./main checkpoint $(app) 2>&1 | tee checkpoint.log
 
 strace-checkpoint: all
 	rm -f snapshot.mem
 	rm -f snapshot.meta
-	setarch -R strace  -f ./main checkpoint $(app) 2>&1 | tee strace-checkpoint.log
+	$(CURDIR)/run-env.sh strace  -f ./main checkpoint $(app) 2>&1 | tee strace-checkpoint.log
 
 run-restore: all
-	setarch -R ./main restore $(app) 2>&1 | tee restore.log
+	$(CURDIR)/run-env.sh ./main restore $(app) 2>&1 | tee restore.log
 
 run: run-checkpoint run-restore
 
 run-perf: all
 	rm -f snapshot.mem
 	rm -f snapshot.meta
-	setarch -R /bin/time -v ./main normal $(app) 2>&1 | tee normal.log
-	setarch -R /bin/time -v ./main checkpoint $(app) 2>&1 | tee checkpoint.log
-	setarch -R /bin/time -v ./main restore $(app) 2>&1 | tee restore.log
+	$(CURDIR)/run-env.sh /bin/time -v ./main normal $(app) 2>&1 | tee normal.log
+	$(CURDIR)/run-env.sh /bin/time -v ./main checkpoint $(app) 2>&1 | tee checkpoint.log
+	$(CURDIR)/run-env.sh /bin/time -v ./main restore $(app) 2>&1 | tee restore.log
 
 gdb-restore: all
-	setarch -R gdb $(gcommands) --args ./main restore $(app)
+	gdb $(gcommands) --args bash $(CURDIR)/run-env.sh ./main restore $(app)
 
 strace-restore: all
-	setarch -R strace -f ./main restore $(app) 2>&1 | tee strace-restore.log
+	$(CURDIR)/run-env.sh strace -f ./main restore $(app) 2>&1 | tee strace-restore.log
 
 clean:
 	rm -f *.o main *.snap *.log

@@ -26,9 +26,12 @@ public class NativeSandboxInterface {
         String functionArgs,
         String metaSnapshotPath,
         String memSnapshotPath);
-    public static native void svmRestore(
+    public static native String svmRestore(
         int svmid,
         String functionPath,
+        int concurrency,
+        int requests,
+        String functionArgs,
         String metaSnapshotPath,
         String memSnapshotPath);
 

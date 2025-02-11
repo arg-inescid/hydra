@@ -4,9 +4,7 @@
 #include "svm-snapshot.h"
 #include <stdio.h>
 #include <stdlib.h>
-
-// Maximum number of characters to receive from a function invocation.
-#define FOUT_LEN 256
+#include <sys/prctl.h>
 
 enum EXECUTION_MODE { NORMAL, CHECKPOINT, RESTORE };
 
@@ -72,8 +70,24 @@ void init_args(int argc, char** argv) {
 }
 
 int main(int argc, char** argv) {
+    isolate_abi_t abi;
+    graal_isolate_t* isolate = NULL;
+
+    // INput and OUTput for function ran by isolate
     const char* fin = "(null)";
     char  fout[FOUT_LEN];
+
+    // Enable unshare() and access to /proc/sys/kernel/ns_last_pid
+    if (prctl(PR_CAP_AMBIENT, PR_CAP_AMBIENT_RAISE, 21, 0, 0) == -1) {
+        perror("prctl CAP_SYS_ADMIN");
+        return 1;
+    }
+
+    // Lock process privileges
+    if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) == -1) {
+        perror("prctl NO_NEW_PRIVS");
+        return 1;
+    }
 
     // Initialize arguments.
     init_args(argc, argv);
@@ -81,24 +95,12 @@ int main(int argc, char** argv) {
     // Disable buffering for stdout.
     setvbuf(stdout, NULL, _IONBF, 0);
 
-    // If in restore mode, start by restoring from the snapshot.
     if (CURRENT_MODE == RESTORE) {
-        graal_isolate_t* isolate;
-        graal_isolatethread_t *isolatethread = NULL;
-        isolate_abi_t abi;
-        restore_svm(FPATH, "metadata.snap", "memory.snap", &abi, &isolate);
-        abi.graal_attach_thread(isolate, &isolatethread);
-        run_entrypoint(&abi, isolate, isolatethread, CONC, ITERS, fin, fout, FOUT_LEN);
-        // Note: from manual (https://www.graalvm.org/22.1/reference-manual/native-image/C-API/):
-        // 'no code may still be executing in the isolate thread's context.' Since we cannot
-        // guarantee that threads may be left behind, it is not safe to detach.
-        //abi.graal_detach_thread(isolatethread);
+        restore_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, &abi, &isolate);
     } else if (CURRENT_MODE == CHECKPOINT) {
-        checkpoint_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, FOUT_LEN, NULL, NULL);
+        checkpoint_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, &abi, &isolate);
     } else {
-        graal_isolate_t* isolate;
-        isolate_abi_t abi;
-        run_svm(FPATH, CONC, ITERS, fin, fout, FOUT_LEN, &abi, &isolate);
+        run_svm(FPATH, CONC, ITERS, fin, fout, &abi, &isolate);
     }
 
     fprintf(stdout, "function(%s) -> %s\n", fin, fout);
