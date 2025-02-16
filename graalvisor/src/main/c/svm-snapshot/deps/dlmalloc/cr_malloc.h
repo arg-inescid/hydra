@@ -25,7 +25,7 @@ typedef struct notif {
 // TODO - add the other memory allocated functions.
 
 mspace_mapping_t* get_mspace_mapping();
-void get_mspace();
+void recover_mspace(int);
 void enter_mspace();
 void join_mspace_when_inited(pid_t*, unsigned int);
 void leave_mspace();

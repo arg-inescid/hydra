@@ -27,26 +27,33 @@ static int mspace_counter = 1;
 static pid_t base_tid = 0;
 
 mspace find_mspace();
+int get_id(pid_t tid);
 
 mspace_mapping_t* get_mspace_mapping() {
     return mspace_table;
 }
 
+void recover_mspace(int old_tid) {
+    id = get_id(old_tid);
+}
+
 // NOT USED ANYMORE
-void get_mspace() {
-    // TODO: add seed as argument to return correct mspace
-    // TODO: give correct id
-    id = mspace_counter++;
-    cr_printf(STDOUT_FILENO, "get_mspace id=%d tid=%d mspace=%p\n", id, syscall(__NR_gettid), mspace_table[id].mspace);
+void get_mspace(int seed) {
+    id = get_id(1000*(seed+1));
+    if (id == -1) {
+        // if id wasn't found use global mspace
+        id = 0;
+    }
 }
 
 int get_id(pid_t tid) {
-    // cr_printf(STDOUT_FILENO, "inside get_id for tid=%d\n", tid);
-    for (int i = 0; i <= mspace_counter; i++) {
-        cr_printf(STDOUT_FILENO, "comparing tid=%d with table[i].tid=%d\n", tid, mspace_table[i].tid);
+    int i = 1;
+    int my_tid = syscall(__NR_gettid);
+    while (mspace_table[i].mspace != NULL) {
         if (tid == mspace_table[i].tid) {
             return i;
         }
+        i++;
     }
     return -1;
 }
@@ -62,8 +69,8 @@ void join_mspace_when_inited(pid_t *future_child, unsigned int mspace_id) {
     circular_notif_queue[position] = child_notif;
 }
 
-void inherit_mspace(pid_t child, unsigned int mspace_id) {
-    int found_id = mspace_id + 1;
+void inherit_mspace(pid_t child, unsigned int seed) {
+    int found_id = get_id(1000*(seed+1));
     // int found_id = parent - base_tid + 1;
     // cr_printf(STDOUT_FILENO, "inside inherit_mspace, found_id=%d, mspace_id=%u, current_tid=%d, mspace_counter=%d\n", found_id, mspace_id, current_tid, mspace_counter);
 
@@ -98,21 +105,20 @@ void init_global_mspace() {
         cr_printf(STDOUT_FILENO, "new global mspace -> %p\n", global);
         mspace_track_large_chunks(global, 1);
     }
+    mspace_mapping_t m = {current_tid, global};
+    mspace_table[0] = m;
 }
 
 void enter_mspace(int mspace_id) {
 
-    cr_printf(STDOUT_FILENO, "enter_mspace\n");
+    cr_printf(STDOUT_FILENO, "enter_mspace with mspace_id=%d\n", mspace_id);
     if (!base_tid) {
         base_tid = syscall(__NR_gettid);
     }
 
-    id = mspace_counter++;
-    // id = mspace_id + 1;
-    // if mspace for sandbox doesnt exist
-    mspace m = create_mspace(0, 0);
-
     current_tid = syscall(__NR_gettid);
+    id = mspace_counter++;
+    mspace m = create_mspace(0, 0);
     mspace_mapping_t mapping = {current_tid, m};
     mspace_table[id] = mapping;
 }
@@ -150,7 +156,7 @@ mspace find_mspace() {
         if (result == -1) {
             cr_printf(STDOUT_FILENO, "get_id returned -1 lol\n");
             // TODO: this doesn't garantee the correct id if more apps are running. use mspace counter..?
-            id = current_tid - base_tid;
+            id = 0; // use global mspace
 
         }
         cr_printf(STDOUT_FILENO, "result id = %d\n", id);
@@ -181,7 +187,7 @@ void leave_mspace() {
 
 void* malloc(size_t bytes) {
     void* ret = mspace_malloc(find_mspace(), bytes);
-    cr_printf(STDOUT_FILENO, "malloc %d -> %p\n", bytes, ret);
+    cr_printf(STDOUT_FILENO, "malloc %d -> %p from tid=%d with id=%d and mspace=%p\n", bytes, ret, syscall(__NR_gettid), id, find_mspace());
     return ret;
 }
 

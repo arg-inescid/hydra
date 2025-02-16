@@ -192,10 +192,10 @@ void* notif_worker(void* args) {
     svm_sandbox_t* svm = wargs->svm_sandbox;
     graal_isolatethread_t *isolatethread = NULL;
 
-    (*svm->abi).graal_attach_thread(svm->isolate, &isolatethread);
 #ifdef USE_DLMALLOC
-        get_mspace();
+        recover_mspace((svm->seed + 1) * 1000);
 #endif
+    (*svm->abi).graal_attach_thread(svm->isolate, &isolatethread);
     // Prepare and run function.
     for (;;) {
         pthread_mutex_lock(svm->mutex);

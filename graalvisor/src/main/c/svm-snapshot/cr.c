@@ -366,14 +366,16 @@ inline void __attribute__((always_inline)) __sigreturn(ucontext_t* ucontext) {
 void* restore_thread_internal(void* tdata) {
     thread_context_t context;
     struct clone_args cargs;
+    pid_t* child_ptr;
 
     // Note: we need to perform this copy because the cpy verson was allocated by the caller.
     memcpy(&context, tdata, sizeof(thread_context_t));
     memcpy(&cargs, ((char*)tdata) + sizeof(thread_context_t), sizeof(struct clone_args));
     free(tdata);
 
-    // TODO: add seed?
-    get_mspace();
+    child_ptr = (pid_t *) cargs.child_tid;
+    recover_mspace(*child_ptr);
+
     // Note: this line reconstructs the deep-copied data structure.
     context.ctx.uc_mcontext.fpregs = &(context.fpstate);
 
