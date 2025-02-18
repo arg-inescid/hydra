@@ -525,22 +525,22 @@ void print_mspace(mstate mspace){
     dbg("seg.base @ %16p, dv @ %16p with size %zu\n", mspace->seg.base, mspace->dv, mspace->dvsize);
 }
 
-void checkpoint_mem_allocator(int meta_snap_fd, mspace_mapping_t* mapping){
+void checkpoint_mem_allocator(int meta_snap_fd, mspace* mapping){
     int tag = MSPACE_TAG;
     if (write(meta_snap_fd, &tag, sizeof(int)) != sizeof(int)) {
         perror("error: failed to serialize mspace tag");
     }
     dbg("now checkpointing mspace_mapping\n");
     // TODO: write_size = get_mapping_count()
-    if (write(meta_snap_fd, mapping, sizeof(mspace_mapping_t) * 10) != sizeof(mspace_mapping_t) * 10) {
+    if (write(meta_snap_fd, mapping, sizeof(mspace) * 10) != sizeof(mspace) * 10) {
         perror("error: failed to serialize mspace mapping");
     }
 }
 
-void restore_mem_allocator(int meta_snap_fd, mspace_mapping_t* mapping) {
+void restore_mem_allocator(int meta_snap_fd, mspace* mapping) {
     dbg("now restoring mspace_mapping\n");
     // TODO: read_size = get_mapping_count()
-    if (read(meta_snap_fd, mapping, sizeof(mspace_mapping_t) * 10) != sizeof(mspace_mapping_t) * 10) {
+    if (read(meta_snap_fd, mapping, sizeof(mspace) * 10) != sizeof(mspace) * 10) {
         perror("error: failed to deserialize mspace mapping");
     }
 }
@@ -694,7 +694,7 @@ void restore_close(int meta_snap_fd) {
 void checkpoint(int meta_snap_fd, int mem_snap_fd, mapping_t* mappings, thread_t* threads, isolate_abi_t* abi, graal_isolate_t* isolate) {
     checkpoint_mappings(meta_snap_fd, mem_snap_fd, mappings);
     #ifdef USE_DLMALLOC
-        // int num_mspaces = get_mspace_count();
+        // TODO: num_mspaces
         checkpoint_mem_allocator(meta_snap_fd, get_mspace_mapping());
     #endif /* USE_DLMALLOC */
     checkpoint_abi(meta_snap_fd, abi);

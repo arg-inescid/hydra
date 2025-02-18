@@ -12,10 +12,10 @@ static mspace global = NULL;
 static __thread mspace local = NULL;
 // Thread local variable that acts as it's TID.
 static __thread pid_t current_tid = 0;
-// mapping of TID to mspace.
-static mspace_mapping_t mspace_table[MAX_MSPACE] = {0};
+// Array for storing mspaces for each sandbox.
+static mspace mspace_table[MAX_MSPACE] = {0};
 
-mspace_mapping_t* get_mspace_mapping() {
+mspace get_mspace_mapping() {
     return mspace_table;
 }
 
@@ -48,12 +48,12 @@ mspace find_mspace() {
         return local;
     }
 
-    if (!mspace_table[mspace_id].mspace) {
+    if (!mspace_table[mspace_id]) {
         mspace m = create_mspace(0, 0);
-        mspace_table[mspace_id].mspace = m;
+        mspace_table[mspace_id] = m;
     }
 
-    local = mspace_table[mspace_id].mspace;
+    local = mspace_table[mspace_id];
     return local;
 }
 
