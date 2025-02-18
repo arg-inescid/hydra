@@ -67,23 +67,19 @@ mspace find_mspace() {
 
 void* malloc(size_t bytes) {
     void* ret = mspace_malloc(find_mspace(), bytes);
-    cr_printf(STDOUT_FILENO, "malloc %d -> %p of mspace=%p\n", bytes, ret, find_mspace());
     return ret;
 }
 
 void free(void* mem) {
-    cr_printf(STDOUT_FILENO, "\t free %p\n", mem);
     return mspace_free(find_mspace(), mem);
 }
 
 void* calloc(size_t num, size_t size){
     void* ret = mspace_calloc(find_mspace(), num, size);
-    cr_printf(STDOUT_FILENO, "calloc %d elements of %d size -> %p\n", num, size, ret);
     return ret;
 }
 
 void* realloc(void* ptr, size_t size){
     void* ret = mspace_realloc(find_mspace(), ptr, size);
-    cr_printf(STDOUT_FILENO, "realloc %p to have %d size -> %p\n", ptr, size, ret);
     return ret;
 }

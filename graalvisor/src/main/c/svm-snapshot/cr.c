@@ -527,13 +527,16 @@ void print_mspace(mstate mspace){
 
 void checkpoint_mem_allocator(int meta_snap_fd, mspace* mapping){
     int tag = MSPACE_TAG;
-    int mspace_count = get_mspace_count();
+    int mspace_count = 0;
     if (write(meta_snap_fd, &tag, sizeof(int)) != sizeof(int)) {
         perror("error: failed to serialize mspace tag");
     }
+#ifdef USE_DLMALLOC
+    mspace_count = get_mspace_count();
     if (write(meta_snap_fd, &mspace_count, sizeof(int)) != sizeof(int)) {
         perror("error: failed to serialize mspace count");
     }
+#endif /* USE_DLMALLOC */
     dbg("now checkpointing mspace_mapping\n");
     if (write(meta_snap_fd, mapping, sizeof(mspace) * mspace_count) != sizeof(mspace) * mspace_count) {
         perror("error: failed to serialize mspace mapping");
