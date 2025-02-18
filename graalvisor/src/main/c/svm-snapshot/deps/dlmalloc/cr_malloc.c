@@ -14,9 +14,15 @@ static __thread mspace local = NULL;
 static __thread pid_t current_tid = 0;
 // Array for storing mspaces for each sandbox.
 static mspace mspace_table[MAX_MSPACE] = {0};
+// Number of used mspaces.
+static int mspace_count = 0;
 
 mspace get_mspace_mapping() {
     return mspace_table;
+}
+
+int get_mspace_count() {
+    return mspace_count;
 }
 
 void init_global_mspace() {
@@ -51,6 +57,7 @@ mspace find_mspace() {
     if (!mspace_table[mspace_id]) {
         mspace m = create_mspace(0, 0);
         mspace_table[mspace_id] = m;
+        mspace_count++;
     }
 
     local = mspace_table[mspace_id];

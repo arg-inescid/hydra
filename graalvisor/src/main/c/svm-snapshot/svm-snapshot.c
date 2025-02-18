@@ -172,7 +172,6 @@ void* checkpoint_worker(void* args) {
 
     // Prepare and run function.
     run_svm(wargs->fpath, wargs->concurrency, wargs->requests, svm->fin, svm->fout, svm->abi, &(svm->isolate));
-    // TODO: leave_mspace
 
     // Mark execution as finished (will alert the seccomp monitor to quit).
     wargs->finished = 1;

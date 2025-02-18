@@ -527,20 +527,26 @@ void print_mspace(mstate mspace){
 
 void checkpoint_mem_allocator(int meta_snap_fd, mspace* mapping){
     int tag = MSPACE_TAG;
+    int mspace_count = get_mspace_count();
     if (write(meta_snap_fd, &tag, sizeof(int)) != sizeof(int)) {
         perror("error: failed to serialize mspace tag");
     }
+    if (write(meta_snap_fd, &mspace_count, sizeof(int)) != sizeof(int)) {
+        perror("error: failed to serialize mspace count");
+    }
     dbg("now checkpointing mspace_mapping\n");
-    // TODO: write_size = get_mapping_count()
-    if (write(meta_snap_fd, mapping, sizeof(mspace) * 10) != sizeof(mspace) * 10) {
+    if (write(meta_snap_fd, mapping, sizeof(mspace) * mspace_count) != sizeof(mspace) * mspace_count) {
         perror("error: failed to serialize mspace mapping");
     }
 }
 
 void restore_mem_allocator(int meta_snap_fd, mspace* mapping) {
+    int mspace_count;
+    if (read(meta_snap_fd, &mspace_count, sizeof(int)) != sizeof(int)) {
+        perror("error: failed to deserialize mspace count");
+    }
     dbg("now restoring mspace_mapping\n");
-    // TODO: read_size = get_mapping_count()
-    if (read(meta_snap_fd, mapping, sizeof(mspace) * 10) != sizeof(mspace) * 10) {
+    if (read(meta_snap_fd, mapping, sizeof(mspace) * mspace_count) != sizeof(mspace) * mspace_count) {
         perror("error: failed to deserialize mspace mapping");
     }
 }
@@ -694,7 +700,6 @@ void restore_close(int meta_snap_fd) {
 void checkpoint(int meta_snap_fd, int mem_snap_fd, mapping_t* mappings, thread_t* threads, isolate_abi_t* abi, graal_isolate_t* isolate) {
     checkpoint_mappings(meta_snap_fd, mem_snap_fd, mappings);
     #ifdef USE_DLMALLOC
-        // TODO: num_mspaces
         checkpoint_mem_allocator(meta_snap_fd, get_mspace_mapping());
     #endif /* USE_DLMALLOC */
     checkpoint_abi(meta_snap_fd, abi);
@@ -778,7 +783,6 @@ void restore(const char* meta_snap_path, const char* mem_snap_path, isolate_abi_
             break;
 #ifdef USE_DLMALLOC
         case MSPACE_TAG:
-            // TODO: get_mspace currently returns FIXED mspace
             restore_mem_allocator(meta_snap_fd, get_mspace_mapping());
             break;
 #endif /* USE_DLMALLOC */
