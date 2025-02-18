@@ -279,9 +279,6 @@ void handle_clone(int meta_snap_fd, thread_t* threads, long long unsigned int* a
 void handle_clone3(int meta_snap_fd, thread_t* threads, struct clone_args *cargs, unsigned int seed) {
     // parent_tid is the address on the parent where the child's tid will be saved (thread hasnt been created yet)
     // requester_tid is the tid of the __NR_clone3 caller
-#ifdef USE_DLMALLOC
-    join_mspace_when_inited((pid_t *) cargs->parent_tid, seed);
-#endif
     print_clone3(cargs);
 #ifdef THREADS
     list_threads_push(threads, (pid_t *) cargs->child_tid, cargs);

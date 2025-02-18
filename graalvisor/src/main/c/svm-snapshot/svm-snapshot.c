@@ -136,10 +136,6 @@ void run_svm(
         graal_isolate_t** isolate) {
     graal_isolatethread_t *isolatethread = NULL;
 
-// #ifdef USE_DLMALLOC
-//     enter_mspace(wargs->seed);
-// #endif
-
     // Load function and initialize abi.
     if (load_function(fpath, abi)) {
         err("error: failed to load isolate abi\n");
@@ -175,9 +171,6 @@ void* checkpoint_worker(void* args) {
     }
 
     // Prepare and run function.
-#ifdef USE_DLMALLOC
-    enter_mspace(wargs->seed);
-#endif
     run_svm(wargs->fpath, wargs->concurrency, wargs->requests, svm->fin, svm->fout, svm->abi, &(svm->isolate));
     // TODO: leave_mspace
 
@@ -192,9 +185,6 @@ void* notif_worker(void* args) {
     svm_sandbox_t* svm = wargs->svm_sandbox;
     graal_isolatethread_t *isolatethread = NULL;
 
-#ifdef USE_DLMALLOC
-        recover_mspace((svm->seed + 1) * 1000);
-#endif
     (*svm->abi).graal_attach_thread(svm->isolate, &isolatethread);
     // Prepare and run function.
     for (;;) {

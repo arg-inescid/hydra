@@ -366,15 +366,12 @@ inline void __attribute__((always_inline)) __sigreturn(ucontext_t* ucontext) {
 void* restore_thread_internal(void* tdata) {
     thread_context_t context;
     struct clone_args cargs;
-    pid_t* child_ptr;
 
     // Note: we need to perform this copy because the cpy verson was allocated by the caller.
     memcpy(&context, tdata, sizeof(thread_context_t));
     memcpy(&cargs, ((char*)tdata) + sizeof(thread_context_t), sizeof(struct clone_args));
-    free(tdata);
-
-    child_ptr = (pid_t *) cargs.child_tid;
-    recover_mspace(*child_ptr);
+    // Note: we dont free this on purpouse. This memory is allocated in another mspace
+    // free(tdata);
 
     // Note: this line reconstructs the deep-copied data structure.
     context.ctx.uc_mcontext.fpregs = &(context.fpstate);
@@ -697,6 +694,7 @@ void restore_close(int meta_snap_fd) {
 void checkpoint(int meta_snap_fd, int mem_snap_fd, mapping_t* mappings, thread_t* threads, isolate_abi_t* abi, graal_isolate_t* isolate) {
     checkpoint_mappings(meta_snap_fd, mem_snap_fd, mappings);
     #ifdef USE_DLMALLOC
+        // int num_mspaces = get_mspace_count();
         checkpoint_mem_allocator(meta_snap_fd, get_mspace_mapping());
     #endif /* USE_DLMALLOC */
     checkpoint_abi(meta_snap_fd, abi);
