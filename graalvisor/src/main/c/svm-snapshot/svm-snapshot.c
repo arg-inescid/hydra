@@ -393,7 +393,6 @@ svm_sandbox_t* restore_svm(
         err("error: failed to get next pid\n");
         return NULL;
     }
-    printf("last_pid = %d\n", last_pid);
     // After having restored threads, set next pid to first pid of current sandbox
     if (set_next_pid(1000*(seed+1)) == -1) {
         err("error: failed to set next pid\n");

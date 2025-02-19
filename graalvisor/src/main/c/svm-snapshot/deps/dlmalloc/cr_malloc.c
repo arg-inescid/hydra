@@ -31,7 +31,6 @@ void init_global_mspace() {
     if (!__atomic_compare_exchange(&global, &uninitialized, &newmspace, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)) {
         destroy_mspace(newmspace);
     } else {
-        cr_printf(STDOUT_FILENO, "new global mspace -> %p\n", global);
         mspace_track_large_chunks(global, 1);
     }
 }
