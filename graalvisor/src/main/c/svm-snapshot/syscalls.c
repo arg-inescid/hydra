@@ -277,8 +277,6 @@ void handle_clone(int meta_snap_fd, thread_t* threads, long long unsigned int* a
 }
 
 void handle_clone3(int meta_snap_fd, thread_t* threads, struct clone_args *cargs) {
-    // parent_tid is the address on the parent where the child's tid will be saved (thread hasnt been created yet)
-    // requester_tid is the tid of the __NR_clone3 caller
     print_clone3(cargs);
 #ifdef THREADS
     list_threads_push(threads, (pid_t *) cargs->child_tid, cargs);

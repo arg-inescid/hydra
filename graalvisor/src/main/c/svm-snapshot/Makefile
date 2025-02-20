@@ -38,17 +38,11 @@ endif
 debug = -O0 -g3
 
 all: *.h *.c
-	@echo "building with custom memory allocator"
 	make -C deps/printf
 	make -C deps/dlmalloc
+#	remove -DUSE_DLMALLOC to compile without mspaces
 	$(CC) $(debug) -Wall -c *.c -DUSE_DLMALLOC
 	$(CC) $(debug) -Wall -o main *.o deps/printf/printf.o deps/dlmalloc/cr_malloc.o deps/dlmalloc/malloc.o
-
-no-dl: *.h *.c
-	make -C deps/printf
-	make -C deps/dlmalloc
-	$(CC) $(debug) -Wall -c *.c
-	$(CC) $(debug) -Wall -o main *.o deps/printf/printf.o deps/dlmalloc/malloc.o
 
 tests: all
 	make -C test0-clib test
@@ -105,7 +99,7 @@ gdb-normal: all
 	./run-env.sh gdb $(gcommands) --args ./main normal $(app)
 
 gdb-checkpoint: all
-	./run-env.sh gdb $(gcommands) ./main normal $(app) | tee gdb-checkpoint.log
+	./run-env.sh gdb $(gcommands) ./main checkpoint $(app) | tee gdb-checkpoint.log
 
 run-checkpoint: all
 	rm -f snapshot.mem
