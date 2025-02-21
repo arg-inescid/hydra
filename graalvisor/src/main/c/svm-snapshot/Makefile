@@ -29,7 +29,7 @@ gcommands = -x gdb-commands.txt
 GCC_VERSION := $(shell gcc -dumpversion)
 CC = gcc
 
-ifneq ($(shell expr $(GCC_VERSION) >= 11), 1)
+ifneq ($(shell [ $(GCC_VERSION) -ge 11 ] && echo 1 || echo 0), 1)
     $(warning GCC version must be >= 11 (current: $(GCC_VERSION)))
     CC = gcc-11
     $(info Switching to $(CC))
@@ -59,6 +59,7 @@ tests: all
 	make -C test7-svm-truffle-function-py test
 	make -C test8-cthreads-syscall test
 	make -C test9-cthreads-futex test
+	make -C test10-malloc test
 	make -C test11-cthreads-mmap test
 	make -C test12-svm-http test
 
