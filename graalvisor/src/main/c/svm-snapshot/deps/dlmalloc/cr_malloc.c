@@ -73,12 +73,54 @@ void free(void* mem) {
     return mspace_free(find_mspace(), mem);
 }
 
-void* calloc(size_t num, size_t size){
+void* calloc(size_t num, size_t size) {
     void* ret = mspace_calloc(find_mspace(), num, size);
     return ret;
 }
 
-void* realloc(void* ptr, size_t size){
+void* realloc(void* ptr, size_t size) {
     void* ret = mspace_realloc(find_mspace(), ptr, size);
     return ret;
+}
+
+size_t malloc_usable_size(const void* mem) {
+    return dlmalloc_usable_size(mem);
+}
+
+struct mallinfo mallinfo() {
+    return mspace_mallinfo(find_mspace());
+}
+
+int mallopt(int param_number, int value) {
+    return dlmallopt(param_number, value);
+}
+
+void* memalign(size_t alignment, size_t bytes) {
+    return mspace_memalign(find_mspace(), alignment, bytes);
+}
+
+void* valloc(size_t size) {
+    return dlvalloc(size);
+}
+
+void* pvalloc(size_t size) {
+    return dlpvalloc(size);
+}
+
+void malloc_stats() {
+    mspace_malloc_stats(find_mspace());
+}
+
+int malloc_info() {
+    err(1, "error: malloc_info is not supported)");
+    return 0;
+}
+
+int malloc_trim(size_t pad) {
+    return mspace_trim(find_mspace(), pad);
+}
+
+void *reallocarray (void *__ptr, size_t __nmemb, size_t __size) {
+    err(1, "error: reallocarray is not supported)");
+    return NULL;
 }

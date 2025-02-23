@@ -18,7 +18,6 @@ typedef unsigned int bindex_t;         /* Described below */
 typedef unsigned int binmap_t;         /* Described below */
 typedef unsigned int flag_t;           /* The type of various bit flag sets */
 
-
 typedef struct malloc_chunk  mchunk;
 typedef struct malloc_chunk* mchunkptr;
 typedef struct malloc_chunk* sbinptr;  /* The type of bins of chunks */
@@ -38,8 +37,6 @@ struct malloc_segment {
 
 typedef struct malloc_segment  msegment;
 typedef struct malloc_segment* msegmentptr;
-
-
 
 struct malloc_tree_chunk {
   /* The first four fields must be compatible with malloc_chunk */
@@ -94,9 +91,5 @@ struct malloc_state {
 };
 
 typedef struct malloc_state*    mstate;
-
-
-
-
 
 #endif // MALLOC_INTERNAL_H
