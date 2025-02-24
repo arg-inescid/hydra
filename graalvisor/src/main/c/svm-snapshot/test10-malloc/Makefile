@@ -18,8 +18,21 @@ run-restore:
 run: all run-checkpoint run-restore
 
 test: run
-	-grep --color=always -e warning -e error checkpoint.log restore.log
-	if grep -q "myvar = 1" restore.log ; then printf ${GREEN}OK${NC}\\n; else printf ${RED}NOK${NC}\\n; fi
+	@( \
+	    if ! grep -q "It's contents are: this should be copied" restore.log; then \
+		printf ${RED}NOK${NC} && printf " contents of buffer weren't restored\n"; \
+		return 0; \
+	    fi; \
+	    if ! grep -q "new buff addr = 0xa00000001500" restore.log; then \
+		printf ${RED}NOK${NC} && printf "Unexpected new buff addr\n"; \
+		return 0; \
+	    fi; \
+	    if ! grep -q "Difference between pointers: 1056" restore.log; then \
+		printf ${RED}NOK${NC} && printf "Difference between pointers is more than a page\n"; \
+		return 0; \
+	    fi; \
+	    printf ${GREEN}OK${NC} && printf "\n"; \
+	)
 
 clean:
 	rm -f *.txt *.o *.so *.snap

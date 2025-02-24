@@ -6,6 +6,7 @@
 #include "svm-snapshot.h"
 #include "list_mappings.h"
 #include "list_threads.h"
+#include "deps/dlmalloc/cr_malloc.h"
 
 /*
  * Limitations:
@@ -34,13 +35,6 @@
 //#define PERF_DEBUG
 // If defined, enables performance optimizations.
 #define OPT
-
-// Forward declarations for our custom memory allocator (Doug Lea's).
-void* dlmalloc(size_t);
-void  dlfree(void*);
-
-#define cr_malloc dlmalloc
-#define cr_free   dlfree
 
 #define log(format, args...) do { cr_printf(STDOUT_FILENO, format, ## args); } while(0)
 #ifdef DEBUG

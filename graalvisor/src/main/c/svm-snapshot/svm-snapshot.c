@@ -38,6 +38,8 @@ typedef struct {
     int requests;
     // Integer used as a boolean to decide if the function has terminated.
     int finished;
+    // The seed is used to pass the mspace id.
+    unsigned int seed;
 } checkpoint_worker_args_t;
 
 typedef struct {
@@ -47,6 +49,8 @@ typedef struct {
     int concurrency;
     // Number of requests to perform.
     int requests;
+    // Identifies sandbox.
+    unsigned long seed;
 } notif_worker_args_t;
 
 typedef struct {
@@ -99,8 +103,8 @@ void run_entrypoint(
     if (concurrency == 1) {
         run_serial_entrypoint(abi, isolatethread, requests, fin, fout);
     } else {
-        pthread_t* workers = (pthread_t*) cr_malloc(concurrency * sizeof(pthread_t));
-        entrypoint_worker_args_t* wargs = (entrypoint_worker_args_t*) cr_malloc(concurrency * sizeof(entrypoint_worker_args_t));
+        pthread_t* workers = (pthread_t*) malloc(concurrency * sizeof(pthread_t));
+        entrypoint_worker_args_t* wargs = (entrypoint_worker_args_t*) malloc(concurrency * sizeof(entrypoint_worker_args_t));
         for (int i = 0; i < concurrency; i++) {
             wargs[i].abi = abi;
             wargs[i].isolate = isolate;
@@ -113,8 +117,8 @@ void run_entrypoint(
         for (int i = 0; i < concurrency; i++) {
             pthread_join(workers[i], NULL);
         }
-        cr_free(workers);
-        cr_free(wargs);
+        free(workers);
+        free(wargs);
     }
 }
 
@@ -204,7 +208,7 @@ void invoke_svm(svm_sandbox_t* svm_sandbox) {
     pthread_mutex_unlock(svm_sandbox->mutex);
 }
 
-svm_sandbox_t* create_sandbox(isolate_abi_t* abi, graal_isolate_t** isolate, const char* fin, char* fout) {
+svm_sandbox_t* create_sandbox(isolate_abi_t* abi, graal_isolate_t** isolate, const char* fin, char* fout, unsigned long seed) {
     svm_sandbox_t* svm_sandbox = malloc(sizeof(svm_sandbox_t));
     memset(svm_sandbox, 0, sizeof(svm_sandbox_t));
 
@@ -212,6 +216,7 @@ svm_sandbox_t* create_sandbox(isolate_abi_t* abi, graal_isolate_t** isolate, con
     svm_sandbox->isolate = *isolate;
     svm_sandbox->fin = fin;
     svm_sandbox->fout = fout;
+    svm_sandbox->seed = seed;
     svm_sandbox->processing = 0;
 
     svm_sandbox->mutex = malloc(sizeof(pthread_mutex_t));
@@ -259,12 +264,12 @@ svm_sandbox_t* checkpoint_svm(
     checkpoint_worker_args_t* wargs = malloc(sizeof(checkpoint_worker_args_t));
     memset(wargs, 0, sizeof(checkpoint_worker_args_t));
 
-    svm_sandbox_t* svm_sandbox = create_sandbox(abi, isolate, fin, fout);
-
+    svm_sandbox_t* svm_sandbox = create_sandbox(abi, isolate, fin, fout, seed);
     wargs->svm_sandbox = svm_sandbox;
     wargs->fpath = fpath;
     wargs->concurrency = concurrency;
     wargs->requests = requests;
+    wargs->seed = seed;
 
     if (set_next_pid(1000*(seed+1)) == -1) {
         err("set_next_pid");
@@ -365,6 +370,7 @@ svm_sandbox_t* restore_svm(
         struct timeval st, et;
         gettimeofday(&st, NULL);
 #endif
+
         restore(meta_snap_path, mem_snap_path, abi, isolate);
 #ifdef PERF
         gettimeofday(&et, NULL);
@@ -375,7 +381,7 @@ svm_sandbox_t* restore_svm(
 #endif
 
     wargs = malloc(sizeof(notif_worker_args_t));
-    svm_sandbox = create_sandbox(abi, isolate, fin, fout);
+    svm_sandbox = create_sandbox(abi, isolate, fin, fout, seed);
     wargs->svm_sandbox = svm_sandbox;
     wargs->concurrency = concurrency;
     wargs->requests = requests;
@@ -385,7 +391,6 @@ svm_sandbox_t* restore_svm(
         err("error: failed to get next pid\n");
         return NULL;
     }
-    printf("last_pid = %d\n", last_pid);
     // After having restored threads, set next pid to first pid of current sandbox
     if (set_next_pid(1000*(seed+1)) == -1) {
         err("error: failed to set next pid\n");

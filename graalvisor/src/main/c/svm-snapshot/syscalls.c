@@ -300,8 +300,8 @@ void* allow_syscalls(void* args) {
         return NULL;
     }
 
-    struct seccomp_notif *req = (struct seccomp_notif*)cr_malloc(sizes.seccomp_notif);
-    struct seccomp_notif_resp *resp = (struct seccomp_notif_resp*)cr_malloc(sizes.seccomp_notif_resp);
+    struct seccomp_notif *req = (struct seccomp_notif*)malloc(sizes.seccomp_notif);
+    struct seccomp_notif_resp *resp = (struct seccomp_notif_resp*)malloc(sizes.seccomp_notif_resp);
     struct pollfd fds[1] = {
         {
             .fd  = seccomp_fd,
@@ -361,8 +361,8 @@ void handle_syscalls(size_t seed, int seccomp_fd, int* finished, int meta_snap_f
         return;
     }
 
-    struct seccomp_notif *req = (struct seccomp_notif*)cr_malloc(sizes.seccomp_notif);
-    struct seccomp_notif_resp *resp = (struct seccomp_notif_resp*)cr_malloc(sizes.seccomp_notif_resp);
+    struct seccomp_notif *req = (struct seccomp_notif*)malloc(sizes.seccomp_notif);
+    struct seccomp_notif_resp *resp = (struct seccomp_notif_resp*)malloc(sizes.seccomp_notif_resp);
     struct pollfd fds[1] = {
         {
             .fd  = seccomp_fd,
@@ -516,8 +516,8 @@ void handle_syscalls(size_t seed, int seccomp_fd, int* finished, int meta_snap_f
         }
     }
 
-    cr_free(req);
-    cr_free(resp);
+    free(req);
+    free(resp);
 }
 
 int install_seccomp_filter() {

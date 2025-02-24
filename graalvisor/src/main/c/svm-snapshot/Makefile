@@ -26,13 +26,23 @@ endif
 
 gcommands = -x gdb-commands.txt
 
+GCC_VERSION := $(shell gcc -dumpversion)
+CC = gcc
+
+ifneq ($(shell [ $(GCC_VERSION) -ge 11 ] && echo 1 || echo 0), 1)
+    $(warning GCC version must be >= 11 (current: $(GCC_VERSION)))
+    CC = gcc-11
+    $(info Switching to $(CC))
+endif
+
 debug = -O0 -g3
 
 all: *.h *.c
 	make -C deps/printf
 	make -C deps/dlmalloc
-	gcc $(debug) -Wall -c *.c
-	gcc $(debug) -Wall -o main *.o deps/printf/printf.o deps/dlmalloc/malloc.o
+#	remove -DUSE_DLMALLOC to compile without mspaces
+	$(CC) $(debug) -Wall -c *.c -DUSE_DLMALLOC
+	$(CC) $(debug) -Wall -o main *.o deps/printf/printf.o deps/dlmalloc/cr_malloc.o deps/dlmalloc/malloc.o
 
 tests: all
 	make -C test0-clib test
@@ -49,6 +59,7 @@ tests: all
 	make -C test7-svm-truffle-function-py test
 	make -C test8-cthreads-syscall test
 	make -C test9-cthreads-futex test
+	make -C test10-malloc test
 	make -C test11-cthreads-mmap test
 	make -C test12-svm-http test
 
@@ -86,10 +97,10 @@ strace-normal: all
 	$(CURDIR)/run-env.sh strace -f ./main normal $(app) 2>&1 | tee strace-normal.log
 
 gdb-normal: all
-	gdb $(gcommands) --args bash $(CURDIR)/run-env.sh ./main normal $(app)
+	./run-env.sh gdb $(gcommands) --args ./main normal $(app)
 
 gdb-checkpoint: all
-	gdb $(gcommands) --args bash $(CURDIR)/run-env.sh ./main checkpoint $(app) | tee gdb-checkpoint.log
+	./run-env.sh gdb $(gcommands) ./main checkpoint $(app) | tee gdb-checkpoint.log
 
 run-checkpoint: all
 	rm -f snapshot.mem
@@ -114,7 +125,7 @@ run-perf: all
 	$(CURDIR)/run-env.sh /bin/time -v ./main restore $(app) 2>&1 | tee restore.log
 
 gdb-restore: all
-	gdb $(gcommands) --args bash $(CURDIR)/run-env.sh ./main restore $(app)
+	./run-env.sh gdb $(gcommands) --args ./main restore $(app)
 
 strace-restore: all
 	$(CURDIR)/run-env.sh strace -f ./main restore $(app) 2>&1 | tee strace-restore.log
