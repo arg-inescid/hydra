@@ -166,14 +166,14 @@ public class ArgumentStorage {
         Logger.setLogger(logger);
     }
 
-    private void initMetricsScraper() {
+    private void initMetricsScraper(LambdaManagerPool lambdaPool) {
         try {
             File managerMetricsFile = new File(Environment.MANAGER_METRICS_FILENAME);
             managerMetricsFile.getParentFile().mkdirs();
             managerMetricsFile.createNewFile();
 
             ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-            metricsScraper = new MetricsScraper(managerMetricsFile, executor);
+            metricsScraper = new MetricsScraper(managerMetricsFile, executor, lambdaPool);
             executor.scheduleAtFixedRate(metricsScraper, 1, 1, TimeUnit.SECONDS);
         } catch (IOException ioException) {
             ioException.printStackTrace();
@@ -187,7 +187,7 @@ public class ArgumentStorage {
         initErrorHandler();
 
         prepareLogger(lambdaManagerConfiguration.getManagerConsole());
-        initMetricsScraper();
+        initMetricsScraper(lambdaManagerConfiguration.getLambdaPool());
 
         LambdaManagerPool poolConfiguration = lambdaManagerConfiguration.getLambdaPool();
         boolean hasOpenWhiskLambdas = poolConfiguration.getCustomJava() != 0 || poolConfiguration.getCustomJavaScript() != 0 || poolConfiguration.getCustomPython() != 0;
@@ -344,6 +344,8 @@ public class ArgumentStorage {
     }
 
     public void tearDownLambdaKeepAliveTask() {
-        lambdaKeepAliveTask.close();
+        if (lambdaKeepAliveTask != null) {
+            lambdaKeepAliveTask.close();
+        }
     }
 }

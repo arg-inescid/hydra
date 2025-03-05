@@ -114,27 +114,23 @@ public class LambdaMetricsUtils {
         }
     }
 
-    // Metrics collection for GraalOS (GraalHub) footprint.
-    public static List<Double> collectGraalOSFootprint() {
-        try (InputStream stream = executeCommand("bash", "-c", "top -bn 1 | grep \"GraalHub\"")) {
-            return readGraalHubFootprint(stream);
+    // Metrics collection for instance footprints.
+    public static List<Double> collectLambdaFootprint(String command) {
+        try (InputStream stream = executeCommand("bash", "-c", command)) {
+            return readIndividualFootprint(stream);
         } catch (Throwable thr) {
             thr.printStackTrace();
             return Collections.emptyList();
         }
     }
 
-    private static List<Double> readGraalHubFootprint(InputStream stream) throws IOException {
+    private static List<Double> readIndividualFootprint(InputStream stream) throws IOException {
         List<Double> result = new LinkedList<>();
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                // Line format:
-                // PID  USER  PR  NI  VIRT  RES  SHR  S  %CPU  %MEM  TIME+  COMMAND
-                if (line.contains("GraalHub")) {
-                    String[] tokens = line.trim().split("\\s+");
-                    result.add(kilobytesToMegabytes(Double.parseDouble(tokens[5])));
-                }
+                // Each line is expected to have a single number in kilobytes.
+                result.add(kilobytesToMegabytes(Double.parseDouble(line)));
             }
         }
         return result;

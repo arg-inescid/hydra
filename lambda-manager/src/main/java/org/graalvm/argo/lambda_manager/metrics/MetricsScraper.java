@@ -1,5 +1,8 @@
 package org.graalvm.argo.lambda_manager.metrics;
 
+import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
+import org.graalvm.argo.lambda_manager.utils.parser.LambdaManagerPool;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -12,16 +15,26 @@ public class MetricsScraper implements Runnable {
     private final BufferedWriter bw;
     private final ExecutorService service;
     private boolean isFirstRecord = true;
+    private final String lambdaFootprintCommand;
 
-    public MetricsScraper(File output, ExecutorService executor) throws IOException {
+    public MetricsScraper(File output, ExecutorService executor, LambdaManagerPool lambdaPool) throws IOException {
         this.bw = new BufferedWriter(new FileWriter(output));
         this.service = executor;
+        if (lambdaPool.getGraalvisor() > 0) {
+            lambdaFootprintCommand = "sudo smem -P \"polyglot-proxy\" -a -c \"name pss\" | grep \"polyglot-proxy\" | awk '{print $NF}'";
+        } else if (lambdaPool.getCustomJava() > 0) {
+            lambdaFootprintCommand = "sudo smem -P \"javaAction-all\" -a -c \"name pss\" | grep \"java\" | awk '{print $NF}'";
+        } else if (lambdaPool.getGraalOS() > 0) {
+            lambdaFootprintCommand = "sudo smem -P \"graalhost/graalhost\" -a -c \"name pss\" | grep \"GraalHub\" | awk '{print $NF}'";
+        } else {
+            lambdaFootprintCommand = null;
+        }
         bw.write("[\n");
     }
 
     @Override
     public void run() {
-        String record = MetricsProvider.getMetricsRecord();
+        String record = MetricsProvider.getMetricsRecord(lambdaFootprintCommand);
         if (isFirstRecord) {
             isFirstRecord = false;
         } else {

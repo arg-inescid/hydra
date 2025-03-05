@@ -30,6 +30,7 @@ LAMBDA_HOME="$CODEBASE_HOME"/"$LAMBDA_NAME"
 mkdir "$LAMBDA_HOME" &> /dev/null
 
 docker run --rm --name $LAMBDA_NAME \
+    --pid host \
     -p $LAMBDA_PORT:9001 \
     -p $GRAALOS_PORT:$GRAALOS_PORT \
     -v "${GRAALOS_SDK_DIR}:/graalos" \
