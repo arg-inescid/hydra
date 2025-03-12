@@ -157,4 +157,6 @@ void minimize_syscalls(
 // TODO: prettify
 void process_instructions(const char* input_file);
 
+void call_command(int argc, char argv[10][100]);
+
 #endif

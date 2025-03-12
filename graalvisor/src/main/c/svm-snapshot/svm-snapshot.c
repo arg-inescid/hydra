@@ -412,6 +412,41 @@ void process_instructions(const char* input_file) {
         printf("Saved: %s\n", command[i]);
     }
 
+    call_command(token_counter, command);
+
     fclose(file);
     return;
+}
+
+// void init_args(int argc, char** argv) {
+void call_command(int argc, char argv[10][100]) {
+    const char* fin = "(null)";
+    char  fout[FOUT_LEN];
+    isolate_abi_t abi;
+    graal_isolate_t* isolate = NULL;
+
+    if (argc < 2) {
+        err("wrong utilization!");
+        exit(0);
+    }
+
+    // Find current mode.
+    switch (argv[0][0])
+    {
+    case 'n':
+        printf("normal\n");
+        break;
+    case 'c':
+        printf("checkpoint\n");
+        checkpoint_svm(argv[1], "metadata.snap", "memory.snap", 0, 1, 1, fin, fout, &abi, &isolate);
+        break;
+    case 'r':
+        printf("restore\n");
+        break;
+    case 'f':
+        err("No file recursion!\n");
+        exit(0);
+    default:
+        err("command not recognized");
+    }
 }
