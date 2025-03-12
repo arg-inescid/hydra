@@ -106,6 +106,7 @@ int main(int argc, char** argv) {
         graal_isolate_t* isolate = NULL;
         run_svm(FPATH, CONC, ITERS, fin, fout, &abi, &isolate);
     }
+    // TODO: add option that receives commands.txt file and executes each action
 
     fprintf(stdout, "function(%s) -> %s\n", fin, fout);
 
