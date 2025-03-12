@@ -385,3 +385,33 @@ svm_sandbox_t* restore_svm(
 
     return svm_sandbox;
 }
+
+void process_instructions(const char* input_file) {
+    char command[10][100] = {0};
+    char buffer[100];
+    int token_counter = 0;
+
+    FILE *file = fopen(input_file, "r");
+    if (file == NULL) {
+        err("process_instructions: couldn't open input_file");
+        return;
+    }
+
+    while (fgets(buffer, sizeof(buffer), file) != NULL) {
+        printf("%s", buffer);
+        char *token = strtok(buffer, " \t\n");
+        while (token != NULL && token_counter < 10) {
+            // printf("Word: %s\n", token);
+            strncpy(command[token_counter], token, 99);
+            command[token_counter++][99] = '\0';
+            token = strtok(NULL, " \t\n");
+        }
+    }
+
+    for (int i=0; i < token_counter; i++) {
+        printf("Saved: %s\n", command[i]);
+    }
+
+    fclose(file);
+    return;
+}

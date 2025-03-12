@@ -154,4 +154,7 @@ void minimize_syscalls(
     // Path where to store metadata information.
     const char* output_path);
 
+// TODO: prettify
+void process_instructions(const char* input_file);
+
 #endif
