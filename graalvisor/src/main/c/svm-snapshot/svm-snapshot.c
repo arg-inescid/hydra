@@ -322,6 +322,8 @@ svm_sandbox_t* checkpoint_svm(
     pthread_create(&svm_sandbox->thread, NULL, notif_worker, restore_wargs);
 
     // Close meta and mem fds.
+    fsync(meta_snap_fd);
+    fsync(mem_snap_fd);
     close(meta_snap_fd);
     close(mem_snap_fd);
 
@@ -398,21 +400,26 @@ void process_instructions(const char* input_file) {
     }
 
     while (fgets(buffer, sizeof(buffer), file) != NULL) {
+        token_counter = 0;
+        memset(command, 0, sizeof(command));
+
         printf("%s", buffer);
         char *token = strtok(buffer, " \t\n");
         while (token != NULL && token_counter < 10) {
-            // printf("Word: %s\n", token);
+            printf("Word: %s|\n", token);
             strncpy(command[token_counter], token, 99);
-            command[token_counter++][99] = '\0';
+            command[token_counter++][strlen(token)] = '\0';
             token = strtok(NULL, " \t\n");
         }
-    }
 
-    for (int i=0; i < token_counter; i++) {
-        printf("Saved: %s\n", command[i]);
-    }
+        for (int i=0; i < token_counter; i++) {
+            printf("Saved: %s|\n", command[i]);
+        }
 
-    call_command(token_counter, command);
+        call_command(token_counter, command);
+        printf("\n\n\n");
+        memset(buffer, 0, sizeof(buffer));
+    }
 
     fclose(file);
     return;
@@ -435,6 +442,7 @@ void call_command(int argc, char argv[10][100]) {
     {
     case 'n':
         printf("normal\n");
+        run_svm(argv[1], 1, 1, fin, fout, &abi, &isolate);
         break;
     case 'c':
         printf("checkpoint\n");
@@ -442,6 +450,7 @@ void call_command(int argc, char argv[10][100]) {
         break;
     case 'r':
         printf("restore\n");
+        restore_svm(argv[1], "metadata.snap", "memory.snap", 0, 1, 1, fin, fout, &abi, &isolate);
         break;
     case 'f':
         err("No file recursion!\n");
