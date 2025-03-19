@@ -427,6 +427,10 @@ void process_instructions(const char* input_file) {
 
 // void init_args(int argc, char** argv) {
 void call_command(int argc, char argv[10][100]) {
+    const char* FPATH = NULL;
+    unsigned int CONC = 1;
+    unsigned int ITERS = 1;
+    unsigned int SEED = 0;
     const char* fin = "(null)";
     char  fout[FOUT_LEN];
     isolate_abi_t abi;
@@ -437,20 +441,36 @@ void call_command(int argc, char argv[10][100]) {
         exit(0);
     }
 
+    // Find function code.
+    FPATH = argv[1];
+
+    // Find optional arguments.
+    if (argc >= 4) {
+        CONC = atoi(argv[2]);
+    }
+
+    if (argc >= 5) {
+        ITERS = atoi(argv[3]);
+    }
+
+    if (argc >= 6) {
+        SEED = atoi(argv[4]);
+    }
+
     // Find current mode.
     switch (argv[0][0])
     {
     case 'n':
         printf("normal\n");
-        run_svm(argv[1], 1, 1, fin, fout, &abi, &isolate);
+        run_svm(FPATH, CONC, ITERS, fin, fout, &abi, &isolate);
         break;
     case 'c':
         printf("checkpoint\n");
-        checkpoint_svm(argv[1], "metadata.snap", "memory.snap", 0, 1, 1, fin, fout, &abi, &isolate);
+        checkpoint_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, &abi, &isolate);
         break;
     case 'r':
         printf("restore\n");
-        restore_svm(argv[1], "metadata.snap", "memory.snap", 0, 1, 1, fin, fout, &abi, &isolate);
+        restore_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, &abi, &isolate);
         break;
     case 'f':
         err("No file recursion!\n");
