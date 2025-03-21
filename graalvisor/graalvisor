@@ -1,0 +1,43 @@
+#!/bin/bash
+
+if [ $# -eq 0  ]
+then
+    echo "Syntax: start-graalvisor.sh <path to graalvisor binary> [<path to pid file>]"
+    exit 0
+fi
+
+graalvisor=$1
+pidfile=$2
+
+# Uncomment to enable strace. The log will be put next to the graalvisor binary.
+#trace_syscalls="strace -f -o $(dirname $graalvisor)/strace.log"
+
+# This is important to ensure that we can load many (>100k) sandboxes.
+# sudo sysctl -w vm.max_map_count=2000000
+
+# Note 1: unshare is necessary so that graalvisor lives in a different pid namespace (required for svm snapshotting).
+# Note 2: setarch is necessary to disable ASRL, which is relevant for svm snapshotting (accessible through context-sandbox).
+# Note 3: for large heaps, add `-Xmx128g` next to graalvisor.
+$trace_syscalls \
+unshare --map-root-user --keep-caps --mount-proc --fork --pid \
+setarch -R \
+$graalvisor &
+
+# The quest to find graalvisor's pid! Note that we want the pid as seen from the default namespace.
+if [ ! -z "$pidfile" ]
+then
+    # PID of unshare (or strace).
+    upid=$!
+    # PID of graalvisor (or unshare).
+    gpid=$(pgrep -P $upid)
+    # If strace is being used, we need to go one level deeper.
+    if [ ! -z "$trace_syscalls" ]
+    then
+        # PID of graalvisor.
+        gpid=$(pgrep -P $gpid)
+    fi
+    echo -n "$gpid" > $pidfile
+fi
+
+# Wait for graalvisor to terminate.
+wait

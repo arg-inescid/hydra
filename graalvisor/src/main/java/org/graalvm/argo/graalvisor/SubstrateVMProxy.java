@@ -90,8 +90,8 @@ public class SubstrateVMProxy extends RuntimeProxy {
                         // Sleep for 1 millisecond before trying again
                         Thread.sleep(1);
 
-                        // Check if we have been polling for more than 60,000 times. Due to the 1 millisecond sleep, this is similar to a 60-second timeout
-                        if (numberAttempts++ > 60000) {
+                        // Check if we have been polling for more than 1000 times. Due to the 1 millisecond sleep, this is similar to a 10-second timeout
+                        if (numberAttempts++ > 10000) {
                             break;
                         }
                     }

@@ -50,6 +50,9 @@ public class ProcessSandboxHandle extends SandboxHandle {
     public static native int kill(int pid, int sig);
 
     @CFunction
+    public static native int raise(int sig);
+
+    @CFunction
     public static native int waitpid(int pid, CIntPointer stat_loc, int options);
 
     private void child(ProcessSandboxProvider rsProvider) {
@@ -66,7 +69,7 @@ public class ProcessSandboxHandle extends SandboxHandle {
             System.err.println(e.getMessage());
             e.printStackTrace(System.err);
         } finally {
-            destroyChild(childPid);
+            raise(SIGKILL);
         }
     }
 
@@ -81,7 +84,6 @@ public class ProcessSandboxHandle extends SandboxHandle {
         int[] parentPipe = new int[2];
         try {
             if ((childPid = NativeSandboxInterface.createNativeProcessSandbox(childPipe, parentPipe)) == 0) {
-                childPid = (int) ProcessHandle.current().pid();
                 sender = new FileOutputStream(createFileDescriptor(childPipe[1]));
                 receiver = new BufferedReader(new FileReader(createFileDescriptor(parentPipe[0])));
                 child(rsProvider);

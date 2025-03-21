@@ -6,6 +6,15 @@
 #include <sys/syscall.h> /* for syscall(__NR_gettid) */
 #include <err.h>
 
+// If defined, enables debug prints and extra sanitization checks.
+//#define DEBUG
+
+#ifdef DEBUG
+    #define dbg(format, args...) do { cr_printf(STDOUT_FILENO, format, ## args); } while(0)
+#else
+    #define dbg(format, args...) do { } while(0)
+#endif
+
 // Global memory pool.
 static mspace global = NULL;
 // Thread local reference to the memory pool that the thread should use (it can point to global).
@@ -45,7 +54,7 @@ mspace find_mspace() {
     }
     // we don't restore global mspace, so seed 0 has pid range 1000-1999 and uses mspace 0.
     int mspace_id = (current_tid / 1000) - 1;
-    
+
     // pid = 1 is the system thread, uses global mspace
     if (mspace_id == -1) {
         init_global_mspace();
@@ -65,21 +74,29 @@ mspace find_mspace() {
 
 
 void* malloc(size_t bytes) {
-    void* ret = mspace_malloc(find_mspace(), bytes);
+    mspace ms = find_mspace();
+    void* ret = mspace_malloc(ms, bytes);
+    dbg("malloc(mspace = %p, bytes = %lu) -> %p\n", ms, bytes, ret);
     return ret;
 }
 
 void free(void* mem) {
-    return mspace_free(find_mspace(), mem);
+    mspace ms = find_mspace();
+    dbg("free(mspace = %p, mem = %p)\n", ms, mem);
+    return mspace_free(ms, mem);
 }
 
 void* calloc(size_t num, size_t size) {
-    void* ret = mspace_calloc(find_mspace(), num, size);
+    mspace ms = find_mspace();
+    void* ret = mspace_calloc(ms, num, size);
+    dbg("calloc(mspace = %p, num = %lu, size = %lu) -> %p\n", ms, num, size, ret);
     return ret;
 }
 
 void* realloc(void* ptr, size_t size) {
-    void* ret = mspace_realloc(find_mspace(), ptr, size);
+    mspace ms = find_mspace();
+    void* ret = mspace_realloc(ms, ptr, size);
+    dbg("realloc(mspace = %p, ptr = %p, size = %lu) -> %p\n", ms, ptr, size, ret);
     return ret;
 }
 

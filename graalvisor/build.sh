@@ -83,7 +83,6 @@ function build_ni {
     # Note: if we intend to expand beyond 32GB, then we need to disable compressed references.
     #JAVA_OPTS="$JAVA_OPTS -H:-UseCompressedReferences "
     $JAVA_HOME/bin/native-image \
-        $LIBC_OPTION \
         --no-fallback \
         --install-exit-handlers \
         --enable-url-protocols=http \
@@ -92,7 +91,6 @@ function build_ni {
         -H:CLibraryPath=$LIB_DIR \
         $JAVA_OPTS \
         --features=org.graalvm.argo.graalvisor.sandboxing.NativeSandboxInterfaceFeature \
-        $LANGS \
         -cp $GRAALVISOR_JAR \
         org.graalvm.argo.graalvisor.Main \
         polyglot-proxy \
@@ -125,14 +123,6 @@ then  # Build native image inside Docker container.
     docker run -it -v $JAVA_HOME:/jvm -v $ARGO_HOME:/argo --rm argo-builder /argo/graalvisor/build.sh "local"
     sudo chown -R $(id -u -n):$(id -g -n) $ARGO_HOME/graalvisor/build
 else  # Build native image locally (inside container or directly on host).
-    read -p "Use musl libc? (y or Y, everything else as no)? " -n 1 -r
-    echo    # move to a new line
-    if [[ $REPLY =~ ^[Yy]$ ]]
-    then
-        export PATH=$ARGO_HOME/resources/x86_64-linux-musl-native/bin:$PATH
-        LIBC_OPTION="--libc=musl"
-    fi
-
     echo -e "${GREEN}Building graalvisor jar...${NC}"
     ./gradlew clean shadowJar
     echo -e "${GREEN}Building graalvisor jar... done!${NC}"
