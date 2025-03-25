@@ -1,26 +1,51 @@
 #!/bin/bash
 
-if [ -z "$JAVA_HOME" ]
-then
-    echo "Please set JAVA_HOME first. It you don't have GraalVM locally, download, extract, and set JAVA_HOME."
-    echo "> wget https://download.oracle.com/graalvm/17/latest/graalvm-jdk-17_linux-x64_bin.tar.gz"
-    echo "> tar -vzxf graalvm-jdk-17_linux-x64_bin.tar.gz"
-    echo "> export JAVA_HOME=$(pwd)/graalvm-jdk-17.0.7+8.1"
+GRAALVM=graalvm-community-openjdk-17.0.7+7.1
+
+if [ "$#" -ne 2  ]; then
+    echo "Illegal number of parameters."
+    echo "This script is meant to be called like this:"
+    echo "> docker run -it -v \$PWD:/\$PWD --network host -w \$PWD --rm debian bash \$PWD/prepare-graalvm-23.0.0.sh \$(id -u) \$(id -g)"
+    echo "After running, you should have a graalvm installation that can be used as your JAVA_HOME."
+    echo "WARNING: you should not move the graalvm installation as it contains absolute links. Rather move the script to the desired directory before running."
     exit 1
 fi
 
-# Install GraalVM components.
-$JAVA_HOME/bin/gu install native-image python nodejs
+uid=$1
+gid=$2
 
-# Install graalpy packages in virtual env.
-VENV=$JAVA_HOME/graalvisor-python-venv
-$JAVA_HOME/bin/graalpy -m venv $VENV
-source $VENV/bin/activate
-graalpy -m ginstall list
-graalpy -m ginstall install numpy
-graalpy -m ginstall install Pillow
-graalpy -m ginstall install requests
-graalpy -m ginstall install torch
-graalpy -m ginstall install torchvision
-graalpy -m ginstall install texttable
-graalpy -m ginstall install igraph
+# Update package manager.
+apt update
+
+# We need wget.
+apt install -y wget
+
+# Download the jvm.
+wget https://github.com/graalvm/graalvm-ce-builds/releases/download/jdk-17.0.7/graalvm-community-jdk-17.0.7_linux-x64_bin.tar.gz -O - | tar -vzxf -
+
+# Install python and js support.
+$GRAALVM/bin/gu install python js llvm
+
+# Important to install pillow.
+apt install -y \
+    libtiff5-dev \
+    libjpeg62-turbo-dev \
+    libopenjp2-7-dev zlib1g-dev \
+    libfreetype6-dev \
+    liblcms2-dev \
+    libwebp-dev \
+    tcl8.6-dev \
+    tk8.6-dev python3-tk \
+    libharfbuzz-dev \
+    libfribidi-dev \
+    libxcb1-dev
+
+# Load python virtual environment and its packages.
+$GRAALVM/bin/graalpy -m venv $GRAALVM/hydra-venv
+source $GRAALVM/hydra-venv/bin/activate
+pip install numpy==1.23.5
+pip install requests==2.32.3
+pip install pillow==9.2.0
+
+# Adjust permissions to the host user.
+chown -R $uid:$gid $GRAALVM
