@@ -66,6 +66,10 @@ typedef struct {
     char* fout;
 } entrypoint_worker_args_t;
 
+// Dictionary of char* fpath to svm_sandbox_t* svm.
+// fpath_to_svm[0] = fpath, fpath_to_svm[1] = svm
+void* fpath_to_svm[MAX_SVM * 2] = {0};
+
 void run_serial_entrypoint(isolate_abi_t* abi, graal_isolatethread_t *isolatethread, int requests, const char* fin, char* fout) {
      for (int i = 0; i < requests; i++) {
 #ifdef PERF
@@ -425,15 +429,40 @@ void process_instructions(const char* input_file) {
     return;
 }
 
-svm_sandbox_t* last_svm = NULL;
-
 void save_svm(const char* fpath, svm_sandbox_t* svm) {
-    last_svm = svm;
+    size_t index = 0;
+
+    while(fpath_to_svm[index] != NULL) {
+        if (index >= MAX_SVM) {
+            err("get_svm: surpassed MAX_SVM = %d positions");
+            exit(0);
+        }
+        index += 2;
+    }
+    fpath_to_svm[index++] = fpath;
+    fpath_to_svm[index] = svm;
+
     return;
 }
 
 svm_sandbox_t* get_svm(const char* fpath) {
-    return last_svm;
+    void* svm = NULL;
+    size_t index = 0;
+
+    while(fpath_to_svm[index] != NULL) {
+        if (index >= MAX_SVM) {
+            err("get_svm: surpassed MAX_SVM = %d positions");
+            exit(0);
+        }
+        if (!strcmp(fpath_to_svm[index], fpath)) {
+            svm = fpath_to_svm[index + 1];
+            break;
+        } else {
+            index += 2;
+        }
+    }
+
+    return svm;
 }
 
 // void init_args(int argc, char** argv) {
