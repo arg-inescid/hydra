@@ -425,6 +425,17 @@ void process_instructions(const char* input_file) {
     return;
 }
 
+svm_sandbox_t* last_svm = NULL;
+
+void save_svm(const char* fpath, svm_sandbox_t* svm) {
+    last_svm = svm;
+    return;
+}
+
+svm_sandbox_t* get_svm(const char* fpath) {
+    return last_svm;
+}
+
 // void init_args(int argc, char** argv) {
 void call_command(int argc, char argv[10][100]) {
     const char* FPATH = NULL;
@@ -435,6 +446,7 @@ void call_command(int argc, char argv[10][100]) {
     char  fout[FOUT_LEN];
     isolate_abi_t abi;
     graal_isolate_t* isolate = NULL;
+    svm_sandbox_t* svm = NULL;
 
     if (argc < 2) {
         err("wrong utilization!");
@@ -457,25 +469,35 @@ void call_command(int argc, char argv[10][100]) {
         SEED = atoi(argv[4]);
     }
 
-    // Find current mode.
-    switch (argv[0][0])
-    {
-    case 'n':
-        printf("normal\n");
+    if (argv[0][0] == 'n') {
         run_svm(FPATH, CONC, ITERS, fin, fout, &abi, &isolate);
-        break;
-    case 'c':
-        printf("checkpoint\n");
-        checkpoint_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, &abi, &isolate);
-        break;
-    case 'r':
-        printf("restore\n");
-        restore_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, &abi, &isolate);
-        break;
-    case 'f':
-        err("No file recursion!\n");
-        exit(0);
-    default:
-        err("command not recognized");
+        return;
+    }
+
+    svm = get_svm(FPATH);
+    // if we already have executed this application, reuse its svm
+    if (svm != NULL) {
+        invoke_svm(svm);
+    } else {
+        // Find current mode.
+        switch (argv[0][0])
+        {
+        case 'c':
+            printf("checkpoint\n");
+            svm = checkpoint_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, &abi, &isolate);
+            printf("FPATH= %s\n", FPATH);
+            save_svm(FPATH, svm);
+            break;
+        case 'r':
+            printf("restore\n");
+            svm = restore_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, &abi, &isolate);
+            save_svm(FPATH, svm);
+            break;
+        case 'f':
+            err("No file recursion!\n");
+            exit(0);
+        default:
+            err("command not recognized");
+        }
     }
 }
