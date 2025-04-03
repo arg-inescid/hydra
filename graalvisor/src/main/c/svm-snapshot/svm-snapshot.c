@@ -434,19 +434,22 @@ void save_svm(const char* fpath, svm_sandbox_t* svm) {
 
     while(fpath_to_svm[index] != NULL) {
         if (index >= MAX_SVM) {
-            err("get_svm: surpassed MAX_SVM = %d positions");
+            err("save_svm: surpassed MAX_SVM = %d positions");
             exit(0);
         }
         index += 2;
     }
-    fpath_to_svm[index++] = fpath;
-    fpath_to_svm[index] = svm;
+    char* new_fpath = calloc(strlen(fpath) + 1, 1);
+    strcpy(new_fpath, fpath);
+
+    fpath_to_svm[index] = new_fpath;
+    fpath_to_svm[index + 1] = svm;
 
     return;
 }
 
 svm_sandbox_t* get_svm(const char* fpath) {
-    void* svm = NULL;
+    svm_sandbox_t* svm = NULL;
     size_t index = 0;
 
     while(fpath_to_svm[index] != NULL) {
@@ -462,8 +465,11 @@ svm_sandbox_t* get_svm(const char* fpath) {
         }
     }
 
+    printf("got svm nr = %ld with svm = %p\n", index, svm);
     return svm;
 }
+
+int global_seed = 0;
 
 // void init_args(int argc, char** argv) {
 void call_command(int argc, char argv[10][100]) {
@@ -473,9 +479,15 @@ void call_command(int argc, char argv[10][100]) {
     unsigned int SEED = 0;
     const char* fin = "(null)";
     char  fout[FOUT_LEN];
-    isolate_abi_t abi;
+
+    // isolate_abi_t abi;
+    // isolate_abi_t abi = {0};
+
     graal_isolate_t* isolate = NULL;
     svm_sandbox_t* svm = NULL;
+
+    isolate_abi_t* abi = malloc(sizeof(isolate_abi_t));
+    printf("malloc'd abi @ %p\n", abi);
 
     if (argc < 2) {
         err("wrong utilization!");
@@ -499,7 +511,7 @@ void call_command(int argc, char argv[10][100]) {
     }
 
     if (argv[0][0] == 'n') {
-        run_svm(FPATH, CONC, ITERS, fin, fout, &abi, &isolate);
+        run_svm(FPATH, CONC, ITERS, fin, fout, abi, &isolate);
         return;
     }
 
@@ -513,13 +525,13 @@ void call_command(int argc, char argv[10][100]) {
         {
         case 'c':
             printf("checkpoint\n");
-            svm = checkpoint_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, &abi, &isolate);
-            printf("FPATH= %s\n", FPATH);
+            svm = checkpoint_svm(FPATH, "metadata.snap", "memory.snap", global_seed++, CONC, ITERS, fin, fout, abi, &isolate);
             save_svm(FPATH, svm);
             break;
         case 'r':
             printf("restore\n");
-            svm = restore_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, &abi, &isolate);
+            // TODO: do we want to globaL_seed++ here?
+            svm = restore_svm(FPATH, "metadata.snap", "memory.snap", global_seed, CONC, ITERS, fin, fout, abi, &isolate);
             save_svm(FPATH, svm);
             break;
         case 'f':
