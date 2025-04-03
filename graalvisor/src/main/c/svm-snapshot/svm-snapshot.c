@@ -410,14 +410,12 @@ void process_instructions(const char* input_file) {
         printf("%s", buffer);
         char *token = strtok(buffer, " \t\n");
         while (token != NULL && token_counter < 10) {
-            printf("Word: %s|\n", token);
             strncpy(command[token_counter], token, 99);
             command[token_counter++][strlen(token)] = '\0';
             token = strtok(NULL, " \t\n");
         }
 
         for (int i=0; i < token_counter; i++) {
-            printf("Saved: %s|\n", command[i]);
         }
 
         call_command(token_counter, command);
@@ -448,6 +446,8 @@ void save_svm(const char* fpath, svm_sandbox_t* svm) {
     return;
 }
 
+int global_seed = 0;
+
 svm_sandbox_t* get_svm(const char* fpath) {
     svm_sandbox_t* svm = NULL;
     size_t index = 0;
@@ -457,6 +457,7 @@ svm_sandbox_t* get_svm(const char* fpath) {
             err("get_svm: surpassed MAX_SVM = %d positions");
             exit(0);
         }
+        printf("compared %s with %s\n", fpath_to_svm[index], fpath);
         if (!strcmp(fpath_to_svm[index], fpath)) {
             svm = fpath_to_svm[index + 1];
             break;
@@ -466,10 +467,10 @@ svm_sandbox_t* get_svm(const char* fpath) {
     }
 
     printf("got svm nr = %ld with svm = %p\n", index, svm);
+    global_seed = index / 2;
     return svm;
 }
 
-int global_seed = 0;
 
 // void init_args(int argc, char** argv) {
 void call_command(int argc, char argv[10][100]) {
@@ -516,6 +517,7 @@ void call_command(int argc, char argv[10][100]) {
     }
 
     svm = get_svm(FPATH);
+    printf("global_seed = %d\n", global_seed);
     // if we already have executed this application, reuse its svm
     if (svm != NULL) {
         invoke_svm(svm);
@@ -525,14 +527,13 @@ void call_command(int argc, char argv[10][100]) {
         {
         case 'c':
             printf("checkpoint\n");
-            svm = checkpoint_svm(FPATH, "metadata.snap", "memory.snap", global_seed++, CONC, ITERS, fin, fout, abi, &isolate);
+            svm = checkpoint_svm(FPATH, "metadata.snap", "memory.snap", global_seed, CONC, ITERS, fin, fout, abi, &isolate);
             save_svm(FPATH, svm);
             break;
         case 'r':
             printf("restore\n");
-            // TODO: do we want to globaL_seed++ here?
             svm = restore_svm(FPATH, "metadata.snap", "memory.snap", global_seed, CONC, ITERS, fin, fout, abi, &isolate);
-            save_svm(FPATH, svm);
+            // save_svm(FPATH, svm);
             break;
         case 'f':
             err("No file recursion!\n");
@@ -541,4 +542,5 @@ void call_command(int argc, char argv[10][100]) {
             err("command not recognized");
         }
     }
+    fprintf(stdout, "function(%s) -> %s\n", fin, fout);
 }
