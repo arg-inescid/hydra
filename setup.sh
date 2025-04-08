@@ -83,6 +83,8 @@ echo "export  PATH=\$ARGO_HOME/resources/firecracker-v1.1.0-x86_64:\$PATH"   >> 
 echo "set -gx PATH \$ARGO_HOME/resources/firecracker-v1.1.0-x86_64 \$PATH"   >> $ARGO_HOME/env.fish
 echo "export  JAVA_HOME=\$ARGO_HOME/resources/graalvm-jdk-17.0.7+8.1"        >> $ARGO_HOME/env.sh
 echo "set -gx JAVA_HOME \$ARGO_HOME/resources/graalvm-jdk-17.0.7+8.1"        >> $ARGO_HOME/env.fish
+echo "export  HYDRA_PYTHON=\$ARGO_HOME/../new_jvm/graalvm-community-openjdk-17.0.7+7.1/hydra-venv/bin/python" >> $ARGO_HOME/env.sh
+echo "set -gx HYDRA_PYTHON \$ARGO_HOME/../new_jvm/graalvm-community-openjdk-17.0.7+7.1/hydra-venv/bin/python" >> $ARGO_HOME/env.fish
 
 if [ ! -f $JAVA_HOME/bin/java ];
 then
