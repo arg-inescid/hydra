@@ -35,6 +35,7 @@ public class PolyglotEngine {
     private Value newContext(String language, String source, String entrypoint) {
         Map<String, String> options = new HashMap<>();
         String javaHome = System.getenv("JAVA_HOME");
+        String hydraPython = System.getenv("HYDRA_PYTHON");
         Context context = null;
 
         if (javaHome == null) {
@@ -47,10 +48,14 @@ public class PolyglotEngine {
 
         // Adding compilation option.
         if (PolyglotLanguage.PYTHON.toString().equals(language)) {
-            // Necessary to allow python imports.
-            options.put("python.ForceImportSite", "true");
-            // Loading the virtual env with installed packages
-            options.put("python.Executable", javaHome + "/graalvisor-python-venv/bin/python");
+	    if (hydraPython == null) {
+                System.err.println("HYDRA_PYTHON not found in the environment. Polyglot functionality significantly limited.");
+	    } else {
+                // Necessary to allow python imports.
+                options.put("python.ForceImportSite", "true");
+                // Loading python from Hydra's GraalVM.
+                options.put("python.Executable", hydraPython);
+	    }
         }
 
         // Build context.
