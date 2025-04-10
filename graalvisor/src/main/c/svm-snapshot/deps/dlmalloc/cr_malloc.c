@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+#include <pthread.h>
 #include "cr_malloc.h"
 #include "../../cr_logger.h"
 #include <errno.h>
@@ -25,6 +27,10 @@ static __thread pid_t current_tid = 0;
 static mspace mspace_table[MAX_MSPACE] = {0};
 // Number of used mspaces.
 static int mspace_count = 0;
+// Array for storing mutex for each sandbox.
+static pthread_mutex_t mutex_table[MAX_MSPACE] = {0};
+// Auxiliary variable to know if mutex has already been acquired.
+static __thread int in_allocator = 0;
 
 mspace get_mspace_mapping() {
     return mspace_table;
@@ -42,6 +48,10 @@ void init_global_mspace() {
     } else {
         mspace_track_large_chunks(global, 1);
     }
+    if (pthread_mutex_init(&mutex_table[0], NULL) != 0) {
+        cr_printf(STDOUT_FILENO, "Mutex initialization failed\n");
+        return;
+    }
 }
 
 mspace find_mspace() {
@@ -52,12 +62,14 @@ mspace find_mspace() {
     if (!current_tid) {
         current_tid = syscall(__NR_gettid);
     }
-    // we don't restore global mspace, so seed 0 has pid range 1000-1999 and uses mspace 0.
-    int mspace_id = (current_tid / 1000) - 1;
+    // TODO: confirm restore doesn't crash because 0 is global, untrackable mspace
+    // index 0 is used for global mspace
+    int mspace_id = (current_tid / 1000);
 
     // pid = 1 is the system thread, uses global mspace
-    if (mspace_id == -1) {
+    if (mspace_id == 0) {
         init_global_mspace();
+        mspace_table[mspace_id] = global;
         local = global;
         return local;
     }
@@ -65,6 +77,10 @@ mspace find_mspace() {
     if (!mspace_table[mspace_id]) {
         mspace m = create_mspace(0, 0);
         mspace_table[mspace_id] = m;
+        if (pthread_mutex_init(&mutex_table[mspace_id], NULL) != 0) {
+            cr_printf(STDOUT_FILENO, "Mutex initialization failed\n");
+            return NULL;
+        }
         mspace_count++;
     }
 
@@ -72,31 +88,70 @@ mspace find_mspace() {
     return local;
 }
 
-
 void* malloc(size_t bytes) {
+    int mspace_id = (current_tid / 1000);
+
+    dbg("inside malloc\n");
     mspace ms = find_mspace();
+    dbg("in_allocator=%d, pid=%d\n", in_allocator, gettid());
+    if (!in_allocator) {
+        pthread_mutex_lock(&mutex_table[mspace_id]);
+        in_allocator = 1;
+    }
     void* ret = mspace_malloc(ms, bytes);
     dbg("malloc(mspace = %p, bytes = %lu) -> %p\n", ms, bytes, ret);
+    in_allocator = 0;
+    pthread_mutex_unlock(&mutex_table[mspace_id]);
     return ret;
 }
 
 void free(void* mem) {
+    int mspace_id = (current_tid / 1000);
+
     mspace ms = find_mspace();
+    dbg("inside free(mspace = %p, mem = %p)\n", ms, mem);
+    if (!in_allocator) {
+        pthread_mutex_lock(&mutex_table[mspace_id]);
+        in_allocator = 1;
+    }
     dbg("free(mspace = %p, mem = %p)\n", ms, mem);
-    return mspace_free(ms, mem);
+    mspace_free(ms, mem);
+    in_allocator = 0;
+    pthread_mutex_unlock(&mutex_table[mspace_id]);
+    return;
 }
 
 void* calloc(size_t num, size_t size) {
+    int mspace_id = (current_tid / 1000);
+
+    dbg("inside calloc\n");
     mspace ms = find_mspace();
+    dbg("in_allocator=%d, pid=%d\n", in_allocator, gettid());
+    if (!in_allocator) {
+        pthread_mutex_lock(&mutex_table[mspace_id]);
+        in_allocator = 1;
+    }
     void* ret = mspace_calloc(ms, num, size);
     dbg("calloc(mspace = %p, num = %lu, size = %lu) -> %p\n", ms, num, size, ret);
+    in_allocator = 0;
+    pthread_mutex_unlock(&mutex_table[mspace_id]);
+
     return ret;
 }
 
 void* realloc(void* ptr, size_t size) {
+    int mspace_id = (current_tid / 1000);
+
+    dbg("inside realloc\n");
     mspace ms = find_mspace();
+    if (!in_allocator) {
+        pthread_mutex_lock(&mutex_table[mspace_id]);
+        in_allocator = 1;
+    }
     void* ret = mspace_realloc(ms, ptr, size);
     dbg("realloc(mspace = %p, ptr = %p, size = %lu) -> %p\n", ms, ptr, size, ret);
+    in_allocator = 0;
+    pthread_mutex_unlock(&mutex_table[mspace_id]);
     return ret;
 }
 
