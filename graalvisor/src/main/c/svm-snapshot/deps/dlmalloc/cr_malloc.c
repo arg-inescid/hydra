@@ -32,6 +32,9 @@ static pthread_mutex_t mutex_table[MAX_MSPACE] = {0};
 // Auxiliary variable to know if mutex has already been acquired.
 static __thread int in_allocator = 0;
 
+// If the memory allocator becomes the bottleneck it might be worth to re-evaluate thread_locals:
+// https://stackoverflow.com/questions/9909980/how-fast-is-thread-local-variable-access-on-linux
+
 mspace get_mspace_mapping() {
     return mspace_table;
 }
@@ -103,38 +106,54 @@ void unlock_mspace(int mspace_id) {
 }
 
 void* malloc(size_t bytes) {
+    dbg("inside malloc\n");
     int mspace_id = (current_tid / 1000);
+    int outermost_call = !in_allocator;
     mspace ms = lock_mspace(mspace_id);
     void* ret = mspace_malloc(ms, bytes);
     dbg("malloc(mspace = %p, bytes = %lu) -> %p\n", ms, bytes, ret);
-    unlock_mspace(mspace_id);
+    if (outermost_call) {
+        unlock_mspace(mspace_id);
+    }
     return ret;
 }
 
 void free(void* mem) {
+    dbg("inside free\n");
     int mspace_id = (current_tid / 1000);
+    int outermost_call = !in_allocator;
     mspace ms = lock_mspace(mspace_id);
     mspace_free(ms, mem);
     dbg("free(mspace = %p, mem = %p)\n", ms, mem);
-    unlock_mspace(mspace_id);
+    if (outermost_call) {
+        unlock_mspace(mspace_id);
+    }
     return;
 }
 
 void* calloc(size_t num, size_t size) {
+    dbg("inside calloc\n");
     int mspace_id = (current_tid / 1000);
+    int outermost_call = !in_allocator;
     mspace ms = lock_mspace(mspace_id);
     void* ret = mspace_calloc(ms, num, size);
     dbg("calloc(mspace = %p, num = %lu, size = %lu) -> %p\n", ms, num, size, ret);
-    unlock_mspace(mspace_id);
+    if (outermost_call) {
+        unlock_mspace(mspace_id);
+    }
     return ret;
 }
 
 void* realloc(void* ptr, size_t size) {
+    dbg("inside realloc\n");
     int mspace_id = (current_tid / 1000);
+    int outermost_call = !in_allocator;
     mspace ms = lock_mspace(mspace_id);
     void* ret = mspace_realloc(ms, ptr, size);
     dbg("realloc(mspace = %p, ptr = %p, size = %lu) -> %p\n", ms, ptr, size, ret);
-    unlock_mspace(mspace_id);
+    if (outermost_call) {
+        unlock_mspace(mspace_id);
+    }
     return ret;
 }
 

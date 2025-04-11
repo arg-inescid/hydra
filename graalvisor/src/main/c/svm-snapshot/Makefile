@@ -91,44 +91,44 @@ benchmarks: all
 # TODO - gv_python_videoprocessing (process)
 
 run-normal: all
-	$(CURDIR)/run-env.sh ./main normal $(app) 2>&1 | tee normal.log
+	$(CURDIR)/run-env.sh env LD_PRELOAD=./deps/dlmalloc/newdl.so ./main normal $(app) 2>&1 | tee normal.log
 
 strace-normal: all
-	$(CURDIR)/run-env.sh strace -f ./main normal $(app) 2>&1 | tee strace-normal.log
+	$(CURDIR)/run-env.sh strace -f env LD_PRELOAD=./deps/dlmalloc/newdl.so ./main normal $(app) 2>&1 | tee strace-normal.log
 
 gdb-normal: all
-	./run-env.sh gdb $(gcommands) --args ./main normal $(app)
+	./run-env.sh gdb $(gcommands) -ex "set environment LD_PRELOAD ./deps/dlmalloc/newdl.so" --args ./main normal $(app)
 
 gdb-checkpoint: all
-	./run-env.sh gdb $(gcommands) ./main checkpoint $(app) | tee gdb-checkpoint.log
+	./run-env.sh gdb $(gcommands) -ex "set environment LD_PRELOAD ./deps/dlmalloc/newdl.so" --args ./main checkpoint $(app) | tee gdb-checkpoint.log
 
 run-checkpoint: all
 	rm -f snapshot.mem
 	rm -f snapshot.meta
-	$(CURDIR)/run-env.sh ./main checkpoint $(app) 2>&1 | tee checkpoint.log
+	$(CURDIR)/run-env.sh env LD_PRELOAD=./deps/dlmalloc/newdl.so ./main checkpoint $(app) 2>&1 | tee checkpoint.log
 
 strace-checkpoint: all
 	rm -f snapshot.mem
 	rm -f snapshot.meta
-	$(CURDIR)/run-env.sh strace  -f ./main checkpoint $(app) 2>&1 | tee strace-checkpoint.log
+	$(CURDIR)/run-env.sh strace -f env LD_PRELOAD=./deps/dlmalloc/newdl.so ./main checkpoint $(app) 2>&1 | tee strace-checkpoint.log
 
 run-restore: all
-	$(CURDIR)/run-env.sh ./main restore $(app) 2>&1 | tee restore.log
+	$(CURDIR)/run-env.sh env LD_PRELOAD=./deps/dlmalloc/newdl.so ./main restore $(app) 2>&1 | tee restore.log
 
 run: run-checkpoint run-restore
 
 run-perf: all
 	rm -f snapshot.mem
 	rm -f snapshot.meta
-	$(CURDIR)/run-env.sh /bin/time -v ./main normal $(app) 2>&1 | tee normal.log
-	$(CURDIR)/run-env.sh /bin/time -v ./main checkpoint $(app) 2>&1 | tee checkpoint.log
-	$(CURDIR)/run-env.sh /bin/time -v ./main restore $(app) 2>&1 | tee restore.log
+	$(CURDIR)/run-env.sh /bin/time -v env LD_PRELOAD=./deps/dlmalloc/newdl.so ./main normal $(app) 2>&1 | tee normal.log
+	$(CURDIR)/run-env.sh /bin/time -v env LD_PRELOAD=./deps/dlmalloc/newdl.so ./main checkpoint $(app) 2>&1 | tee checkpoint.log
+	$(CURDIR)/run-env.sh /bin/time -v env LD_PRELOAD=./deps/dlmalloc/newdl.so ./main restore $(app) 2>&1 | tee restore.log
 
 gdb-restore: all
-	./run-env.sh gdb $(gcommands) --args ./main restore $(app)
+	./run-env.sh gdb $(gcommands) -ex "set environment LD_PRELOAD ./deps/dlmalloc/newdl.so" --args ./main restore $(app)
 
 strace-restore: all
-	$(CURDIR)/run-env.sh strace -f ./main restore $(app) 2>&1 | tee strace-restore.log
+	$(CURDIR)/run-env.sh strace -f env LD_PRELOAD=./deps/dlmalloc/newdl.so ./main restore $(app) 2>&1 | tee strace-restore.log
 
 clean:
 	rm -f *.o main *.snap *.log
