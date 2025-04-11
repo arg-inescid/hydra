@@ -52,6 +52,7 @@ void init_global_mspace() {
         cr_printf(STDOUT_FILENO, "Mutex initialization failed\n");
         return;
     }
+    mspace_count++;
 }
 
 mspace find_mspace() {
@@ -62,7 +63,6 @@ mspace find_mspace() {
     if (!current_tid) {
         current_tid = syscall(__NR_gettid);
     }
-    // TODO: confirm restore doesn't crash because 0 is global, untrackable mspace
     // index 0 is used for global mspace
     int mspace_id = (current_tid / 1000);
 
@@ -88,70 +88,53 @@ mspace find_mspace() {
     return local;
 }
 
-void* malloc(size_t bytes) {
-    int mspace_id = (current_tid / 1000);
-
-    dbg("inside malloc\n");
+mspace lock_mspace(int mspace_id) {
     mspace ms = find_mspace();
-    dbg("in_allocator=%d, pid=%d\n", in_allocator, gettid());
     if (!in_allocator) {
         pthread_mutex_lock(&mutex_table[mspace_id]);
         in_allocator = 1;
     }
-    void* ret = mspace_malloc(ms, bytes);
-    dbg("malloc(mspace = %p, bytes = %lu) -> %p\n", ms, bytes, ret);
+    return ms;
+}
+
+void unlock_mspace(int mspace_id) {
     in_allocator = 0;
     pthread_mutex_unlock(&mutex_table[mspace_id]);
+}
+
+void* malloc(size_t bytes) {
+    int mspace_id = (current_tid / 1000);
+    mspace ms = lock_mspace(mspace_id);
+    void* ret = mspace_malloc(ms, bytes);
+    dbg("malloc(mspace = %p, bytes = %lu) -> %p\n", ms, bytes, ret);
+    unlock_mspace(mspace_id);
     return ret;
 }
 
 void free(void* mem) {
     int mspace_id = (current_tid / 1000);
-
-    mspace ms = find_mspace();
-    dbg("inside free(mspace = %p, mem = %p)\n", ms, mem);
-    if (!in_allocator) {
-        pthread_mutex_lock(&mutex_table[mspace_id]);
-        in_allocator = 1;
-    }
-    dbg("free(mspace = %p, mem = %p)\n", ms, mem);
+    mspace ms = lock_mspace(mspace_id);
     mspace_free(ms, mem);
-    in_allocator = 0;
-    pthread_mutex_unlock(&mutex_table[mspace_id]);
+    dbg("free(mspace = %p, mem = %p)\n", ms, mem);
+    unlock_mspace(mspace_id);
     return;
 }
 
 void* calloc(size_t num, size_t size) {
     int mspace_id = (current_tid / 1000);
-
-    dbg("inside calloc\n");
-    mspace ms = find_mspace();
-    dbg("in_allocator=%d, pid=%d\n", in_allocator, gettid());
-    if (!in_allocator) {
-        pthread_mutex_lock(&mutex_table[mspace_id]);
-        in_allocator = 1;
-    }
+    mspace ms = lock_mspace(mspace_id);
     void* ret = mspace_calloc(ms, num, size);
     dbg("calloc(mspace = %p, num = %lu, size = %lu) -> %p\n", ms, num, size, ret);
-    in_allocator = 0;
-    pthread_mutex_unlock(&mutex_table[mspace_id]);
-
+    unlock_mspace(mspace_id);
     return ret;
 }
 
 void* realloc(void* ptr, size_t size) {
     int mspace_id = (current_tid / 1000);
-
-    dbg("inside realloc\n");
-    mspace ms = find_mspace();
-    if (!in_allocator) {
-        pthread_mutex_lock(&mutex_table[mspace_id]);
-        in_allocator = 1;
-    }
+    mspace ms = lock_mspace(mspace_id);
     void* ret = mspace_realloc(ms, ptr, size);
     dbg("realloc(mspace = %p, ptr = %p, size = %lu) -> %p\n", ms, ptr, size, ret);
-    in_allocator = 0;
-    pthread_mutex_unlock(&mutex_table[mspace_id]);
+    unlock_mspace(mspace_id);
     return ret;
 }
 
