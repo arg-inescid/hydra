@@ -123,6 +123,9 @@ then  # Build native image inside Docker container.
     docker run -it -v $JAVA_HOME:/jvm -v $ARGO_HOME:/argo --rm argo-builder /argo/graalvisor/build.sh "local"
     sudo chown -R $(id -u -n):$(id -g -n) $ARGO_HOME/graalvisor/build
 else  # Build native image locally (inside container or directly on host).
+    echo -e "${GREEN}Building graalvisor lib jar...${NC}"
+    bash $ARGO_HOME/graalvisor-lib/build.sh
+    echo -e "${GREEN}Building graalvisor jar... done!${NC}"
     echo -e "${GREEN}Building graalvisor jar...${NC}"
     ./gradlew clean shadowJar
     echo -e "${GREEN}Building graalvisor jar... done!${NC}"
