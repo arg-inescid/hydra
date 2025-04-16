@@ -9,6 +9,18 @@ fi
 graalvisor=$1
 pidfile=$2
 
+function get_child_pid {
+    ppid=$1
+    attempts=10
+    for ((i=0; i<attempts; i++))
+    do
+        cpid=$(pgrep -P $ppid)
+        [[ ! -z $cpid ]] && break
+        sleep .1
+    done
+    echo $cpid
+}
+
 # Uncomment to enable strace. The log will be put next to the graalvisor binary.
 #trace_syscalls="strace -f -o $(dirname $graalvisor)/strace.log"
 
@@ -29,14 +41,16 @@ then
     # PID of unshare (or strace).
     upid=$!
     # PID of graalvisor (or unshare).
-    gpid=$(pgrep -P $upid)
+    gpid=$(get_child_pid $upid)
     # If strace is being used, we need to go one level deeper.
     if [ ! -z "$trace_syscalls" ]
     then
         # PID of graalvisor.
-        gpid=$(pgrep -P $gpid)
+        ggpid=$(get_child_pid $gpid)
+        echo -n "$ggpid" > $pidfile
+    else
+        echo -n "$gpid" > $pidfile
     fi
-    echo -n "$gpid" > $pidfile
 fi
 
 # Wait for graalvisor to terminate.
