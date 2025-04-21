@@ -27,8 +27,8 @@ static mspace mspace_table[MAX_MSPACE] = {0};
 static volatile int mspace_count = 0;
 // Array for storing mutex for each sandbox.
 static pthread_mutex_t mutex_table[MAX_MSPACE] = {0};
-// Auxiliary variable to know if mutex has already been acquired.
-static __thread int in_allocator = 0;
+// Array for storing mutex attribute for each sandbox.
+static pthread_mutexattr_t attr_table[MAX_MSPACE] = {0};
 
 // If the memory allocator becomes the bottleneck it might be worth to re-evaluate thread_locals:
 // https://stackoverflow.com/questions/9909980/how-fast-is-thread-local-variable-access-on-linux
@@ -49,7 +49,9 @@ void init_mspace(int mspace_id) {
         destroy_mspace(newmspace);
     } else {
         mspace_track_large_chunks(mspace_table[mspace_id], 1);
-        if (pthread_mutex_init(&mutex_table[mspace_id], NULL) != 0) {
+        pthread_mutexattr_init(&attr_table[mspace_id]);
+        pthread_mutexattr_settype(&attr_table[mspace_id], PTHREAD_MUTEX_RECURSIVE);
+        if (pthread_mutex_init(&mutex_table[mspace_id], &attr_table[mspace_id]) != 0) {
             cr_printf(STDOUT_FILENO, "Mutex initialization failed\n");
         }
     }
@@ -74,70 +76,53 @@ mspace find_mspace() {
     return local;
 }
 
-// TODO: mutex recursive
 mspace lock_mspace(int mspace_id) {
     mspace ms = find_mspace();
-    if (!in_allocator) {
-        pthread_mutex_lock(&mutex_table[mspace_id]);
-        in_allocator = 1;
-    }
+    pthread_mutex_lock(&mutex_table[mspace_id]);
     return ms;
 }
 
 void unlock_mspace(int mspace_id) {
-    in_allocator = 0;
     pthread_mutex_unlock(&mutex_table[mspace_id]);
 }
 
 void* malloc(size_t bytes) {
     dbg("inside malloc\n");
     int mspace_id = (current_tid / 1000);
-    int outermost_call = !in_allocator;
     mspace ms = lock_mspace(mspace_id);
     void* ret = mspace_malloc(ms, bytes);
     dbg("malloc(mspace = %p, bytes = %lu) -> %p\n", ms, bytes, ret);
-    if (outermost_call) {
-        unlock_mspace(mspace_id);
-    }
+    unlock_mspace(mspace_id);
     return ret;
 }
 
 void free(void* mem) {
     dbg("inside free\n");
     int mspace_id = (current_tid / 1000);
-    int outermost_call = !in_allocator;
     mspace ms = lock_mspace(mspace_id);
     mspace_free(ms, mem);
     dbg("free(mspace = %p, mem = %p)\n", ms, mem);
-    if (outermost_call) {
-        unlock_mspace(mspace_id);
-    }
+    unlock_mspace(mspace_id);
     return;
 }
 
 void* calloc(size_t num, size_t size) {
     dbg("inside calloc\n");
     int mspace_id = (current_tid / 1000);
-    int outermost_call = !in_allocator;
     mspace ms = lock_mspace(mspace_id);
     void* ret = mspace_calloc(ms, num, size);
     dbg("calloc(mspace = %p, num = %lu, size = %lu) -> %p\n", ms, num, size, ret);
-    if (outermost_call) {
-        unlock_mspace(mspace_id);
-    }
+    unlock_mspace(mspace_id);
     return ret;
 }
 
 void* realloc(void* ptr, size_t size) {
     dbg("inside realloc\n");
     int mspace_id = (current_tid / 1000);
-    int outermost_call = !in_allocator;
     mspace ms = lock_mspace(mspace_id);
     void* ret = mspace_realloc(ms, ptr, size);
     dbg("realloc(mspace = %p, ptr = %p, size = %lu) -> %p\n", ms, ptr, size, ret);
-    if (outermost_call) {
-        unlock_mspace(mspace_id);
-    }
+    unlock_mspace(mspace_id);
     return ret;
 }
 
