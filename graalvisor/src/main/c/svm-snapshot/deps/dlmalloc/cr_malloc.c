@@ -17,8 +17,6 @@
     #define dbg(format, args...) do { } while(0)
 #endif
 
-// Global memory pool.
-static mspace global = NULL;
 // Thread local reference to the memory pool that the thread should use (it can point to global).
 static __thread mspace local = NULL;
 // Thread local variable that acts as it's TID.
@@ -26,7 +24,7 @@ static __thread pid_t current_tid = 0;
 // Array for storing mspaces for each sandbox.
 static mspace mspace_table[MAX_MSPACE] = {0};
 // Number of used mspaces.
-static int mspace_count = 0;
+static volatile int mspace_count = 0;
 // Array for storing mutex for each sandbox.
 static pthread_mutex_t mutex_table[MAX_MSPACE] = {0};
 // Auxiliary variable to know if mutex has already been acquired.
@@ -36,26 +34,25 @@ static __thread int in_allocator = 0;
 // https://stackoverflow.com/questions/9909980/how-fast-is-thread-local-variable-access-on-linux
 
 mspace get_mspace_mapping() {
-    return mspace_table;
+    // we skip global mspace because it can't be checkpoint/restored
+    return mspace_table[1];
 }
 
 int get_mspace_count() {
     return mspace_count;
 }
 
-void init_global_mspace() {
+void init_mspace(int mspace_id) {
     mspace newmspace = create_mspace(0, 0);
     mspace uninitialized = NULL;
-    if (!__atomic_compare_exchange(&global, &uninitialized, &newmspace, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)) {
+    if (!__atomic_compare_exchange(&mspace_table[mspace_id], &uninitialized, &newmspace, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)) {
         destroy_mspace(newmspace);
     } else {
-        mspace_track_large_chunks(global, 1);
+        mspace_track_large_chunks(mspace_table[mspace_id], 1);
+        if (pthread_mutex_init(&mutex_table[mspace_id], NULL) != 0) {
+            cr_printf(STDOUT_FILENO, "Mutex initialization failed\n");
+        }
     }
-    if (pthread_mutex_init(&mutex_table[0], NULL) != 0) {
-        cr_printf(STDOUT_FILENO, "Mutex initialization failed\n");
-        return;
-    }
-    mspace_count++;
 }
 
 mspace find_mspace() {
@@ -69,28 +66,15 @@ mspace find_mspace() {
     // index 0 is used for global mspace
     int mspace_id = (current_tid / 1000);
 
-    // pid = 1 is the system thread, uses global mspace
-    if (mspace_id == 0) {
-        init_global_mspace();
-        mspace_table[mspace_id] = global;
-        local = global;
-        return local;
-    }
-
     if (!mspace_table[mspace_id]) {
-        mspace m = create_mspace(0, 0);
-        mspace_table[mspace_id] = m;
-        if (pthread_mutex_init(&mutex_table[mspace_id], NULL) != 0) {
-            cr_printf(STDOUT_FILENO, "Mutex initialization failed\n");
-            return NULL;
-        }
-        mspace_count++;
+        init_mspace(mspace_id);
     }
 
     local = mspace_table[mspace_id];
     return local;
 }
 
+// TODO: mutex recursive
 mspace lock_mspace(int mspace_id) {
     mspace ms = find_mspace();
     if (!in_allocator) {
