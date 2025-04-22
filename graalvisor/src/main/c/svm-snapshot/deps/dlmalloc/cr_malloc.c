@@ -9,9 +9,9 @@
 #include <err.h>
 
 // If defined, enables debug prints and extra sanitization checks.
-//#define DEBUG
+#define DEBUGDL
 
-#ifdef DEBUG
+#ifdef DEBUGDL
     #define dbg(format, args...) do { cr_printf(STDOUT_FILENO, format, ## args); } while(0)
 #else
     #define dbg(format, args...) do { } while(0)
@@ -29,6 +29,8 @@ static volatile int mspace_count = 0;
 static pthread_mutex_t mutex_table[MAX_MSPACE] = {0};
 // Array for storing mutex attribute for each sandbox.
 static pthread_mutexattr_t attr_table[MAX_MSPACE] = {0};
+// Mutex for exlusive access to initialization of an mspace.
+pthread_mutex_t malloc_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // If the memory allocator becomes the bottleneck it might be worth to re-evaluate thread_locals:
 // https://stackoverflow.com/questions/9909980/how-fast-is-thread-local-variable-access-on-linux
@@ -43,18 +45,12 @@ int get_mspace_count() {
 }
 
 void init_mspace(int mspace_id) {
+    pthread_mutex_lock(&malloc_mutex);
     mspace newmspace = create_mspace(0, 0);
-    mspace uninitialized = NULL;
-    if (!__atomic_compare_exchange(&mspace_table[mspace_id], &uninitialized, &newmspace, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)) {
-        destroy_mspace(newmspace);
-    } else {
-        mspace_track_large_chunks(mspace_table[mspace_id], 1);
-        pthread_mutexattr_init(&attr_table[mspace_id]);
-        pthread_mutexattr_settype(&attr_table[mspace_id], PTHREAD_MUTEX_RECURSIVE);
-        if (pthread_mutex_init(&mutex_table[mspace_id], &attr_table[mspace_id]) != 0) {
-            cr_printf(STDOUT_FILENO, "Mutex initialization failed\n");
-        }
+    if (!newmspace) {
+        err(1, "error: could not init mspace)");
     }
+    pthread_mutex_unlock(&malloc_mutex);
 }
 
 mspace find_mspace() {
@@ -78,16 +74,20 @@ mspace find_mspace() {
 
 mspace lock_mspace(int mspace_id) {
     mspace ms = find_mspace();
+    dbg("locking mspace %d from tid %d\n", mspace_id, current_tid);
     pthread_mutex_lock(&mutex_table[mspace_id]);
+    dbg("locked mspace %d from tid %d\n", mspace_id, current_tid);
     return ms;
 }
 
 void unlock_mspace(int mspace_id) {
+    dbg("unlocking mspace %d from tid %d\n", mspace_id, current_tid);
     pthread_mutex_unlock(&mutex_table[mspace_id]);
 }
 
 void* malloc(size_t bytes) {
-    dbg("inside malloc\n");
+    find_mspace();
+    dbg("inside malloc from tid=%d\n", current_tid);
     int mspace_id = (current_tid / 1000);
     mspace ms = lock_mspace(mspace_id);
     void* ret = mspace_malloc(ms, bytes);
@@ -97,7 +97,8 @@ void* malloc(size_t bytes) {
 }
 
 void free(void* mem) {
-    dbg("inside free\n");
+    find_mspace();
+    dbg("inside free of %p from tid=%d with local=%p and gettid=%d\n", mem, current_tid, local, gettid());
     int mspace_id = (current_tid / 1000);
     mspace ms = lock_mspace(mspace_id);
     mspace_free(ms, mem);
@@ -107,7 +108,8 @@ void free(void* mem) {
 }
 
 void* calloc(size_t num, size_t size) {
-    dbg("inside calloc\n");
+    find_mspace();
+    dbg("inside calloc from tid=%d\n", current_tid);
     int mspace_id = (current_tid / 1000);
     mspace ms = lock_mspace(mspace_id);
     void* ret = mspace_calloc(ms, num, size);
@@ -117,7 +119,8 @@ void* calloc(size_t num, size_t size) {
 }
 
 void* realloc(void* ptr, size_t size) {
-    dbg("inside realloc\n");
+    find_mspace();
+    dbg("inside realloc from tid=%d\n", current_tid);
     int mspace_id = (current_tid / 1000);
     mspace ms = lock_mspace(mspace_id);
     void* ret = mspace_realloc(ms, ptr, size);
