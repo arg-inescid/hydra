@@ -37,11 +37,11 @@ pthread_mutex_t malloc_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 mspace get_mspace_mapping() {
     // we skip global mspace because it can't be checkpoint/restored
-    return mspace_table[1];
+    return &mspace_table[1];
 }
 
 int get_mspace_count() {
-    return mspace_count;
+    return mspace_count-1;
 }
 
 void init_mspace(int mspace_id) {

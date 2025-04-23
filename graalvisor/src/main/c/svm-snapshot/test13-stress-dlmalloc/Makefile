@@ -13,7 +13,7 @@ run-checkpoint:
 	$(CURDIR)/../run-env.sh env LD_PRELOAD=../deps/dlmalloc/newdl.so ../main checkpoint $(app) > checkpoint.log 2>&1
 
 run-restore:
-	$(CURDIR)/../run-env.sh ../main restore $(app) > restore.log 2>&1
+	$(CURDIR)/../run-env.sh env LD_PRELOAD=../deps/dlmalloc/newdl.so ../main restore $(app) > restore.log 2>&1
 
 run: all run-checkpoint run-restore
 
