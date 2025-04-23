@@ -10,7 +10,7 @@ all:
 run-checkpoint:
 	rm -f snapshot.mem
 	rm -f snapshot.meta
-	$(CURDIR)/../run-env.sh ../main checkpoint $(app) > checkpoint.log 2>&1
+	$(CURDIR)/../run-env.sh env LD_PRELOAD=../deps/dlmalloc/newdl.so ../main checkpoint $(app) > checkpoint.log 2>&1
 
 run-restore:
 	$(CURDIR)/../run-env.sh ../main restore $(app) > restore.log 2>&1

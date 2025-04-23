@@ -9,7 +9,7 @@
 #include <err.h>
 
 // If defined, enables debug prints and extra sanitization checks.
-#define DEBUGDL
+//#define DEBUGDL
 
 #ifdef DEBUGDL
     #define dbg(format, args...) do { cr_printf(STDOUT_FILENO, format, ## args); } while(0)
@@ -47,8 +47,17 @@ int get_mspace_count() {
 void init_mspace(int mspace_id) {
     pthread_mutex_lock(&malloc_mutex);
     mspace newmspace = create_mspace(0, 0);
-    if (!newmspace) {
-        err(1, "error: could not init mspace)");
+    mspace uninitialized = NULL;
+    if (!__atomic_compare_exchange(&mspace_table[mspace_id], &uninitialized, &newmspace, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)) {
+        destroy_mspace(newmspace);
+    } else {
+        mspace_track_large_chunks(mspace_table[mspace_id], 1);
+        pthread_mutexattr_init(&attr_table[mspace_id]);
+        pthread_mutexattr_settype(&attr_table[mspace_id], PTHREAD_MUTEX_RECURSIVE);
+        if (pthread_mutex_init(&mutex_table[mspace_id], &attr_table[mspace_id]) != 0) {
+            cr_printf(STDOUT_FILENO, "Mutex initialization failed\n");
+        }
+        mspace_count++;
     }
     pthread_mutex_unlock(&malloc_mutex);
 }
@@ -101,6 +110,8 @@ void free(void* mem) {
     dbg("inside free of %p from tid=%d with local=%p and gettid=%d\n", mem, current_tid, local, gettid());
     int mspace_id = (current_tid / 1000);
     mspace ms = lock_mspace(mspace_id);
+    // compiled with FOOTERS=1 this mspace_free() will be replaced by a free()
+    // so global mspace can call free of stuff on the application's mspace
     mspace_free(ms, mem);
     dbg("free(mspace = %p, mem = %p)\n", ms, mem);
     unlock_mspace(mspace_id);
