@@ -46,11 +46,9 @@ int get_mspace_count() {
 
 void init_mspace(int mspace_id) {
     pthread_mutex_lock(&malloc_mutex);
-    mspace newmspace = create_mspace(0, 0);
-    mspace uninitialized = NULL;
-    if (!__atomic_compare_exchange(&mspace_table[mspace_id], &uninitialized, &newmspace, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)) {
-        destroy_mspace(newmspace);
-    } else {
+    if (!mspace_table[mspace_id]) {
+        mspace newmspace = create_mspace(0, 0);
+        mspace_table[mspace_id] = newmspace;
         mspace_track_large_chunks(mspace_table[mspace_id], 1);
         pthread_mutexattr_init(&attr_table[mspace_id]);
         pthread_mutexattr_settype(&attr_table[mspace_id], PTHREAD_MUTEX_RECURSIVE);
