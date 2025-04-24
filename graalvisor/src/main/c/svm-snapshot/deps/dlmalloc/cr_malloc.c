@@ -9,9 +9,9 @@
 #include <err.h>
 
 // If defined, enables debug prints and extra sanitization checks.
-//#define DEBUGDL
+#define HYDRALLOC_DEBUG
 
-#ifdef DEBUGDL
+#ifdef HYDRALLOC_DEBUG
     #define dbg(format, args...) do { cr_printf(STDOUT_FILENO, format, ## args); } while(0)
 #else
     #define dbg(format, args...) do { } while(0)
@@ -83,59 +83,58 @@ mspace find_mspace() {
 
 mspace lock_mspace(int mspace_id) {
     mspace ms = find_mspace();
-    dbg("locking mspace %d from tid %d\n", mspace_id, current_tid);
     pthread_mutex_lock(&mutex_table[mspace_id]);
-    dbg("locked mspace %d from tid %d\n", mspace_id, current_tid);
+    dbg("[HYDRALLOC] locked mspace %d from tid %d\n", mspace_id, current_tid);
     return ms;
 }
 
 void unlock_mspace(int mspace_id) {
-    dbg("unlocking mspace %d from tid %d\n", mspace_id, current_tid);
+    dbg("[HYDRALLOC] unlocking mspace %d from tid %d\n", mspace_id, current_tid);
     pthread_mutex_unlock(&mutex_table[mspace_id]);
 }
 
 void* malloc(size_t bytes) {
     find_mspace();
-    dbg("inside malloc from tid=%d\n", current_tid);
+    dbg("[HYDRALLOC] inside malloc from tid=%d\n", current_tid);
     int mspace_id = (current_tid / 1000);
     mspace ms = lock_mspace(mspace_id);
     void* ret = mspace_malloc(ms, bytes);
-    dbg("malloc(mspace = %p, bytes = %lu) -> %p\n", ms, bytes, ret);
+    dbg("[HYDRALLOC] malloc(mspace = %p, bytes = %lu) -> %p\n", ms, bytes, ret);
     unlock_mspace(mspace_id);
     return ret;
 }
 
 void free(void* mem) {
     find_mspace();
-    dbg("inside free of %p from tid=%d with local=%p and gettid=%d\n", mem, current_tid, local, gettid());
+    dbg("[HYDRALLOC] inside free of %p from tid=%d with local=%p and gettid=%d\n", mem, current_tid, local, gettid());
     int mspace_id = (current_tid / 1000);
     mspace ms = lock_mspace(mspace_id);
     // compiled with FOOTERS=1 this mspace_free() will be replaced by a free()
     // so global mspace can call free of stuff on the application's mspace
     mspace_free(ms, mem);
-    dbg("free(mspace = %p, mem = %p)\n", ms, mem);
+    dbg("[HYDRALLOC] free(mspace = %p, mem = %p)\n", ms, mem);
     unlock_mspace(mspace_id);
     return;
 }
 
 void* calloc(size_t num, size_t size) {
     find_mspace();
-    dbg("inside calloc from tid=%d\n", current_tid);
+    dbg("[HYDRALLOC] inside calloc from tid=%d\n", current_tid);
     int mspace_id = (current_tid / 1000);
     mspace ms = lock_mspace(mspace_id);
     void* ret = mspace_calloc(ms, num, size);
-    dbg("calloc(mspace = %p, num = %lu, size = %lu) -> %p\n", ms, num, size, ret);
+    dbg("[HYDRALLOC] calloc(mspace = %p, num = %lu, size = %lu) -> %p\n", ms, num, size, ret);
     unlock_mspace(mspace_id);
     return ret;
 }
 
 void* realloc(void* ptr, size_t size) {
     find_mspace();
-    dbg("inside realloc from tid=%d\n", current_tid);
+    dbg("[HYDRALLOC] inside realloc from tid=%d\n", current_tid);
     int mspace_id = (current_tid / 1000);
     mspace ms = lock_mspace(mspace_id);
     void* ret = mspace_realloc(ms, ptr, size);
-    dbg("realloc(mspace = %p, ptr = %p, size = %lu) -> %p\n", ms, ptr, size, ret);
+    dbg("[HYDRALLOC] realloc(mspace = %p, ptr = %p, size = %lu) -> %p\n", ms, ptr, size, ret);
     unlock_mspace(mspace_id);
     return ret;
 }
