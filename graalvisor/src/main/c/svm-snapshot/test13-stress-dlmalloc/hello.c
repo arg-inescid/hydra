@@ -1,6 +1,3 @@
-/* This test is for stress testing our custom memory allocator, to try to find all possible kinds of errors from a memory allocator. */
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
@@ -13,6 +10,8 @@
 #include "../graal_isolate.h"
 #include <sys/mman.h>
 #include <errno.h>
+
+/* This test is for stress testing our custom memory allocator, to try to find all possible kinds of errors from a memory allocator. */
 
 #define NUM_THREADS 16
 #define OPS_PER_THREAD 100
