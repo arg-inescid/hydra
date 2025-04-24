@@ -97,10 +97,10 @@ strace-normal: all
 	$(CURDIR)/run-env.sh strace -f ./main normal $(app) 2>&1 | tee strace-normal.log
 
 gdb-normal: all
-	./run-env.sh gdb $(gcommands) -ex "set environment LD_PRELOAD ./deps/dlmalloc/newdl.so" --args ./main normal $(app)
+	./run-gdb-env.sh gdb --args ./main normal $(app)
 
 gdb-checkpoint: all
-	./run-env.sh gdb $(gcommands) -ex "set environment LD_PRELOAD ./deps/dlmalloc/newdl.so" --args ./main checkpoint $(app) | tee gdb-checkpoint.log
+	./run-env.sh gdb $(gcommands)  ./main checkpoint $(app) | tee gdb-checkpoint.log
 
 run-checkpoint: all
 	rm -f snapshot.mem
@@ -125,7 +125,7 @@ run-perf: all
 	$(CURDIR)/run-env.sh /bin/time -v ./main restore $(app) 2>&1 | tee restore.log
 
 gdb-restore: all
-	./run-env.sh gdb $(gcommands) -ex "set environment LD_PRELOAD ./deps/dlmalloc/newdl.so" --args ./main restore $(app)
+	./run-env.sh --args ./main restore $(app)
 
 strace-restore: all
 	$(CURDIR)/run-env.sh strace -f ./main restore $(app) 2>&1 | tee strace-restore.log
