@@ -29,7 +29,7 @@ function get_child_pid {
 # Note 2: setarch is necessary to disable ASRL, which is relevant for svm snapshotting (accessible through context-sandbox).
 # Note 3: for large heaps, add `-Xmx128g` next to graalvisor.
 $trace_syscalls \
-env LD_PRELOAD=$ARGO_HOME/graalvisor/src/main/c/svm-snapshot/deps/dlmalloc/newdl.so \
+env LD_PRELOAD=$ARGO_HOME/graalvisor/src/main/c/svm-snapshot/deps/dlmalloc/hydralloc.so \
 unshare --map-root-user --keep-caps --mount-proc --fork --pid \
 setarch -R \
 $ARGO_HOME/graalvisor/build/native-image/polyglot-proxy &
