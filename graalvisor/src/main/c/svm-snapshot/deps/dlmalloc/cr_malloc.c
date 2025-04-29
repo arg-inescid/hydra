@@ -9,7 +9,7 @@
 #include <err.h>
 
 // If defined, enables debug prints and extra sanitization checks.
-#define HYDRALLOC_DEBUG
+//#define HYDRALLOC_DEBUG
 
 #ifdef HYDRALLOC_DEBUG
     #define dbg(format, args...) do { cr_printf(STDOUT_FILENO, format, ## args); } while(0)
@@ -41,7 +41,7 @@ mspace get_mspace_mapping() {
 }
 
 int get_mspace_count() {
-    return mspace_count-1;
+    return mspace_count - 1;
 }
 
 void init_mspace(int mspace_id) {

@@ -42,7 +42,7 @@ all: *.h *.c
 	make -C deps/dlmalloc
 #	remove -DUSE_DLMALLOC to compile without mspaces
 	$(CC) $(debug) -Wall -c *.c -DUSE_DLMALLOC
-	$(CC) $(debug) -Wall -o main *.o deps/printf/printf.o deps/dlmalloc/cr_malloc.o deps/dlmalloc/malloc.o
+	$(CC) $(debug) -Wall -o main *.o deps/printf/printf.o deps/dlmalloc/hydralloc.so
 
 tests: all
 	make -C test0-clib test
@@ -97,10 +97,10 @@ strace-normal: all
 	$(CURDIR)/run-env.sh strace -f ./main normal $(app) 2>&1 | tee strace-normal.log
 
 gdb-normal: all
-	./run-gdb-env.sh gdb --args ./main normal $(app)
+	./run-gdb-env.sh ./main normal $(app)
 
 gdb-checkpoint: all
-	./run-env.sh gdb $(gcommands)  ./main checkpoint $(app) | tee gdb-checkpoint.log
+	./run-gdb-env.sh ./main checkpoint $(app) | tee gdb-checkpoint.log
 
 run-checkpoint: all
 	rm -f snapshot.mem
@@ -125,7 +125,7 @@ run-perf: all
 	$(CURDIR)/run-env.sh /bin/time -v ./main restore $(app) 2>&1 | tee restore.log
 
 gdb-restore: all
-	./run-env.sh --args ./main restore $(app)
+	./run-env.sh ./main restore $(app)
 
 strace-restore: all
 	$(CURDIR)/run-env.sh strace -f ./main restore $(app) 2>&1 | tee strace-restore.log
