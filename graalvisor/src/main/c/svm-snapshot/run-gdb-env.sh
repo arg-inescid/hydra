@@ -8,5 +8,4 @@ HYDRALLOC="$ARGO_HOME/graalvisor/src/main/c/svm-snapshot/deps/dlmalloc/hydralloc
 # Run the command with all arguments passed to the script
 unshare $UNSHARE_OPTS \
 setarch $ARCH_OPTS \
-gdb -x gdb-commands.txt -ex "set environment LD_PRELOAD $HYDRALLOC" --args \
-$@
+gdb -x gdb-commands.txt -ex "set environment LD_PRELOAD $HYDRALLOC" --args $@
