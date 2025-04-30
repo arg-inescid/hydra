@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+#include <pthread.h>
 #include "cr_malloc.h"
 #include "../../cr_logger.h"
 #include <errno.h>
@@ -7,16 +9,14 @@
 #include <err.h>
 
 // If defined, enables debug prints and extra sanitization checks.
-//#define DEBUG
+//#define HYDRALLOC_DEBUG
 
-#ifdef DEBUG
+#ifdef HYDRALLOC_DEBUG
     #define dbg(format, args...) do { cr_printf(STDOUT_FILENO, format, ## args); } while(0)
 #else
     #define dbg(format, args...) do { } while(0)
 #endif
 
-// Global memory pool.
-static mspace global = NULL;
 // Thread local reference to the memory pool that the thread should use (it can point to global).
 static __thread mspace local = NULL;
 // Thread local variable that acts as it's TID.
@@ -24,24 +24,40 @@ static __thread pid_t current_tid = 0;
 // Array for storing mspaces for each sandbox.
 static mspace mspace_table[MAX_MSPACE] = {0};
 // Number of used mspaces.
-static int mspace_count = 0;
+static volatile int mspace_count = 0;
+// Array for storing mutex for each sandbox.
+static pthread_mutex_t mutex_table[MAX_MSPACE] = {0};
+// Array for storing mutex attribute for each sandbox.
+static pthread_mutexattr_t attr_table[MAX_MSPACE] = {0};
+// Mutex for exlusive access to initialization of an mspace.
+pthread_mutex_t malloc_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+// If the memory allocator becomes the bottleneck it might be worth to re-evaluate thread_locals:
+// https://stackoverflow.com/questions/9909980/how-fast-is-thread-local-variable-access-on-linux
 
 mspace get_mspace_mapping() {
-    return mspace_table;
+    // we skip global mspace because it can't be checkpoint/restored
+    return &mspace_table[1];
 }
 
 int get_mspace_count() {
-    return mspace_count;
+    return mspace_count - 1;
 }
 
-void init_global_mspace() {
-    mspace newmspace = create_mspace(0, 0);
-    mspace uninitialized = NULL;
-    if (!__atomic_compare_exchange(&global, &uninitialized, &newmspace, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)) {
-        destroy_mspace(newmspace);
-    } else {
-        mspace_track_large_chunks(global, 1);
+void init_mspace(int mspace_id) {
+    pthread_mutex_lock(&malloc_mutex);
+    if (!mspace_table[mspace_id]) {
+        mspace newmspace = create_mspace(0, 0);
+        mspace_table[mspace_id] = newmspace;
+        mspace_track_large_chunks(mspace_table[mspace_id], 1);
+        pthread_mutexattr_init(&attr_table[mspace_id]);
+        pthread_mutexattr_settype(&attr_table[mspace_id], PTHREAD_MUTEX_RECURSIVE);
+        if (pthread_mutex_init(&mutex_table[mspace_id], &attr_table[mspace_id]) != 0) {
+            cr_printf(STDOUT_FILENO, "Mutex initialization failed\n");
+        }
+        mspace_count++;
     }
+    pthread_mutex_unlock(&malloc_mutex);
 }
 
 mspace find_mspace() {
@@ -52,51 +68,72 @@ mspace find_mspace() {
     if (!current_tid) {
         current_tid = syscall(__NR_gettid);
     }
-    // we don't restore global mspace, so seed 0 has pid range 1000-1999 and uses mspace 0.
-    int mspace_id = (current_tid / 1000) - 1;
-
-    // pid = 1 is the system thread, uses global mspace
-    if (mspace_id == -1) {
-        init_global_mspace();
-        local = global;
-        return local;
-    }
+    // index 0 is used for global mspace
+    int mspace_id = (current_tid / 1000);
 
     if (!mspace_table[mspace_id]) {
-        mspace m = create_mspace(0, 0);
-        mspace_table[mspace_id] = m;
-        mspace_count++;
+        init_mspace(mspace_id);
     }
 
     local = mspace_table[mspace_id];
     return local;
 }
 
+mspace lock_mspace(int mspace_id) {
+    mspace ms = find_mspace();
+    pthread_mutex_lock(&mutex_table[mspace_id]);
+    dbg("[HYDRALLOC] locked mspace %d from tid %d\n", mspace_id, current_tid);
+    return ms;
+}
+
+void unlock_mspace(int mspace_id) {
+    dbg("[HYDRALLOC] unlocking mspace %d from tid %d\n", mspace_id, current_tid);
+    pthread_mutex_unlock(&mutex_table[mspace_id]);
+}
 
 void* malloc(size_t bytes) {
-    mspace ms = find_mspace();
+    find_mspace();
+    dbg("[HYDRALLOC] inside malloc from tid=%d\n", current_tid);
+    int mspace_id = (current_tid / 1000);
+    mspace ms = lock_mspace(mspace_id);
     void* ret = mspace_malloc(ms, bytes);
-    dbg("malloc(mspace = %p, bytes = %lu) -> %p\n", ms, bytes, ret);
+    dbg("[HYDRALLOC] malloc(mspace = %p, bytes = %lu) -> %p\n", ms, bytes, ret);
+    unlock_mspace(mspace_id);
     return ret;
 }
 
 void free(void* mem) {
-    mspace ms = find_mspace();
-    dbg("free(mspace = %p, mem = %p)\n", ms, mem);
-    return mspace_free(ms, mem);
+    find_mspace();
+    dbg("[HYDRALLOC] inside free of %p from tid=%d with local=%p and gettid=%d\n", mem, current_tid, local, gettid());
+    int mspace_id = (current_tid / 1000);
+    mspace ms = lock_mspace(mspace_id);
+    // compiled with FOOTERS=1 this mspace_free() will be replaced by a free()
+    // so global mspace can call free of stuff on the application's mspace
+    mspace_free(ms, mem);
+    dbg("[HYDRALLOC] free(mspace = %p, mem = %p)\n", ms, mem);
+    unlock_mspace(mspace_id);
+    return;
 }
 
 void* calloc(size_t num, size_t size) {
-    mspace ms = find_mspace();
+    find_mspace();
+    dbg("[HYDRALLOC] inside calloc from tid=%d\n", current_tid);
+    int mspace_id = (current_tid / 1000);
+    mspace ms = lock_mspace(mspace_id);
     void* ret = mspace_calloc(ms, num, size);
-    dbg("calloc(mspace = %p, num = %lu, size = %lu) -> %p\n", ms, num, size, ret);
+    dbg("[HYDRALLOC] calloc(mspace = %p, num = %lu, size = %lu) -> %p\n", ms, num, size, ret);
+    unlock_mspace(mspace_id);
     return ret;
 }
 
 void* realloc(void* ptr, size_t size) {
-    mspace ms = find_mspace();
+    find_mspace();
+    dbg("[HYDRALLOC] inside realloc from tid=%d\n", current_tid);
+    int mspace_id = (current_tid / 1000);
+    mspace ms = lock_mspace(mspace_id);
     void* ret = mspace_realloc(ms, ptr, size);
-    dbg("realloc(mspace = %p, ptr = %p, size = %lu) -> %p\n", ms, ptr, size, ret);
+    dbg("[HYDRALLOC] realloc(mspace = %p, ptr = %p, size = %lu) -> %p\n", ms, ptr, size, ret);
+    unlock_mspace(mspace_id);
     return ret;
 }
 

@@ -1,13 +1,11 @@
 #!/bin/bash
 
-if [ $# -eq 0  ]
-then
-    echo "Syntax: start-graalvisor.sh <path to graalvisor binary> [<path to pid file>]"
-    exit 0
+if [ -z "${ARGO_HOME}" ]; then
+    echo "ARGO_HOME is not defined. Existing..."
+    exit 1
 fi
 
-graalvisor=$1
-pidfile=$2
+pidfile=$1
 
 function get_child_pid {
     ppid=$1
@@ -33,7 +31,8 @@ function get_child_pid {
 $trace_syscalls \
 unshare --map-root-user --keep-caps --mount-proc --fork --pid \
 setarch -R \
-$graalvisor &
+env LD_PRELOAD=$ARGO_HOME/graalvisor/src/main/c/svm-snapshot/deps/dlmalloc/hydralloc.so \
+$ARGO_HOME/graalvisor/build/native-image/polyglot-proxy &
 
 # The quest to find graalvisor's pid! Note that we want the pid as seen from the default namespace.
 if [ ! -z "$pidfile" ]
