@@ -125,7 +125,7 @@ run-perf: all
 	$(CURDIR)/run-env.sh /bin/time -v ./main restore $(app) 2>&1 | tee restore.log
 
 gdb-restore: all
-	./run-env.sh ./main restore $(app)
+	./run-gdb-env.sh ./main restore $(app)
 
 strace-restore: all
 	$(CURDIR)/run-env.sh strace -f ./main restore $(app) 2>&1 | tee strace-restore.log
