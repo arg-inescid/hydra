@@ -40,9 +40,8 @@ debug = -O0 -g3
 all: *.h *.c
 	make -C deps/printf
 	make -C deps/dlmalloc
-#	remove -DUSE_DLMALLOC to compile without mspaces
-	$(CC) $(debug) -Wall -c *.c -DUSE_DLMALLOC
-	$(CC) $(debug) -Wall -o main *.o deps/printf/printf.o deps/dlmalloc/hydralloc.so
+	$(CC) $(debug) -Wall -c *.c
+	$(CC) $(debug) -Wall -o main *.o $(CURDIR)/deps/printf/printf.o $(CURDIR)/deps/dlmalloc/hydralloc.so
 
 tests: all
 	make -C test0-clib test

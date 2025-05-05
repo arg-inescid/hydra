@@ -700,9 +700,7 @@ void restore_close(int meta_snap_fd) {
 
 void checkpoint(int meta_snap_fd, int mem_snap_fd, mapping_t* mappings, thread_t* threads, isolate_abi_t* abi, graal_isolate_t* isolate) {
     checkpoint_mappings(meta_snap_fd, mem_snap_fd, mappings);
-    #ifdef USE_DLMALLOC
-        checkpoint_mem_allocator(meta_snap_fd, get_mspace_mapping());
-    #endif /* USE_DLMALLOC */
+    checkpoint_mem_allocator(meta_snap_fd, get_mspace_mapping());
     checkpoint_abi(meta_snap_fd, abi);
     checkpoint_isolate(meta_snap_fd, isolate);
     if (!list_threads_empty(threads)) {
@@ -782,11 +780,9 @@ void restore(const char* meta_snap_path, const char* mem_snap_path, isolate_abi_
         case ABI_TAG:
             restore_abi(meta_snap_fd, abi);
             break;
-#ifdef USE_DLMALLOC
         case MSPACE_TAG:
             restore_mem_allocator(meta_snap_fd, get_mspace_mapping());
             break;
-#endif /* USE_DLMALLOC */
         case MEMORY_TAG:
             restore_memory(meta_snap_fd, mem_snap_fd);
             break;

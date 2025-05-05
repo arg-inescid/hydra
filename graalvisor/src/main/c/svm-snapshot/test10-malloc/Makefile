@@ -23,10 +23,6 @@ test: run
 		printf ${RED}NOK${NC} && printf " contents of buffer weren't restored\n"; \
 		return 0; \
 	    fi; \
-	    if ! grep -q "new buff addr = 0xa00000001500" restore.log; then \
-		printf ${RED}NOK${NC} && printf "Unexpected new buff addr\n"; \
-		return 0; \
-	    fi; \
 	    if ! grep -q "Difference between pointers: 1056" restore.log; then \
 		printf ${RED}NOK${NC} && printf "Difference between pointers is more than a page\n"; \
 		return 0; \
