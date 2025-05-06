@@ -27,11 +27,11 @@ function get_child_pid {
 # Note 1: unshare is necessary so that graalvisor lives in a different pid namespace (required for svm snapshotting).
 # Note 2: setarch is necessary to disable ASRL, which is relevant for svm snapshotting (accessible through context-sandbox).
 # Note 3: for large heaps, add `-Xmx128g` next to graalvisor.
-$trace_syscalls \
-unshare --map-root-user --keep-caps --mount-proc --fork --pid \
-setarch -R \
-env LD_PRELOAD=$(DIR)/src/main/c/svm-snapshot/deps/dlmalloc/hydralloc.so \
-$(DIR)/build/native-image/polyglot-proxy &
+UNSHARE_OPTS="--kill-child --map-root-user --keep-caps --mount-proc -f -p"
+ARCH_OPTS="-R"
+ALLOCATOR="$(DIR)/src/main/c/svm-snapshot/deps/dlmalloc/hydralloc.so"
+
+$trace_syscalls unshare $UNSHARE_OPTS setarch $ARCH_OPTS env LD_PRELOAD=$ALLOCATOR $(DIR)/build/native-image/polyglot-proxy &
 
 # The quest to find graalvisor's pid! Note that we want the pid as seen from the default namespace.
 if [ ! -z "$pidfile" ]
