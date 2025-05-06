@@ -56,6 +56,7 @@ function build_nsi {
     build_network_isolation
     build_svm_snapshot
     gcc -c \
+        -g \
         -I"$JAVA_HOME/include" \
         -I"$JAVA_HOME/include/linux" \
         -I"$HEADER_DIR" \
@@ -87,6 +88,7 @@ function build_ni {
         --install-exit-handlers \
         --enable-url-protocols=http \
         --initialize-at-run-time=com.oracle.svm.graalvisor.utils.JsonUtils \
+        -g \
         $LINKER_OPTIONS \
         -H:CLibraryPath=$LIB_DIR \
         $JAVA_OPTS \

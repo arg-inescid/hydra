@@ -1,9 +1,8 @@
 #!/bin/bash
 
-if [ -z "${ARGO_HOME}" ]; then
-    echo "ARGO_HOME is not defined. Existing..."
-    exit 1
-fi
+function DIR {
+    echo "$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+}
 
 pidfile=$1
 
@@ -31,8 +30,8 @@ function get_child_pid {
 $trace_syscalls \
 unshare --map-root-user --keep-caps --mount-proc --fork --pid \
 setarch -R \
-env LD_PRELOAD=$ARGO_HOME/graalvisor/src/main/c/svm-snapshot/deps/dlmalloc/hydralloc.so \
-$ARGO_HOME/graalvisor/build/native-image/polyglot-proxy &
+env LD_PRELOAD=$(DIR)/src/main/c/svm-snapshot/deps/dlmalloc/hydralloc.so \
+$(DIR)/build/native-image/polyglot-proxy &
 
 # The quest to find graalvisor's pid! Note that we want the pid as seen from the default namespace.
 if [ ! -z "$pidfile" ]
