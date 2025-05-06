@@ -38,10 +38,11 @@ endif
 debug = -O0 -g3
 
 all: *.h *.c
+	gcc -c cr_logger.c
 	make -C deps/printf
 	make -C deps/dlmalloc
 	$(CC) $(debug) -Wall -c *.c
-	$(CC) $(debug) -Wall -o main *.o $(CURDIR)/deps/printf/printf.o $(CURDIR)/deps/dlmalloc/hydralloc.so
+	$(CC) $(debug) -Wall -o main *.o $(CURDIR)/deps/printf/printf.o
 
 tests: all
 	make -C test0-clib test

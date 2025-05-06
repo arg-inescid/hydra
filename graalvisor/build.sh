@@ -32,7 +32,7 @@ function build_svm_snapshot {
     # We don't want to include the main (which is used for testing).
     rm $SNAP_DIR/main.o
     # Add all object files to the list of objects to be included in the final binary.
-    for f in $SNAP_DIR/*.o $SNAP_DIR/deps/printf/*.o $SNAP_DIR/deps/dlmalloc/*.o;
+    for f in $SNAP_DIR/*.o $SNAP_DIR/deps/printf/*.o;
     do
         LINKER_OPTIONS="$LINKER_OPTIONS -H:NativeLinkerOption="$f""
     done

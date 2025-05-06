@@ -7,7 +7,7 @@
 
 #define MAX_MSPACE 1024
 
-mspace get_mspace_mapping();
-int get_mspace_count();
+__attribute__((weak)) mspace get_mspace_mapping();
+__attribute__((weak)) int get_mspace_count();
 
 #endif
