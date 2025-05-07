@@ -1,6 +1,6 @@
 #app = "$(shell pwd)/test0-clib/libhello.so"
 #app = "$(shell pwd)/test1-staticvar/libhello.so"
-#app = "$(shell pwd)/test2-svm/libhello.so"
+app = "$(shell pwd)/test2-svm/libhello.so"
 #app = "$(shell pwd)/test2-svm-jar/libhello.so"
 #app = "$(shell pwd)/test2-svm-gradle/libhello.so"
 #app = "$(shell pwd)/test3-svm-truffle-js/libhello.so"
@@ -18,7 +18,7 @@
 #app="${ARGO_HOME}/benchmarks/src/java/gv-hello-world/build/libhelloworld.so"
 #app="${ARGO_HOME}/benchmarks/src/javascript/gv-hello-world/build/libhelloworld.so"
 #app="${ARGO_HOME}/benchmarks/src/python/gv-hello-world/build/libhelloworld.so"
-app="${ARGO_HOME}/benchmarks/src/python/gv-dynamic-html/build/libdynamichtml.so"
+#app="${ARGO_HOME}/benchmarks/src/python/gv-dynamic-html/build/libdynamichtml.so"
 
 ifndef ARGO_HOME
 $(error ARGO_HOME is not set (needed to run benchmarks)!)
@@ -38,11 +38,10 @@ endif
 debug = -O0 -g3
 
 all: *.h *.c
-	gcc -c cr_logger.c
 	make -C deps/printf
-	make -C deps/dlmalloc
 	$(CC) $(debug) -Wall -c *.c
 	$(CC) $(debug) -Wall -o main *.o $(CURDIR)/deps/printf/printf.o
+	make -C deps/dlmalloc
 
 tests: all
 	make -C test0-clib test
