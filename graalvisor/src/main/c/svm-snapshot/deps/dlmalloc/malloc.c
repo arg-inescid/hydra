@@ -3183,6 +3183,7 @@ static int init_mparams(void) {
 #else
       magic = (size_t)(time(0) ^ (size_t)0x55555555U);
 #endif
+      magic = 1122334455;
       magic |= (size_t)8U;    /* ensure nonzero */
       magic &= ~(size_t)7U;   /* improve chances of fault for bad values */
       /* Until memory modes commonly available, use volatile-write */
