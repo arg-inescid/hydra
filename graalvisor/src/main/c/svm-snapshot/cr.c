@@ -48,6 +48,7 @@ typedef struct {
 
 __attribute__((weak)) void* get_mem_allocator_addr();
 __attribute__((weak)) int get_mem_allocator_len();
+__attribute__((weak)) void print_mspace(void *mem_allocator);
 
 size_t memory_to_file(int fd, char* buffer, size_t count) {
     size_t written = 0;
@@ -524,12 +525,15 @@ void restore_abi(int meta_snap_fd, isolate_abi_t* abi) {
     print_abi(abi);
 }
 
-// void print_mspace(mstate mspace) {
-//     dbg("seg.base @ %16p, dv @ %16p with size %zu\n", mspace->seg.base, mspace->dv, mspace->dvsize);
-// }
+void print_mem_allocator(void* mem_allocator) {
+#ifdef DEBUG
+    print_mspace(mem_allocator);
+#endif
+}
 
 void checkpoint_mem_allocator(int meta_snap_fd, void* mapping) {
     int tag = MSPACE_TAG;
+    print_mem_allocator(mapping);
     int mem_len = 0;
     if (write(meta_snap_fd, &tag, sizeof(int)) != sizeof(int)) {
         perror("error: failed to serialize mem_allocator tag");
@@ -553,6 +557,7 @@ void restore_mem_allocator(int meta_snap_fd, void* mapping) {
     if (read(meta_snap_fd, mapping, mem_len) != mem_len) {
         perror("error: failed to deserialize mspace mapping");
     }
+    print_mem_allocator(mapping);
 }
 
 void checkpoint_syscall(int meta_snap_fd, int tag, void* syscall_args, size_t size) {
