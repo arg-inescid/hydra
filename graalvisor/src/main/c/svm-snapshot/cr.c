@@ -46,6 +46,9 @@ typedef struct {
     size_t pop;
 } memory_t;
 
+__attribute__((weak)) void* get_mem_allocator_addr();
+__attribute__((weak)) int get_mem_allocator_len();
+
 size_t memory_to_file(int fd, char* buffer, size_t count) {
     size_t written = 0;
     size_t n;
@@ -521,33 +524,33 @@ void restore_abi(int meta_snap_fd, isolate_abi_t* abi) {
     print_abi(abi);
 }
 
-void print_mspace(mstate mspace){
-    dbg("seg.base @ %16p, dv @ %16p with size %zu\n", mspace->seg.base, mspace->dv, mspace->dvsize);
-}
+// void print_mspace(mstate mspace) {
+//     dbg("seg.base @ %16p, dv @ %16p with size %zu\n", mspace->seg.base, mspace->dv, mspace->dvsize);
+// }
 
-void checkpoint_mem_allocator(int meta_snap_fd, mspace* mapping){
+void checkpoint_mem_allocator(int meta_snap_fd, void* mapping) {
     int tag = MSPACE_TAG;
-    int mspace_count = 0;
+    int mem_len = 0;
     if (write(meta_snap_fd, &tag, sizeof(int)) != sizeof(int)) {
-        perror("error: failed to serialize mspace tag");
+        perror("error: failed to serialize mem_allocator tag");
     }
-    mspace_count = get_mspace_count();
-    if (write(meta_snap_fd, &mspace_count, sizeof(int)) != sizeof(int)) {
-        perror("error: failed to serialize mspace count");
+    mem_len = get_mem_allocator_len();
+    if (write(meta_snap_fd, &mem_len, sizeof(int)) != sizeof(int)) {
+        perror("error: failed to serialize mem allocator length");
     }
     dbg("now checkpointing mspace_mapping\n");
-    if (write(meta_snap_fd, mapping, sizeof(mspace) * mspace_count) != sizeof(mspace) * mspace_count) {
+    if (write(meta_snap_fd, mapping, mem_len) != mem_len) {
         perror("error: failed to serialize mspace mapping");
     }
 }
 
-void restore_mem_allocator(int meta_snap_fd, mspace* mapping) {
-    int mspace_count;
-    if (read(meta_snap_fd, &mspace_count, sizeof(int)) != sizeof(int)) {
-        perror("error: failed to deserialize mspace count");
+void restore_mem_allocator(int meta_snap_fd, void* mapping) {
+    int mem_len;
+    if (read(meta_snap_fd, &mem_len, sizeof(int)) != sizeof(int)) {
+        perror("error: failed to deserialize mem allocator length");
     }
     dbg("now restoring mspace_mapping\n");
-    if (read(meta_snap_fd, mapping, sizeof(mspace) * mspace_count) != sizeof(mspace) * mspace_count) {
+    if (read(meta_snap_fd, mapping, mem_len) != mem_len) {
         perror("error: failed to deserialize mspace mapping");
     }
 }
@@ -700,7 +703,7 @@ void restore_close(int meta_snap_fd) {
 
 void checkpoint(int meta_snap_fd, int mem_snap_fd, mapping_t* mappings, thread_t* threads, isolate_abi_t* abi, graal_isolate_t* isolate) {
     checkpoint_mappings(meta_snap_fd, mem_snap_fd, mappings);
-    checkpoint_mem_allocator(meta_snap_fd, get_mspace_mapping());
+    checkpoint_mem_allocator(meta_snap_fd, get_mem_allocator_addr());
     checkpoint_abi(meta_snap_fd, abi);
     checkpoint_isolate(meta_snap_fd, isolate);
     if (!list_threads_empty(threads)) {
@@ -781,7 +784,7 @@ void restore(const char* meta_snap_path, const char* mem_snap_path, isolate_abi_
             restore_abi(meta_snap_fd, abi);
             break;
         case MSPACE_TAG:
-            restore_mem_allocator(meta_snap_fd, get_mspace_mapping());
+            restore_mem_allocator(meta_snap_fd, get_mem_allocator_addr());
             break;
         case MEMORY_TAG:
             restore_memory(meta_snap_fd, mem_snap_fd);

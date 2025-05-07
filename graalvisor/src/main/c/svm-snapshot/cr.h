@@ -6,7 +6,6 @@
 #include "svm-snapshot.h"
 #include "list_mappings.h"
 #include "list_threads.h"
-#include "deps/dlmalloc/cr_malloc.h"
 
 /*
  * Limitations:
