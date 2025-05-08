@@ -46,6 +46,10 @@ typedef struct {
     size_t pop;
 } memory_t;
 
+// Use weak function declaration to remove compilation dependency on mem_allocator,
+// these functions are provided in the .so from LD_PRELOAD.
+// By NOT having both LD_PRELOAD AND direct mem_allocator calls we avoid having
+// 2 separate mem_allocator instances.
 __attribute__((weak)) void* get_mem_allocator_addr();
 __attribute__((weak)) int get_mem_allocator_len();
 __attribute__((weak)) void print_mspace(void *mem_allocator);

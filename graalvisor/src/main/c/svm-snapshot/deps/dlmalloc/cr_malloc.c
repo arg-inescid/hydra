@@ -51,7 +51,7 @@ void print_mspace(mstate* mapping) {
 
 void init_mspace(int mspace_id) {
     pthread_mutex_lock(&malloc_mutex);
-    dbg("[HYDRALLOC] inside init_mspace after mutex from tid=%d!!\n", current_tid);
+    dbg("[HYDRALLOC] inside init_mspace from tid=%d\n", current_tid);
     if (!mspace_table[mspace_id]) {
         mspace newmspace = create_mspace(0, 0);
         mspace_table[mspace_id] = newmspace;
@@ -61,8 +61,8 @@ void init_mspace(int mspace_id) {
         if (pthread_mutex_init(&mutex_table[mspace_id], &attr_table[mspace_id]) != 0) {
             cr_printf(STDOUT_FILENO, "Mutex initialization failed\n");
         }
+        dbg("[HYDRALLOC] created mspace %d from tid %d -> %p\n", mspace_count, current_tid, newmspace);
         mspace_count++;
-        dbg("[HYDRALLOC] created mspace=%p from tid=%d with mspace_count=%d!!\n", newmspace, current_tid, mspace_count);
     }
     pthread_mutex_unlock(&malloc_mutex);
 }
