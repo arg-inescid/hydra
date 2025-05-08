@@ -197,9 +197,10 @@ void* notif_worker(void* args) {
     return NULL;
 }
 
-// TODO - should we pass fin and fout?
-void invoke_svm(svm_sandbox_t* svm_sandbox) {
+void invoke_svm(svm_sandbox_t* svm_sandbox, const char* fin, char* fout) {
     pthread_mutex_lock(&svm_sandbox->mutex);
+    svm_sandbox->fin = fin;
+    svm_sandbox->fout = fout;
     svm_sandbox->processing = 1;
     pthread_cond_signal(&svm_sandbox->completed_request);
     while (svm_sandbox->processing == 1) {
@@ -208,12 +209,9 @@ void invoke_svm(svm_sandbox_t* svm_sandbox) {
     pthread_mutex_unlock(&svm_sandbox->mutex);
 }
 
-svm_sandbox_t* create_sandbox(const char* fin, char* fout, unsigned long seed) {
+svm_sandbox_t* create_sandbox(unsigned long seed) {
     svm_sandbox_t* svm_sandbox = malloc(sizeof(svm_sandbox_t));
     memset(svm_sandbox, 0, sizeof(svm_sandbox_t));
-    svm_sandbox->isolate = NULL;
-    svm_sandbox->fin = fin;
-    svm_sandbox->fout = fout;
     svm_sandbox->seed = seed;
     svm_sandbox->processing = 0;
     return svm_sandbox;
@@ -230,8 +228,6 @@ svm_sandbox_t* checkpoint_svm(
         char* fout) {
     // Thread that will run the sandboxed code.
     pthread_t worker;
-    // Thread that will run the application every time its signaled.
-    pthread_t* loop_worker;
     // Thread that will accept all syscalls after checkpoint.
     pthread_t allower;
 
@@ -247,7 +243,9 @@ svm_sandbox_t* checkpoint_svm(
     checkpoint_worker_args_t* wargs = malloc(sizeof(checkpoint_worker_args_t));
     memset(wargs, 0, sizeof(checkpoint_worker_args_t));
 
-    svm_sandbox_t* svm_sandbox = create_sandbox(fin, fout, seed);
+    svm_sandbox_t* svm_sandbox = create_sandbox(seed);
+    svm_sandbox->fin = fin;
+    svm_sandbox->fout = fout;
     wargs->svm_sandbox = svm_sandbox;
     wargs->fpath = fpath;
     wargs->concurrency = concurrency;
@@ -321,9 +319,7 @@ svm_sandbox_t* checkpoint_svm(
     restore_wargs->concurrency = wargs->concurrency;
     restore_wargs->requests = wargs->requests;
 
-    loop_worker = malloc(sizeof(pthread_t));
-    svm_sandbox->thread = loop_worker;
-    pthread_create(loop_worker, NULL, notif_worker, restore_wargs);
+    pthread_create(&svm_sandbox->thread, NULL, notif_worker, restore_wargs);
 
     // Close meta and mem fds.
     close(meta_snap_fd);
@@ -341,9 +337,7 @@ svm_sandbox_t* restore_svm(
         unsigned int requests,
         const char* fin,
         char* fout) {
-
-    svm_sandbox_t* svm_sandbox = create_sandbox(fin, fout, seed);
-    pthread_t* loop_worker;
+    svm_sandbox_t* svm_sandbox = create_sandbox(seed);
     notif_worker_args_t* wargs;
     int last_pid;
 
@@ -378,9 +372,7 @@ svm_sandbox_t* restore_svm(
     }
 
     // Launch worker thread and wait for it to finish.
-    loop_worker = malloc(sizeof(pthread_t));
-    svm_sandbox->thread = loop_worker;
-    pthread_create(loop_worker, NULL, notif_worker, wargs);
+    pthread_create(&svm_sandbox->thread, NULL, notif_worker, wargs);
     // After launching original application, restore last next_pid for future threads
     if (last_pid != 1) {
         // Threads were restored so we want to change next pid
@@ -389,7 +381,7 @@ svm_sandbox_t* restore_svm(
             return NULL;
         }
     }
-    invoke_svm(svm_sandbox);
+    invoke_svm(svm_sandbox, fin, fout);
 
     return svm_sandbox;
 }

@@ -157,10 +157,8 @@ JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSand
         jint svmid,
         jstring fin) {
     const char* fin_str = (*env)->GetStringUTFChars(env, fin, 0);
-    char fout[256];
-    sandboxes[svmid]->fin = fin_str;
-    sandboxes[svmid]->fout = fout;
-    invoke_svm(sandboxes[svmid]);
+    char fout[FOUT_LEN];
+    invoke_svm(sandboxes[svmid], fin_str, fout);
     (*env)->ReleaseStringUTFChars(env, fin, fin_str);
     return (*env)->NewStringUTF(env, fout);
 }

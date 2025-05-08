@@ -14,7 +14,7 @@ typedef struct {
     // Pointer to the isolate where the thread runs.
     graal_isolate_t*    isolate;
     // Pointer to thread running application.
-    pthread_t*          thread; // TODO - should not be a pointer here.
+    pthread_t          thread;
     // Mutex to have exclusive access between worker and request sender.
     pthread_mutex_t     mutex;
     // Condition variable to signal request status start/finished.
@@ -22,14 +22,9 @@ typedef struct {
     // Predicative variable to avoid deadlocks from signal arriving before
     // other thread started to wait for the signal.
     int                 processing;
-    // Arguments passed to the function upon each invocation.
-    // Expects null-terminated string with max len FOUT_LEN
+    // Used to pass input to the worker thread.
     const char*         fin;
-    // Output buffer where the output of the invocation will be placed.
-    // Note that if multiple invocations are performed (as a result of concurrency
-    // or requests), only the output of the first request will be saved.
-    // If the output string is larger than FOUT_LEN, a warning
-    // is printed to stdout and a '\0' is placed at outbuf[outbuf_len - 1].
+    // Used to receive output to the worker thread.
     char*               fout;
     // The seed is used to control which virtual memory ranges the svm instance
     // will used. Each seed value represents a 16TB virtual memory range. When
@@ -39,12 +34,21 @@ typedef struct {
 } svm_sandbox_t;
 
 // Handle for external use of svm_sandbox on related functions.
-typedef svm_sandbox_t* sandbox; // TODO - is this used?
+//typedef svm_sandbox_t* sandbox; // TODO - is this used?
 
 // Executes entrypoint from the provided sandbox.
 void invoke_svm(
     // Sandbox for executing entrypoints and getting their results.
-    sandbox);
+    svm_sandbox_t* sandbox,
+    // Arguments passed to the function upon each invocation.
+    // Expects null-terminated string with max len FOUT_LEN
+    const char* fin,
+    // Output buffer where the output of the invocation will be placed.
+    // Note that if multiple invocations are performed (as a result of concurrency
+    // or requests), only the output of the first request will be saved.
+    // If the output string is larger than FOUT_LEN, a warning
+    // is printed to stdout and a '\0' is placed at outbuf[outbuf_len - 1].
+    char* fout);
 
 // Loads, runs and then checkpoints a substrate vm instance.
 // Returns svm_sandbox_t to be able to invoke more runs.
