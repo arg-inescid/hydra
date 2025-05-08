@@ -1,0 +1,14 @@
+#!/bin/bash
+
+function DIR {
+    echo "$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+}
+
+# Note 1: unshare is necessary so that graalvisor lives in a different pid namespace (required for svm snapshotting).
+# Note 2: setarch is necessary to disable ASRL, which is relevant for svm snapshotting (accessible through context-sandbox).
+# Note 3: for large heaps, add `-Xmx128g` next to graalvisor.
+UNSHARE_OPTS="--kill-child --map-root-user --keep-caps --mount-proc -f -p"
+ARCH_OPTS="-R"
+ALLOCATOR="$(DIR)/src/main/c/svm-snapshot/deps/dlmalloc/hydralloc.so"
+
+unshare $UNSHARE_OPTS setarch $ARCH_OPTS gdb -x graalvisor-gdb-commands.txt -ex "set environment LD_PRELOAD $ALLOCATOR" $(DIR)/build/native-image/polyglot-proxy

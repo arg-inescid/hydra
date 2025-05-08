@@ -103,12 +103,13 @@ public abstract class RuntimeProxy {
             int warmupConc,
             int warmupReqs,
             String arguments) {
+        long startTime = System.nanoTime();
         PolyglotFunction function = FTABLE.get(functionName);
 
         if (function == null) {
-            String.format("{'Error': 'Function %s not registered!'}", functionName);
+            sendReply(he, startTime, String.format("{'Error': 'Function %s not registered!'}", functionName));
         } else {
-            invoke(he, function, cached, warmupConc, warmupReqs, System.nanoTime(), arguments);
+            invoke(he, function, cached, warmupConc, warmupReqs, startTime, arguments);
         }
    }
 

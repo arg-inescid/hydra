@@ -35,17 +35,29 @@ pthread_mutex_t malloc_mutex = PTHREAD_MUTEX_INITIALIZER;
 // If the memory allocator becomes the bottleneck it might be worth to re-evaluate thread_locals:
 // https://stackoverflow.com/questions/9909980/how-fast-is-thread-local-variable-access-on-linux
 
-mspace get_mspace_mapping() {
+void* get_mem_allocator_addr() {
     // we skip global mspace because it can't be checkpoint/restored
     return &mspace_table[1];
 }
 
-int get_mspace_count() {
-    return mspace_count - 1;
+int get_mem_allocator_len() {
+    return (mspace_count - 1) * sizeof(mspace);
+}
+
+void print_mspace(mstate mapping) {
+    cr_printf(STDOUT_FILENO, "seg.base @ %16p, dv @ %16p with size %zu\n", mapping->seg.base, mapping->dv, mapping->dvsize);
+}
+
+void print_allocator() {
+    int mspace_id = 1;
+    while (mspace_table[mspace_id]) {
+        print_mspace(mspace_table[mspace_id++]);
+    }
 }
 
 void init_mspace(int mspace_id) {
     pthread_mutex_lock(&malloc_mutex);
+    dbg("[HYDRALLOC] inside init_mspace from tid=%d\n", current_tid);
     if (!mspace_table[mspace_id]) {
         mspace newmspace = create_mspace(0, 0);
         mspace_table[mspace_id] = newmspace;
@@ -55,6 +67,7 @@ void init_mspace(int mspace_id) {
         if (pthread_mutex_init(&mutex_table[mspace_id], &attr_table[mspace_id]) != 0) {
             cr_printf(STDOUT_FILENO, "Mutex initialization failed\n");
         }
+        dbg("[HYDRALLOC] created mspace %d from tid %d -> %p\n", mspace_count, current_tid, newmspace);
         mspace_count++;
     }
     pthread_mutex_unlock(&malloc_mutex);
