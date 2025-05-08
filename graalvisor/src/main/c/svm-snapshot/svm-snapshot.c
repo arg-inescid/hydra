@@ -167,7 +167,7 @@ void* checkpoint_worker(void* args) {
     }
 
     // Prepare and run function.
-    run_svm(wargs->fpath, wargs->concurrency, wargs->requests, svm->fin, svm->fout, svm->abi, &(svm->isolate));
+    run_svm(wargs->fpath, wargs->concurrency, wargs->requests, svm->fin, svm->fout, &svm->abi, &(svm->isolate));
     // Mark execution as finished (will alert the seccomp monitor to quit).
     wargs->finished = 1;
 
@@ -179,58 +179,43 @@ void* notif_worker(void* args) {
     svm_sandbox_t* svm = wargs->svm_sandbox;
     graal_isolatethread_t *isolatethread = NULL;
 
-    (*svm->abi).graal_attach_thread(svm->isolate, &isolatethread);
+    (svm->abi).graal_attach_thread(svm->isolate, &isolatethread);
     // Prepare and run function.
     for (;;) {
-        pthread_mutex_lock(svm->mutex);
+        pthread_mutex_lock(&svm->mutex);
         // until state is processing or signal to start processing is received, wait.
         while (svm->processing == 0) {
-            pthread_cond_wait(svm->completed_request, svm->mutex);
+            pthread_cond_wait(&svm->completed_request, &svm->mutex);
         }
-        run_entrypoint(svm->abi, svm->isolate, isolatethread, wargs->concurrency, wargs->requests, svm->fin, svm->fout);
+        run_entrypoint(&svm->abi, svm->isolate, isolatethread, wargs->concurrency, wargs->requests, svm->fin, svm->fout);
         // set state to finished
         svm->processing = 0;
-        pthread_cond_signal(svm->completed_request);
-        pthread_mutex_unlock(svm->mutex);
+        pthread_cond_signal(&svm->completed_request);
+        pthread_mutex_unlock(&svm->mutex);
     }
     free(wargs);
     return NULL;
 }
 
-
+// TODO - should we pass fin and fout?
 void invoke_svm(svm_sandbox_t* svm_sandbox) {
-    pthread_mutex_lock(svm_sandbox->mutex);
+    pthread_mutex_lock(&svm_sandbox->mutex);
     svm_sandbox->processing = 1;
-    pthread_cond_signal(svm_sandbox->completed_request);
+    pthread_cond_signal(&svm_sandbox->completed_request);
     while (svm_sandbox->processing == 1) {
-        pthread_cond_wait(svm_sandbox->completed_request, svm_sandbox->mutex);
+        pthread_cond_wait(&svm_sandbox->completed_request, &svm_sandbox->mutex);
     }
-    pthread_mutex_unlock(svm_sandbox->mutex);
+    pthread_mutex_unlock(&svm_sandbox->mutex);
 }
 
-svm_sandbox_t* create_sandbox(isolate_abi_t* abi, graal_isolate_t** isolate, const char* fin, char* fout, unsigned long seed) {
+svm_sandbox_t* create_sandbox(const char* fin, char* fout, unsigned long seed) {
     svm_sandbox_t* svm_sandbox = malloc(sizeof(svm_sandbox_t));
     memset(svm_sandbox, 0, sizeof(svm_sandbox_t));
-
-    svm_sandbox->abi = abi;
-    svm_sandbox->isolate = *isolate;
+    svm_sandbox->isolate = NULL;
     svm_sandbox->fin = fin;
     svm_sandbox->fout = fout;
     svm_sandbox->seed = seed;
     svm_sandbox->processing = 0;
-
-    svm_sandbox->mutex = malloc(sizeof(pthread_mutex_t));
-    if (pthread_mutex_init(svm_sandbox->mutex, NULL) != 0) {
-        err("error: failed to init mutex\n");
-        return NULL;
-    }
-
-    svm_sandbox->completed_request = malloc(sizeof(pthread_cond_t));
-    if (pthread_cond_init(svm_sandbox->completed_request, NULL) != 0) {
-        err("error: failed to init cond\n");
-        return NULL;
-    }
-
     return svm_sandbox;
 }
 
@@ -242,9 +227,7 @@ svm_sandbox_t* checkpoint_svm(
         unsigned int concurrency,
         unsigned int requests,
         const char* fin,
-        char* fout,
-        isolate_abi_t* abi,
-        graal_isolate_t** isolate) {
+        char* fout) {
     // Thread that will run the sandboxed code.
     pthread_t worker;
     // Thread that will run the application every time its signaled.
@@ -264,7 +247,7 @@ svm_sandbox_t* checkpoint_svm(
     checkpoint_worker_args_t* wargs = malloc(sizeof(checkpoint_worker_args_t));
     memset(wargs, 0, sizeof(checkpoint_worker_args_t));
 
-    svm_sandbox_t* svm_sandbox = create_sandbox(abi, isolate, fin, fout, seed);
+    svm_sandbox_t* svm_sandbox = create_sandbox(fin, fout, seed);
     wargs->svm_sandbox = svm_sandbox;
     wargs->fpath = fpath;
     wargs->concurrency = concurrency;
@@ -315,7 +298,7 @@ svm_sandbox_t* checkpoint_svm(
     struct timeval st, et;
     gettimeofday(&st, NULL);
 #endif
-    checkpoint(meta_snap_fd, mem_snap_fd, &mappings, &threads, svm_sandbox->abi, svm_sandbox->isolate);
+    checkpoint(meta_snap_fd, mem_snap_fd, &mappings, &threads, &svm_sandbox->abi, svm_sandbox->isolate);
 #ifdef PERF
     gettimeofday(&et, NULL);
     log("checkpoint took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
@@ -357,12 +340,10 @@ svm_sandbox_t* restore_svm(
         unsigned int concurrency,
         unsigned int requests,
         const char* fin,
-        char* fout,
-        isolate_abi_t* abi,
-        graal_isolate_t** isolate) {
+        char* fout) {
 
+    svm_sandbox_t* svm_sandbox = create_sandbox(fin, fout, seed);
     pthread_t* loop_worker;
-    svm_sandbox_t* svm_sandbox;
     notif_worker_args_t* wargs;
     int last_pid;
 
@@ -371,7 +352,7 @@ svm_sandbox_t* restore_svm(
         gettimeofday(&st, NULL);
 #endif
 
-        restore(meta_snap_path, mem_snap_path, abi, isolate);
+        restore(meta_snap_path, mem_snap_path, &svm_sandbox->abi, &svm_sandbox->isolate);
 #ifdef PERF
         gettimeofday(&et, NULL);
         log("restore took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
@@ -381,7 +362,6 @@ svm_sandbox_t* restore_svm(
 #endif
 
     wargs = malloc(sizeof(notif_worker_args_t));
-    svm_sandbox = create_sandbox(abi, isolate, fin, fout, seed);
     wargs->svm_sandbox = svm_sandbox;
     wargs->concurrency = concurrency;
     wargs->requests = requests;
@@ -412,8 +392,4 @@ svm_sandbox_t* restore_svm(
     invoke_svm(svm_sandbox);
 
     return svm_sandbox;
-    // Note: from manual (https://www.graalvm.org/22.1/reference-manual/native-image/C-API/):
-    // 'no code may still be executing in the isolate thread's context.' Since we cannot
-    // guarantee that threads may be left behind, it is not safe to detach.
-    //abi.graal_detach_thread(isolatethread);
 }
