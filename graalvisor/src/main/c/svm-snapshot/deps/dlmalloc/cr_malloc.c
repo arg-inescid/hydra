@@ -49,6 +49,12 @@ void print_mspace(mstate* mapping) {
     cr_printf(STDOUT_FILENO, "seg.base @ %16p, dv @ %16p with size %zu\n", mspace->seg.base, mspace->dv, mspace->dvsize);
 }
 
+void print_allocator() {
+    for (int i=0; mspace_table[i]; i++) {
+        print_mspace(&mspace_table[i]);
+    }
+}
+
 void init_mspace(int mspace_id) {
     pthread_mutex_lock(&malloc_mutex);
     dbg("[HYDRALLOC] inside init_mspace from tid=%d\n", current_tid);

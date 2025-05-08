@@ -53,6 +53,7 @@ typedef struct {
 __attribute__((weak)) void* get_mem_allocator_addr();
 __attribute__((weak)) int get_mem_allocator_len();
 __attribute__((weak)) void print_mspace(void *mem_allocator);
+__attribute__((weak)) void print_allocator();
 
 size_t memory_to_file(int fd, char* buffer, size_t count) {
     size_t written = 0;
@@ -531,7 +532,7 @@ void restore_abi(int meta_snap_fd, isolate_abi_t* abi) {
 
 void print_mem_allocator(void* mem_allocator) {
 #ifdef DEBUG
-    print_mspace(mem_allocator);
+    print_allocator();
 #endif
 }
 
