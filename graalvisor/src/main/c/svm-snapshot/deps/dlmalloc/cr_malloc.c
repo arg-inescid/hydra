@@ -44,14 +44,19 @@ int get_mem_allocator_len() {
     return (mspace_count - 1) * sizeof(mspace);
 }
 
-void print_mspace(mstate* mapping) {
-    mstate mspace = (mstate) *mapping;
-    cr_printf(STDOUT_FILENO, "seg.base @ %16p, dv @ %16p with size %zu\n", mspace->seg.base, mspace->dv, mspace->dvsize);
+void print_mspace(mstate mapping) {
+    cr_printf(STDOUT_FILENO, "seg.base @ %16p, dv @ %16p with size %zu\n", mapping->seg.base, mapping->dv, mapping->dvsize);
 }
 
 void print_allocator() {
-    for (int i=0; mspace_table[i]; i++) {
-        print_mspace(&mspace_table[i]);
+    int mspace_id = 0;
+    // if we are in restore we need to skip global (non-restored) mspace
+    if (mspace_count == 0) {
+        mspace_id = 1;
+    }
+
+    while (mspace_table[mspace_id]) {
+        print_mspace(mspace_table[mspace_id++]);
     }
 }
 
