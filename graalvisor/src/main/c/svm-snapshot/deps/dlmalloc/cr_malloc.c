@@ -49,12 +49,7 @@ void print_mspace(mstate mapping) {
 }
 
 void print_allocator() {
-    int mspace_id = 0;
-    // if we are in restore we need to skip global (non-restored) mspace
-    if (mspace_count == 0) {
-        mspace_id = 1;
-    }
-
+    int mspace_id = 1;
     while (mspace_table[mspace_id]) {
         print_mspace(mspace_table[mspace_id++]);
     }
