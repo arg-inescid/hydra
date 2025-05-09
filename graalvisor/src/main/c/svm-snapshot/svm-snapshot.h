@@ -33,9 +33,6 @@ typedef struct {
     unsigned long       seed;
 } svm_sandbox_t;
 
-// Handle for external use of svm_sandbox on related functions.
-//typedef svm_sandbox_t* sandbox; // TODO - is this used?
-
 // Executes entrypoint from the provided sandbox.
 void invoke_svm(
     // Sandbox for executing entrypoints and getting their results.
