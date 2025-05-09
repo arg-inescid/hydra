@@ -125,6 +125,9 @@ gdb-restore: all
 strace-restore: all
 	$(CURDIR)/run-env.sh strace -f ./main restore $(app) 2>&1 | tee strace-restore.log
 
+run-minimize: all
+	$(CURDIR)/run-env.sh ./main minimize $(app) 2>&1 | tee minimize.log
+
 clean:
 	rm -f *.o main *.snap *.log
 

@@ -18,9 +18,6 @@
 #include <asm/prctl.h>
 #include <sys/syscall.h>
 
-// Number of fds that we allow for the function to use. We may use some fds after this limit.
-#define RESERVED_FDS 768
-
 // This variable is used to generate reserved fds. Used for:
 // - meta snapshot fd;
 // - memory snapshot fd;
