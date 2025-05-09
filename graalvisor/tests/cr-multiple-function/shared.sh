@@ -12,14 +12,6 @@ HYDRA_ADDRESS="$HYDRA_HOST:$HYDRA_PORT"
 # - pyco is a problematic benchmark (needs malloc virtualization), replace w/ py/pr, pybfs, py/dna, etc;
 # - need to generate snapshots one by one;
 # - when generating snapshots, issue many requests so that the heap size stabilizies;
-BENCH_ARRAY=(jshw jsup jsdh pyhw pyup jvhw jvfh jvhr)
-#BENCH_ARRAY=(pyhw pyup jvhw jvfh jvhr)
-#BENCH_ARRAY=(jshw jsup jsdh jvhw jvfh jvhr)
-#BENCH_ARRAY=(jshw jsup jsdh pyhw pyup)
-#BENCH_ARRAY=(jshw pyhw jvhw)
-#BENCH_ARRAY=(jvhw jvfh jvhr)
-#BENCH_ARRAY=(pyhw pyup)
-#BENCH_ARRAY=(jshw jsup jsdh)
 
 declare -A BENCHMARK_REGISTER_QUERY
 BENCHMARK_REGISTER_QUERY[jshw]="name=jshw&language=java&entrypoint=com.helloworld.HelloWorld&isBinary=true&svmid=1&sandbox=snapshot&url=http://127.0.0.1:8000/apps/gv-js-hello-world.so"
@@ -84,64 +76,5 @@ function run_ab {
     ab -p $APP_POST -T application/json -c $conc -n $reqs http://$HYDRA_ADDRESS/${BENCHMARK_RUN_ENDPOINT["$bench"]} &> $bench-ab.log
     rm $APP_POST
     echo "Ran function $bench"
+    cat $bench-ab.log
 }
-
-function prepare_snapshots {
-    # Ensure a clean setup (no previous snapshots).
-    bash $(DIR)/cleanup.sh
-
-    # For each benchmark.
-    for bench in "${BENCH_ARRAY[@]}"; do
-        # Start hydra.
-        start_hydra
-
-        # Upload the function.
-        upload_function $bench
-
-        # Create the snapshot after 1 request.
-        run_ab $bench 1 1
-
-        # Stop hydra.
-        stop_hydra
-
-        # Wait for all subprocesses to terminate (hydra in particular).
-        wait
-    done
-}
-
-function run_benchmark {
-    # Clean logs but not snapshots.
-    rm -f $(DIR)/{*.log,*.pid}
-
-    # Start hydra.
-    start_hydra
-
-    # Upload all functions.
-    for bench in "${BENCH_ARRAY[@]}"; do
-        upload_function $bench
-    done
-
-    # Run ab for each function.
-    for bench in "${BENCH_ARRAY[@]}"; do
-        run_ab $bench 1 100
-    done
-
-    # Run ab for each function.
-    for bench in "${BENCH_ARRAY[@]}"; do
-        run_ab $bench 1 100
-    done
-
-    # Stop hydra.
-    stop_hydra
-}
-
-echo "Generating snapshots:"
-prepare_snapshots
-
-echo "Running tests:"
-run_benchmark
-
-echo "Finished!"
-
-echo "Dumping graalvisor log (eleminating duplicates and removing the request prints):"
-cat $(DIR)/graalvisor.log | grep -v took | awk '!seen[$0]++'
