@@ -9,18 +9,8 @@ public class SnapshotSandboxHandle extends SandboxHandle {
      */
     private final SnapshotSandboxProvider provider;
 
-    /**
-     * Pointer to the isolate thread structure (see NativeSandboxInterface.c).
-     */
-    private final long isolateThread;
-
-    public SnapshotSandboxHandle(SnapshotSandboxProvider provider, long isolateThread) {
+    public SnapshotSandboxHandle(SnapshotSandboxProvider provider) {
         this.provider = provider;
-        this.isolateThread = isolateThread;
-    }
-
-    public long getIsolateThread() {
-        return this.isolateThread;
     }
 
     @Override
@@ -30,6 +20,6 @@ public class SnapshotSandboxHandle extends SandboxHandle {
 
     @Override
     public String toString() {
-        return Long.toString(isolateThread);
+        return Integer.toString(provider.getSVMID());
     }
 }

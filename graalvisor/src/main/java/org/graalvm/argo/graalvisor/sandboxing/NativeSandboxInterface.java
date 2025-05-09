@@ -15,9 +15,7 @@ public class NativeSandboxInterface {
     public static native void teardownNativeRuntimeSandbox();
 
     // Methods to access svm-snapshot module (see svm-snapshot.h).
-    public static native long svmAttachThread(int svmid);
-    public static native String svmEntrypoint(int svmid, long isolateThread, String args);
-    public static native void svmDetachThread(int svmid, long isolateThread);
+    public static native String svmInvoke(int svmid, String args);
     public static native String svmCheckpoint(
         int svmid,
         String functionPath,

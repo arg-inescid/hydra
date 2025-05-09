@@ -70,9 +70,6 @@ void init_args(int argc, char** argv) {
 }
 
 int main(int argc, char** argv) {
-    isolate_abi_t abi;
-    graal_isolate_t* isolate = NULL;
-
     // INput and OUTput for function ran by isolate
     const char* fin = "(null)";
     char  fout[FOUT_LEN];
@@ -96,10 +93,12 @@ int main(int argc, char** argv) {
     setvbuf(stdout, NULL, _IONBF, 0);
 
     if (CURRENT_MODE == RESTORE) {
-        restore_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, &abi, &isolate);
+        restore_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout);
     } else if (CURRENT_MODE == CHECKPOINT) {
-        checkpoint_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, &abi, &isolate);
+        checkpoint_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout);
     } else {
+        isolate_abi_t abi;
+        graal_isolate_t* isolate = NULL;
         run_svm(FPATH, CONC, ITERS, fin, fout, &abi, &isolate);
     }
 
