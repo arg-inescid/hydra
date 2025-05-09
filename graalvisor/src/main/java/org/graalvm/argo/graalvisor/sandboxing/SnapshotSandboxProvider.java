@@ -37,11 +37,12 @@ public class SnapshotSandboxProvider extends SandboxProvider {
         this.svmID = svmID;
     }
 
+    public int getSVMID() {
+        return svmID;
+    }
+
     public String invoke(String jsonArguments) {
-        long isolateThread = NativeSandboxInterface.svmAttachThread(svmID);
-        String output = NativeSandboxInterface.svmEntrypoint(svmID, isolateThread, jsonArguments);
-        // Note: we do not detach as there may be code left running behind (see CAPI documentation).
-        return output;
+        return NativeSandboxInterface.svmInvoke(svmID, jsonArguments);
     }
 
     @Override
@@ -72,19 +73,17 @@ public class SnapshotSandboxProvider extends SandboxProvider {
         // TODO - throw Exception if provider is not warmup yet.
         // TODO - for Truffle functions we attached because we want to create a new context inside
         // the same isolate. But for Java functions we could create a new isolate.
-        long isolateThread = NativeSandboxInterface.svmAttachThread(svmID);
-        return new SnapshotSandboxHandle(this, isolateThread);
+        return new SnapshotSandboxHandle(this);
     }
 
     @Override
     public void destroySandbox(SandboxHandle shandle) {
-        // TODO - shouldn't this be destroy?
-        NativeSandboxInterface.svmDetachThread(svmID, ((SnapshotSandboxHandle)shandle).getIsolateThread());
+        // TODO - need to implement?
     }
 
     @Override
     public void unloadProvider() throws IOException {
-        // TODO - need to implement.
+        // TODO - need to implement?
     }
 
     @Override

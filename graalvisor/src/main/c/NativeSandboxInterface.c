@@ -19,10 +19,9 @@
 #define TRUE  1
 #define FALSE 0
 
-// Isolate and abi pointer array. These should be indexed using an svmid.
-#define MAX_SVM_ID 16
-graal_isolate_t* isolates[MAX_SVM_ID];
-isolate_abi_t abis[MAX_SVM_ID];
+// Snapshot sandboxes indexed by svm id.
+#define MAX_SVM_ID 128
+svm_sandbox_t* sandboxes[MAX_SVM_ID];
 
 int network_isolation_enabled() {
     const char* env_var = getenv("network_isolation");
@@ -50,8 +49,7 @@ void reset_parent_signal_handlers() {
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_initialize(JNIEnv *env, jobject thisObj) {
     setbuf(stdout, NULL);
-    memset(isolates, 0, sizeof(graal_isolate_t*) * MAX_SVM_ID);
-    memset(abis, 0, sizeof(isolate_abi_t) * MAX_SVM_ID);
+    memset(sandboxes, 0, sizeof(svm_sandbox_t*) * MAX_SVM_ID);
     // Note: for some reason that we should track down, the first call to dup2 takes 10s of ms.
     // We do it now to avoid further latency later.
     int dummy = dup2(0, 1023);
@@ -153,26 +151,16 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     }
 }
 
-JNIEXPORT long JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmAttachThread(
-        JNIEnv *env, jobject thisObj, jint svmid) {
-    graal_isolatethread_t* isolatethread;
-    abis[svmid].graal_attach_thread(isolates[svmid], &isolatethread);
-    return (long) isolatethread;
-}
-
-JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmEntrypoint(
-        JNIEnv *env, jobject thisObj, jint svmid, long isolatethread, jstring fin) {
-    graal_isolatethread_t* ithread = (graal_isolatethread_t*) isolatethread;
+JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmInvoke(
+        JNIEnv *env,
+        jobject thisObj,
+        jint svmid,
+        jstring fin) {
     const char* fin_str = (*env)->GetStringUTFChars(env, fin, 0);
-    char fout[256];
-    abis[svmid].entrypoint(ithread, fin_str, fout, 256);
+    char fout[FOUT_LEN];
+    invoke_svm(sandboxes[svmid], fin_str, fout);
     (*env)->ReleaseStringUTFChars(env, fin, fin_str);
     return (*env)->NewStringUTF(env, fout);
-}
-
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmDetachThread(
-        JNIEnv *env, jobject thisObj, jint svmid, long isolatethread) {
-    abis[svmid].graal_detach_thread((graal_isolatethread_t*) isolatethread);
 }
 
 JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmCheckpoint(
@@ -214,7 +202,7 @@ JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSand
     const char* mem_snap_path_str = (*env)->GetStringUTFChars(env, mem_snap_path, 0);
     const char* fin_str = (*env)->GetStringUTFChars(env, fin, 0);
     char fout[FOUT_LEN];
-    restore_svm(fpath_str, meta_snap_path_str, mem_snap_path_str, svmid, concurrency, requests, fin_str, fout, &abis[svmid], &isolates[svmid]);
+    sandboxes[svmid] = restore_svm(fpath_str, meta_snap_path_str, mem_snap_path_str, svmid, concurrency, requests, fin_str, fout);
     (*env)->ReleaseStringUTFChars(env, fpath, fpath_str);
     (*env)->ReleaseStringUTFChars(env, mem_snap_path, mem_snap_path_str);
     (*env)->ReleaseStringUTFChars(env, meta_snap_path, meta_snap_path_str);

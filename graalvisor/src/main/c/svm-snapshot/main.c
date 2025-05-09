@@ -73,9 +73,6 @@ void init_args(int argc, char** argv) {
 }
 
 int main(int argc, char** argv) {
-    isolate_abi_t abi;
-    graal_isolate_t* isolate = NULL;
-
     // INput and OUTput for function ran by isolate
     const char* fin = "(null)";
     char  fout[FOUT_LEN];
@@ -105,6 +102,8 @@ int main(int argc, char** argv) {
     } else if (CURRENT_MODE == MINIMIZE) {
         minimize_syscalls("metadata.snap", "metadata.snap");
     } else {
+        isolate_abi_t abi;
+        graal_isolate_t* isolate = NULL;
         run_svm(FPATH, CONC, ITERS, fin, fout, &abi, &isolate);
     }
 
