@@ -7,6 +7,9 @@
 #include "list_mappings.h"
 #include "list_threads.h"
 
+// Number of fds that we allow for the function to use. We may use some fds after this limit.
+#define RESERVED_FDS 768
+
 /*
  * Limitations:
  * - after an invocation, there should be no open files or sockets, nor running threads, nor sub-processes;
