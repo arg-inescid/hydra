@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <sys/prctl.h>
 
-enum EXECUTION_MODE { NORMAL, CHECKPOINT, RESTORE };
+enum EXECUTION_MODE { NORMAL, CHECKPOINT, RESTORE , MINIMIZE};
 
 // Wether we are checkpointing or restoreing.
 enum EXECUTION_MODE CURRENT_MODE = NORMAL;
@@ -47,6 +47,9 @@ void init_args(int argc, char** argv) {
         break;
     case 'r':
         CURRENT_MODE = RESTORE;
+        break;
+    case 'm':
+        CURRENT_MODE = MINIMIZE;
         break;
     default:
         usage_exit();
@@ -96,9 +99,11 @@ int main(int argc, char** argv) {
     setvbuf(stdout, NULL, _IONBF, 0);
 
     if (CURRENT_MODE == RESTORE) {
-        restore_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, &abi, &isolate);
+        restore_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout);
     } else if (CURRENT_MODE == CHECKPOINT) {
-        checkpoint_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout, &abi, &isolate);
+        checkpoint_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout);
+    } else if (CURRENT_MODE == MINIMIZE) {
+        minimize_syscalls("metadata.snap", "metadata.snap");
     } else {
         run_svm(FPATH, CONC, ITERS, fin, fout, &abi, &isolate);
     }

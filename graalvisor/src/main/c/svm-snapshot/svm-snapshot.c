@@ -412,8 +412,4 @@ svm_sandbox_t* restore_svm(
     invoke_svm(svm_sandbox);
 
     return svm_sandbox;
-    // Note: from manual (https://www.graalvm.org/22.1/reference-manual/native-image/C-API/):
-    // 'no code may still be executing in the isolate thread's context.' Since we cannot
-    // guarantee that threads may be left behind, it is not safe to detach.
-    //abi.graal_detach_thread(isolatethread);
 }
