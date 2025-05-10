@@ -73,7 +73,7 @@ function run_ab {
     APP_POST="/tmp/app-post-$bench"
     echo '{"arguments":"{ \"url\":\"http://127.0.0.1:8000/snap.png\" }","name":"'$bench'"}' > $APP_POST
 
-    ab -p $APP_POST -T application/json -c $conc -n $reqs http://$HYDRA_ADDRESS/${BENCHMARK_RUN_ENDPOINT["$bench"]} &> $bench-ab.log
+    ab -l -p $APP_POST -T application/json -c $conc -n $reqs http://$HYDRA_ADDRESS/${BENCHMARK_RUN_ENDPOINT["$bench"]} &> $bench-ab.log
     rm $APP_POST
     echo "Ran function $bench"
     cat $bench-ab.log

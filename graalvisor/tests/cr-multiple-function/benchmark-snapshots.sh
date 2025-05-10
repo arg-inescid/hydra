@@ -7,13 +7,28 @@ function DIR {
 source $(DIR)/shared.sh
 
 # List of benchmarks to run.
-BENCH_ARRAY=(jshw jsup jsdh pyhw pyup jvhw jvfh jvhr)
+#BENCH_ARRAY=(jshw jsup jsdh pyhw pyup jvhw jvfh jvhr)
+BENCH_ARRAY=(jshw jsdh pyhw pyup jvhw jvfh jvhr) # No js uploader -> seems to work!
+
+# py + jv (ok)
 #BENCH_ARRAY=(pyhw pyup jvhw jvfh jvhr)
+
+# js + jv (ok)
 #BENCH_ARRAY=(jshw jsup jsdh jvhw jvfh jvhr)
+
+# js + py (ok)
 #BENCH_ARRAY=(jshw jsup jsdh pyhw pyup)
+
+# js (ok)
 #BENCH_ARRAY=(jshw pyhw jvhw)
+
+# jv (ok)
 #BENCH_ARRAY=(jvhw jvfh jvhr)
+
+# py (ok)
 #BENCH_ARRAY=(pyhw pyup)
+
+# ps (ok)
 #BENCH_ARRAY=(jshw jsup jsdh)
 
 function run_benchmark {
@@ -30,12 +45,12 @@ function run_benchmark {
 
     # Run ab for each function.
     for bench in "${BENCH_ARRAY[@]}"; do
-        run_ab $bench 1 1000
+        run_ab $bench 1 10000
     done
 
     # Run ab for each function.
     for bench in "${BENCH_ARRAY[@]}"; do
-        run_ab $bench 1 1000
+        run_ab $bench 1 10000
     done
 
     # Stop hydra.
