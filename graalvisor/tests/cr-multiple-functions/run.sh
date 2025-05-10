@@ -4,7 +4,7 @@ function DIR {
     echo "$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 }
 
-source $(DIR)/shared.sh
+source $(DIR)/../cr-single-function/shared.sh
 
 # List of benchmarks to run.
 #BENCH_ARRAY=(jshw jsup jsdh pyhw pyup jvhw jvfh jvhr)

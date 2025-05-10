@@ -37,7 +37,7 @@ BENCHMARK_RUN_ENDPOINT[jvhr]=""
 
 function start_hydra {
     export app_dir=$(DIR)
-    bash $(DIR)/../../../graalvisor/graalvisor $(DIR)/graalvisor.pid &>> graalvisor.log &
+    bash $(DIR)/../../../graalvisor/graalvisor graalvisor.pid &>> graalvisor.log &
 
     # Wait for hydra to launch.
     timeout 1s bash -c "while ! nc -z $HYDRA_HOST $HYDRA_PORT; do sleep 0.1; done"
@@ -47,13 +47,13 @@ function start_hydra {
 
 function stop_hydra {
     # Note: wait until pid file is filled.
-    timeout 1s bash -c "while [ ! -s $(DIR)/hydra.pid ]; do sleep 0.1; done"
+    timeout 1s bash -c "while [ ! -s hydra.pid ]; do sleep 0.1; done"
 
     # Kill hydra.
     if [ -f graalvisor.pid ]; then
-        echo "killing graalvisor running with pid $(cat $(DIR)/graalvisor.pid)"
-        kill $(cat $(DIR)/graalvisor.pid)
-        rm $(DIR)/graalvisor.pid
+        echo "killing graalvisor running with pid $(cat graalvisor.pid)"
+        kill $(cat graalvisor.pid)
+        rm graalvisor.pid
     else
         echo "error: graalvisor.pid not found."
     fi

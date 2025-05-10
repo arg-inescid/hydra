@@ -1,0 +1,5 @@
+*.so
+*.log
+*.pid
+*.memsnap
+*.metasnap
