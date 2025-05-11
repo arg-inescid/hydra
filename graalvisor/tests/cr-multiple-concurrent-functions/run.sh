@@ -8,7 +8,7 @@ source $(DIR)/../cr-single-function/shared.sh
 
 # List of benchmarks to run.
 #BENCH_ARRAY=(jshw jsup jsdh pyhw pyup jvhw jvfh jvhr)
-#BENCH_ARRAY=(jshw jsdh pyhw pyup jvhw jvfh jvhr) # No js uploader -> seems to work!
+BENCH_ARRAY=(jshw jsdh pyhw pyup jvhw jvfh jvhr) # No js uploader -> seems to work!
 
 # py + jv (ok)
 #BENCH_ARRAY=(pyhw pyup jvhw jvfh jvhr)
@@ -26,7 +26,7 @@ source $(DIR)/../cr-single-function/shared.sh
 #BENCH_ARRAY=(jvhw jvfh jvhr)
 
 # py (ok)
-BENCH_ARRAY=(pyhw pyup)
+#BENCH_ARRAY=(pyhw pyup)
 
 function run_benchmark {
     # Clean logs but not snapshots.
@@ -48,11 +48,13 @@ function run_benchmark {
     # Run ab for each function.
     for bench in "${BENCH_ARRAY[@]}"; do
         run_ab $bench 1 1000 &
-    done
+        echo $! > $bench-ab.pid
+   done
 
     # Wait for all ab instances to finish.
-    #wait ab
-    sleep 10
+    for bench in "${BENCH_ARRAY[@]}"; do
+        wait $(cat $bench-ab.pid)
+    done
 
     # Stop hydra.
     stop_hydra
