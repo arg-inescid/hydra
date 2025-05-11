@@ -9,10 +9,10 @@ HYDRA_PORT="8080"
 HYDRA_ADDRESS="$HYDRA_HOST:$HYDRA_PORT"
 
 # How to use svm snapshots and avoid some of the current limitations:
-# - pyco is a problematic benchmark (needs malloc virtualization), replace w/ py/pr, pybfs, py/dna, etc;
 # - need to generate snapshots one by one;
 # - when generating snapshots, issue many requests so that the heap size stabilizies;
 
+# TODO - need to extend to add more functions.
 declare -A BENCHMARK_REGISTER_QUERY
 BENCHMARK_REGISTER_QUERY[jshw]="name=jshw&language=java&entrypoint=com.helloworld.HelloWorld&isBinary=true&svmid=1&sandbox=snapshot&url=http://127.0.0.1:8000/apps/gv-js-hello-world.so"
 BENCHMARK_REGISTER_QUERY[jsup]="name=jsup&language=java&entrypoint=com.uploader.Uploader&isBinary=true&svmid=2&sandbox=snapshot&url=http://127.0.0.1:8000/apps/gv-js-uploader.so"

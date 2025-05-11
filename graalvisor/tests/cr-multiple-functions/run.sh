@@ -8,6 +8,7 @@ source $(DIR)/../cr-single-function/shared.sh
 
 # List of benchmarks to run.
 #BENCH_ARRAY=(jshw jsup jsdh pyhw pyup jvhw jvfh jvhr)
+# TODO - js uploader seems to break this test.
 BENCH_ARRAY=(jshw jsdh pyhw pyup jvhw jvfh jvhr) # No js uploader -> seems to work!
 
 # py + jv (ok)
