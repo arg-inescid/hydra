@@ -520,19 +520,19 @@ void call_command(int argc, char argv[10][100]) {
     printf("global_seed = %d\n", global_seed);
     // if we already have executed this application, reuse its svm
     if (svm != NULL) {
-        invoke_svm(svm);
+        invoke_svm(svm, fin, fout);
     } else {
         // Find current mode.
         switch (argv[0][0])
         {
         case 'c':
             printf("checkpoint\n");
-            svm = checkpoint_svm(FPATH, "metadata.snap", "memory.snap", global_seed, CONC, ITERS, fin, fout, abi, &isolate);
+            svm = checkpoint_svm(FPATH, "metadata.snap", "memory.snap", global_seed, CONC, ITERS, fin, fout);
             save_svm(FPATH, svm);
             break;
         case 'r':
             printf("restore\n");
-            svm = restore_svm(FPATH, "metadata.snap", "memory.snap", global_seed, CONC, ITERS, fin, fout, abi, &isolate);
+            svm = restore_svm(FPATH, "metadata.snap", "memory.snap", global_seed, CONC, ITERS, fin, fout);
             // save_svm(FPATH, svm);
             break;
         case 'f':
