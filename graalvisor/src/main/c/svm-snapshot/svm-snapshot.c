@@ -67,8 +67,10 @@ typedef struct {
 } entrypoint_worker_args_t;
 
 // Dictionary of char* fpath to svm_sandbox_t* svm.
-// fpath_to_svm[0] = fpath, fpath_to_svm[1] = svm
+// fpath_to_svm[2n] = fpath, fpath_to_svm[2n+1] = svm
 void* fpath_to_svm[MAX_SVM * 2] = {0};
+// Automatic seed assigning for running multiple svm_sandbox_t.
+int global_seed = 0;
 
 void run_serial_entrypoint(isolate_abi_t* abi, graal_isolatethread_t *isolatethread, int requests, const char* fin, char* fout) {
      for (int i = 0; i < requests; i++) {
@@ -325,9 +327,10 @@ svm_sandbox_t* checkpoint_svm(
 
     pthread_create(&svm_sandbox->thread, NULL, notif_worker, restore_wargs);
 
-    // Close meta and mem fds.
+    // We use fsync to ensure that restore reads the complete checkpoint artifacts.
     fsync(meta_snap_fd);
     fsync(mem_snap_fd);
+    // Close meta and mem fds.
     close(meta_snap_fd);
     close(mem_snap_fd);
 
@@ -415,15 +418,17 @@ void process_instructions(const char* input_file) {
             token = strtok(NULL, " \t\n");
         }
 
-        for (int i=0; i < token_counter; i++) {
-        }
-
         call_command(token_counter, command);
         printf("\n\n\n");
         memset(buffer, 0, sizeof(buffer));
     }
 
-    fclose(file);
+    // Flush any open streammed file.
+    fflush(NULL);
+
+    // Exit even if there are unfinished threads running in function code.
+    exit(0);
+
     return;
 }
 
@@ -445,8 +450,6 @@ void save_svm(const char* fpath, svm_sandbox_t* svm) {
 
     return;
 }
-
-int global_seed = 0;
 
 svm_sandbox_t* get_svm(const char* fpath) {
     svm_sandbox_t* svm = NULL;
@@ -471,8 +474,6 @@ svm_sandbox_t* get_svm(const char* fpath) {
     return svm;
 }
 
-
-// void init_args(int argc, char** argv) {
 void call_command(int argc, char argv[10][100]) {
     const char* FPATH = NULL;
     unsigned int CONC = 1;
@@ -480,15 +481,7 @@ void call_command(int argc, char argv[10][100]) {
     unsigned int SEED = 0;
     const char* fin = "(null)";
     char  fout[FOUT_LEN];
-
-    // isolate_abi_t abi;
-    // isolate_abi_t abi = {0};
-
-    graal_isolate_t* isolate = NULL;
     svm_sandbox_t* svm = NULL;
-
-    isolate_abi_t* abi = malloc(sizeof(isolate_abi_t));
-    printf("malloc'd abi @ %p\n", abi);
 
     if (argc < 2) {
         err("wrong utilization!");
@@ -512,7 +505,9 @@ void call_command(int argc, char argv[10][100]) {
     }
 
     if (argv[0][0] == 'n') {
-        run_svm(FPATH, CONC, ITERS, fin, fout, abi, &isolate);
+        isolate_abi_t abi;
+        graal_isolate_t* isolate = NULL;
+        run_svm(FPATH, CONC, ITERS, fin, fout, &abi, &isolate);
         return;
     }
 
@@ -533,7 +528,7 @@ void call_command(int argc, char argv[10][100]) {
         case 'r':
             printf("restore\n");
             svm = restore_svm(FPATH, "metadata.snap", "memory.snap", global_seed, CONC, ITERS, fin, fout);
-            // save_svm(FPATH, svm);
+            save_svm(FPATH, svm);
             break;
         case 'f':
             err("No file recursion!\n");
