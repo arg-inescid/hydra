@@ -6,7 +6,8 @@ function DIR {
 
 source $(DIR)/shared.sh
 
-BENCH_ARRAY=(jshw jsup jsdh pyhw pyup jvhw jvfh jvhr)
+# List of benchmarks to run.
+BENCH_ARRAY=(jshw jsdh jsup pyhw pymst pybfs pypr pydna pydh pyco pytn pyup jvhw jvfh jvcy jvhr)
 
 # Ensure that we have a clean environment to start.
 bash $(DIR)/cleanup.sh
@@ -19,8 +20,8 @@ for bench in "${BENCH_ARRAY[@]}"; do
     # Upload the function.
     upload_function $bench
 
-    # Create the snapshot after 1 request.
-    run_ab $bench 1 1000
+    # Run apache bench serial for a number of requests.
+    run_ab $bench 1 100
 
     # Stop hydra.
     stop_hydra

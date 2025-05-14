@@ -1,3 +1,4 @@
 #!/bin/bash
 
-rm -f *.log *.so *.memsnap *.metasnap *.pid
+rm -rf snap.png apps
+rm -f *.log *.so *.memsnap *.metasnap *.pid *.zip *.png
