@@ -73,7 +73,7 @@ BENCHMARK_POST[pytn]='{"arguments":"{ \"url\":\"http://127.0.0.1:8000/snap.png\"
 BENCHMARK_POST[pyup]='{"arguments":"{ \"url\":\"http://127.0.0.1:8000/snap.png\" }","name":"pyup"}'
 
 function start_hydra {
-    export app_dir=$(DIR)/apps
+    export app_dir=$(pwd)/apps
     mkdir -p $app_dir
     bash $(DIR)/../../../graalvisor/graalvisor graalvisor.pid &>> graalvisor.log &
 
