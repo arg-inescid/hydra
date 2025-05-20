@@ -166,14 +166,14 @@ public class ArgumentStorage {
         Logger.setLogger(logger);
     }
 
-    private void initMetricsScraper(LambdaManagerPool lambdaPool) {
+    private void initMetricsScraper() {
         try {
             File managerMetricsFile = new File(Environment.MANAGER_METRICS_FILENAME);
             managerMetricsFile.getParentFile().mkdirs();
             managerMetricsFile.createNewFile();
 
             ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-            metricsScraper = new MetricsScraper(managerMetricsFile, executor, lambdaPool);
+            metricsScraper = new MetricsScraper(managerMetricsFile, executor);
             executor.scheduleAtFixedRate(metricsScraper, 1, 1, TimeUnit.SECONDS);
         } catch (IOException ioException) {
             ioException.printStackTrace();
@@ -187,7 +187,7 @@ public class ArgumentStorage {
         initErrorHandler();
 
         prepareLogger(lambdaManagerConfiguration.getManagerConsole());
-        initMetricsScraper(lambdaManagerConfiguration.getLambdaPool());
+        initMetricsScraper();
 
         LambdaManagerPool poolConfiguration = lambdaManagerConfiguration.getLambdaPool();
         boolean hasOpenWhiskLambdas = poolConfiguration.getCustomJava() != 0 || poolConfiguration.getCustomJavaScript() != 0 || poolConfiguration.getCustomPython() != 0;

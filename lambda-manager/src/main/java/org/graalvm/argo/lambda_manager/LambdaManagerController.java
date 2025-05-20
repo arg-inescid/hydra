@@ -63,7 +63,7 @@ public class LambdaManagerController {
 
     @Get(value = "/metrics", produces = MediaType.TEXT_PLAIN)
     public String scrapeMetrics() {
-        return MetricsProvider.getMetricsRecord(null);
+        return MetricsProvider.getMetricsRecord();
     }
 
 }
