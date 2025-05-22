@@ -50,7 +50,7 @@ function run_benchmark {
     for bench in "${BENCH_ARRAY[@]}"; do
         run_ab $bench 1 1000 &
         echo $! > $bench-ab.pid
-   done
+    done
 
     # Wait for all ab instances to finish.
     for bench in "${BENCH_ARRAY[@]}"; do
