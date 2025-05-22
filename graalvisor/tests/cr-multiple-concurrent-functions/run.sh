@@ -18,7 +18,6 @@ function run_benchmark {
         upload_function $bench
     done
 
-    # TODO - need to ensure that hydra restores one function at a time.
     # Restore each function.
     for bench in "${BENCH_ARRAY[@]}"; do
         run_ab $bench 1 1
