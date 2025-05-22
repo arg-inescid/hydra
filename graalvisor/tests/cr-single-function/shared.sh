@@ -82,6 +82,9 @@ BENCHMARK_POST[pytn]='{"arguments":"{ \"url\":\"http://127.0.0.1:8000/snap.png\"
 BENCHMARK_POST[pyup]='{"arguments":"{ \"url\":\"http://127.0.0.1:8000/snap.png\" }","name":"pyup"}'
 BENCHMARK_POST[pyvp]='{"arguments":"{ \"video\":\"http://127.0.0.1:8000/video.mp4\", \"ffmpeg\": \"http://127.0.0.1:8000/ffmpeg\" }","name":"pyvp"}'
 
+# List with all benchmarks.
+BENCH_ARRAY=(jshw jsdh jsup jstn pyhw pymst pybfs pypr pydna pydh pyco pytn pyup pyvp jvhw jvfh jvcy jvhr jvvp)
+
 function start_hydra {
     export app_dir=$(pwd)/apps
     mkdir -p $app_dir

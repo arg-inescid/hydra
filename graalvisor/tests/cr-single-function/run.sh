@@ -6,9 +6,6 @@ function DIR {
 
 source $(DIR)/shared.sh
 
-# List of benchmarks to run.
-BENCH_ARRAY=(jshw jsdh jsup pyhw pymst pybfs pypr pydna pydh pyco pytn pyup jvhw jvfh jvcy jvhr)
-
 # Ensure that we have a clean environment to start.
 bash $(DIR)/cleanup.sh
 
