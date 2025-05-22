@@ -9,7 +9,9 @@ pidfile=$1
 
 function get_child_pid {
     ppid=$1
-    sleep .1 # TODO - under high load conditions, we need to wait for unshare to have childs.
+    # Note: under high load conditions, we need to wait for unshare to have childs.
+    sleep .1
+    # Note: if the child crashed, we don't want to wait forever.
     attempts=10 # TODO - needs to be fixed.
     for ((i=0; i<attempts; i++))
     do
