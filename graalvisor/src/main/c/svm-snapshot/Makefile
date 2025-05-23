@@ -1,6 +1,6 @@
 #app = "$(shell pwd)/test0-clib/libhello.so"
 #app = "$(shell pwd)/test1-staticvar/libhello.so"
-app = "$(shell pwd)/test2-svm/libhello.so"
+#app = "$(shell pwd)/test2-svm/libhello.so"
 #app = "$(shell pwd)/test2-svm-jar/libhello.so"
 #app = "$(shell pwd)/test2-svm-gradle/libhello.so"
 #app = "$(shell pwd)/test3-svm-truffle-js/libhello.so"
@@ -19,6 +19,7 @@ app = "$(shell pwd)/test2-svm/libhello.so"
 #app="${ARGO_HOME}/benchmarks/src/javascript/gv-hello-world/build/libhelloworld.so"
 #app="${ARGO_HOME}/benchmarks/src/python/gv-hello-world/build/libhelloworld.so"
 #app="${ARGO_HOME}/benchmarks/src/python/gv-dynamic-html/build/libdynamichtml.so"
+app="${ARGO_HOME}/benchmarks/src/python/gv-thumbnail/build/libthumbnail.so"
 
 ifndef ARGO_HOME
 $(error ARGO_HOME is not set (needed to run benchmarks)!)
@@ -74,18 +75,13 @@ benchmarks: all
 	$(MAKE) app="${ARGO_HOME}/benchmarks/src/javascript/gv-thumbnail/build/libthumbnail.so" run
 	$(MAKE) app="${ARGO_HOME}/benchmarks/src/javascript/gv-uploader/build/libuploader.so" run
 	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-hello-world/build/libhelloworld.so" run
-# TODO - seems to be crashing.
 	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-compression/build/libcompression.so" run
 	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-uploader/build/libuploader.so" run
 	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-mst/build/libmst.so" run
 	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-pagerank/build/libpr.so" run
 	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-bfs/build/libbfs.so" run
 	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-dna/build/libdna.so" run
-# Note: there is an intermittent bug when threads are enabled on this benchmark.
-# It is memory related and I hope it will be fixed once we properly isolate memory from libc.
-# Impossible to reproduce if NI compiled with -O0.
 	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-dynamic-html/build/libdynamichtml.so" run
-# TODO - fails on restore w/ segfault.
 	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-thumbnail/build/libthumbnail.so" run
 # TODO - gv_python_videoprocessing (process)
 
