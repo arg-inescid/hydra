@@ -124,7 +124,8 @@ function run_ab {
     APP_POST="/tmp/app-post-$bench"
     echo ${BENCHMARK_POST["$bench"]} > $APP_POST
 
-    ab -l -p $APP_POST -T application/json -c $conc -n $reqs http://$HYDRA_ADDRESS/${BENCHMARK_RUN_ENDPOINT["$bench"]} &> $bench-ab.log
+    ab -r -l -p $APP_POST -T application/json -c $conc -n $reqs http://$HYDRA_ADDRESS/${BENCHMARK_RUN_ENDPOINT["$bench"]} &> $bench-ab.log
+#    ab -l -p $APP_POST -T application/json -c $conc -n $reqs http://$HYDRA_ADDRESS/${BENCHMARK_RUN_ENDPOINT["$bench"]} &> $bench-ab.log
     rm $APP_POST
     echo "Ran function $bench"
     cat $bench-ab.log
