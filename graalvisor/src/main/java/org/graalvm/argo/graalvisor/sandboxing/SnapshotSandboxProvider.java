@@ -47,9 +47,7 @@ public class SnapshotSandboxProvider extends SandboxProvider {
             return NativeSandboxInterface.svmInvoke(svmID, jsonArguments);
         }
 
-        synchronized (this) {
-            return warmupProvider(1, 1, jsonArguments);
-        }
+        return warmupProvider(1, 1, jsonArguments);
     }
 
     @Override
@@ -60,7 +58,10 @@ public class SnapshotSandboxProvider extends SandboxProvider {
         }
 
         synchronized (this) {
-            if (new File(this.metaSnapPath).exists()) {
+            if (warmedUp.get()) {
+                // The other thread has already warmed up in the meantime, just invoke.
+                return NativeSandboxInterface.svmInvoke(svmID, jsonArguments);
+            } else if (new File(this.metaSnapPath).exists()) {
                 System.out.println(String.format("Found %s, restoring svm.", this.metaSnapPath));
                 String output = NativeSandboxInterface.svmRestore(svmID, functionPath, 1, 1, jsonArguments, metaSnapPath, memSnapPath);
                 warmedUp.set(true);
