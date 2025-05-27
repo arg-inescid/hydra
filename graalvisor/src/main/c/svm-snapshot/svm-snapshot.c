@@ -105,13 +105,14 @@ void run_entrypoint(
     } else {
         pthread_t* workers = (pthread_t*) malloc(concurrency * sizeof(pthread_t));
         entrypoint_worker_args_t* wargs = (entrypoint_worker_args_t*) malloc(concurrency * sizeof(entrypoint_worker_args_t));
+        char* fouts = (char*) malloc(concurrency * sizeof(char) * FOUT_LEN);
         for (int i = 0; i < concurrency; i++) {
             wargs[i].abi = abi;
             wargs[i].isolate = isolate;
             wargs[i].requests = requests;
             wargs[i].fin = fin;
             // When multiple threads are launched, the output is taken from the first.
-            wargs[i].fout = i == 0 ? fout : NULL;
+            wargs[i].fout = i == 0 ? fout : &(fouts[i * FOUT_LEN]);
             pthread_create(&(workers[i]), NULL, entrypoint_worker, &(wargs[i]));
         }
         for (int i = 0; i < concurrency; i++) {
@@ -119,6 +120,7 @@ void run_entrypoint(
         }
         free(workers);
         free(wargs);
+        free(fouts);
     }
 }
 
@@ -182,36 +184,47 @@ void* notif_worker(void* args) {
     (svm->abi).graal_attach_thread(svm->isolate, &isolatethread);
     // Prepare and run function.
     for (;;) {
-        pthread_mutex_lock(&svm->mutex);
+        pthread_mutex_lock(&svm->worker_mutex);
         // until state is processing or signal to start processing is received, wait.
         while (svm->processing == 0) {
-            pthread_cond_wait(&svm->completed_request, &svm->mutex);
+            pthread_cond_wait(&svm->completed_request, &svm->worker_mutex);
         }
         run_entrypoint(&svm->abi, svm->isolate, isolatethread, wargs->concurrency, wargs->requests, svm->fin, svm->fout);
         // set state to finished
         svm->processing = 0;
         pthread_cond_signal(&svm->completed_request);
-        pthread_mutex_unlock(&svm->mutex);
+        pthread_mutex_unlock(&svm->worker_mutex);
     }
     free(wargs);
     return NULL;
 }
 
 void invoke_svm(svm_sandbox_t* svm_sandbox, const char* fin, char* fout) {
-    pthread_mutex_lock(&svm_sandbox->mutex);
+    // First, we lock this sandbox.
+    pthread_mutex_lock(&svm_sandbox->invoke_mutex);
+    // Second, we acquire the lock used to fill fin and fout.
+    pthread_mutex_lock(&svm_sandbox->worker_mutex);
     svm_sandbox->fin = fin;
     svm_sandbox->fout = fout;
     svm_sandbox->processing = 1;
     pthread_cond_signal(&svm_sandbox->completed_request);
     while (svm_sandbox->processing == 1) {
-        pthread_cond_wait(&svm_sandbox->completed_request, &svm_sandbox->mutex);
+        pthread_cond_wait(&svm_sandbox->completed_request, &svm_sandbox->worker_mutex);
     }
-    pthread_mutex_unlock(&svm_sandbox->mutex);
+    // Release both locks.
+    pthread_mutex_unlock(&svm_sandbox->worker_mutex);
+    pthread_mutex_unlock(&svm_sandbox->invoke_mutex);
 }
 
 svm_sandbox_t* create_sandbox(unsigned long seed) {
     svm_sandbox_t* svm_sandbox = malloc(sizeof(svm_sandbox_t));
     memset(svm_sandbox, 0, sizeof(svm_sandbox_t));
+    if (pthread_mutex_init(&svm_sandbox->invoke_mutex, NULL)) {
+        err("error: failed initialize sandbox mutext (invoke_mutex)\n");
+    }
+    if (pthread_mutex_init(&svm_sandbox->worker_mutex, NULL)) {
+        err("error: failed initialize sandbox mutext (worker_mutex)\n");
+    }
     svm_sandbox->seed = seed;
     svm_sandbox->processing = 0;
     return svm_sandbox;

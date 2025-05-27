@@ -15,8 +15,10 @@ typedef struct {
     graal_isolate_t*    isolate;
     // Pointer to thread running application.
     pthread_t          thread;
-    // Mutex to have exclusive access between worker and request sender.
-    pthread_mutex_t     mutex;
+    // Mutex to have exclusive access to invoke this sandbox.
+    pthread_mutex_t     invoke_mutex;
+    // Mutex to coordinate between invoker and worker threads.
+    pthread_mutex_t     worker_mutex;
     // Condition variable to signal request status start/finished.
     pthread_cond_t      completed_request;
     // Predicative variable to avoid deadlocks from signal arriving before

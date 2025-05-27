@@ -2,13 +2,14 @@ package org.graalvm.argo.graalvisor.sandboxing;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.graalvm.argo.graalvisor.function.NativeFunction;
 import org.graalvm.argo.graalvisor.function.PolyglotFunction;
 
 public class SnapshotSandboxProvider extends SandboxProvider {
 
-    private boolean warmedUp = false;
+    private AtomicBoolean warmedUp = new AtomicBoolean(false);
     /**
      * This number is used to identify a memory range where the svm instance will be restored.
      * Note 1: the same id should be used when checkpointing and restoring.
@@ -41,25 +42,33 @@ public class SnapshotSandboxProvider extends SandboxProvider {
         return svmID;
     }
 
-    public String invoke(String jsonArguments) {
-        return NativeSandboxInterface.svmInvoke(svmID, jsonArguments);
+    public String invoke(String jsonArguments) throws IOException {
+        return warmupProvider(1, 1, jsonArguments);
     }
 
     @Override
-    public synchronized String warmupProvider(int concurrency, int requests, String jsonArguments) throws IOException {
-        if (warmedUp) {
-            return invoke(jsonArguments);
-        } else if (new File(this.metaSnapPath).exists()) {
-            System.out.println(String.format("Found %s, restoring svm.", this.metaSnapPath));
-            String output = NativeSandboxInterface.svmRestore(svmID, functionPath, 1, 1, jsonArguments, metaSnapPath, memSnapPath);
-            warmedUp = true;
-            return output;
-        } else {
-            System.out.println(String.format("No snapshot found (%s), checkpointing svm after %d requests on %d concurrent threads.",
-                this.metaSnapPath, requests, concurrency));
-            String output = NativeSandboxInterface.svmCheckpoint(svmID, functionPath, concurrency, requests, jsonArguments, metaSnapPath, memSnapPath);
-            warmedUp = true;
-            return output;
+    public String warmupProvider(int concurrency, int requests, String jsonArguments) throws IOException {
+        // If already warm, just invoke.
+        if (warmedUp.get()) {
+            return NativeSandboxInterface.svmInvoke(svmID, jsonArguments);
+        }
+
+        synchronized (this) {
+            if (warmedUp.get()) {
+                // The other thread has already warmed up in the meantime, just invoke.
+                return NativeSandboxInterface.svmInvoke(svmID, jsonArguments);
+            } else if (new File(this.metaSnapPath).exists()) {
+                System.out.println(String.format("Found %s, restoring svm.", this.metaSnapPath));
+                String output = NativeSandboxInterface.svmRestore(svmID, functionPath, 1, 1, jsonArguments, metaSnapPath, memSnapPath);
+                warmedUp.set(true);
+                return output;
+            } else {
+                System.out.println(String.format("No snapshot found (%s), checkpointing svm after %d requests on %d concurrent threads.",
+                    this.metaSnapPath, requests, concurrency));
+                String output = NativeSandboxInterface.svmCheckpoint(svmID, functionPath, concurrency, requests, jsonArguments, metaSnapPath, memSnapPath);
+                warmedUp.set(true);
+                return output;
+            }
         }
     }
 

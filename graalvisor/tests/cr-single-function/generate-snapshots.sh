@@ -6,9 +6,6 @@ function DIR {
 
 source $(DIR)/shared.sh
 
-# List of benchmarks to generate snapshots.
-BENCH_ARRAY=(jshw jsdh jsup pyhw pymst pybfs pypr pydna pydh pyco pytn pyup)
-
 function prepare_snapshots {
     # Ensure a clean setup (no previous snapshots).
     bash $(DIR)/cleanup-snapshots.sh
