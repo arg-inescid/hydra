@@ -105,13 +105,14 @@ void run_entrypoint(
     } else {
         pthread_t* workers = (pthread_t*) malloc(concurrency * sizeof(pthread_t));
         entrypoint_worker_args_t* wargs = (entrypoint_worker_args_t*) malloc(concurrency * sizeof(entrypoint_worker_args_t));
+        char* fouts = (char*) malloc(concurrency * sizeof(char) * FOUT_LEN);
         for (int i = 0; i < concurrency; i++) {
             wargs[i].abi = abi;
             wargs[i].isolate = isolate;
             wargs[i].requests = requests;
             wargs[i].fin = fin;
             // When multiple threads are launched, the output is taken from the first.
-            wargs[i].fout = i == 0 ? fout : NULL;
+            wargs[i].fout = i == 0 ? fout : &fouts[i * concurrency  * FOUT_LEN];
             pthread_create(&(workers[i]), NULL, entrypoint_worker, &(wargs[i]));
         }
         for (int i = 0; i < concurrency; i++) {
@@ -119,6 +120,7 @@ void run_entrypoint(
         }
         free(workers);
         free(wargs);
+        free(fouts);
     }
 }
 

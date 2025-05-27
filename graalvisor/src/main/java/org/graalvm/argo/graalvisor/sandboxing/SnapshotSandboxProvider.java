@@ -43,10 +43,6 @@ public class SnapshotSandboxProvider extends SandboxProvider {
     }
 
     public String invoke(String jsonArguments) throws IOException {
-        if (warmedUp.get()) {
-            return NativeSandboxInterface.svmInvoke(svmID, jsonArguments);
-        }
-
         return warmupProvider(1, 1, jsonArguments);
     }
 
