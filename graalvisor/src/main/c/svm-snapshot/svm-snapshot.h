@@ -7,7 +7,10 @@
 // Maximum number of characters to receive from a function invocation.
 #define FOUT_LEN 256
 
-/*  Sandbox for executing entrypoints and getting their results. */
+// Maximum number of SVMs saved for calling invoke_svm
+#define MAX_SVM 20
+
+/* Sandbox for executing entrypoints and getting their results. */
 typedef struct {
     // Pointer to the abi structure where the function pointers will be stored.
     isolate_abi_t       abi;
@@ -155,5 +158,10 @@ void minimize_syscalls(
     const char* meta_snap_path,
     // Path where to store metadata information.
     const char* output_path);
+
+// TODO: prettify
+void process_instructions(const char* input_file);
+
+void call_command(int argc, char argv[10][100]);
 
 #endif

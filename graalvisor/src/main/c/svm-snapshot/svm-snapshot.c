@@ -66,6 +66,12 @@ typedef struct {
     char* fout;
 } entrypoint_worker_args_t;
 
+// Dictionary of char* fpath to svm_sandbox_t* svm.
+// fpath_to_svm[2n] = fpath, fpath_to_svm[2n+1] = svm
+void* fpath_to_svm[MAX_SVM * 2] = {0};
+// Automatic seed assigning for running multiple svm_sandbox_t.
+int global_seed = 0;
+
 void run_serial_entrypoint(isolate_abi_t* abi, graal_isolatethread_t *isolatethread, int requests, const char* fin, char* fout) {
      for (int i = 0; i < requests; i++) {
 #ifdef PERF
@@ -334,6 +340,9 @@ svm_sandbox_t* checkpoint_svm(
 
     pthread_create(&svm_sandbox->thread, NULL, notif_worker, restore_wargs);
 
+    // We use fsync to ensure that restore reads the complete checkpoint artifacts.
+    fsync(meta_snap_fd);
+    fsync(mem_snap_fd);
     // Close meta and mem fds.
     close(meta_snap_fd);
     close(mem_snap_fd);
@@ -397,4 +406,149 @@ svm_sandbox_t* restore_svm(
     invoke_svm(svm_sandbox, fin, fout);
 
     return svm_sandbox;
+}
+
+void process_instructions(const char* input_file) {
+    char command[10][100] = {0};
+    char buffer[100];
+    int token_counter = 0;
+
+    FILE *file = fopen(input_file, "r");
+    if (file == NULL) {
+        err("process_instructions: couldn't open input_file");
+        return;
+    }
+
+    while (fgets(buffer, sizeof(buffer), file) != NULL) {
+        token_counter = 0;
+        memset(command, 0, sizeof(command));
+
+        printf("%s", buffer);
+        char *token = strtok(buffer, " \t\n");
+        while (token != NULL && token_counter < 10) {
+            strncpy(command[token_counter], token, 99);
+            command[token_counter++][strlen(token)] = '\0';
+            token = strtok(NULL, " \t\n");
+        }
+
+        call_command(token_counter, command);
+        printf("\n\n\n");
+        memset(buffer, 0, sizeof(buffer));
+    }
+
+    // Flush any open streammed file.
+    fflush(NULL);
+
+    // Exit even if there are unfinished threads running in function code.
+    exit(0);
+
+    return;
+}
+
+void save_svm(const char* fpath, svm_sandbox_t* svm) {
+    size_t index = 0;
+
+    while(fpath_to_svm[index] != NULL) {
+        if (index >= MAX_SVM) {
+            err("save_svm: surpassed MAX_SVM = %d positions");
+            exit(0);
+        }
+        index += 2;
+    }
+    char* new_fpath = calloc(strlen(fpath) + 1, 1);
+    strcpy(new_fpath, fpath);
+
+    fpath_to_svm[index] = new_fpath;
+    fpath_to_svm[index + 1] = svm;
+
+    return;
+}
+
+svm_sandbox_t* get_svm(const char* fpath) {
+    svm_sandbox_t* svm = NULL;
+    size_t index = 0;
+
+    while(fpath_to_svm[index] != NULL) {
+        if (index >= MAX_SVM) {
+            err("get_svm: surpassed MAX_SVM = %d positions");
+            exit(0);
+        }
+        printf("compared %s with %s\n", fpath_to_svm[index], fpath);
+        if (!strcmp(fpath_to_svm[index], fpath)) {
+            svm = fpath_to_svm[index + 1];
+            break;
+        } else {
+            index += 2;
+        }
+    }
+
+    printf("got svm nr = %ld with svm = %p\n", index, svm);
+    global_seed = index / 2;
+    return svm;
+}
+
+void call_command(int argc, char argv[10][100]) {
+    const char* FPATH = NULL;
+    unsigned int CONC = 1;
+    unsigned int ITERS = 1;
+    unsigned int SEED = 0;
+    const char* fin = "(null)";
+    char  fout[FOUT_LEN];
+    svm_sandbox_t* svm = NULL;
+
+    if (argc < 2) {
+        err("wrong utilization!");
+        exit(0);
+    }
+
+    // Find function code.
+    FPATH = argv[1];
+
+    // Find optional arguments.
+    if (argc >= 4) {
+        CONC = atoi(argv[2]);
+    }
+
+    if (argc >= 5) {
+        ITERS = atoi(argv[3]);
+    }
+
+    if (argc >= 6) {
+        SEED = atoi(argv[4]);
+    }
+
+    if (argv[0][0] == 'n') {
+        isolate_abi_t abi;
+        graal_isolate_t* isolate = NULL;
+        run_svm(FPATH, CONC, ITERS, fin, fout, &abi, &isolate);
+        return;
+    }
+
+    svm = get_svm(FPATH);
+    printf("global_seed = %d\n", global_seed);
+    // if we already have executed this application, reuse its svm
+    if (svm != NULL) {
+        invoke_svm(svm, fin, fout);
+    } else {
+        // Find current mode.
+        switch (argv[0][0])
+        {
+        case 'c':
+            printf("checkpoint\n");
+            svm = checkpoint_svm(FPATH, "metadata.snap", "memory.snap", global_seed, CONC, ITERS, fin, fout);
+            save_svm(FPATH, svm);
+            break;
+        case 'r':
+            printf("restore\n");
+            svm = restore_svm(FPATH, "metadata.snap", "memory.snap", global_seed, CONC, ITERS, fin, fout);
+            save_svm(FPATH, svm);
+            break;
+        case 'f':
+            err("No file recursion!\n");
+            exit(0);
+        default:
+            err("command not recognized");
+        }
+    }
+    fprintf(stdout, "function(%s) -> %s\n", fin, fout);
 }
