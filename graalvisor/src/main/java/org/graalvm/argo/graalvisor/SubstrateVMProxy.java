@@ -21,20 +21,22 @@ public class SubstrateVMProxy extends RuntimeProxy {
      */
     static class Request {
 
-        final HttpExchange he;
+        final boolean async;
 
         final long startTime;
 
         final String input;
 
-        public Request(HttpExchange he, long startTime, String input) {
-            this.he = he;
+        String output;
+
+        public Request(boolean async, long startTime, String input) {
+            this.async = async;
             this.startTime = startTime;
             this.input = input;
         }
 
-        public HttpExchange getHttpExchange() {
-            return this.he;
+        public boolean isAsync() {
+            return this.async;
         }
 
         public long getStartTime() {
@@ -43,6 +45,14 @@ public class SubstrateVMProxy extends RuntimeProxy {
 
         public String getInput() {
             return input;
+        }
+
+        public void setOutput(String output) {
+            this.output = output;
+        }
+
+        public String getOutput() {
+            return this.output;
         }
     }
 
@@ -58,15 +68,20 @@ public class SubstrateVMProxy extends RuntimeProxy {
         }
 
         private void processRequest(SandboxHandle shandle, Request req) {
-            String output = "(uninitialized output)";
             try {
-                output = shandle.invokeSandbox(req.getInput());
-                RuntimeProxy.PROCESSED_REQUESTS.incrementAndGet();
+                req.setOutput(shandle.invokeSandbox(req.getInput()));
             } catch (Exception e) {
                 e.printStackTrace(System.err);
-                output = getName();
+                req.setOutput(getName());
             } finally {
-                sendReply(req.getHttpExchange(), req.getStartTime(), output);
+                // If the request is async, send reply. Otherwise, notify the frontend thread.
+                if (req.async) {
+                    sendReply(null, req.getStartTime(), req.getOutput());
+                } else {
+                    synchronized (req) {
+                        req.notify();
+                    }
+                }
             }
         }
 
@@ -155,6 +170,19 @@ public class SubstrateVMProxy extends RuntimeProxy {
 
             // Adding request to the function pipeline queue.
             queue.add(req);
+
+            // If the request is synchronous, we need to wait for the output to be ready.
+            if (!req.async) {
+                synchronized (req) {
+                    while(req.getOutput() == null) {
+                        try {
+                            req.wait();
+                        } catch (InterruptedException e) {
+                            // Ignore
+                        }
+                    }
+                }
+            }
         }
 
         public void setMaxWorkers(int value) {
@@ -205,6 +233,11 @@ public class SubstrateVMProxy extends RuntimeProxy {
     }
 
     @Override
+    protected void asyncInvoke(PolyglotFunction function, long startTime, String arguments) {
+        getFunctionPipeline(function).invokeInCachedSandbox(new Request(true, startTime, arguments));
+    }
+
+    @Override
     protected void invoke(
             HttpExchange he,
             PolyglotFunction function,
@@ -217,16 +250,16 @@ public class SubstrateVMProxy extends RuntimeProxy {
         try {
             if (!function.getSandboxProvider().isWarm()) {
                 output = function.getSandboxProvider().warmupProvider(warmupConc, warmupReqs, arguments);
-                RuntimeProxy.PROCESSED_REQUESTS.incrementAndGet();
             } else if (cached) {
                 System.out.println("Executing request in warm sandbox.");
-                getFunctionPipeline(function).invokeInCachedSandbox(new Request(he, startTime, arguments));
+                Request req = new Request(false, startTime, arguments);
+                getFunctionPipeline(function).invokeInCachedSandbox(req);
+                output = req.getOutput();
             } else {
                 System.out.println("Executing request in cold sandbox.");
                 SandboxHandle shandle = prepareSandbox(function);
                 output = shandle.invokeSandbox(arguments);
                 destroySandbox(function, shandle);
-                RuntimeProxy.PROCESSED_REQUESTS.incrementAndGet();
             }
         } catch (Exception e) {
             e.printStackTrace();

@@ -57,6 +57,11 @@ public class HotSpotProxy extends RuntimeProxy {
     }
 
     @Override
+    public void asyncInvoke(PolyglotFunction function, long startTime, String arguments) {
+        System.err.println("Error: HotSpot proxy does not support async invokes.");
+    }
+
+    @Override
     public void invoke(
             HttpExchange he,
             PolyglotFunction function,
@@ -73,7 +78,6 @@ public class HotSpotProxy extends RuntimeProxy {
             Method method = hf.getMethod();
             try {
                 output = json.asString(method.invoke(null, new Object[] { jsonToMap(arguments) }));
-                RuntimeProxy.PROCESSED_REQUESTS.incrementAndGet();
             } catch (Exception e) {
                 output = e.getLocalizedMessage();
                 e.printStackTrace(System.err);
@@ -81,7 +85,6 @@ public class HotSpotProxy extends RuntimeProxy {
         } else if (function instanceof TruffleFunction){
             TruffleFunction tf = (TruffleFunction) function;
             output = LANGUAGE_ENGINE.invoke(tf.getLanguage().toString(), tf.getSource(), tf.getEntryPoint(), arguments);
-            RuntimeProxy.PROCESSED_REQUESTS.incrementAndGet();
         } else {
             output = String.format("Error: Function %s not registered or not truffle function!", function.getName());
         }
