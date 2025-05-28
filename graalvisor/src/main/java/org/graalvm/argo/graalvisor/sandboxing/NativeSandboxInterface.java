@@ -16,7 +16,7 @@ public class NativeSandboxInterface {
 
     // Methods to access svm-snapshot module (see svm-snapshot.h).
     public static native String svmInvoke(SnapshotSandboxHandle sandboxHandle, String args);
-    public static native SnapshotSandboxHandle svmClone(SnapshotSandboxHandle sandboxHandle);
+    public static native void svmClone(SnapshotSandboxHandle original, SnapshotSandboxHandle clone);
     public static native String svmCheckpoint(
         int svmid,
         SnapshotSandboxHandle sandboxHandle,

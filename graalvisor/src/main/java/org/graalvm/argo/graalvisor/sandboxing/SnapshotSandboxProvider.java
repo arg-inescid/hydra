@@ -32,7 +32,7 @@ public class SnapshotSandboxProvider extends SandboxProvider {
      * This sandbox is used to create additional sandboxes, should not be destroyed but
      * can be used for normal invocations.
      */
-    private SnapshotSandboxHandle sandboxHandle;
+    private final SnapshotSandboxHandle sandboxHandle = new SnapshotSandboxHandle();
     /**
      * Number of sandboxes handles returned from createSandbox.
      */
@@ -68,7 +68,8 @@ public class SnapshotSandboxProvider extends SandboxProvider {
             } else if (new File(this.metaSnapPath).exists()) {
                 // A snapshot was found, we are restoring.
                 System.out.println(String.format("Found %s, restoring svm.", this.metaSnapPath));
-                String output = NativeSandboxInterface.svmRestore(svmID, sandboxHandle, jsonArguments, functionPath, metaSnapPath, memSnapPath);
+                String output = NativeSandboxInterface.svmRestore(
+                    svmID, sandboxHandle, jsonArguments, functionPath, metaSnapPath, memSnapPath);
                 warmedUp.set(true);
                 return output;
             } else {
@@ -84,6 +85,11 @@ public class SnapshotSandboxProvider extends SandboxProvider {
     }
 
     @Override
+    public boolean isWarm() {
+        return this.warmedUp.get();
+    }
+
+    @Override
     public void loadProvider() throws IOException {
         // Nothin to be done at load time.
     }
@@ -94,7 +100,9 @@ public class SnapshotSandboxProvider extends SandboxProvider {
             if (sandboxHandleCounter.getAndIncrement() == 0) {
                 return this.sandboxHandle;
             } else {
-                return NativeSandboxInterface.svmClone(this.sandboxHandle);
+                SnapshotSandboxHandle clone = new SnapshotSandboxHandle();
+                NativeSandboxInterface.svmClone(this.sandboxHandle, clone);
+                return clone;
             }
         } else {
             throw new IOException(String.format("Snapshot sandbox provider not initialized for function %s", function.getName()));

@@ -214,29 +214,25 @@ public class SubstrateVMProxy extends RuntimeProxy {
             long startTime,
             String arguments) {
         String output = "(uninitialized output)";
-        if (warmupConc != 0 || warmupReqs != 0) {
-            try {
+        try {
+            if (!function.getSandboxProvider().isWarm()) {
                 output = function.getSandboxProvider().warmupProvider(warmupConc, warmupReqs, arguments);
-            } catch (Exception e) {
-                e.printStackTrace();
-                output = e.getLocalizedMessage();
-            } finally {
-                sendReply(he, startTime, output);
-            }
-        } else if (cached) {
-            getFunctionPipeline(function).invokeInCachedSandbox(new Request(he, startTime, arguments));
-        } else {
-            try {
+                RuntimeProxy.PROCESSED_REQUESTS.incrementAndGet();
+            } else if (cached) {
+                System.out.println("Executing request in warm sandbox.");
+                getFunctionPipeline(function).invokeInCachedSandbox(new Request(he, startTime, arguments));
+            } else {
+                System.out.println("Executing request in cold sandbox.");
                 SandboxHandle shandle = prepareSandbox(function);
                 output = shandle.invokeSandbox(arguments);
-                RuntimeProxy.PROCESSED_REQUESTS.incrementAndGet();
                 destroySandbox(function, shandle);
-            } catch (Exception e) {
-                e.printStackTrace();
-                output = e.getLocalizedMessage();
-            } finally {
-                sendReply(he, startTime, output);
+                RuntimeProxy.PROCESSED_REQUESTS.incrementAndGet();
             }
+        } catch (Exception e) {
+            e.printStackTrace();
+            output = e.getLocalizedMessage();
+        } finally {
+            sendReply(he, startTime, output);
         }
     }
 }

@@ -147,10 +147,10 @@ public abstract class RuntimeProxy {
             boolean cached = input.get("cached") == null ? true : Boolean.parseBoolean((String)input.get("cached"));
 
             if (async != null && async.equals("true")) {
-                invokeWrapper(null, functionName, cached, 0, 0, arguments);
+                invokeWrapper(null, functionName, cached, 1, 1, arguments);
                 HttpUtils.writeResponse(t, 200, "Asynchronous request submitted!");
             } else {
-                invokeWrapper(t, functionName, cached, 0, 0, arguments);
+                invokeWrapper(t, functionName, cached, 1, 1, arguments);
             }
         }
     }

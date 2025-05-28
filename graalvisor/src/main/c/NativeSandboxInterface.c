@@ -160,15 +160,17 @@ JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSand
     return (*env)->NewStringUTF(env, fout);
 }
 
-JNIEXPORT jobject JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmClone(
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmClone(
         JNIEnv *env,
         jobject thisObj,
-        jobject sandboxHandle) {
-    jclass cls = (*env)->GetObjectClass(env, sandboxHandle);
-    jmethodID constructor = (*env)->GetMethodID(env, cls, "<init>", "(I)V");
-    jlong sandbox_handle = (*env)->GetLongField(env, sandboxHandle, (*env)->GetFieldID(env, cls, "sandboxHandle", "J"));
-    jlong clone_handle = (jlong) clone_svm((svm_sandbox_t*)sandbox_handle);
-    return (*env)->NewObject(env, cls, constructor, clone_handle);
+        jobject original,
+        jobject clone) {
+    jclass cls = (*env)->GetObjectClass(env, original);
+    jfieldID field = (*env)->GetFieldID(env, cls, "sandboxHandle", "J");
+    jlong original_handle = (*env)->GetLongField(env, original, field);
+    jlong clone_handle = (jlong) clone_svm((svm_sandbox_t*)original_handle);
+    (*env)->SetLongField(env, clone, field, clone_handle);
+    return;
 }
 
 JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmCheckpoint(
