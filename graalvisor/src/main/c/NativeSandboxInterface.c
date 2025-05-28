@@ -19,10 +19,6 @@
 #define TRUE  1
 #define FALSE 0
 
-// Snapshot sandboxes indexed by svm id.
-#define MAX_SVM_ID 128
-svm_sandbox_t* sandboxes[MAX_SVM_ID];
-
 int network_isolation_enabled() {
     const char* env_var = getenv("network_isolation");
 
@@ -49,7 +45,6 @@ void reset_parent_signal_handlers() {
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_initialize(JNIEnv *env, jobject thisObj) {
     setbuf(stdout, NULL);
-    memset(sandboxes, 0, sizeof(svm_sandbox_t*) * MAX_SVM_ID);
     // Note: for some reason that we should track down, the first call to dup2 takes 10s of ms.
     // We do it now to avoid further latency later.
     int dummy = dup2(0, 1023);
@@ -154,23 +149,37 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmInvoke(
         JNIEnv *env,
         jobject thisObj,
-        jint svmid,
+        jobject sandboxHandle,
         jstring fin) {
     const char* fin_str = (*env)->GetStringUTFChars(env, fin, 0);
     char fout[FOUT_LEN];
-    invoke_svm(sandboxes[svmid], fin_str, fout);
+    jclass cls = (*env)->GetObjectClass(env, sandboxHandle);
+    jlong sandbox_handle = (*env)->GetLongField(env, sandboxHandle, (*env)->GetFieldID(env, cls, "sandboxHandle", "J"));
+    invoke_svm((svm_sandbox_t*)sandbox_handle, fin_str, fout);
     (*env)->ReleaseStringUTFChars(env, fin, fin_str);
     return (*env)->NewStringUTF(env, fout);
+}
+
+JNIEXPORT jobject JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmClone(
+        JNIEnv *env,
+        jobject thisObj,
+        jobject sandboxHandle) {
+    jclass cls = (*env)->GetObjectClass(env, sandboxHandle);
+    jmethodID constructor = (*env)->GetMethodID(env, cls, "<init>", "(I)V");
+    jlong sandbox_handle = (*env)->GetLongField(env, sandboxHandle, (*env)->GetFieldID(env, cls, "sandboxHandle", "J"));
+    jlong clone_handle = (jlong) clone_svm((svm_sandbox_t*)sandbox_handle);
+    return (*env)->NewObject(env, cls, constructor, clone_handle);
 }
 
 JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmCheckpoint(
         JNIEnv *env,
         jobject thisObj,
         jint svmid,
-        jstring fpath,
+        jobject sandboxHandle,
         jint concurrency,
         jint requests,
         jstring fin,
+        jstring fpath,
         jstring meta_snap_path,
         jstring mem_snap_path) {
     const char* fpath_str = (*env)->GetStringUTFChars(env, fpath, 0);
@@ -178,8 +187,10 @@ JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSand
     const char* mem_snap_path_str = (*env)->GetStringUTFChars(env, mem_snap_path, 0);
     const char* fin_str = (*env)->GetStringUTFChars(env, fin, 0);
     char fout[FOUT_LEN];
-    sandboxes[svmid] = checkpoint_svm(fpath_str, meta_snap_path_str, mem_snap_path_str, svmid, concurrency, requests, fin_str, fout);
+    jlong sandbox_handle = (jlong) checkpoint_svm(fpath_str, meta_snap_path_str, mem_snap_path_str, svmid, concurrency, requests, fin_str, fout);
     minimize_syscalls(meta_snap_path_str, meta_snap_path_str);
+    jclass cls = (*env)->GetObjectClass(env, sandboxHandle);
+    (*env)->SetLongField(env, sandboxHandle, (*env)->GetFieldID(env, cls, "sandboxHandle", "J"), sandbox_handle);
     (*env)->ReleaseStringUTFChars(env, fpath, fpath_str);
     (*env)->ReleaseStringUTFChars(env, meta_snap_path, meta_snap_path_str);
     (*env)->ReleaseStringUTFChars(env, mem_snap_path, mem_snap_path_str);
@@ -191,10 +202,9 @@ JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSand
         JNIEnv *env,
         jobject thisObj,
         jint svmid,
-        jstring fpath,
-        jint concurrency,
-        jint requests,
+        jobject sandboxHandle,
         jstring fin,
+        jstring fpath,
         jstring meta_snap_path,
         jstring mem_snap_path) {
     const char* fpath_str = (*env)->GetStringUTFChars(env, fpath, 0);
@@ -202,14 +212,15 @@ JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSand
     const char* mem_snap_path_str = (*env)->GetStringUTFChars(env, mem_snap_path, 0);
     const char* fin_str = (*env)->GetStringUTFChars(env, fin, 0);
     char fout[FOUT_LEN];
-    sandboxes[svmid] = restore_svm(fpath_str, meta_snap_path_str, mem_snap_path_str, svmid, concurrency, requests, fin_str, fout);
+    jlong sandbox_handle = (jlong) restore_svm(fpath_str, meta_snap_path_str, mem_snap_path_str, svmid, fin_str, fout);
+    jclass cls = (*env)->GetObjectClass(env, sandboxHandle);
+    (*env)->SetLongField(env, sandboxHandle, (*env)->GetFieldID(env, cls, "sandboxHandle", "J"), sandbox_handle);
     (*env)->ReleaseStringUTFChars(env, fpath, fpath_str);
     (*env)->ReleaseStringUTFChars(env, mem_snap_path, mem_snap_path_str);
     (*env)->ReleaseStringUTFChars(env, meta_snap_path, meta_snap_path_str);
     (*env)->ReleaseStringUTFChars(env, fin, fin_str);
     return (*env)->NewStringUTF(env, fout);
 }
-
 
 typedef struct {
     // dlopen handle that points to the function code.

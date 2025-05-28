@@ -8,7 +8,7 @@
 #define FOUT_LEN 256
 
 /*  Sandbox for executing entrypoints and getting their results. */
-typedef struct {
+typedef struct { // TODO - we should hide this struct. There is nothing here that needs to be exposed.
     // Pointer to the abi structure where the function pointers will be stored.
     isolate_abi_t       abi;
     // Pointer to the isolate where the thread runs.
@@ -48,6 +48,12 @@ void invoke_svm(
     // If the output string is larger than FOUT_LEN, a warning
     // is printed to stdout and a '\0' is placed at outbuf[outbuf_len - 1].
     char* fout);
+
+/* Creates a new svm_sandbox_t pointing to the same underlying sandbox. A cloned
+   sandbox can be invoked concurrently with other clones and the original. */
+svm_sandbox_t* clone_svm(
+    // Sandbox for executing entrypoints and getting their results.
+    svm_sandbox_t* sandbox);
 
 /*  Loads, runs and then checkpoints a substrate vm instance.
     Returns svm_sandbox_t to be able to invoke more runs. */
@@ -91,10 +97,6 @@ svm_sandbox_t* restore_svm(
     // calling restore, the user must make sure there is no restoredsvm instance
     // using the same range.
     unsigned long seed,
-    // Number of concurrent threads that will invoke the function code.
-    unsigned int concurrency,
-    // Number of invocations each thread will perform.
-    unsigned int requests,
     // Arguments passed to the function upon each invocation.
     // Expects null-terminated string with max len FOUT_LEN
     const char* fin,

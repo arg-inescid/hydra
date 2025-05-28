@@ -43,17 +43,6 @@ typedef struct {
 } checkpoint_worker_args_t;
 
 typedef struct {
-    // Sandbox for executing entrypoints and getting their results.
-    svm_sandbox_t* svm_sandbox;
-    // Number of parallel threads handling requests.
-    int concurrency;
-    // Number of requests to perform.
-    int requests;
-    // Identifies sandbox.
-    unsigned long seed;
-} notif_worker_args_t;
-
-typedef struct {
      // ABI to create, invoke, destroy isolates.
     isolate_abi_t* abi;
     // Pointer to the isolate.
@@ -177,8 +166,7 @@ void* checkpoint_worker(void* args) {
 }
 
 void* notif_worker(void* args) {
-    notif_worker_args_t* wargs = (notif_worker_args_t*) args;
-    svm_sandbox_t* svm = wargs->svm_sandbox;
+    svm_sandbox_t* svm = (svm_sandbox_t*) args;
     graal_isolatethread_t *isolatethread = NULL;
 
     (svm->abi).graal_attach_thread(svm->isolate, &isolatethread);
@@ -189,13 +177,12 @@ void* notif_worker(void* args) {
         while (svm->processing == 0) {
             pthread_cond_wait(&svm->completed_request, &svm->worker_mutex);
         }
-        run_entrypoint(&svm->abi, svm->isolate, isolatethread, wargs->concurrency, wargs->requests, svm->fin, svm->fout);
+        run_entrypoint(&svm->abi, svm->isolate, isolatethread, 1, 1, svm->fin, svm->fout);
         // set state to finished
         svm->processing = 0;
         pthread_cond_signal(&svm->completed_request);
         pthread_mutex_unlock(&svm->worker_mutex);
     }
-    free(wargs);
     return NULL;
 }
 
@@ -228,6 +215,28 @@ svm_sandbox_t* create_sandbox(unsigned long seed) {
     svm_sandbox->seed = seed;
     svm_sandbox->processing = 0;
     return svm_sandbox;
+}
+
+svm_sandbox_t* clone_svm(svm_sandbox_t* sandbox) {
+    svm_sandbox_t* clone = create_sandbox(sandbox->seed);
+    clone->abi = sandbox->abi;
+
+    // Create isolate with no limit (use 256*1024*1024 for 256MB).
+    graal_create_isolate_params_t params;
+    graal_isolatethread_t *isolatethread = NULL;
+    memset(&params, 0, sizeof(graal_create_isolate_params_t));
+    params.version = 1;
+    params.reserved_address_space_size = 0;
+    if (clone->abi.graal_create_isolate(&params, &clone->isolate, &isolatethread) != 0) {
+        err("error: failed to create isolate for cloned svm\n");
+        return NULL;
+    }
+
+    // Detach thread function isolate and quit. This is safe since all threads are stopped.
+    clone->abi.graal_detach_thread(isolatethread);
+
+    pthread_create(&clone->thread, NULL, notif_worker, clone);
+    return clone;
 }
 
 svm_sandbox_t* checkpoint_svm(
@@ -326,13 +335,7 @@ svm_sandbox_t* checkpoint_svm(
         resume_background_threads(&threads);
     }
 
-    // Launch worker thread and wait for it to finish.
-    notif_worker_args_t* restore_wargs = malloc(sizeof(notif_worker_args_t));
-    restore_wargs->svm_sandbox = wargs->svm_sandbox;
-    restore_wargs->concurrency = wargs->concurrency;
-    restore_wargs->requests = wargs->requests;
-
-    pthread_create(&svm_sandbox->thread, NULL, notif_worker, restore_wargs);
+    pthread_create(&svm_sandbox->thread, NULL, notif_worker, svm_sandbox);
 
     // Close meta and mem fds.
     close(meta_snap_fd);
@@ -346,12 +349,9 @@ svm_sandbox_t* restore_svm(
         const char* meta_snap_path,
         const char* mem_snap_path,
         size_t seed,
-        unsigned int concurrency,
-        unsigned int requests,
         const char* fin,
         char* fout) {
     svm_sandbox_t* svm_sandbox = create_sandbox(seed);
-    notif_worker_args_t* wargs;
     int last_pid;
 
 #ifdef PERF
@@ -368,11 +368,6 @@ svm_sandbox_t* restore_svm(
         check_proc_maps("after_restore.log", NULL);
 #endif
 
-    wargs = malloc(sizeof(notif_worker_args_t));
-    wargs->svm_sandbox = svm_sandbox;
-    wargs->concurrency = concurrency;
-    wargs->requests = requests;
-
     // Get pid that will be assigned to next created thread
     if ((last_pid = get_next_pid()) == -1) {
         err("error: failed to get next pid\n");
@@ -385,7 +380,7 @@ svm_sandbox_t* restore_svm(
     }
 
     // Launch worker thread and wait for it to finish.
-    pthread_create(&svm_sandbox->thread, NULL, notif_worker, wargs);
+    pthread_create(&svm_sandbox->thread, NULL, notif_worker, svm_sandbox);
     // After launching original application, restore last next_pid for future threads
     if (last_pid != 1) {
         // Threads were restored so we want to change next pid
