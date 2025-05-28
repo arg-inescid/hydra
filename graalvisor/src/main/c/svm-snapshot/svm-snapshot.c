@@ -1,6 +1,8 @@
+#include "svm-snapshot.h"
 #include "cr.h"
 #include "list_threads.h"
 #include "syscalls.h"
+#include "graal_capi.h"
 
 #include <dlfcn.h>
 #include <errno.h>
@@ -24,6 +26,33 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <unistd.h>
+
+struct svm_sandbox_t {
+    // Pointer to the abi structure where the function pointers will be stored.
+    isolate_abi_t       abi;
+    // Pointer to the isolate where the thread runs.
+    graal_isolate_t*    isolate;
+    // Pointer to thread running application.
+    pthread_t          thread;
+    // Mutex to have exclusive access to invoke this sandbox.
+    pthread_mutex_t     invoke_mutex;
+    // Mutex to coordinate between invoker and worker threads.
+    pthread_mutex_t     worker_mutex;
+    // Condition variable to signal request status start/finished.
+    pthread_cond_t      completed_request;
+    // Predicative variable to avoid deadlocks from signal arriving before
+    // other thread started to wait for the signal.
+    int                 processing;
+    // Used to pass input to the worker thread.
+    const char*         fin;
+    // Used to receive output to the worker thread.
+    char*               fout;
+    // The seed is used to control which virtual memory ranges the svm instance
+    // will used. Each seed value represents a 16TB virtual memory range. When
+    // calling restore, the user must make sure there is no restoredsvm instance
+    // using the same range.
+    unsigned long       seed;
+};
 
 typedef struct {
     // Sandbox for executing entrypoints and getting their results.
