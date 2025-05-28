@@ -111,6 +111,7 @@ public class SnapshotSandboxProvider extends SandboxProvider {
 
     @Override
     public void destroySandbox(SandboxHandle shandle) {
+        sandboxHandleCounter.getAndDecrement();
         System.out.println("Snapshot sandbox handle destroy has not been implemented yet. Ignoring..");
     }
 

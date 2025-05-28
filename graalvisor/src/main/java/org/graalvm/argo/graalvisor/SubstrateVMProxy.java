@@ -251,12 +251,10 @@ public class SubstrateVMProxy extends RuntimeProxy {
             if (!function.getSandboxProvider().isWarm()) {
                 output = function.getSandboxProvider().warmupProvider(warmupConc, warmupReqs, arguments);
             } else if (cached) {
-                System.out.println("Executing request in warm sandbox.");
                 Request req = new Request(false, startTime, arguments);
                 getFunctionPipeline(function).invokeInCachedSandbox(req);
                 output = req.getOutput();
             } else {
-                System.out.println("Executing request in cold sandbox.");
                 SandboxHandle shandle = prepareSandbox(function);
                 output = shandle.invokeSandbox(arguments);
                 destroySandbox(function, shandle);

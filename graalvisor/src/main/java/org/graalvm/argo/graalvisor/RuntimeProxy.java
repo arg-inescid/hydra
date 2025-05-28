@@ -164,7 +164,7 @@ public abstract class RuntimeProxy {
             Map<String, Object> input = jsonToMap(HttpUtils.extractRequestBody(t));
             String functionName = (String) input.get("name");
             String arguments = (String) input.get("arguments");
-            invokeWrapper(t, functionName, false, concurrency, requests, arguments);
+            invokeWrapper(t, functionName, true, concurrency, requests, arguments);
         }
     }
 
