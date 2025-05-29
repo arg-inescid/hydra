@@ -25,8 +25,8 @@ unsigned int SEED = 0;
 
 void usage_exit() {
     fprintf(stderr, "Syntax: main <normal|checkpoint|restore> <path to native image app library> [concurrency [iterations [seed]]]\n");
-    fprintf(stderr, "Optional: concurrency (defaults to 1).\n");
-    fprintf(stderr, "Optional: iterations (defaults to 1).\n");
+    fprintf(stderr, "Optional: concurrency in checkpoint mode (defaults to 1).\n");
+    fprintf(stderr, "Optional: iterations in checkpoint mode (defaults to 1).\n");
     fprintf(stderr, "Optional: seed (defaults to zero and ignored in normal and restore modes).\n");
     exit(1);
 }
@@ -96,15 +96,13 @@ int main(int argc, char** argv) {
     setvbuf(stdout, NULL, _IONBF, 0);
 
     if (CURRENT_MODE == RESTORE) {
-        restore_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout);
+        restore_svm(FPATH, "metadata.snap", "memory.snap", SEED, fin, fout);
     } else if (CURRENT_MODE == CHECKPOINT) {
         checkpoint_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout);
     } else if (CURRENT_MODE == MINIMIZE) {
         minimize_syscalls("metadata.snap", "metadata.snap");
     } else {
-        isolate_abi_t abi;
-        graal_isolate_t* isolate = NULL;
-        run_svm(FPATH, CONC, ITERS, fin, fout, &abi, &isolate);
+        run_svm(FPATH, CONC, ITERS, fin, fout);
     }
 
     fprintf(stdout, "function(%s) -> %s\n", fin, fout);

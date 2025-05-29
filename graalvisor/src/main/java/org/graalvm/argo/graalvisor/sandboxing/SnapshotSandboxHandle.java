@@ -5,21 +5,18 @@ import java.io.IOException;
 public class SnapshotSandboxHandle extends SandboxHandle {
 
     /**
-     * Provider for this handle.
+     * Native sandbox handle (pointer casted to long).
+     * This value is set from JNI (see checkpoint and restore svm).
      */
-    private final SnapshotSandboxProvider provider;
-
-    public SnapshotSandboxHandle(SnapshotSandboxProvider provider) {
-        this.provider = provider;
-    }
+    private final long sandboxHandle = 0;
 
     @Override
     public String invokeSandbox(String jsonArguments) throws IOException {
-	 return provider.invoke(jsonArguments);
+        return NativeSandboxInterface.svmInvoke(this, jsonArguments);
     }
 
     @Override
     public String toString() {
-        return Integer.toString(provider.getSVMID());
+        return Long.toString(sandboxHandle);
     }
 }

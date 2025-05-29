@@ -96,6 +96,11 @@ public abstract class RuntimeProxy {
             long startTime,
             String arguments);
 
+    protected abstract void asyncInvoke(
+            PolyglotFunction functionName,
+            long startTime,
+            String arguments);
+
    private void invokeWrapper(
             HttpExchange he,
             String functionName,
@@ -115,6 +120,7 @@ public abstract class RuntimeProxy {
 
     protected static void sendReply(HttpExchange he, long startTime, String output) {
         long microLatency = (System.nanoTime() - startTime) / 1000;
+        PROCESSED_REQUESTS.incrementAndGet();
         String msg = String.format("{\"result\":\"%s\",\"process time (us)\":%s}", output, microLatency);
         // HttpExchange may be null if the invocation is asynchronous.
         if (he == null) {
@@ -143,15 +149,8 @@ public abstract class RuntimeProxy {
             Map<String, Object> input = jsonToMap(HttpUtils.extractRequestBody(t));
             String functionName = (String) input.get("name");
             String arguments = (String) input.get("arguments");
-            String async = (String)input.get("async");
             boolean cached = input.get("cached") == null ? true : Boolean.parseBoolean((String)input.get("cached"));
-
-            if (async != null && async.equals("true")) {
-                invokeWrapper(null, functionName, cached, 0, 0, arguments);
-                HttpUtils.writeResponse(t, 200, "Asynchronous request submitted!");
-            } else {
-                invokeWrapper(t, functionName, cached, 0, 0, arguments);
-            }
+            invokeWrapper(t, functionName, cached, 1, 1, arguments);
         }
     }
 
@@ -165,8 +164,7 @@ public abstract class RuntimeProxy {
             Map<String, Object> input = jsonToMap(HttpUtils.extractRequestBody(t));
             String functionName = (String) input.get("name");
             String arguments = (String) input.get("arguments");
-            // TODO - why calling the invokeWrapper? We could directly call the provider to warmup.
-            invokeWrapper(t, functionName, false, concurrency, requests, arguments);
+            invokeWrapper(t, functionName, true, concurrency, requests, arguments);
         }
     }
 
@@ -187,6 +185,10 @@ public abstract class RuntimeProxy {
                 HttpUtils.writeResponse(t, 200, "Function not registered!");
             }
 
+            if (!pf.getSandboxProvider().isWarm()) {
+                HttpUtils.writeResponse(t, 200, "Function sandbox provider not warm!");
+            }
+
             System.out.println(String.format("Stress testing with %s threads and %s requests each.", concurrency, requests));
 
             // Set maximum number of sandboxes for a specific function.
@@ -194,7 +196,7 @@ public abstract class RuntimeProxy {
 
             // Submit all function invocations.
             for (int j = 0; j < requests; j++) {
-                invokeWrapper(null, functionName, true, 0, 0, arguments);
+                asyncInvoke(pf, System.nanoTime(), arguments);
                 try {
                     Thread.sleep(1);
                 } catch (InterruptedException e) {

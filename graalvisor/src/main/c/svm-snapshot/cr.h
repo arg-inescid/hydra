@@ -6,6 +6,7 @@
 #include "svm-snapshot.h"
 #include "list_mappings.h"
 #include "list_threads.h"
+#include "graal_capi.h"
 
 // Number of fds that we allow for the function to use. We may use some fds after this limit.
 #define RESERVED_FDS 768

@@ -43,20 +43,20 @@ BENCHMARK_RUN_ENDPOINT[jvcy]=""
 BENCHMARK_RUN_ENDPOINT[jvhr]=""
 BENCHMARK_RUN_ENDPOINT[jvvp]=""
 
-BENCHMARK_RUN_ENDPOINT[jshw]="warmup?concurrency=1&requests=1"
-BENCHMARK_RUN_ENDPOINT[jsdh]="warmup?concurrency=1&requests=1"
-BENCHMARK_RUN_ENDPOINT[jsup]="warmup?concurrency=1&requests=1"
+BENCHMARK_RUN_ENDPOINT[jshw]=""
+BENCHMARK_RUN_ENDPOINT[jsdh]=""
+BENCHMARK_RUN_ENDPOINT[jsup]=""
 BENCHMARK_RUN_ENDPOINT[jstn]="" # Note: cr not supported.
 
-BENCHMARK_RUN_ENDPOINT[pyhw]="warmup?concurrency=1&requests=1"
-BENCHMARK_RUN_ENDPOINT[pymst]="warmup?concurrency=1&requests=1"
-BENCHMARK_RUN_ENDPOINT[pybfs]="warmup?concurrency=1&requests=1"
-BENCHMARK_RUN_ENDPOINT[pypr]="warmup?concurrency=1&requests=1"
-BENCHMARK_RUN_ENDPOINT[pydna]="warmup?concurrency=1&requests=1"
-BENCHMARK_RUN_ENDPOINT[pydh]="warmup?concurrency=1&requests=1"
-BENCHMARK_RUN_ENDPOINT[pyco]="warmup?concurrency=1&requests=1"
-BENCHMARK_RUN_ENDPOINT[pytn]="warmup?concurrency=1&requests=1"
-BENCHMARK_RUN_ENDPOINT[pyup]="warmup?concurrency=1&requests=1"
+BENCHMARK_RUN_ENDPOINT[pyhw]=""
+BENCHMARK_RUN_ENDPOINT[pymst]=""
+BENCHMARK_RUN_ENDPOINT[pybfs]=""
+BENCHMARK_RUN_ENDPOINT[pypr]=""
+BENCHMARK_RUN_ENDPOINT[pydna]=""
+BENCHMARK_RUN_ENDPOINT[pydh]=""
+BENCHMARK_RUN_ENDPOINT[pyco]=""
+BENCHMARK_RUN_ENDPOINT[pytn]=""
+BENCHMARK_RUN_ENDPOINT[pyup]=""
 BENCHMARK_RUN_ENDPOINT[pyvp]="" # Note: cr not supported.
 
 declare -A BENCHMARK_POST
