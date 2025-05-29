@@ -14,4 +14,4 @@ UNSHARE_OPTS="--kill-child --map-root-user --keep-caps --mount-proc -f -p"
 ARCH_OPTS="-R"
 ALLOCATOR="$(DIR)/src/main/c/svm-snapshot/deps/dlmalloc/hydralloc.so"
 
-unshare $UNSHARE_OPTS setarch $ARCH_OPTS gdb -x graalvisor-gdb-commands.txt -ex "set environment LD_PRELOAD $ALLOCATOR" G_SLICE=always-malloc $(DIR)/build/native-image/polyglot-proxy
+unshare $UNSHARE_OPTS setarch $ARCH_OPTS gdb -x graalvisor-gdb-commands.txt -ex "set environment LD_PRELOAD $ALLOCATOR" -ex "set environment G_SLICE always-malloc" $(DIR)/build/native-image/polyglot-proxy
