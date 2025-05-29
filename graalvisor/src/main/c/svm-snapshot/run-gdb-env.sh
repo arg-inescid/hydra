@@ -10,4 +10,4 @@ ARCH_OPTS="-R"
 
 unshare $UNSHARE_OPTS \
 setarch $ARCH_OPTS \
-gdb -x gdb-commands.txt -ex "set environment LD_PRELOAD $(DIR)/deps/dlmalloc/hydralloc.so" --args $@
+gdb -x gdb-commands.txt -ex "set environment LD_PRELOAD $(DIR)/deps/dlmalloc/hydralloc.so" G_SLICE=malloc-always --args $@
