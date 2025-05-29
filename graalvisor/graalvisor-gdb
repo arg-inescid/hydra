@@ -6,9 +6,12 @@ function DIR {
 
 # Note 1: unshare is necessary so that graalvisor lives in a different pid namespace (required for svm snapshotting).
 # Note 2: setarch is necessary to disable ASRL, which is relevant for svm snapshotting (accessible through context-sandbox).
-# Note 3: for large heaps, add `-Xmx128g` next to graalvisor.
+# Note 3: G_SLICE makes GLIB ONLY use malloc/free and not weirder things like posix_memalign which aren't supported in mspaces.
+# G_SLICE is important for the correct execution of the javascript-thumbnail test.
+# For more information check https://web.mit.edu/barnowl/share/gtk-doc/html/glib/glib-running.html#G_SLICE
+# Note 4: for large heaps, add `-Xmx128g` next to graalvisor.
 UNSHARE_OPTS="--kill-child --map-root-user --keep-caps --mount-proc -f -p"
 ARCH_OPTS="-R"
 ALLOCATOR="$(DIR)/src/main/c/svm-snapshot/deps/dlmalloc/hydralloc.so"
 
-unshare $UNSHARE_OPTS setarch $ARCH_OPTS gdb -x graalvisor-gdb-commands.txt -ex "set environment LD_PRELOAD $ALLOCATOR" $(DIR)/build/native-image/polyglot-proxy
+unshare $UNSHARE_OPTS setarch $ARCH_OPTS gdb -x graalvisor-gdb-commands.txt -ex "set environment LD_PRELOAD $ALLOCATOR" -ex "set environment G_SLICE always-malloc" $(DIR)/build/native-image/polyglot-proxy
