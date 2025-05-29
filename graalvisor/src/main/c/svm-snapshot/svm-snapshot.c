@@ -142,7 +142,7 @@ void run_entrypoint(
     }
 }
 
-void run_svm(
+void run_svm_internal(
         const char* fpath,
         unsigned int concurrency,
         unsigned int requests,
@@ -175,6 +175,12 @@ void run_svm(
     abi->graal_detach_thread(isolatethread);
 }
 
+void run_svm(const char* fpath, unsigned int concurrency, unsigned int requests, const char* fin, char* fout) {
+    isolate_abi_t abi;
+    graal_isolate_t* isolate = NULL;
+    run_svm_internal(fpath, concurrency, requests, fin, fout, &abi, &isolate);
+}
+
 void* checkpoint_worker(void* args) {
     checkpoint_worker_args_t* wargs = (checkpoint_worker_args_t*) args;
     svm_sandbox_t* svm = wargs->svm_sandbox;
@@ -187,7 +193,7 @@ void* checkpoint_worker(void* args) {
     }
 
     // Prepare and run function.
-    run_svm(wargs->fpath, wargs->concurrency, wargs->requests, svm->fin, svm->fout, &svm->abi, &(svm->isolate));
+    run_svm_internal(wargs->fpath, wargs->concurrency, wargs->requests, svm->fin, svm->fout, &svm->abi, &(svm->isolate));
     // Mark execution as finished (will alert the seccomp monitor to quit).
     wargs->finished = 1;
 

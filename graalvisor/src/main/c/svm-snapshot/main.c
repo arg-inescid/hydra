@@ -102,9 +102,7 @@ int main(int argc, char** argv) {
     } else if (CURRENT_MODE == MINIMIZE) {
         minimize_syscalls("metadata.snap", "metadata.snap");
     } else {
-        isolate_abi_t abi;
-        graal_isolate_t* isolate = NULL;
-        run_svm(FPATH, CONC, ITERS, fin, fout, &abi, &isolate);
+        run_svm(FPATH, CONC, ITERS, fin, fout);
     }
 
     fprintf(stdout, "function(%s) -> %s\n", fin, fout);

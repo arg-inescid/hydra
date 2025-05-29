@@ -95,11 +95,7 @@ void run_svm(
     // or requests), only the output of the first request will be saved.
     // If the output string is larger than FOUT_LEN, a warning
     // is printed to stdout and a '\0' is placed at outbuf[outbuf_len - 1].
-    char* fout,
-    // Pointer to the abi structure where the function pointers will be stored.
-    isolate_abi_t* abi,
-    // Output argument used to save the pointer to the restored isolate.
-    graal_isolate_t** isolate);
+    char* fout);
 
 /*
 minimize_syscalls optimizes system calls by filtering the system calls that are
