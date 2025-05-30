@@ -27,6 +27,8 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+pthread_mutex_t restore_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 struct svm_sandbox_t {
     // Pointer to the abi structure where the function pointers will be stored.
     isolate_abi_t       abi;
@@ -222,9 +224,11 @@ void* notif_worker(void* args) {
 }
 
 void invoke_svm(svm_sandbox_t* svm_sandbox, const char* fin, char* fout) {
-    // First, we lock this sandbox.
+    // First, lock restores.
+    pthread_mutex_lock(&restore_mutex);
+    // Then, we lock this sandbox.
     pthread_mutex_lock(&svm_sandbox->invoke_mutex);
-    // Second, we acquire the lock used to fill fin and fout.
+    // After that, we acquire the lock used to fill fin and fout.
     pthread_mutex_lock(&svm_sandbox->worker_mutex);
     svm_sandbox->fin = fin;
     svm_sandbox->fout = fout;
@@ -236,6 +240,7 @@ void invoke_svm(svm_sandbox_t* svm_sandbox, const char* fin, char* fout) {
     // Release both locks.
     pthread_mutex_unlock(&svm_sandbox->worker_mutex);
     pthread_mutex_unlock(&svm_sandbox->invoke_mutex);
+    pthread_mutex_unlock(&restore_mutex);
 }
 
 svm_sandbox_t* create_sandbox(unsigned long seed) {
@@ -390,17 +395,18 @@ svm_sandbox_t* restore_svm(
     int last_pid;
 
 #ifdef PERF
-        struct timeval st, et;
-        gettimeofday(&st, NULL);
+    struct timeval st, et;
+    gettimeofday(&st, NULL);
 #endif
-
-        restore(meta_snap_path, mem_snap_path, &svm_sandbox->abi, &svm_sandbox->isolate);
+    pthread_mutex_lock(&restore_mutex);
+    restore(meta_snap_path, mem_snap_path, &svm_sandbox->abi, &svm_sandbox->isolate);
+    pthread_mutex_unlock(&restore_mutex);
 #ifdef PERF
-        gettimeofday(&et, NULL);
-        log("restore took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
+    gettimeofday(&et, NULL);
+    log("restore took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
 #endif
 #ifdef DEBUG
-        check_proc_maps("after_restore.log", NULL);
+    check_proc_maps("after_restore.log", NULL);
 #endif
 
     // Get pid that will be assigned to next created thread
@@ -425,6 +431,7 @@ svm_sandbox_t* restore_svm(
         }
     }
     invoke_svm(svm_sandbox, fin, fout);
+    pthread_mutex_unlock(&restore_mutex);
 
     return svm_sandbox;
 }
