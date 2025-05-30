@@ -224,11 +224,9 @@ void* notif_worker(void* args) {
 }
 
 void invoke_svm(svm_sandbox_t* svm_sandbox, const char* fin, char* fout) {
-    // First, lock restores.
-    pthread_mutex_lock(&restore_mutex);
-    // Then, we lock this sandbox.
+    // First, we lock this sandbox.
     pthread_mutex_lock(&svm_sandbox->invoke_mutex);
-    // After that, we acquire the lock used to fill fin and fout.
+    // Second, we acquire the lock used to fill fin and fout.
     pthread_mutex_lock(&svm_sandbox->worker_mutex);
     svm_sandbox->fin = fin;
     svm_sandbox->fout = fout;
@@ -240,7 +238,6 @@ void invoke_svm(svm_sandbox_t* svm_sandbox, const char* fin, char* fout) {
     // Release both locks.
     pthread_mutex_unlock(&svm_sandbox->worker_mutex);
     pthread_mutex_unlock(&svm_sandbox->invoke_mutex);
-    pthread_mutex_unlock(&restore_mutex);
 }
 
 svm_sandbox_t* create_sandbox(unsigned long seed) {
@@ -431,7 +428,6 @@ svm_sandbox_t* restore_svm(
         }
     }
     invoke_svm(svm_sandbox, fin, fout);
-    pthread_mutex_unlock(&restore_mutex);
 
     return svm_sandbox;
 }
