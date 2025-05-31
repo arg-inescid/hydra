@@ -33,4 +33,7 @@ RUN apt -y install libopenjp2-7-dev
 RUN rm -f /jvm/hydra-venv/bin/graalpy && \
     ln -s /jvm/languages/python/bin/graalpy /jvm/hydra-venv/bin/graalpy
 
+# Make the entrypoint script executable.
+RUN chmod +x /graalvisor
+
 ENTRYPOINT /graalvisor
