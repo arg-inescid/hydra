@@ -14,7 +14,6 @@ public class StartGraalvisorContainer extends StartContainer {
     protected List<String> makeCommand() {
         List<String> command = prepareCommand("graalvisor:latest");
         command.add(TIMESTAMP_TAG + System.currentTimeMillis());
-        command.add("LD_LIBRARY_PATH=/lib:/lib64:/tmp/apps:/usr/local/lib");
         return command;
     }
 }

@@ -18,7 +18,7 @@ function copy_polyglot_deps {
         cp $DIR/../truffle-deps/libhwloc.so.5         $DISK/usr/lib/x86_64-linux-gnu/
         # Copy graalvm python language libs and python's virtual environment.
         cp -r $JAVA_HOME/languages/{python,llvm} $DISK/jvm/languages
-        cp -r $JAVA_HOME/graalvisor-python-venv $DISK/jvm
+        cp -r $JAVA_HOME/hydra-venv $DISK/jvm
     fi
 
     read -p "Include JavaScript dependencies in image (y or Y, everything else as no)? " -n 1 -r

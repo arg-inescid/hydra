@@ -51,7 +51,6 @@ fi
 
 # To set up such tags as lambda_port, lambda_timestamp, and LD_LIBRARY_PATH.
 TAGS=( "${TAGS[@]/#/'-e '}" )
-TAGS+=( "-e app_dir=/codebase/" )
 
 # The default value for Graalvisor and OpenWhisk.
 PROXY_PORT="8080"
@@ -68,9 +67,8 @@ cd "$LAMBDA_HOME"
 
 docker run --privileged --rm --name="$LAMBDA_NAME" \
   ${TAGS[@]} \
-  --privileged \
   -p "$LAMBDA_PORT":"$PROXY_PORT" \
-  -v "$ARGO_HOME"/benchmarks/data/apps:/codebase \
+  -v "$ARGO_HOME"/benchmarks/data/apps:/tmp/apps \
   $CONTAINER_SIZE_OPTIONS \
   "$CONTAINER_IMAGE" &
 
