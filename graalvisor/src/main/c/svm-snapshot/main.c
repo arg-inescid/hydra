@@ -99,8 +99,6 @@ int main(int argc, char** argv) {
         restore_svm(FPATH, "metadata.snap", "memory.snap", SEED, fin, fout);
     } else if (CURRENT_MODE == CHECKPOINT) {
         checkpoint_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout);
-    } else if (CURRENT_MODE == MINIMIZE) {
-        minimize_syscalls("metadata.snap", "metadata.snap");
     } else {
         run_svm(FPATH, CONC, ITERS, fin, fout);
     }
