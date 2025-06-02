@@ -27,6 +27,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+// Mutex to ensure only one thread restores at a time.
 pthread_mutex_t restore_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 struct svm_sandbox_t {
