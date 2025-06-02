@@ -10,7 +10,6 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <sys/time.h>
-#include <pthread.h>
 
 // If defined, enables debug prints.
 // #define MINIMIZE_DEBUG
@@ -27,9 +26,6 @@
 #define INITIAL_LINES 100
 // Arbitrary value to set size of static array where we store the syscall in binary.
 #define MAX_DATA 500
-
-// Mutex to ensure only one thread minimizes at a time.
-pthread_mutex_t minimize_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 typedef struct {
     // Binary data read from file that corresponds to a syscall to be restored.
@@ -359,7 +355,6 @@ void minimize_syscalls(
 
     struct timeval st, et;
     gettimeofday(&st, NULL);
-    pthread_mutex_lock(&minimize_mutex);
     init_dynamic(&lines, INITIAL_LINES);
 
     // Open the metadata file, contains syscall arguments, memory ranges, etc.
@@ -394,8 +389,6 @@ void minimize_syscalls(
     if (!strcmp(output_path, meta_snap_path)) {
         rename(temp_path, output_path);
     }
-
-    pthread_mutex_unlock(&minimize_mutex);
     gettimeofday(&et, NULL);
     cr_printf(STDOUT_FILENO, "in %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
 }
