@@ -1,6 +1,6 @@
 {
   "gateway": "172.18.0.1/16",
-  "maxMemory": 1024,
+  "maxMemory": 2048,
   "maxTaps": 10,
   "timeout": 25000,
   "healthCheck": 50,

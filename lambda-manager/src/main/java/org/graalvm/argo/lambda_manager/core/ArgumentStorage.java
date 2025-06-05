@@ -344,6 +344,8 @@ public class ArgumentStorage {
     }
 
     public void tearDownLambdaKeepAliveTask() {
-        lambdaKeepAliveTask.close();
+        if (lambdaKeepAliveTask != null) {
+            lambdaKeepAliveTask.close();
+        }
     }
 }

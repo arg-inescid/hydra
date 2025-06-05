@@ -1,7 +1,7 @@
 {
   "gateway": "172.18.0.1/16",
-  "maxMemory": 1024,
-  "maxTaps": 9,
+  "maxMemory": 2048,
+  "maxTaps": 20,
   "timeout": 5000,
   "healthCheck": 50,
   "lambdaPort": 8080,
@@ -18,9 +18,9 @@
     "hotspot": 0,
     "graalvisor": 0,
     "graalos": 0,
-    "customJava": 3,
-    "customJavaScript": 3,
-    "customPython": 3,
+    "customJava": 5,
+    "customJavaScript": 5,
+    "customPython": 10,
     "graalvisorPgo": 0,
     "graalvisorPgoOptimized": 0
   }
