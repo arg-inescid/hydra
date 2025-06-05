@@ -9,6 +9,7 @@ import org.graalvm.argo.lambda_manager.function_storage.LocalFunctionStorage;
 import org.graalvm.argo.lambda_manager.function_storage.SimpleFunctionStorage;
 import org.graalvm.argo.lambda_manager.metrics.MetricsScraper;
 import org.graalvm.argo.lambda_manager.pool.LambdaPool;
+import org.graalvm.argo.lambda_manager.pool.ProactiveLambdaPool;
 import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
 import org.graalvm.argo.lambda_manager.processes.devmapper.PrepareDevmapperBase;
 import org.graalvm.argo.lambda_manager.processes.lambda.factory.AbstractLambdaFactory;
@@ -91,7 +92,6 @@ public class ArgumentStorage {
         this.lambdaType = LambdaType.fromString(lambdaManagerConfiguration.getLambdaType());
         this.maxMemory = lambdaManagerConfiguration.getMaxMemory();
         this.cpuQuota = ((maxMemory * 1000 / 1024) / 2) * 100; // MiB to MB; divide by two due to ratio; multiply by 100 to get cgroups quota.
-        this.lambdaPool = new LambdaPool(lambdaType, lambdaManagerConfiguration.getMaxTaps());
         this.timeout = lambdaManagerConfiguration.getTimeout();
         this.healthCheck = lambdaManagerConfiguration.getHealthCheck();
         this.lambdaPort = lambdaManagerConfiguration.getLambdaPort();
@@ -207,7 +207,9 @@ public class ArgumentStorage {
         ElapseTimer.init(); // Start internal timer.
 
         // Initialize the lambda pool and start the reclaiming task.
-        this.lambdaPool.setUp(lambdaPort, lambdaManagerConfiguration.getGateway(), lambdaManagerConfiguration.getLambdaPool());
+        this.lambdaPool = new ProactiveLambdaPool(lambdaType, lambdaManagerConfiguration.getMaxTaps(), lambdaManagerConfiguration.getGateway(), poolConfiguration);
+        this.lambdaPool.setUp();
+
         // Initialize the lambda keep alive task that terminates the timed out lambdas.
         this.lambdaKeepAliveTask = LambdaKeepAliveTask.createAndInit(Configuration.argumentStorage.getTimeout());
     }
