@@ -25,7 +25,9 @@ void invoke_svm(
    sandbox can be invoked concurrently with other clones and the original. */
 svm_sandbox_t* clone_svm(
     // Sandbox for executing entrypoints and getting their results.
-    svm_sandbox_t* sandbox);
+    svm_sandbox_t* sandbox,
+    // If zero, a new isolate will be created for this sandbox.
+    int reuse_isolate);
 
 /*  Loads, runs and then checkpoints a substrate vm instance.
     Returns svm_sandbox_t to be able to invoke more runs. */
