@@ -20,7 +20,11 @@ function prepare_snapshots {
         upload_function $bench
 
         # Create the snapshot after 1 request.
-        run_ab $bench 1 1
+        APP_POST="/tmp/app-post-$bench"
+        echo ${BENCHMARK_POST["$bench"]} > $APP_POST
+        curl -s -X POST http://$HYDRA_ADDRESS/warmup?requests=1\&concurrency=1 -H "Content-Type: application/json" -d@$APP_POST
+        echo ""
+        rm $APP_POST
 
         # Stop hydra.
         stop_hydra
