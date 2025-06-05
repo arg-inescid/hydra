@@ -8,6 +8,7 @@ import org.graalvm.argo.lambda_manager.encoders.DefaultCoder;
 import org.graalvm.argo.lambda_manager.function_storage.LocalFunctionStorage;
 import org.graalvm.argo.lambda_manager.function_storage.SimpleFunctionStorage;
 import org.graalvm.argo.lambda_manager.metrics.MetricsScraper;
+import org.graalvm.argo.lambda_manager.pool.LambdaPool;
 import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
 import org.graalvm.argo.lambda_manager.processes.devmapper.PrepareDevmapperBase;
 import org.graalvm.argo.lambda_manager.processes.lambda.factory.AbstractLambdaFactory;

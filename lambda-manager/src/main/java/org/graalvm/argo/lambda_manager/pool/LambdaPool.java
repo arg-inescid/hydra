@@ -1,13 +1,16 @@
-package org.graalvm.argo.lambda_manager.core;
+package org.graalvm.argo.lambda_manager.pool;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import org.graalvm.argo.lambda_manager.core.Environment;
+import org.graalvm.argo.lambda_manager.core.Lambda;
+import org.graalvm.argo.lambda_manager.core.LambdaType;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
 import org.graalvm.argo.lambda_manager.processes.taps.RemoveTapsOutsidePool;
 import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
-import org.graalvm.argo.lambda_manager.utils.LambdaPoolUtils;
+import org.graalvm.argo.lambda_manager.pool.utils.LambdaPoolUtils;
 import org.graalvm.argo.lambda_manager.utils.NetworkConfigurationUtils;
 import org.graalvm.argo.lambda_manager.utils.parser.LambdaManagerPool;
 
