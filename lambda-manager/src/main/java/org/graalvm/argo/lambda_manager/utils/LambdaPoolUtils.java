@@ -79,7 +79,7 @@ public class LambdaPoolUtils {
             Logger.log(Level.INFO, "Starting new " + targetMode + " lambda.");
             ProcessBuilder process = whomToSpawn(lambda, targetMode).build();
             process.start();
-            if (NetworkUtils.waitForOpenPort(lambda.getConnection().ip, lambda.getConnection().port, 250)) {
+            if (NetworkUtils.waitForOpenPort(lambda.getConnection().ip, lambda.getConnection().port, 500)) {
                 lambdaPool.get(targetMode).add(lambda);
                 Logger.log(Level.INFO, "Added new lambda with mode " + targetMode + ". It took " + (System.currentTimeMillis() - timeBefore) + " ms.");
             } else {
