@@ -85,8 +85,6 @@ public abstract class RuntimeProxy {
         RuntimeProxy.appDir = appDir;
     }
 
-    protected abstract void setMaxSandboxes(PolyglotFunction function, int max);
-
     protected abstract void invoke(
             HttpExchange he,
             PolyglotFunction functionName,
@@ -180,32 +178,32 @@ public abstract class RuntimeProxy {
             String arguments = (String) input.get("arguments");
             int currentProcessedRequests = PROCESSED_REQUESTS.intValue();
 
+            if (!(RuntimeProxy.this instanceof SubstrateVMProxy)) {
+                HttpUtils.writeResponse(t, 200, "Stress endpoint is only available for substrate vm!");
+                return;
+            }
+
             PolyglotFunction pf = FTABLE.get(functionName);
             if (pf == null) {
                 HttpUtils.writeResponse(t, 200, "Function not registered!");
+                return;
             }
 
             if (!pf.getSandboxProvider().isWarm()) {
                 HttpUtils.writeResponse(t, 200, "Function sandbox provider not warm!");
+                return;
             }
 
             System.out.println(String.format("Stress testing with %s threads and %s requests each.", concurrency, requests));
 
             // Set maximum number of sandboxes for a specific function.
-            setMaxSandboxes(pf, concurrency);
+            SubstrateVMProxy.getFunctionPipeline(pf).setMaxWorkers(concurrency);
 
             // Submit all function invocations.
+            long startTime = System.nanoTime();
             for (int j = 0; j < requests; j++) {
-                asyncInvoke(pf, System.nanoTime(), arguments);
-                try {
-                    Thread.sleep(1);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+                asyncInvoke(pf, startTime, arguments);
             }
-
-            // Reset the value.
-            setMaxSandboxes(pf, 0);
 
             // Wait for all requests to be processed. Note that we just look at the total count,
             // there is no guarantee that these are actually 'our' requests.
@@ -217,7 +215,14 @@ public abstract class RuntimeProxy {
                 }
             }
 
-            System.out.println("Stress test done!");
+            // Reset the max worker value and close the pipeline.
+            startTime = System.nanoTime();
+            SubstrateVMProxy.getFunctionPipeline(pf).setMaxWorkers(0);
+            SubstrateVMProxy.getFunctionPipeline(pf).close();
+            System.out.println(String.format("Stress test done (tear down took %s ns)!", System.nanoTime() - startTime));
+
+            // Open the pipeline again so that it can process future requests.
+            SubstrateVMProxy.getFunctionPipeline(pf).open();
             HttpUtils.writeResponse(t, 200, "success!");
         }
     }

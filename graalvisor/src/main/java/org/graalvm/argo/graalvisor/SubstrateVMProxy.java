@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.graalvm.argo.graalvisor.function.PolyglotFunction;
@@ -91,7 +92,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
             int numberAttempts = 0;
 
             try {
-                while (true) {
+                while (pipeline.isOpen()) {
                     req = pipeline.queue.poll();
 
                     if (req != null) {
@@ -147,6 +148,8 @@ public class SubstrateVMProxy extends RuntimeProxy {
 
         private AtomicInteger maxWorkers = new AtomicInteger(0);
 
+        private AtomicBoolean open = new AtomicBoolean(true);
+
         public FunctionPipeline(PolyglotFunction function) {
             this.function = function;
             this.queue = new ConcurrentLinkedQueue<>();
@@ -189,8 +192,24 @@ public class SubstrateVMProxy extends RuntimeProxy {
             this.maxWorkers.set(value);
         }
 
+        public void close() {
+            this.open.set(false);
+        }
+
+        public void open() {
+            this.open.set(true);
+        }
+
         public PolyglotFunction getFunction() {
             return this.function;
+        }
+
+        public boolean isOpen() {
+            return this.open.get();
+        }
+
+        public int getWorkers() {
+            return this.workers.get();
         }
     }
 
@@ -203,7 +222,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
         super(port, appDir);
     }
 
-    private static FunctionPipeline getFunctionPipeline(PolyglotFunction function) {
+    protected static FunctionPipeline getFunctionPipeline(PolyglotFunction function) {
         FunctionPipeline pipeline = queues.get(function.getName());
 
         if (pipeline == null) {
@@ -226,10 +245,6 @@ public class SubstrateVMProxy extends RuntimeProxy {
     private static void destroySandbox(PolyglotFunction function, SandboxHandle shandle) throws IOException {
         System.out.println(String.format("[thread %s] Destroying %s sandbox %s", Thread.currentThread().getId(), function.getSandboxProvider().getName(), shandle));
         function.getSandboxProvider().destroySandbox(shandle);
-    }
-
-    protected void setMaxSandboxes(PolyglotFunction function, int max) {
-        getFunctionPipeline(function).maxWorkers.set(max);
     }
 
     @Override
