@@ -52,10 +52,6 @@ public class HotSpotProxy extends RuntimeProxy {
         server.setExecutor(Executors.newSingleThreadExecutor());
     }
 
-    protected void setMaxSandboxes(PolyglotFunction function, int max) {
-        System.err.println("Error: HotSpot proxy does not support setting a maximum number of sandboxes.");
-    }
-
     @Override
     public void asyncInvoke(PolyglotFunction function, long startTime, String arguments) {
         System.err.println("Error: HotSpot proxy does not support async invokes.");
