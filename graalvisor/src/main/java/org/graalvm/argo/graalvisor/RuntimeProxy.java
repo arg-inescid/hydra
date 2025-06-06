@@ -219,6 +219,13 @@ public abstract class RuntimeProxy {
             startTime = System.nanoTime();
             SubstrateVMProxy.getFunctionPipeline(pf).setMaxWorkers(0);
             SubstrateVMProxy.getFunctionPipeline(pf).close();
+            while (SubstrateVMProxy.getFunctionPipeline(pf).getWorkers() > 0) {
+                try {
+                    Thread.sleep(1);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
             System.out.println(String.format("Stress test done (tear down took %s ns)!", System.nanoTime() - startTime));
 
             // Open the pipeline again so that it can process future requests.
