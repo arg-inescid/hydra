@@ -10,6 +10,7 @@ import org.graalvm.argo.lambda_manager.function_storage.SimpleFunctionStorage;
 import org.graalvm.argo.lambda_manager.metrics.MetricsScraper;
 import org.graalvm.argo.lambda_manager.pool.LambdaPool;
 import org.graalvm.argo.lambda_manager.pool.ProactiveLambdaPool;
+import org.graalvm.argo.lambda_manager.pool.ReactiveLambdaPool;
 import org.graalvm.argo.lambda_manager.processes.ProcessBuilder;
 import org.graalvm.argo.lambda_manager.processes.devmapper.PrepareDevmapperBase;
 import org.graalvm.argo.lambda_manager.processes.lambda.factory.AbstractLambdaFactory;
@@ -192,11 +193,15 @@ public class ArgumentStorage {
 
         LambdaManagerPool poolConfiguration = lambdaManagerConfiguration.getLambdaPool();
         boolean hasOpenWhiskLambdas = poolConfiguration.getCustomJava() != 0 || poolConfiguration.getCustomJavaScript() != 0 || poolConfiguration.getCustomPython() != 0;
+        boolean hasLambdaPoolConfig = hasOpenWhiskLambdas || poolConfiguration.getGraalOS() != 0 || poolConfiguration.getGraalvisor() != 0
+                || poolConfiguration.getGraalvisorPgo() != 0 || poolConfiguration.getGraalvisorPgoOptimized() != 0
+                || poolConfiguration.getHotspot() != 0 || poolConfiguration.getHotspotWithAgent() != 0;
 
         Configuration.initFields(
             new RoundedRobinScheduler(),
             new DefaultCoder(),
-            hasOpenWhiskLambdas ? new LocalFunctionStorage() : new SimpleFunctionStorage(),
+            // Use local function storage
+            hasOpenWhiskLambdas || !hasLambdaPoolConfig ? new LocalFunctionStorage() : new SimpleFunctionStorage(),
             new DefaultLambdaManagerClient(),
             this);
 
@@ -207,7 +212,12 @@ public class ArgumentStorage {
         ElapseTimer.init(); // Start internal timer.
 
         // Initialize the lambda pool and start the reclaiming task.
-        this.lambdaPool = new ProactiveLambdaPool(lambdaType, lambdaManagerConfiguration.getMaxTaps(), lambdaManagerConfiguration.getGateway(), poolConfiguration);
+        if (hasLambdaPoolConfig) {
+            this.lambdaPool = new ProactiveLambdaPool(lambdaType, lambdaManagerConfiguration.getMaxTaps(), lambdaManagerConfiguration.getGateway(), poolConfiguration);
+        } else {
+            // For OpenWhisk and Knative only.
+            this.lambdaPool = new ReactiveLambdaPool(lambdaType, lambdaManagerConfiguration.getMaxTaps(), lambdaManagerConfiguration.getGateway());
+        }
         this.lambdaPool.setUp();
 
         // Initialize the lambda keep alive task that terminates the timed out lambdas.

@@ -26,7 +26,11 @@ public class ProactiveLambdaPool implements LambdaPool {
     /**
      * Maximum number of network taps that will be setup by the Lambda Manager.
      */
-    private final int targetSize;
+    private final int maxLambdas;
+
+    private final String gatewayWithMask;
+
+    private final LambdaManagerPool poolConfiguration;
 
     /**
      * Concurrent queue where the connections are pooled from.
@@ -47,12 +51,9 @@ public class ProactiveLambdaPool implements LambdaPool {
             Map.entry(LambdaExecutionMode.GRAALVISOR_PGO, new ConcurrentLinkedQueue<>()),
             Map.entry(LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED, new ConcurrentLinkedQueue<>()));
 
-    private final String gatewayWithMask;
-    private final LambdaManagerPool poolConfiguration;
-
     public ProactiveLambdaPool(LambdaType lambdaType, int maxTaps, String gatewayWithMask, LambdaManagerPool poolConfiguration) {
         this.lambdaType = lambdaType;
-        this.targetSize = maxTaps;
+        this.maxLambdas = maxTaps;
         this.gatewayWithMask = gatewayWithMask;
         this.poolConfiguration = poolConfiguration;
         this.connectionPool = new ConcurrentLinkedQueue<>();
@@ -63,9 +64,9 @@ public class ProactiveLambdaPool implements LambdaPool {
         int lambdaPort = Configuration.argumentStorage.getLambdaPort();
 
         if (lambdaType.isVM()) {
-            NetworkConfigurationUtils.prepareVmConnectionPool(connectionPool, targetSize, gatewayWithMask, lambdaPort);
+            NetworkConfigurationUtils.prepareVmConnectionPool(connectionPool, maxLambdas, gatewayWithMask, lambdaPort);
         } else {
-            NetworkConfigurationUtils.prepareContainerConnectionPool(connectionPool, targetSize);
+            NetworkConfigurationUtils.prepareContainerConnectionPool(connectionPool, maxLambdas);
         }
         LambdaPoolUtils.prepareLambdaPool(lambdaPool, poolConfiguration);
         LambdaPoolUtils.startLambdaReclaimingDaemon(lambdaPool, poolConfiguration);
@@ -96,7 +97,7 @@ public class ProactiveLambdaPool implements LambdaPool {
             // Only replenish if managed to terminate the previous lambda successfully.
             if (success && Environment.notShutdownHookActive()) {
                 Lambda newLambda = new Lambda(lambda.getExecutionMode());
-                LambdaPoolUtils.startLambda(lambdaPool, newLambda, lambda.getExecutionMode());
+                LambdaPoolUtils.startLambda(lambdaPool.get(lambda.getExecutionMode()), newLambda, lambda.getExecutionMode(), null, null);
             }
         }
     }
@@ -104,7 +105,7 @@ public class ProactiveLambdaPool implements LambdaPool {
     @Override
     public void tearDown() throws InterruptedException {
         // Shutdown lambdas inside pool and starting lambdas.
-        LambdaPoolUtils.shutdownLambdas(lambdaPool);
+        lambdaPool.values().forEach(LambdaPoolUtils::shutdownLambdas);
 
         // Close any lasting connection.
         for (LambdaConnection connection : connectionPool) {

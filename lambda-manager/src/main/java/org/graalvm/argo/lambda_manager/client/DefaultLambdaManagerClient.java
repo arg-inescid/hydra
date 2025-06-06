@@ -31,6 +31,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
             } catch (HttpClientException e) {
                 try {
                     Logger.log(Level.WARNING, "Received HttpClientException in lambda " + lambda.getLambdaID() + ". Message: " + e.getMessage());
+                    // Add exponential backoff with randomization element.
                     Thread.sleep(Configuration.argumentStorage.getHealthCheck());
                 } catch (InterruptedException interruptedException) {
                     // Skipping raised exception.

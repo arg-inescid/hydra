@@ -1,5 +1,6 @@
 package org.graalvm.argo.lambda_manager.processes.lambda.factory;
 
+import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.core.Lambda;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalOSNative;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartLambda;
@@ -31,7 +32,7 @@ public class NativeLambdaFactory extends AbstractLambdaFactory {
     }
 
     @Override
-    public StartLambda createOpenWhisk(Lambda lambda) {
+    public StartLambda createOpenWhisk(Lambda lambda, Function function) {
         throw new IllegalStateException("OpenWhisk is not yet supported in native mode.");
     }
 
