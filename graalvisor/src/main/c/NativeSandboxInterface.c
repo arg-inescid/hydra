@@ -190,7 +190,6 @@ JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSand
     const char* fin_str = (*env)->GetStringUTFChars(env, fin, 0);
     char fout[FOUT_LEN];
     jlong sandbox_handle = (jlong) checkpoint_svm(fpath_str, meta_snap_path_str, mem_snap_path_str, svmid, concurrency, requests, fin_str, fout);
-    minimize_syscalls(meta_snap_path_str, meta_snap_path_str);
     jclass cls = (*env)->GetObjectClass(env, sandboxHandle);
     (*env)->SetLongField(env, sandboxHandle, (*env)->GetFieldID(env, cls, "sandboxHandle", "J"), sandbox_handle);
     (*env)->ReleaseStringUTFChars(env, fpath, fpath_str);

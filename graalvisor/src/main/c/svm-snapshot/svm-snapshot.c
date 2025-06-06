@@ -27,6 +27,9 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+// Mutex to ensure only one thread minimizes syscalls / restores at a time.
+pthread_mutex_t cr_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 struct svm_sandbox_t {
     // Pointer to the abi structure where the function pointers will be stored.
     isolate_abi_t       abi;
@@ -300,6 +303,7 @@ svm_sandbox_t* checkpoint_svm(
     checkpoint_worker_args_t* wargs = malloc(sizeof(checkpoint_worker_args_t));
     memset(wargs, 0, sizeof(checkpoint_worker_args_t));
 
+    pthread_mutex_lock(&cr_mutex);
     svm_sandbox_t* svm_sandbox = create_sandbox(seed);
     svm_sandbox->fin = fin;
     svm_sandbox->fout = fout;
@@ -359,6 +363,9 @@ svm_sandbox_t* checkpoint_svm(
     log("checkpoint took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
 #endif
 
+    // Minimize our meta_snap_path by removing unnecessary system calls.
+    minimize_syscalls(meta_snap_path, meta_snap_path);
+
     // Join thread after checkpoint (this glibc may free memory right before we checkpoint).
     // Glibc is tricky as it has internal state. We should avoid it at all cost.
     pthread_join(worker, NULL);
@@ -375,6 +382,7 @@ svm_sandbox_t* checkpoint_svm(
     // Close meta and mem fds.
     close(meta_snap_fd);
     close(mem_snap_fd);
+    pthread_mutex_unlock(&cr_mutex);
 
     return svm_sandbox;
 }
@@ -390,17 +398,18 @@ svm_sandbox_t* restore_svm(
     int last_pid;
 
 #ifdef PERF
-        struct timeval st, et;
-        gettimeofday(&st, NULL);
+    struct timeval st, et;
+    gettimeofday(&st, NULL);
 #endif
-
-        restore(meta_snap_path, mem_snap_path, &svm_sandbox->abi, &svm_sandbox->isolate);
+    pthread_mutex_lock(&cr_mutex);
+    restore(meta_snap_path, mem_snap_path, &svm_sandbox->abi, &svm_sandbox->isolate);
+    pthread_mutex_unlock(&cr_mutex);
 #ifdef PERF
-        gettimeofday(&et, NULL);
-        log("restore took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
+    gettimeofday(&et, NULL);
+    log("restore took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
 #endif
 #ifdef DEBUG
-        check_proc_maps("after_restore.log", NULL);
+    check_proc_maps("after_restore.log", NULL);
 #endif
 
     // Get pid that will be assigned to next created thread
