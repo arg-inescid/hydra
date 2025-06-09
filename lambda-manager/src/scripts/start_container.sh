@@ -43,9 +43,9 @@ if [[ $CONTAINER_IMAGE == openwhisk* ]]; then
   # The default value. Source: https://docs.docker.com/config/containers/resource_constraints/#configure-the-default-cfs-scheduler
   CGROUPS_CPU_PERIOD="100000"
   CONTAINER_SIZE_OPTIONS="--memory=$LAMBDA_MEMORY"
-  # Not limiting CPU quota - relying on the OS scheduler instead.
-  # CONTAINER_SIZE_OPTIONS="$CONTAINER_SIZE_OPTIONS --cpu-period=$CGROUPS_CPU_PERIOD"
-  # CONTAINER_SIZE_OPTIONS="$CONTAINER_SIZE_OPTIONS --cpu-quota=$LAMBDA_CPU_QUOTA"
+  # Limiting CPU to 1 core instead of using $LAMBDA_CPU_QUOTA - overprovisioning but relying on the OS scheduler.
+  CONTAINER_SIZE_OPTIONS="$CONTAINER_SIZE_OPTIONS --cpu-period=$CGROUPS_CPU_PERIOD"
+  CONTAINER_SIZE_OPTIONS="$CONTAINER_SIZE_OPTIONS --cpu-quota=$CGROUPS_CPU_PERIOD"
 else
   TAGS=( "${@:4}" )
 fi
