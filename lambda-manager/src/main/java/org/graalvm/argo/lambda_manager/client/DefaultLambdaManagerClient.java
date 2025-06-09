@@ -3,6 +3,7 @@ package org.graalvm.argo.lambda_manager.client;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.util.SplittableRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
@@ -20,6 +21,9 @@ import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 
 public class DefaultLambdaManagerClient implements LambdaManagerClient {
 
+    private static final SplittableRandom RANDOM = new SplittableRandom();
+    private static final int MAX_SLEEP_MS = 5000;
+
     private String sendRequest(HttpRequest<?> request, Lambda lambda) {
         for (int failures = 0; failures < Configuration.argumentStorage.getFaultTolerance(); failures++) {
             try {
@@ -31,8 +35,11 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
             } catch (HttpClientException e) {
                 try {
                     Logger.log(Level.WARNING, "Received HttpClientException in lambda " + lambda.getLambdaID() + ". Message: " + e.getMessage());
-                    // Add exponential backoff with randomization element.
-                    Thread.sleep(Configuration.argumentStorage.getHealthCheck());
+                    // Exponential backoff with randomization element.
+                    int sleepTime = Configuration.argumentStorage.getHealthCheck() * (int) Math.pow(2, failures);
+                    sleepTime += RANDOM.nextInt(sleepTime);
+                    sleepTime = Math.min(sleepTime, MAX_SLEEP_MS);
+                    Thread.sleep(sleepTime);
                 } catch (InterruptedException interruptedException) {
                     // Skipping raised exception.
                 }
