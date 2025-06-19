@@ -277,8 +277,4 @@ public class LambdaPoolUtils {
     public static int compare(Lambda l1, Lambda l2) {
         return (int) (l1.getLastUsedTimestamp() - l2.getLastUsedTimestamp());
     }
-
-    public static int getStartingLambdasCount() {
-        return startingLambdas.size();
-    }
 }

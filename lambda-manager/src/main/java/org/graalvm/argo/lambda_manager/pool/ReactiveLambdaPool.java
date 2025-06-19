@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ReactiveLambdaPool implements LambdaPool {
 
@@ -45,6 +46,8 @@ public class ReactiveLambdaPool implements LambdaPool {
      */
     private final Map<String, AtomicBoolean> lambdaCreationLocks;
 
+    private final AtomicInteger totalLambdas;
+
     /**
      * Used for lambda creation and termination.
      */
@@ -56,6 +59,7 @@ public class ReactiveLambdaPool implements LambdaPool {
         this.gatewayWithMask = gatewayWithMask;
         this.connectionPool = new ConcurrentLinkedQueue<>();
         this.lambdaPool = new ConcurrentHashMap<>();
+        this.totalLambdas = new AtomicInteger(0);
         this.executor = Executors.newFixedThreadPool(LambdaPoolUtils.EXECUTOR_THREAD_COUNT);
         this.lambdaCreationLocks = new ConcurrentHashMap<>();
     }
@@ -88,6 +92,7 @@ public class ReactiveLambdaPool implements LambdaPool {
     public void disposeLambda(Lambda lambda) {
         LambdaPoolUtils.shutdownLambda(lambda, lambdaType);
         connectionPool.add(lambda.getConnection());
+        totalLambdas.decrementAndGet();
     }
 
     @Override
@@ -126,7 +131,7 @@ public class ReactiveLambdaPool implements LambdaPool {
 
         // If we are here, it means that we don't have lambdas in the 'amortization' data structure.
         // The only two places where we can have more lambdas - in 'startingLambdas' and in the main set of lambdas.
-        if (LambdaManager.lambdas.size() + LambdaPoolUtils.getStartingLambdasCount() >= maxLambdas) {
+        if (totalLambdas.get() >= maxLambdas) {
             // Reclaim some lambdas as we are reaching the max number of lambdas.
             // Use Math.ceil to always reclaim at least one lambda.
             int lambdasToReclaim = (int) Math.ceil(maxLambdas * Configuration.argumentStorage.getReclamationPercentage());
@@ -136,11 +141,15 @@ public class ReactiveLambdaPool implements LambdaPool {
 
         AtomicBoolean lock = lambdaCreationLocks.computeIfAbsent(functionName, k -> new AtomicBoolean(false));
 
-        // True -> lock is set, the lambda is already being created. False -> lock is not set, we can create a new lambda.
-        if (lock.compareAndSet(false, true)) {
-            Lambda newLambda = new Lambda(mode);
-            // We only get here after the 'pollLambda' invocation, so the queue should be created by this moment.
-            executor.execute(() -> LambdaPoolUtils.startLambda(lambdaPool.get(function.getName()), newLambda, mode, function, lock));
+        // TODO: double-check this code, maybe optimize by setting the decision flag and run startLambda after sync block.
+        synchronized (totalLambdas) {
+            // True -> lock is set, the lambda is already being created. False -> lock is not set, we can create a new lambda.
+            if (totalLambdas.get() < maxLambdas && lock.compareAndSet(false, true)) {
+                totalLambdas.incrementAndGet();
+                Lambda newLambda = new Lambda(mode);
+                // We only get here after the 'pollLambda' invocation, so the queue should be created by this moment.
+                executor.execute(() -> LambdaPoolUtils.startLambda(lambdaPool.get(function.getName()), newLambda, mode, function, lock));
+            }
         }
     }
 }
