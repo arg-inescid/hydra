@@ -59,7 +59,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
                 String sandbox = function.getGraalvisorSandbox() != null ? String.format("&sandbox=%s", function.getGraalvisorSandbox()) : "";
                 String svmId = function.snapshotSandbox() ? String.format("&svmid=%s", function.getSvmId()) : "";
                 final boolean binaryFunctionExecution = isBinaryFunctionExecution(lambda);
-                path = String.format("/register?name=%s&url=%s&language=%s&entryPoint=%s&isBinary=%s%s%s", function.getName(), function.getFunctionUrl(), function.getLanguage().toString(), function.getEntryPoint(), binaryFunctionExecution, sandbox, svmId);
+                path = String.format("/register?name=%s&url=%s&language=%s&entryPoint=%s&isBinary=%s%s%s", function.getName(), function.getFunctionCode(), function.getLanguage().toString(), function.getEntryPoint(), binaryFunctionExecution, sandbox, svmId);
             } else if (lambda.getExecutionMode().isCustom()) {
                 // TODO: optimization: read chunks of file and send it in parts.
                 try (InputStream sourceFile = Files.newInputStream(function.buildFunctionSourceCodePath())) {
@@ -70,7 +70,9 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
                 }
                 path = "/init";
             } else if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT || lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT) {
-                path = String.format("/register?name=%s&url=%s&language=%s&entryPoint=%s", function.getName(), function.getFunctionUrl(), function.getLanguage().toString(), function.getEntryPoint());
+                path = String.format("/register?name=%s&url=%s&language=%s&entryPoint=%s", function.getName(), function.getFunctionCode(), function.getLanguage().toString(), function.getEntryPoint());
+            } else if (lambda.getExecutionMode() == LambdaExecutionMode.KNATIVE) {
+                return "No registration needed in a Knative lambda.";
             } else if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALOS) {
                 return "No registration needed in a GraalOS lambda.";
             } else {
@@ -110,6 +112,8 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         } else if (lambda.getExecutionMode().isCustom()) {
             path = "/run";
             payload = "{ \"value\" : " + arguments + " }";
+        } else if (lambda.getExecutionMode() == LambdaExecutionMode.KNATIVE) {
+            payload = arguments;
         } else if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALOS) {
             path = "/helloworld";
         } else {

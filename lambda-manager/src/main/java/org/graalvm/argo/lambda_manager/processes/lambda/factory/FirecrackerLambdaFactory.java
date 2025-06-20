@@ -44,4 +44,9 @@ public class FirecrackerLambdaFactory extends AbstractLambdaFactory {
         throw new UnsupportedOperationException("GraalOS not available with Firecracker.");
     }
 
+    @Override
+    public StartLambda createKnative(Lambda lambda, Function function) {
+        throw new IllegalStateException("Knative is not yet supported in Firecracker mode.");
+    }
+
 }

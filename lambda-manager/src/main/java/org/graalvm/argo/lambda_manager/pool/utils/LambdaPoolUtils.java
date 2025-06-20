@@ -115,6 +115,8 @@ public class LambdaPoolUtils {
             case CUSTOM_JAVASCRIPT:
             case CUSTOM_PYTHON:
                 return Configuration.argumentStorage.getLambdaFactory().createOpenWhisk(lambda, function);
+            case KNATIVE:
+                return Configuration.argumentStorage.getLambdaFactory().createKnative(lambda, function);
             default:
                 throw new IllegalStateException("Unexpected value: " + targetMode);
         }

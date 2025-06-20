@@ -53,7 +53,7 @@ fi
 # To set up such tags as lambda_port, lambda_timestamp, and LD_LIBRARY_PATH.
 TAGS=( "${TAGS[@]/#/'-e '}" )
 
-# The default value for Graalvisor and OpenWhisk.
+# The default value for Graalvisor, Knative, and OpenWhisk.
 PROXY_PORT="8080"
 
 LAMBDA_HOME="$CODEBASE_HOME"/"$LAMBDA_NAME"

@@ -195,27 +195,27 @@ BENCHMARK_PAYLOADS[ow_py_up]='{"url":"'$DATA_ADDRESS'/snap.png"}'
 
 
 # Knative benchmarks.
-BENCHMARK_CODE[kn_jv_hw]="$ARGO_HOME/benchmarks/src/java/cr-hello-world/init.json"
-BENCHMARK_CODE[kn_jv_fh]="$ARGO_HOME/benchmarks/src/java/cr-file-hashing/init.json"
-BENCHMARK_CODE[kn_jv_cl]="$ARGO_HOME/benchmarks/src/java/cr-classify/init.json"
-BENCHMARK_CODE[kn_jv_hr]="$ARGO_HOME/benchmarks/src/java/cr-httprequest/init.json"
-BENCHMARK_CODE[kn_jv_vp]="$ARGO_HOME/benchmarks/src/java/cr-video-processing/init.json"
+BENCHMARK_CODE[kn_jv_hw]="knative-jv/kn-hello-world"
+BENCHMARK_CODE[kn_jv_fh]="knative-jv/kn-file-hashing"
+BENCHMARK_CODE[kn_jv_cl]="knative-jv/kn-classify"
+BENCHMARK_CODE[kn_jv_hr]="knative-jv/kn-httprequest"
+BENCHMARK_CODE[kn_jv_vp]="knative-jv/kn-video-processing"
 
-BENCHMARK_CODE[kn_js_hw]="$ARGO_HOME/benchmarks/src/javascript/cr-hello-world/init.json"
-BENCHMARK_CODE[kn_js_dh]="$ARGO_HOME/benchmarks/src/javascript/cr-dynamic-html/init.json"
-BENCHMARK_CODE[kn_js_th]="$ARGO_HOME/benchmarks/src/javascript/cr-thumbnail/init.json"
-BENCHMARK_CODE[kn_js_up]="$ARGO_HOME/benchmarks/src/javascript/cr-uploader/init.json"
+BENCHMARK_CODE[kn_js_hw]="knative-js/kn-hello-world"
+BENCHMARK_CODE[kn_js_dh]="knative-js/kn-dynamic-html"
+BENCHMARK_CODE[kn_js_th]="knative-js/kn-thumbnail"
+BENCHMARK_CODE[kn_js_up]="knative-js/kn-uploader"
 
-BENCHMARK_CODE[kn_py_hw]="$ARGO_HOME/benchmarks/src/python/cr-hello-world/init.json"
-BENCHMARK_CODE[kn_py_ms]="$ARGO_HOME/benchmarks/src/python/cr-mst/init.json"
-BENCHMARK_CODE[kn_py_bf]="$ARGO_HOME/benchmarks/src/python/cr-bfs/init.json"
-BENCHMARK_CODE[kn_py_pr]="$ARGO_HOME/benchmarks/src/python/cr-pagerank/init.json"
-BENCHMARK_CODE[kn_py_dn]="$ARGO_HOME/benchmarks/src/python/cr-dna/init.json"
-BENCHMARK_CODE[kn_py_dh]="$ARGO_HOME/benchmarks/src/python/cr-dynamic-html/init.json"
-BENCHMARK_CODE[kn_py_co]="$ARGO_HOME/benchmarks/src/python/cr-compression/init.json"
-BENCHMARK_CODE[kn_py_th]="$ARGO_HOME/benchmarks/src/python/cr-thumbnail/init.json"
-BENCHMARK_CODE[kn_py_vp]="$ARGO_HOME/benchmarks/src/python/cr-video-processing/init.json"
-BENCHMARK_CODE[kn_py_up]="$ARGO_HOME/benchmarks/src/python/cr-uploader/init.json"
+BENCHMARK_CODE[kn_py_hw]="knative-py/kn-hello-world"
+BENCHMARK_CODE[kn_py_ms]="knative-py/kn-mst"
+BENCHMARK_CODE[kn_py_bf]="knative-py/kn-bfs"
+BENCHMARK_CODE[kn_py_pr]="knative-py/kn-pagerank"
+BENCHMARK_CODE[kn_py_dn]="knative-py/kn-dna"
+BENCHMARK_CODE[kn_py_dh]="knative-py/kn-dynamic-html"
+BENCHMARK_CODE[kn_py_co]="knative-py/kn-compression"
+BENCHMARK_CODE[kn_py_th]="knative-py/kn-thumbnail"
+BENCHMARK_CODE[kn_py_vp]="knative-py/kn-video-processing"
+BENCHMARK_CODE[kn_py_up]="knative-py/kn-uploader"
 
 
 for bench in "${KN_BENCHMARKS[@]}"; do

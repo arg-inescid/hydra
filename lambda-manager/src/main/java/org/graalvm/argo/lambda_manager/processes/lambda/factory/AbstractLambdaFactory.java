@@ -19,4 +19,6 @@ public abstract class AbstractLambdaFactory {
     public abstract StartLambda createOpenWhisk(Lambda lambda, Function function);
 
     public abstract StartLambda createGraalOS(Lambda lambda);
+
+    public abstract StartLambda createKnative(Lambda lambda, Function function);
 }

@@ -40,4 +40,9 @@ public class NativeLambdaFactory extends AbstractLambdaFactory {
     public StartLambda createGraalOS(Lambda lambda) {
         return new StartGraalOSNative(lambda);
     }
+
+    @Override
+    public StartLambda createKnative(Lambda lambda, Function function) {
+        throw new IllegalStateException("Knative is not yet supported in native mode.");
+    }
 }
