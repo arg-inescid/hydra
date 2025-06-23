@@ -5,14 +5,18 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.SplittableRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 
 import io.micronaut.http.HttpRequest;
+import io.micronaut.http.HttpStatus;
 import io.micronaut.http.client.exceptions.HttpClientException;
+import io.micronaut.http.client.exceptions.HttpClientResponseException;
 import io.netty.handler.timeout.ReadTimeoutException;
 import io.reactivex.Flowable;
 import org.graalvm.argo.lambda_manager.core.Configuration;
 import org.graalvm.argo.lambda_manager.core.Function;
+import org.graalvm.argo.lambda_manager.core.FunctionLanguage;
 import org.graalvm.argo.lambda_manager.core.Lambda;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.utils.JsonUtils;
@@ -23,25 +27,39 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
 
     private static final SplittableRandom RANDOM = new SplittableRandom();
     private static final int MAX_SLEEP_MS = 5000;
+    private static final long REACTIVEX_TIMEOUT_SECONDS = 60;
 
     private String sendRequest(HttpRequest<?> request, Lambda lambda) {
+        return sendRequest(request, lambda, REACTIVEX_TIMEOUT_SECONDS);
+    }
+
+    private String sendRequest(HttpRequest<?> request, Lambda lambda, long reactivexTimeout) {
         for (int failures = 0; failures < Configuration.argumentStorage.getFaultTolerance(); failures++) {
             try {
                 Flowable<String> flowable = lambda.getConnection().client.retrieve(request);
-                return flowable.timeout(60, TimeUnit.SECONDS).blockingFirst();
+                return flowable.timeout(reactivexTimeout, TimeUnit.SECONDS).blockingFirst();
+            } catch (HttpClientException e) {
+                if (e instanceof HttpClientResponseException) {
+                    HttpClientResponseException responseException = (HttpClientResponseException) e;
+                    if (responseException.getStatus() == HttpStatus.NOT_FOUND) {
+                        // Response indicates 404 Not Found, no need to retry.
+                        return responseException.getMessage();
+                    }
+                }
+                Logger.log(Level.WARNING, "Received HttpClientException in lambda " + lambda.getLambdaID() + ". Message: " + e.getMessage());
+                exponentialBackoff(failures);
             } catch (ReadTimeoutException e) {
                 Logger.log(Level.WARNING, "Received ReadTimeoutException in lambda " + lambda.getLambdaID() + ". Message: " + e.getMessage());
                 break;
-            } catch (HttpClientException e) {
-                try {
-                    Logger.log(Level.WARNING, "Received HttpClientException in lambda " + lambda.getLambdaID() + ". Message: " + e.getMessage());
-                    // Exponential backoff with randomization element.
-                    int sleepTime = Configuration.argumentStorage.getHealthCheck() * (int) Math.pow(2, failures);
-                    sleepTime += RANDOM.nextInt(sleepTime);
-                    sleepTime = Math.min(sleepTime, MAX_SLEEP_MS);
-                    Thread.sleep(sleepTime);
-                } catch (InterruptedException interruptedException) {
-                    // Skipping raised exception.
+            } catch (RuntimeException e) {
+                Throwable cause = e.getCause();
+                if (cause instanceof TimeoutException) {
+                    // Can be thrown if the ReactiveX timeout from Flowable has been reached.
+                    Logger.log(Level.WARNING, "ReactiveX timeout in lambda " + lambda.getLambdaID() + ". Message: " + cause.getMessage());
+                    exponentialBackoff(failures);
+                } else {
+                    // Some other exception that needs to be propagated.
+                    throw e;
                 }
             }
         }
@@ -72,6 +90,10 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
             } else if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT || lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT) {
                 path = String.format("/register?name=%s&url=%s&language=%s&entryPoint=%s", function.getName(), function.getFunctionCode(), function.getLanguage().toString(), function.getEntryPoint());
             } else if (lambda.getExecutionMode() == LambdaExecutionMode.KNATIVE) {
+                if (function.getLanguage() == FunctionLanguage.PYTHON) {
+                    // Intentionally triggering 404 as a way to ensure the Python server has been started.
+                    sendRequest(lambda.getConnection().post("/ping", payload), lambda, 1);
+                }
                 return "No registration needed in a Knative lambda.";
             } else if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALOS) {
                 return "No registration needed in a GraalOS lambda.";
@@ -124,5 +146,17 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
 
     private static boolean isBinaryFunctionExecution(Lambda lambda){
         return lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZING;
+    }
+
+    private void exponentialBackoff(int failures) {
+        try {
+            // Exponential backoff with randomization element.
+            int sleepTime = Configuration.argumentStorage.getHealthCheck() * (int) Math.pow(2, failures);
+            sleepTime += RANDOM.nextInt(sleepTime);
+            sleepTime = Math.min(sleepTime, MAX_SLEEP_MS);
+            Thread.sleep(sleepTime);
+        } catch (InterruptedException interruptedException) {
+            // Skipping raised exception.
+        }
     }
 }
