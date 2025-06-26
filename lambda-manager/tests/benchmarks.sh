@@ -97,14 +97,14 @@ BENCHMARK_PAYLOADS[gv_py_up]='{"url":"'$DATA_ADDRESS'/snap.png"}'
 declare -A BENCHMARK_SANDBOXES
 BENCHMARK_SANDBOXES[gv_jv_hw]="isolate"
 BENCHMARK_SANDBOXES[gv_jv_fh]="isolate"
-BENCHMARK_SANDBOXES[gv_jv_cl]="isolate"
+BENCHMARK_SANDBOXES[gv_jv_cl]="process"
 BENCHMARK_SANDBOXES[gv_jv_hr]="isolate"
-BENCHMARK_SANDBOXES[gv_jv_vp]="isolate"
+BENCHMARK_SANDBOXES[gv_jv_vp]="process"
 
 BENCHMARK_SANDBOXES[gv_js_hw]="snapshot"
 BENCHMARK_SANDBOXES[gv_js_dh]="snapshot"
 BENCHMARK_SANDBOXES[gv_js_th]="process"
-BENCHMARK_SANDBOXES[gv_js_up]="process"
+BENCHMARK_SANDBOXES[gv_js_up]="context"
 
 BENCHMARK_SANDBOXES[gv_py_hw]="snapshot"
 BENCHMARK_SANDBOXES[gv_py_ms]="snapshot"
