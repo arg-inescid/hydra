@@ -255,24 +255,29 @@ svm_sandbox_t* create_sandbox(unsigned long seed) {
     return svm_sandbox;
 }
 
-svm_sandbox_t* clone_svm(svm_sandbox_t* sandbox) {
+svm_sandbox_t* clone_svm(svm_sandbox_t* sandbox, int reuse_isolate) {
     svm_sandbox_t* clone = create_sandbox(sandbox->seed);
     clone->abi = sandbox->abi;
 
-    // Create isolate with no limit (use 256*1024*1024 for 256MB).
-    graal_create_isolate_params_t params;
-    graal_isolatethread_t *isolatethread = NULL;
-    memset(&params, 0, sizeof(graal_create_isolate_params_t));
-    params.version = 1;
-    params.reserved_address_space_size = 0;
-    if (clone->abi.graal_create_isolate(&params, &clone->isolate, &isolatethread) != 0) {
-        err("error: failed to create isolate for cloned svm\n");
-        return NULL;
+    if (reuse_isolate) {
+        clone->isolate = sandbox->isolate;
+    } else {
+        // Create isolate with no limit (use 256*1024*1024 for 256MB).
+        graal_create_isolate_params_t params;
+        graal_isolatethread_t *isolatethread = NULL;
+        memset(&params, 0, sizeof(graal_create_isolate_params_t));
+        params.version = 1;
+        params.reserved_address_space_size = 0;
+        if (clone->abi.graal_create_isolate(&params, &clone->isolate, &isolatethread) != 0) {
+            err("error: failed to create isolate for cloned svm\n");
+            return NULL;
+        }
+
+        // Detach thread function isolate and quit.
+        clone->abi.graal_detach_thread(isolatethread);
     }
 
-    // Detach thread function isolate and quit. This is safe since all threads are stopped.
-    clone->abi.graal_detach_thread(isolatethread);
-
+    // Launch thread that will be handling requests for this svm sandbox.
     pthread_create(&clone->thread, NULL, notif_worker, clone);
     return clone;
 }

@@ -101,7 +101,8 @@ public class SnapshotSandboxProvider extends SandboxProvider {
                 return this.sandboxHandle;
             } else {
                 SnapshotSandboxHandle clone = new SnapshotSandboxHandle();
-                NativeSandboxInterface.svmClone(this.sandboxHandle, clone);
+                // TODO - for Java applications we may not want to reuse the isolate.
+                NativeSandboxInterface.svmClone(this.sandboxHandle, clone, true);
                 return clone;
             }
         } else {

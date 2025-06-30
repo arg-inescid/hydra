@@ -164,11 +164,12 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
         JNIEnv *env,
         jobject thisObj,
         jobject original,
-        jobject clone) {
+        jobject clone,
+        jboolean reuseIsolate) {
     jclass cls = (*env)->GetObjectClass(env, original);
     jfieldID field = (*env)->GetFieldID(env, cls, "sandboxHandle", "J");
     jlong original_handle = (*env)->GetLongField(env, original, field);
-    jlong clone_handle = (jlong) clone_svm((svm_sandbox_t*)original_handle);
+    jlong clone_handle = (jlong) clone_svm((svm_sandbox_t*)original_handle, reuseIsolate);
     (*env)->SetLongField(env, clone, field, clone_handle);
     return;
 }
