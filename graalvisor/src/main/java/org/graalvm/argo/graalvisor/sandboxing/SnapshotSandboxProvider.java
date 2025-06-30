@@ -37,7 +37,7 @@ public class SnapshotSandboxProvider extends SandboxProvider {
     /**
      * Number of sandboxes handles returned from createSandbox.
      */
-    private AtomicInteger sandboxHandleCounter = new AtomicInteger(0);
+    private AtomicInteger sandboxHandleCounter = new AtomicInteger(1);
 
     public SnapshotSandboxProvider(PolyglotFunction function) {
         super(function);
