@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.graalvm.argo.graalvisor.function.NativeFunction;
 import org.graalvm.argo.graalvisor.function.PolyglotFunction;
+import org.graalvm.argo.graalvisor.utils.JsonUtils;
 
 public class SnapshotSandboxProvider extends SandboxProvider {
 
@@ -56,6 +57,9 @@ public class SnapshotSandboxProvider extends SandboxProvider {
 
     @Override
     public String warmupProvider(int concurrency, int requests, String jsonArguments) throws IOException {
+        // Extending the arguments JSON object to include sandbox-specific tmp directory.
+        jsonArguments = JsonUtils.appendTmpDirectoryKey(jsonArguments, sandboxHandle.getSandboxTmpDirectoryPath());
+
         // If already warm, just invoke.
         if (warmedUp.get()) {
             return NativeSandboxInterface.svmInvoke(sandboxHandle, jsonArguments);

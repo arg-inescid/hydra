@@ -25,4 +25,17 @@ public class JsonUtils {
         }
         return new HashMap<>();
     }
+
+    public static String appendTmpDirectoryKey(String jsonString, String tmpDirectory) {
+        String trimmed = jsonString.trim();
+        if (trimmed.endsWith("}")) {
+            String prefix = trimmed.substring(0, trimmed.length() - 1).trim();
+            if (prefix.endsWith("{")) {
+                jsonString = prefix + "\"tmpDir\": \"" + tmpDirectory + "\"}";
+            } else {
+                jsonString = prefix + ", \"tmpDir\": \"" + tmpDirectory + "\"}";
+            }
+        }
+        return jsonString;
+    }
 }
