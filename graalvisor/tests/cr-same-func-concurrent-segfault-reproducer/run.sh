@@ -30,7 +30,7 @@ function run_benchmark {
 
     # Run ab for each function.
     for bench in "${BENCH_ARRAY[@]}"; do
-        run_ab $bench 1 1
+        run_ab $bench 5 100 &
         echo $! > $bench-ab.pid
     done
 

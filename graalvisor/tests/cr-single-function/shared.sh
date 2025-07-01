@@ -101,7 +101,7 @@ function start_hydra {
 
 function stop_hydra {
     # Note: wait until pid file is filled.
-    timeout 1s bash -c "while [ ! -s hydra.pid ]; do sleep 0.1; done"
+    timeout 1s bash -c "while [ ! -s graalvisor.pid ]; do sleep 0.1; done"
 
     # Kill hydra.
     if [ -f graalvisor.pid ]; then
