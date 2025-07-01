@@ -6,10 +6,7 @@ function DIR {
 
 source $(DIR)/shared.sh
 
-BENCH_ARRAY=(pymst pyhw)
-
-BENCHMARK_REGISTER_QUERY[pyhw]="name=pyhw&language=java&entrypoint=com.helloworld.HelloWorld&svmid=5&sandbox=snapshot&url=http://127.0.0.1:8000/apps/gv-py-hello-world.so"
-BENCHMARK_REGISTER_QUERY[pymst]="name=pymst&language=java&entrypoint=com.mst.MST&svmid=6&sandbox=snapshot&url=http://127.0.0.1:8000/apps/gv-py-mst.so"
+BENCH_ARRAY=(pyco pydh)
 
 function run_benchmark {
     # Clean logs but not snapshots.
