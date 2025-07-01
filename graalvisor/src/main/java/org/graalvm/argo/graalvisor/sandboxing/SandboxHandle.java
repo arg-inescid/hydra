@@ -2,6 +2,7 @@ package org.graalvm.argo.graalvisor.sandboxing;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -28,13 +29,16 @@ public abstract class SandboxHandle {
     }
 
     public String getSandboxTmpDirectoryPath() {
-        String path = "/tmp/sandbox-" + this.sandboxId;
-        try {
-            Files.createDirectories(Paths.get(path));
-        } catch (IOException e) {
-            // TODO: maybe some robust handling?
-            e.printStackTrace();
+        String directoryName = "/tmp/sandbox-" + this.sandboxId;
+        Path path = Paths.get(directoryName);
+        if (Files.notExists(path)) {
+            try {
+                Files.createDirectories(path);
+            } catch (IOException e) {
+                // TODO: maybe some robust handling?
+                e.printStackTrace();
+            }
         }
-        return path;
+        return directoryName;
     }
 }
