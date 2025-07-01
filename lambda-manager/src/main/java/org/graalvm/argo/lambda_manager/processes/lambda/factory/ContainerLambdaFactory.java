@@ -1,14 +1,8 @@
 package org.graalvm.argo.lambda_manager.processes.lambda.factory;
 
+import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.core.Lambda;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalOSContainer;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalvisorContainer;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalvisorPgoContainer;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalvisorPgoOptimizedContainer;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotContainer;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotWithAgentContainer;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartLambda;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartOpenWhiskContainer;
+import org.graalvm.argo.lambda_manager.processes.lambda.*;
 
 public class ContainerLambdaFactory extends AbstractLambdaFactory {
 
@@ -28,8 +22,8 @@ public class ContainerLambdaFactory extends AbstractLambdaFactory {
     }
 
     @Override
-    public StartLambda createOpenWhisk(Lambda lambda) {
-        return new StartOpenWhiskContainer(lambda);
+    public StartLambda createOpenWhisk(Lambda lambda, Function function) {
+        return new StartOpenWhiskContainer(lambda, function);
     }
 
     @Override
@@ -44,6 +38,11 @@ public class ContainerLambdaFactory extends AbstractLambdaFactory {
 
     public StartLambda createGraalOS(Lambda lambda) {
         return new StartGraalOSContainer(lambda);
+    }
+
+    @Override
+    public StartLambda createKnative(Lambda lambda, Function function) {
+        return new StartKnativeContainer(lambda, function);
     }
 
 }

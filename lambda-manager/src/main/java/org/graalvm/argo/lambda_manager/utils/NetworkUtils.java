@@ -25,7 +25,7 @@ public class NetworkUtils {
                     return true;
                 } else {
                     Logger.log(Level.INFO, node + ":" + port + " not open. Waiting...");
-                    Thread.sleep(100);
+                    Thread.sleep(50);
                 }
             } catch (InterruptedException e) {
                 // Ignored.

@@ -295,6 +295,11 @@ public abstract class RuntimeProxy {
                     if (functionPath.endsWith(".zip")) {
                         // Note: this is a convention shared between the function registry and graalvisor.
                         functionPath = functionPath.replace(".zip", ".so");
+
+                        // If .so with the same name is not present already, then unzip.
+                        if (new File(functionPath).length() == 0) {
+                            ZipUtils.unzip(functionPath.replace(".so", ".zip"), appDir);
+                        }
                     }
                     System.out.println(String.format("Reusing %s", functionPath));
                 }

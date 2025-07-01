@@ -7,6 +7,7 @@ import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Lambda {
@@ -36,11 +37,15 @@ public class Lambda {
 	/** Functions that need to be uploaded to this lambda. */
 	private final Set<Function> requiresFunctionUpload;
 
+    /** Lock to terminate this lambda at most once (to avoid lambda shutdown handler processing the same lambda multiple times). */
+    private final AtomicBoolean terminationLock;
+
     public Lambda(LambdaExecutionMode executionMode) {
         this.openRequestCount = new AtomicInteger(0);
         this.executionMode = executionMode;
         this.registeredFunctions = new ConcurrentHashMap<>();
         this.requiresFunctionUpload = ConcurrentHashMap.newKeySet();
+        this.terminationLock = new AtomicBoolean(false);
     }
 
 	public long setLambdaID(long lid) {
@@ -202,5 +207,9 @@ public class Lambda {
     public boolean tryBookLambda(Function function) {
         // Increment the open request count (replaces incOpenRequests).
         return function.canCollocateInvocation() ? openRequestCount.incrementAndGet() > 0 : openRequestCount.compareAndSet(0, 1);
+    }
+
+    public boolean tryAcquireTerminationLock() {
+        return terminationLock.compareAndSet(false, true);
     }
 }

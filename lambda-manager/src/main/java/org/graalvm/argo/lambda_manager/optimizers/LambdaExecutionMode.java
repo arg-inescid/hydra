@@ -15,6 +15,9 @@ public enum LambdaExecutionMode {
     CUSTOM_JAVASCRIPT,
     CUSTOM_PYTHON,
 
+    // Knative (single function with colocation).
+    KNATIVE,
+
     // With profile-guided optimizations enabled.
     GRAALVISOR_PGO,
     // Optimizing with the iprof files.

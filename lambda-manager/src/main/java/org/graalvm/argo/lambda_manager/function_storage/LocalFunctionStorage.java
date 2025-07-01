@@ -15,7 +15,7 @@ public class LocalFunctionStorage extends SimpleFunctionStorage {
     @Override
     public Function register(String functionName, Function function, byte[] codePathEncoded) throws Exception {
         String codePath = new String(codePathEncoded).trim();
-        if (!codePath.startsWith("http")) {
+        if (!codePath.startsWith("http") && !codePath.startsWith("knative-")) {
             Path src = Paths.get(codePath);
             Path dst = function.buildFunctionSourceCodePath();
             if (dst.getParent().toFile().mkdirs()) {

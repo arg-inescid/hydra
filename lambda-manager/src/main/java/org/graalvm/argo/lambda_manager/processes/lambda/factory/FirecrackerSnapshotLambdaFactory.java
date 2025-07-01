@@ -1,5 +1,6 @@
 package org.graalvm.argo.lambda_manager.processes.lambda.factory;
 
+import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.core.Lambda;
 import org.graalvm.argo.lambda_manager.processes.lambda.RestoreGraalvisorFirecracker;
 import org.graalvm.argo.lambda_manager.processes.lambda.RestoreHotspotFirecracker;
@@ -25,7 +26,7 @@ public class FirecrackerSnapshotLambdaFactory extends AbstractLambdaFactory {
     }
 
     @Override
-    public StartLambda createOpenWhisk(Lambda lambda) {
+    public StartLambda createOpenWhisk(Lambda lambda, Function function) {
         return new RestoreOpenWhiskFirecracker(lambda);
     }
 
@@ -41,6 +42,11 @@ public class FirecrackerSnapshotLambdaFactory extends AbstractLambdaFactory {
 
     public StartLambda createGraalOS(Lambda lambda) {
         throw new UnsupportedOperationException("GraalOS not available with Firecracker snapshots.");
+    }
+
+    @Override
+    public StartLambda createKnative(Lambda lambda, Function function) {
+        throw new IllegalStateException("Knative not available with Firecracker snapshots.");
     }
 
 }

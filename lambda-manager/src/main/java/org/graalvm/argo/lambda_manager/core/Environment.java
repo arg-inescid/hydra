@@ -36,6 +36,7 @@ public class Environment {
 
     // Graalvisor runtime identifiers.
     public static final String GRAALVISOR_RUNTIME = "graalvisor";
+    public static final String KNATIVE_RUNTIME = "knative";
     public static final String GRAALOS_RUNTIME = "graalos";
 
     // Cold start sliding window parameters.

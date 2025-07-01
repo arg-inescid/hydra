@@ -45,7 +45,7 @@ public class RoundedRobinScheduler implements Scheduler {
 
             // If we didn't find a lambda, try to get a new one from the pool.
             if (lambda == null) {
-                Lambda newLambda = Configuration.argumentStorage.getLambdaPool().getLambda(targetMode);
+                Lambda newLambda = Configuration.argumentStorage.getLambdaPool().getLambda(targetMode, function);
                 if (newLambda != null) {
                     Logger.log(Level.INFO, "Obtained a new lambda from the pool.");
                     newLambda.updateLastUsed();

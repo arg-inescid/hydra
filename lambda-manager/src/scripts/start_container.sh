@@ -43,8 +43,9 @@ if [[ $CONTAINER_IMAGE == openwhisk* ]]; then
   # The default value. Source: https://docs.docker.com/config/containers/resource_constraints/#configure-the-default-cfs-scheduler
   CGROUPS_CPU_PERIOD="100000"
   CONTAINER_SIZE_OPTIONS="--memory=$LAMBDA_MEMORY"
+  # Limiting CPU to 1 core instead of using $LAMBDA_CPU_QUOTA - overprovisioning but relying on the OS scheduler.
   CONTAINER_SIZE_OPTIONS="$CONTAINER_SIZE_OPTIONS --cpu-period=$CGROUPS_CPU_PERIOD"
-  CONTAINER_SIZE_OPTIONS="$CONTAINER_SIZE_OPTIONS --cpu-quota=$LAMBDA_CPU_QUOTA"
+  CONTAINER_SIZE_OPTIONS="$CONTAINER_SIZE_OPTIONS --cpu-quota=$CGROUPS_CPU_PERIOD"
 else
   TAGS=( "${@:4}" )
 fi
@@ -52,7 +53,7 @@ fi
 # To set up such tags as lambda_port, lambda_timestamp, and LD_LIBRARY_PATH.
 TAGS=( "${TAGS[@]/#/'-e '}" )
 
-# The default value for Graalvisor and OpenWhisk.
+# The default value for Graalvisor, Knative, and OpenWhisk.
 PROXY_PORT="8080"
 
 LAMBDA_HOME="$CODEBASE_HOME"/"$LAMBDA_NAME"

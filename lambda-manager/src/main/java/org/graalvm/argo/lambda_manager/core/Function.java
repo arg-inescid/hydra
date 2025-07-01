@@ -48,8 +48,9 @@ public class Function {
     /** SVM ID used for sandbox checkpoint/restore for this function. Should be a valid small integer. Can only be used with Graalvisor. Can be null. */
     private final String svmId;
 
-    /** URL of the function code to be downloaded by Graalvisor. Can only be used with Graalvisor or HotSpot modes. */
-    private final String functionUrl;
+    /** If the function has the Graalvisor or HotSpot mode - URL of the function code to be downloaded by Graalvisor.
+     * If the function is Knative - name of the Docker image for this function. */
+    private final String functionCode;
 
     /** Flag stating if this function can be re-built into native image in case of fallback (only for Graalvisor). */
     private final boolean canRebuild;
@@ -71,7 +72,7 @@ public class Function {
         this.entryPoint = entryPoint;
         this.memory = Long.parseLong(memory);
         this.runtime = runtime;
-        this.functionUrl = functionCode;
+        this.functionCode = functionCode;
         this.canRebuild = runtime.equals(Environment.GRAALVISOR_RUNTIME) && this.isJar(functionCode);
         if (this.canRebuild) {
             this.status = FunctionStatus.NOT_BUILT_NOT_CONFIGURED;
@@ -147,6 +148,8 @@ public class Function {
                     return LambdaExecutionMode.GRAALVISOR;
                 } else if (getRuntime().equals(Environment.GRAALOS_RUNTIME)) {
                     return LambdaExecutionMode.GRAALOS;
+                } else if (getRuntime().equals(Environment.KNATIVE_RUNTIME)) {
+                    return LambdaExecutionMode.KNATIVE;
                 } else {
                     switch (getLanguage()) {
                         case JAVA:
@@ -245,7 +248,7 @@ public class Function {
         }
     }
 
-    public String getFunctionUrl() {
-        return functionUrl;
+    public String getFunctionCode() {
+        return functionCode;
     }
 }
