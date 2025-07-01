@@ -37,19 +37,10 @@ struct svm_sandbox_t {
     graal_isolate_t*    isolate;
     // Pointer to thread running application.
     pthread_t          thread;
-    // Mutex to have exclusive access to invoke this sandbox.
-    pthread_mutex_t     invoke_mutex;
-    // Mutex to coordinate between invoker and worker threads.
-    pthread_mutex_t     worker_mutex;
-    // Condition variable to signal request status start/finished.
-    pthread_cond_t      completed_request;
-    // Predicative variable to avoid deadlocks from signal arriving before
-    // other thread started to wait for the signal.
-    int                 processing;
-    // Used to pass input to the worker thread.
-    const char*         fin;
-    // Used to receive output to the worker thread.
-    char*               fout;
+    // File descriptor of the input stream.
+    int                istream[2]; // read 0, write into 1.
+    // File descriptor of the output stream
+    int                 ostream[2];
     // The seed is used to control which virtual memory ranges the svm instance
     // will used. Each seed value represents a 16TB virtual memory range. When
     // calling restore, the user must make sure there is no restoredsvm instance
@@ -58,8 +49,14 @@ struct svm_sandbox_t {
 };
 
 typedef struct {
-    // Sandbox for executing entrypoints and getting their results.
-    svm_sandbox_t* svm_sandbox;
+    // ABI to create, invoke, destroy isolates.
+    isolate_abi_t abi;
+    // Pointer to the isolate.
+    graal_isolate_t* isolate;
+    // Function arguments.
+    const char* fin;
+    // Return string from function invocation.
+    char* fout;
     // Path to the function library.
     const void* fpath;
     // File descriptor used when installing seccomp.
@@ -186,7 +183,6 @@ void run_svm(const char* fpath, unsigned int concurrency, unsigned int requests,
 
 void* checkpoint_worker(void* args) {
     checkpoint_worker_args_t* wargs = (checkpoint_worker_args_t*) args;
-    svm_sandbox_t* svm = wargs->svm_sandbox;
 
     // Install seccomp filter.
     wargs->seccomp_fd = install_seccomp_filter();
@@ -196,7 +192,7 @@ void* checkpoint_worker(void* args) {
     }
 
     // Prepare and run function.
-    run_svm_internal(wargs->fpath, wargs->concurrency, wargs->requests, svm->fin, svm->fout, &svm->abi, &(svm->isolate));
+    run_svm_internal(wargs->fpath, wargs->concurrency, wargs->requests, wargs->fin, wargs->fout, &wargs->abi, &(wargs->isolate));
     // Mark execution as finished (will alert the seccomp monitor to quit).
     wargs->finished = 1;
 
@@ -206,61 +202,114 @@ void* checkpoint_worker(void* args) {
 void* notif_worker(void* args) {
     svm_sandbox_t* svm = (svm_sandbox_t*) args;
     graal_isolatethread_t *isolatethread = NULL;
+    char fin[FOUT_LEN];
+    char fout[FOUT_LEN];
 
+    // Attach thread to the isolate.
     (svm->abi).graal_attach_thread(svm->isolate, &isolatethread);
-    // Prepare and run function.
+
+    // Handle requests received from the stream.
     for (;;) {
-        pthread_mutex_lock(&svm->worker_mutex);
-        // until state is processing or signal to start processing is received, wait.
-        while (svm->processing == 0) {
-            pthread_cond_wait(&svm->completed_request, &svm->worker_mutex);
+        size_t len;
+        int ret;
+
+        // Read function input length.
+        ret = read(svm->istream[0], &len, sizeof(int));
+        if (ret == -1) {
+            err("error: failed to read input len (error %d)\n", errno);
+        } else if (ret == 0) {
+            err("[notif_worker] receiving input with 0 bytes, exiting...\n");
+            break;
         }
-        run_entrypoint(&svm->abi, svm->isolate, isolatethread, 1, 1, svm->fin, svm->fout);
-        // set state to finished
-        svm->processing = 0;
-        pthread_cond_signal(&svm->completed_request);
-        pthread_mutex_unlock(&svm->worker_mutex);
+
+        // Force input size.
+        if (len >= FOUT_LEN) {
+            err("warning: input over maximum length (len = %d)\n", len);
+            len = FOUT_LEN;
+        }
+
+        // Read 'len' input bytes.
+        if (read(svm->istream[0], fin, len) != len) {
+            err("error: failed to read input (error %d)\n", errno);
+        }
+
+        // Force null termination.
+        fin[len == 0 ? 0 : len - 1] = '\0';
+
+        dbg("[notif_worker] received input: %s (len = %d)\n", fin, len);
+
+        // Call the function.
+        run_entrypoint(&svm->abi, svm->isolate, isolatethread, 1, 1, fin, fout);
+
+        // Write output to pipe (+1 to count with the null terminator).
+        len = strlen(fout) + 1;
+        if (len >= FOUT_LEN) {
+            err("warning: output over maximum length (len = %d)\n", len);
+            len = FOUT_LEN;
+        }
+
+        // Force null termination.
+        fout[len == 0 ? 0 : len - 1] = '\0';
+
+        dbg("[notif_worker] sending output: %s (len = %d)\n", fout, len);
+
+        // Write output len in bytes.
+        if (write(svm->ostream[1], &len, sizeof(int)) != sizeof(int)) {
+            err("error: failed to write output len (error %d)\n", errno);
+        }
+
+        // Write output.
+        if (write(svm->ostream[1], fout, len) != len) {
+            err("error: failed to write output (error %d)\n", errno);
+        }
     }
     return NULL;
 }
 
-void invoke_svm(svm_sandbox_t* svm_sandbox, const char* fin, char* fout) {
-    // First, we lock this sandbox.
-    pthread_mutex_lock(&svm_sandbox->invoke_mutex);
-    // Second, we acquire the lock used to fill fin and fout.
-    pthread_mutex_lock(&svm_sandbox->worker_mutex);
-    svm_sandbox->fin = fin;
-    svm_sandbox->fout = fout;
-    svm_sandbox->processing = 1;
-    pthread_cond_signal(&svm_sandbox->completed_request);
-    while (svm_sandbox->processing == 1) {
-        pthread_cond_wait(&svm_sandbox->completed_request, &svm_sandbox->worker_mutex);
+void invoke_svm(svm_sandbox_t* svm, const char* fin, char* fout) {
+    // Calculate the size of the string, including the null terminator.
+    size_t len = strlen(fin) + 1;
+
+    // Write len and input into pipe.
+    if (write(svm->istream[1], &len, sizeof(int)) != sizeof(int)) {
+        err("error: failed to write input len (error %d)\n", errno);
     }
-    // Release both locks.
-    pthread_mutex_unlock(&svm_sandbox->worker_mutex);
-    pthread_mutex_unlock(&svm_sandbox->invoke_mutex);
+    if (write(svm->istream[1], fin, len) != len) {
+        err("error: failed to write input (error %d)\n", errno);
+    }
+    // Read output len from pipe.
+    if(read(svm->ostream[0], &len, sizeof(int)) != sizeof(int)) {
+        err("error: failed to read output len (error %d)\n", errno);
+    }
+
+    //  Read output from the pipe.
+    if (read(svm->ostream[0], fout, len) != len) {
+        err("error: failed to read input (error %d)\n", errno);
+    }
 }
 
-svm_sandbox_t* create_sandbox(unsigned long seed) {
+svm_sandbox_t* create_sandbox(unsigned long seed, isolate_abi_t abi, graal_isolate_t* isolate) {
     svm_sandbox_t* svm_sandbox = malloc(sizeof(svm_sandbox_t));
     memset(svm_sandbox, 0, sizeof(svm_sandbox_t));
-    if (pthread_mutex_init(&svm_sandbox->invoke_mutex, NULL)) {
-        err("error: failed initialize sandbox mutext (invoke_mutex)\n");
-    }
-    if (pthread_mutex_init(&svm_sandbox->worker_mutex, NULL)) {
-        err("error: failed initialize sandbox mutext (worker_mutex)\n");
-    }
     svm_sandbox->seed = seed;
-    svm_sandbox->processing = 0;
+    svm_sandbox->abi = abi;
+    svm_sandbox->isolate = isolate;
+    if (pipe(svm_sandbox->istream) != 0) {
+        err("error: failed to create input stream pipe (error %d)\n", errno);
+        return NULL;
+    }
+    if (pipe(svm_sandbox->ostream) != 0) {
+        err("error: failed to create output stream pipe (error %d)\n", errno);
+        return NULL;
+    }
     return svm_sandbox;
 }
 
 svm_sandbox_t* clone_svm(svm_sandbox_t* sandbox, int reuse_isolate) {
-    svm_sandbox_t* clone = create_sandbox(sandbox->seed);
-    clone->abi = sandbox->abi;
+    graal_isolate_t* clone_isolate;
 
     if (reuse_isolate) {
-        clone->isolate = sandbox->isolate;
+        clone_isolate = sandbox->isolate;
     } else {
         // Create isolate with no limit (use 256*1024*1024 for 256MB).
         graal_create_isolate_params_t params;
@@ -268,16 +317,17 @@ svm_sandbox_t* clone_svm(svm_sandbox_t* sandbox, int reuse_isolate) {
         memset(&params, 0, sizeof(graal_create_isolate_params_t));
         params.version = 1;
         params.reserved_address_space_size = 0;
-        if (clone->abi.graal_create_isolate(&params, &clone->isolate, &isolatethread) != 0) {
+        if (sandbox->abi.graal_create_isolate(&params, &clone_isolate, &isolatethread) != 0) {
             err("error: failed to create isolate for cloned svm\n");
             return NULL;
         }
 
         // Detach thread function isolate and quit.
-        clone->abi.graal_detach_thread(isolatethread);
+        sandbox->abi.graal_detach_thread(isolatethread);
     }
 
     // Launch thread that will be handling requests for this svm sandbox.
+    svm_sandbox_t* clone = create_sandbox(sandbox->seed, sandbox->abi, clone_isolate);
     pthread_create(&clone->thread, NULL, notif_worker, clone);
     return clone;
 }
@@ -309,10 +359,8 @@ svm_sandbox_t* checkpoint_svm(
     memset(wargs, 0, sizeof(checkpoint_worker_args_t));
 
     pthread_mutex_lock(&cr_mutex);
-    svm_sandbox_t* svm_sandbox = create_sandbox(seed);
-    svm_sandbox->fin = fin;
-    svm_sandbox->fout = fout;
-    wargs->svm_sandbox = svm_sandbox;
+    wargs->fin = fin;
+    wargs->fout = fout;
     wargs->fpath = fpath;
     wargs->concurrency = concurrency;
     wargs->requests = requests;
@@ -362,7 +410,7 @@ svm_sandbox_t* checkpoint_svm(
     struct timeval st, et;
     gettimeofday(&st, NULL);
 #endif
-    checkpoint(meta_snap_fd, mem_snap_fd, &mappings, &threads, &svm_sandbox->abi, svm_sandbox->isolate);
+    checkpoint(meta_snap_fd, mem_snap_fd, &mappings, &threads, &wargs->abi, wargs->isolate);
 #ifdef PERF
     gettimeofday(&et, NULL);
     log("checkpoint took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
@@ -382,13 +430,13 @@ svm_sandbox_t* checkpoint_svm(
         resume_background_threads(&threads);
     }
 
-    pthread_create(&svm_sandbox->thread, NULL, notif_worker, svm_sandbox);
-
     // Close meta and mem fds.
     close(meta_snap_fd);
     close(mem_snap_fd);
     pthread_mutex_unlock(&cr_mutex);
 
+    svm_sandbox_t* svm_sandbox = create_sandbox(seed, wargs->abi, wargs->isolate);
+    pthread_create(&svm_sandbox->thread, NULL, notif_worker, svm_sandbox);
     return svm_sandbox;
 }
 
@@ -399,7 +447,8 @@ svm_sandbox_t* restore_svm(
         size_t seed,
         const char* fin,
         char* fout) {
-    svm_sandbox_t* svm_sandbox = create_sandbox(seed);
+    isolate_abi_t abi;
+    graal_isolate_t* isolate;
     int last_pid;
 
 #ifdef PERF
@@ -407,7 +456,7 @@ svm_sandbox_t* restore_svm(
     gettimeofday(&st, NULL);
 #endif
     pthread_mutex_lock(&cr_mutex);
-    restore(meta_snap_path, mem_snap_path, &svm_sandbox->abi, &svm_sandbox->isolate);
+    restore(meta_snap_path, mem_snap_path, &abi, &isolate);
     pthread_mutex_unlock(&cr_mutex);
 #ifdef PERF
     gettimeofday(&et, NULL);
@@ -429,6 +478,7 @@ svm_sandbox_t* restore_svm(
     }
 
     // Launch worker thread and wait for it to finish.
+    svm_sandbox_t* svm_sandbox = create_sandbox(seed, abi, isolate);
     pthread_create(&svm_sandbox->thread, NULL, notif_worker, svm_sandbox);
     // After launching original application, restore last next_pid for future threads
     if (last_pid != 1) {
