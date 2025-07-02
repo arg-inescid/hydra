@@ -48,6 +48,17 @@ struct svm_sandbox_t {
     unsigned long       seed;
 };
 
+struct forked_svm_sandbox_t {
+    // File descriptor to write commands to the child process.
+    int ctl_rfd;
+    // File descriptor to read command output from the child process.
+    int ctl_wfd;
+    // File descriptor used to write invocation payloads.
+    int inv_rfd;
+    // File descriptor used to read invocation responses.
+    int inv_wfd;
+};
+
 typedef struct {
     // ABI to create, invoke, destroy isolates.
     isolate_abi_t abi;
@@ -266,26 +277,34 @@ void* notif_worker(void* args) {
     return NULL;
 }
 
-void invoke_svm(svm_sandbox_t* svm, const char* fin, char* fout) {
+void invoke_svm_internal(int input_wfd, int output_rfd, const char* fin, char* fout) {
     // Calculate the size of the string, including the null terminator.
     size_t len = strlen(fin) + 1;
 
     // Write len and input into pipe.
-    if (write(svm->istream[1], &len, sizeof(int)) != sizeof(int)) {
+    if (write(input_wfd, &len, sizeof(int)) != sizeof(int)) {
         err("error: failed to write input len (error %d)\n", errno);
     }
-    if (write(svm->istream[1], fin, len) != len) {
+    if (write(input_wfd, fin, len) != len) {
         err("error: failed to write input (error %d)\n", errno);
     }
     // Read output len from pipe.
-    if(read(svm->ostream[0], &len, sizeof(int)) != sizeof(int)) {
+    if(read(output_rfd, &len, sizeof(int)) != sizeof(int)) {
         err("error: failed to read output len (error %d)\n", errno);
     }
 
     //  Read output from the pipe.
-    if (read(svm->ostream[0], fout, len) != len) {
+    if (read(output_rfd, fout, len) != len) {
         err("error: failed to read input (error %d)\n", errno);
     }
+}
+
+void invoke_svm(svm_sandbox_t* sandbox, const char* fin, char* fout) {
+    invoke_svm_internal(sandbox->istream[1], sandbox->ostream[0], fin, fout);
+}
+
+void forked_invoke_svm(forked_svm_sandbox_t* sandbox, const char* fin, char* fout) {
+    invoke_svm_internal(sandbox->inv_wfd, sandbox->inv_rfd, fin, fout);
 }
 
 svm_sandbox_t* create_sandbox(unsigned long seed, isolate_abi_t abi, graal_isolate_t* isolate) {
@@ -330,6 +349,10 @@ svm_sandbox_t* clone_svm(svm_sandbox_t* sandbox, int reuse_isolate) {
     svm_sandbox_t* clone = create_sandbox(sandbox->seed, sandbox->abi, clone_isolate);
     pthread_create(&clone->thread, NULL, notif_worker, clone);
     return clone;
+}
+
+forked_svm_sandbox_t* forked_clone_svm(forked_svm_sandbox_t* sandbox, int reuse_isolate) {
+    return NULL; // TODO - implement.
 }
 
 svm_sandbox_t* checkpoint_svm(
@@ -440,13 +463,11 @@ svm_sandbox_t* checkpoint_svm(
     return svm_sandbox;
 }
 
-svm_sandbox_t* restore_svm(
+svm_sandbox_t* restore_svm_internal(
         const char* fpath,
         const char* meta_snap_path,
         const char* mem_snap_path,
-        size_t seed,
-        const char* fin,
-        char* fout) {
+        size_t seed) {
     isolate_abi_t abi;
     graal_isolate_t* isolate;
     int last_pid;
@@ -488,7 +509,93 @@ svm_sandbox_t* restore_svm(
             return NULL;
         }
     }
-    invoke_svm(svm_sandbox, fin, fout);
-
     return svm_sandbox;
+}
+
+svm_sandbox_t* restore_svm(
+        const char* fpath,
+        const char* meta_snap_path,
+        const char* mem_snap_path,
+        size_t seed,
+        const char* fin,
+        char* fout) {
+    svm_sandbox_t* svm_sandbox = restore_svm_internal(fpath, meta_snap_path, mem_snap_path, seed);
+    invoke_svm(svm_sandbox, fin, fout);
+    return svm_sandbox;
+}
+
+forked_svm_sandbox_t* forked_restore_svm(
+        const char* fpath,
+        const char* meta_snap_path,
+        const char* mem_snap_path,
+        unsigned long seed,
+        const char* fin,
+        char* fout) {
+    int p2c_pp[2];
+    int c2p_pp[2];
+    // Control pipe to send commands into the child.
+    if (pipe(p2c_pp)) {
+        err("failed to create parent to child pipe for forked restore");
+        return NULL;
+    }
+    // Control pipe to read command output from the child.
+    if (pipe(c2p_pp)) {
+        err("failed to create child to parent pipe for forked restore");
+        return NULL;
+    }
+
+    int pid = fork();
+    if (pid == 0) {
+        // If in the child, invoke restore and print output.
+        svm_sandbox_t* sandbox = restore_svm_internal(fpath, meta_snap_path, mem_snap_path, seed);
+
+        // Send streams for function invocation.
+        if (write(c2p_pp[1], &sandbox->istream[1], sizeof(int)) != sizeof(int)) {
+            err("failed to send invocation payload write stream to parent");
+            exit(EXIT_FAILURE);
+        }
+            if (write(c2p_pp[1], &sandbox->ostream[0], sizeof(int)) != sizeof(int)) {
+            err("failed to send invocation response read stream to parent");
+            exit(EXIT_FAILURE);
+        }
+
+        sleep(600); // TODO - read from p2c on requests (only clone for now).
+        exit(0);
+    } else {
+        // If in the parent, setup the sandbox.
+        forked_svm_sandbox_t* sandbox = (forked_svm_sandbox_t*) malloc(sizeof(forked_svm_sandbox_t));
+        sandbox->ctl_rfd = c2p_pp[0];
+        sandbox->ctl_wfd = p2c_pp[1];
+
+        // Receive streams for function invocation.
+        if (read(c2p_pp[0], &sandbox->inv_wfd, sizeof(int)) != sizeof(int)) {
+            err("failed to receive input stream to parent");
+            return NULL;
+        }
+        if (read(c2p_pp[0], &sandbox->inv_rfd, sizeof(int)) != sizeof(int)) {
+            err("failed to receive output stream to parent");
+            return NULL;
+        }
+
+        // Clone file descrptors from the child into the parent.
+        int pidfd = syscall(SYS_pidfd_open, pid, 0);
+        if (pidfd < 0) {
+            err("failed to create pid file descriptor for child process");
+            return NULL;
+        }
+        sandbox->inv_wfd = syscall(SYS_pidfd_getfd, pidfd, sandbox->inv_wfd, 0);
+        if (sandbox->inv_wfd < 0) {
+            err("failed to copy istream from the child process");
+            return NULL;
+        }
+        sandbox->inv_rfd = syscall(SYS_pidfd_getfd, pidfd, sandbox->inv_rfd, 0);
+        if (sandbox->inv_wfd < 0) {
+            err("failed to copy ostream from the child process");
+            return NULL;
+        }
+        // TODO - should we close the pidfd?
+
+        forked_invoke_svm(sandbox, fin, fout);
+        return sandbox;
+    }
 }

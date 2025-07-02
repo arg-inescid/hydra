@@ -5,7 +5,8 @@
 #define FOUT_LEN 256
 
 /*  Sandbox for executing entrypoints and getting their results. */
-typedef struct svm_sandbox_t svm_sandbox_t;
+typedef struct svm_sandbox_t        svm_sandbox_t;
+typedef struct forked_svm_sandbox_t forked_svm_sandbox_t;
 
 /*  Executes entrypoint from the provided sandbox. */
 void invoke_svm(
@@ -21,12 +22,23 @@ void invoke_svm(
     // is printed to stdout and a '\0' is placed at outbuf[outbuf_len - 1].
     char* fout);
 
+/* Similar to the non-forked version. */
+void forked_invoke_svm(
+    forked_svm_sandbox_t* sandbox,
+    const char* fin,
+    char* fout);
+
 /* Creates a new svm_sandbox_t pointing to the same underlying sandbox. A cloned
    sandbox can be invoked concurrently with other clones and the original. */
 svm_sandbox_t* clone_svm(
     // Sandbox for executing entrypoints and getting their results.
     svm_sandbox_t* sandbox,
     // If zero, a new isolate will be created for this sandbox.
+    int reuse_isolate);
+
+/* Similar to the non-forked version. */
+forked_svm_sandbox_t* forked_clone_svm(
+    forked_svm_sandbox_t* sandbox,
     int reuse_isolate);
 
 /*  Loads, runs and then checkpoints a substrate vm instance.
@@ -79,6 +91,15 @@ svm_sandbox_t* restore_svm(
     // or requests), only the output of the first request will be saved.
     // If the output string is larger than FOUT_LEN, a warning
     // is printed to stdout and a '\0' is placed at outbuf[outbuf_len - 1].
+    char* fout);
+
+/* Similar to the non-forked version. */
+forked_svm_sandbox_t* forked_restore_svm(
+    const char* fpath,
+    const char* meta_snap_path,
+    const char* mem_snap_path,
+    unsigned long seed,
+    const char* fin,
     char* fout);
 
 /*  Loads and runs a substrate vm instance. */

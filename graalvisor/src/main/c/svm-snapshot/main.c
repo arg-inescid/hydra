@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <sys/prctl.h>
 
-enum EXECUTION_MODE { NORMAL, CHECKPOINT, RESTORE , MINIMIZE};
+enum EXECUTION_MODE { NORMAL, CHECKPOINT, RESTORE, FRESTORE, MINIMIZE};
 
 // Wether we are checkpointing or restoreing.
 enum EXECUTION_MODE CURRENT_MODE = NORMAL;
@@ -24,7 +24,7 @@ unsigned int CONC = 1;
 unsigned int SEED = 0;
 
 void usage_exit() {
-    fprintf(stderr, "Syntax: main <normal|checkpoint|restore> <path to native image app library> [concurrency [iterations [seed]]]\n");
+    fprintf(stderr, "Syntax: main <normal|checkpoint|restore|frestore> <path to native image app library> [concurrency [iterations [seed]]]\n");
     fprintf(stderr, "Optional: concurrency in checkpoint mode (defaults to 1).\n");
     fprintf(stderr, "Optional: iterations in checkpoint mode (defaults to 1).\n");
     fprintf(stderr, "Optional: seed (defaults to zero and ignored in normal and restore modes).\n");
@@ -47,6 +47,9 @@ void init_args(int argc, char** argv) {
         break;
     case 'r':
         CURRENT_MODE = RESTORE;
+        break;
+    case 'f':
+        CURRENT_MODE = FRESTORE;
         break;
     case 'm':
         CURRENT_MODE = MINIMIZE;
@@ -97,6 +100,8 @@ int main(int argc, char** argv) {
 
     if (CURRENT_MODE == RESTORE) {
         restore_svm(FPATH, "metadata.snap", "memory.snap", SEED, fin, fout);
+    } else if (CURRENT_MODE == FRESTORE) {
+        forked_restore_svm(FPATH, "metadata.snap", "memory.snap", SEED, fin, fout);
     } else if (CURRENT_MODE == CHECKPOINT) {
         checkpoint_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout);
     } else {
