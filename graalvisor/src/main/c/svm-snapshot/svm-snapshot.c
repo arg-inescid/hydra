@@ -49,6 +49,8 @@ struct svm_sandbox_t {
 };
 
 struct forked_svm_sandbox_t {
+    // PID of the child process;
+    int child_pid;
     // File descriptor to write commands to the child process.
     int ctl_rfd;
     // File descriptor to read command output from the child process.
@@ -324,6 +326,45 @@ svm_sandbox_t* create_sandbox(unsigned long seed, isolate_abi_t abi, graal_isola
     return svm_sandbox;
 }
 
+forked_svm_sandbox_t* forked_create_sandbox(int cpid, int ctl_wfd, int ctl_rfd) {
+    forked_svm_sandbox_t* clone = (forked_svm_sandbox_t*) malloc(sizeof(forked_svm_sandbox_t));
+    clone->child_pid = cpid;
+    clone->ctl_wfd = ctl_wfd;
+    clone->ctl_rfd = ctl_rfd;
+
+    // Receive streams for function invocation.
+    if (read(ctl_rfd, &clone->inv_wfd, sizeof(int)) != sizeof(int)) {
+        err("failed to receive input stream to parent");
+        return NULL;
+    }
+    if (read(ctl_rfd, &clone->inv_rfd, sizeof(int)) != sizeof(int)) {
+        err("failed to receive output stream to parent");
+        return NULL;
+    }
+
+    // Clone file descrptors from the child into the parent.
+    int cpidfd = syscall(SYS_pidfd_open, cpid, 0);
+    if (cpidfd < 0) {
+        err("failed to create pid file descriptor for child process");
+        return NULL;
+    }
+    clone->inv_wfd = syscall(SYS_pidfd_getfd, cpidfd, clone->inv_wfd, 0);
+    if (clone->inv_wfd < 0) {
+        err("failed to copy istream from the child process");
+        return NULL;
+    }
+    clone->inv_rfd = syscall(SYS_pidfd_getfd, cpidfd, clone->inv_rfd, 0);
+    if (clone->inv_wfd < 0) {
+        err("failed to copy ostream from the child process");
+        return NULL;
+    }
+    if (close(cpidfd)) {
+        err("failed to clone child pid file descriptor");
+        return NULL;
+    }
+    return clone;
+}
+
 svm_sandbox_t* clone_svm(svm_sandbox_t* sandbox, int reuse_isolate) {
     graal_isolate_t* clone_isolate;
 
@@ -352,7 +393,17 @@ svm_sandbox_t* clone_svm(svm_sandbox_t* sandbox, int reuse_isolate) {
 }
 
 forked_svm_sandbox_t* forked_clone_svm(forked_svm_sandbox_t* sandbox, int reuse_isolate) {
-    return NULL; // TODO - implement.
+    const char* cmd = "clone";
+    size_t len = strlen(cmd);
+    if (write(sandbox->ctl_wfd, &len, sizeof(int)) != sizeof(int)) {
+        err("error: failed to send clone command len to child");
+        return NULL;
+    }
+    if (write(sandbox->ctl_wfd, cmd, len) != len) {
+        err("error: failed to send clone command to child");
+        return NULL;
+    }
+    return forked_create_sandbox(sandbox->child_pid, sandbox->ctl_wfd, sandbox->ctl_rfd);
 }
 
 svm_sandbox_t* checkpoint_svm(
@@ -554,47 +605,44 @@ forked_svm_sandbox_t* forked_restore_svm(
             err("failed to send invocation payload write stream to parent");
             exit(EXIT_FAILURE);
         }
-            if (write(c2p_pp[1], &sandbox->ostream[0], sizeof(int)) != sizeof(int)) {
+        if (write(c2p_pp[1], &sandbox->ostream[0], sizeof(int)) != sizeof(int)) {
             err("failed to send invocation response read stream to parent");
             exit(EXIT_FAILURE);
         }
 
-        sleep(600); // TODO - read from p2c on requests (only clone for now).
-        exit(0);
+        for (;;) {
+            char buffer[FOUT_LEN];
+            int len;
+            // Write len and input into pipe.
+            if (read(p2c_pp[0], &len, sizeof(int)) != sizeof(int)) {
+                err("error: failed to read command len (error %d)\n", errno);
+                continue;
+            }
+            if (read(p2c_pp[0], buffer, len) != len) {
+                err("error: failed to read command (error %d)\n", errno);
+                continue;
+            }
+            if (!strncmp(buffer, "clone", strlen("clone"))) {
+                err("error: unkown command from parent: %s\n", buffer);
+                continue;
+            }
+
+            // Clone sandbox.
+            svm_sandbox_t* clone = clone_svm(sandbox, 1); // TODO - allow the parent to decide.
+
+            // Send cloned streams for function invocation.
+            if (write(c2p_pp[1], &clone->istream[1], sizeof(int)) != sizeof(int)) {
+                err("failed to send cloned invocation payload write stream to parent");
+                continue;
+            }
+            if (write(c2p_pp[1], &clone->ostream[0], sizeof(int)) != sizeof(int)) {
+                err("failed to send cloned invocation response read stream to parent");
+                continue;
+            }
+        }
     } else {
-        // If in the parent, setup the sandbox.
-        forked_svm_sandbox_t* sandbox = (forked_svm_sandbox_t*) malloc(sizeof(forked_svm_sandbox_t));
-        sandbox->ctl_rfd = c2p_pp[0];
-        sandbox->ctl_wfd = p2c_pp[1];
-
-        // Receive streams for function invocation.
-        if (read(c2p_pp[0], &sandbox->inv_wfd, sizeof(int)) != sizeof(int)) {
-            err("failed to receive input stream to parent");
-            return NULL;
-        }
-        if (read(c2p_pp[0], &sandbox->inv_rfd, sizeof(int)) != sizeof(int)) {
-            err("failed to receive output stream to parent");
-            return NULL;
-        }
-
-        // Clone file descrptors from the child into the parent.
-        int pidfd = syscall(SYS_pidfd_open, pid, 0);
-        if (pidfd < 0) {
-            err("failed to create pid file descriptor for child process");
-            return NULL;
-        }
-        sandbox->inv_wfd = syscall(SYS_pidfd_getfd, pidfd, sandbox->inv_wfd, 0);
-        if (sandbox->inv_wfd < 0) {
-            err("failed to copy istream from the child process");
-            return NULL;
-        }
-        sandbox->inv_rfd = syscall(SYS_pidfd_getfd, pidfd, sandbox->inv_rfd, 0);
-        if (sandbox->inv_wfd < 0) {
-            err("failed to copy ostream from the child process");
-            return NULL;
-        }
-        // TODO - should we close the pidfd?
-
+        // If in the parent, setup the sandbox and invoke.
+        forked_svm_sandbox_t* sandbox = forked_create_sandbox(pid, p2c_pp[1], c2p_pp[0]);
         forked_invoke_svm(sandbox, fin, fout);
         return sandbox;
     }
