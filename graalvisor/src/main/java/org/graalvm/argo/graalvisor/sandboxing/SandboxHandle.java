@@ -1,15 +1,16 @@
 package org.graalvm.argo.graalvisor.sandboxing;
 
+import org.graalvm.argo.graalvisor.utils.FileUtils;
+
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class SandboxHandle {
 
+    private static final String TMP_DIRECTORY_PREFIX = "/tmp/sandbox-";
     public static final AtomicInteger SANDBOX_ID_COUNTER = new AtomicInteger(0);
-    protected final int sandboxId;
+
+    private final int sandboxId;
 
     public SandboxHandle() {
         this.sandboxId = SANDBOX_ID_COUNTER.getAndIncrement();
@@ -18,27 +19,20 @@ public abstract class SandboxHandle {
     public abstract String invokeSandbox(String jsonArguments) throws IOException;
 
     public void destroyHandle() throws IOException {
-        // default implementation;
+        String directoryName = TMP_DIRECTORY_PREFIX + this.sandboxId;
+        FileUtils.deleteDirectory(directoryName);
     }
 
     @Override
     public abstract String toString();
 
-    public int getSandboxId() {
-        return this.sandboxId;
-    }
-
-    public String getSandboxTmpDirectoryPath() {
-        String directoryName = "/tmp/sandbox-" + this.sandboxId;
-        Path path = Paths.get(directoryName);
-        if (Files.notExists(path)) {
-            try {
-                Files.createDirectories(path);
-            } catch (IOException e) {
-                // TODO: maybe some robust handling?
-                e.printStackTrace();
-            }
-        }
+    /**
+     * Initializes a temporary directory for this sandbox and returns a path to it.
+     * @return temporary directory path.
+     */
+    public String initSandboxTmpDirectory() {
+        String directoryName = TMP_DIRECTORY_PREFIX + this.sandboxId;
+        FileUtils.createDirectory(directoryName);
         return directoryName;
     }
 }

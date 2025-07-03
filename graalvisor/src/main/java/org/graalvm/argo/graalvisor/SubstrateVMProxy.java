@@ -72,7 +72,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
         private void processRequest(SandboxHandle shandle, Request req) {
             try {
                 // Extending the arguments JSON object to include sandbox-specific tmp directory.
-                String arguments = JsonUtils.appendTmpDirectoryKey(req.getInput(), shandle.getSandboxTmpDirectoryPath());
+                String arguments = JsonUtils.appendTmpDirectoryKey(req.getInput(), shandle.initSandboxTmpDirectory());
                 req.setOutput(shandle.invokeSandbox(arguments));
             } catch (Exception e) {
                 e.printStackTrace(System.err);
@@ -275,7 +275,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
             } else {
                 SandboxHandle shandle = prepareSandbox(function);
                 // Extending the arguments JSON object to include sandbox-specific tmp directory.
-                arguments = JsonUtils.appendTmpDirectoryKey(arguments, shandle.getSandboxTmpDirectoryPath());
+                arguments = JsonUtils.appendTmpDirectoryKey(arguments, shandle.initSandboxTmpDirectory());
                 output = shandle.invokeSandbox(arguments);
                 destroySandbox(function, shandle);
             }

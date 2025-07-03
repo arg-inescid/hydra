@@ -58,7 +58,7 @@ public class SnapshotSandboxProvider extends SandboxProvider {
     @Override
     public String warmupProvider(int concurrency, int requests, String jsonArguments) throws IOException {
         // Extending the arguments JSON object to include sandbox-specific tmp directory.
-        jsonArguments = JsonUtils.appendTmpDirectoryKey(jsonArguments, sandboxHandle.getSandboxTmpDirectoryPath());
+        jsonArguments = JsonUtils.appendTmpDirectoryKey(jsonArguments, sandboxHandle.initSandboxTmpDirectory());
 
         // If already warm, just invoke.
         if (warmedUp.get()) {
@@ -115,9 +115,10 @@ public class SnapshotSandboxProvider extends SandboxProvider {
     }
 
     @Override
-    public void destroySandbox(SandboxHandle shandle) {
+    public void destroySandbox(SandboxHandle shandle) throws IOException {
         sandboxHandleCounter.getAndDecrement();
         System.out.println("Snapshot sandbox handle destroy has not been implemented yet. Ignoring..");
+        shandle.destroyHandle();
     }
 
     @Override

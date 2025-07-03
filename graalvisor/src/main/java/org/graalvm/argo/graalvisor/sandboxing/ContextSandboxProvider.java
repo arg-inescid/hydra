@@ -31,6 +31,7 @@ public class ContextSandboxProvider extends SandboxProvider {
     @Override
     public void destroySandbox(SandboxHandle shandle) throws IOException {
         NativeSandboxInterface.detachThread(functionHandle, ((ContextSandboxHandle)shandle).getIThreadHandle());
+        shandle.destroyHandle();
     }
 
     @Override

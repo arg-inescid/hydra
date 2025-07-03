@@ -35,6 +35,10 @@ public class JsonUtils {
             } else {
                 jsonString = prefix + ", \"tmpDir\": \"" + tmpDirectory + "\"}";
             }
+        } else if (trimmed.isEmpty()) {
+            jsonString = "{\"tmpDir\": \"" + tmpDirectory + "\"}";
+        } else {
+            System.err.println(String.format("[thread %d] Error: unexpected arguments format: %s", Thread.currentThread().getId(), trimmed));
         }
         return jsonString;
     }
