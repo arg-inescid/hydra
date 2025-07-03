@@ -23,7 +23,7 @@ function get_child_pid {
 }
 
 # Uncomment to enable strace. The log will be put next to the graalvisor binary.
-#trace_syscalls="strace -f -o $(dirname $graalvisor)/strace.log"
+#trace_syscalls="strace -f -o strace.log"
 
 # This is important to ensure that we can load many (>100k) sandboxes.
 # sudo sysctl -w vm.max_map_count=2000000

@@ -25,6 +25,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/time.h>
+#include <sys/signal.h>
 #include <unistd.h>
 
 // Mutex to ensure only one thread minimizes syscalls / restores at a time.
@@ -227,12 +228,12 @@ void* notif_worker(void* args) {
         int ret;
 
         // Read function input length.
-        ret = read(svm->istream[0], &len, sizeof(int));
-        if (ret == -1) {
-            err("error: failed to read input len (error %d)\n", errno);
-        } else if (ret == 0) {
+        ret = read(svm->istream[0], &len, sizeof(size_t));
+        if (ret == 0) {
             err("[notif_worker] receiving input with 0 bytes, exiting...\n");
             break;
+        } else if (ret != sizeof(size_t)) {
+            err("error: failed to read input len (error %d)\n", errno);
         }
 
         // Force input size.
@@ -267,7 +268,7 @@ void* notif_worker(void* args) {
         dbg("[notif_worker] sending output: %s (len = %d)\n", fout, len);
 
         // Write output len in bytes.
-        if (write(svm->ostream[1], &len, sizeof(int)) != sizeof(int)) {
+        if (write(svm->ostream[1], &len, sizeof(size_t)) != sizeof(size_t)) {
             err("error: failed to write output len (error %d)\n", errno);
         }
 
@@ -283,15 +284,17 @@ void invoke_svm_internal(int input_wfd, int output_rfd, const char* fin, char* f
     // Calculate the size of the string, including the null terminator.
     size_t len = strlen(fin) + 1;
 
+    dbg("[invoke_svm_internal] sending input: %s (len = %d)\n", fin, len);
+
     // Write len and input into pipe.
-    if (write(input_wfd, &len, sizeof(int)) != sizeof(int)) {
+    if (write(input_wfd, &len, sizeof(size_t)) != sizeof(size_t)) {
         err("error: failed to write input len (error %d)\n", errno);
     }
     if (write(input_wfd, fin, len) != len) {
         err("error: failed to write input (error %d)\n", errno);
     }
     // Read output len from pipe.
-    if(read(output_rfd, &len, sizeof(int)) != sizeof(int)) {
+    if(read(output_rfd, &len, sizeof(size_t)) != sizeof(size_t)) {
         err("error: failed to read output len (error %d)\n", errno);
     }
 
@@ -299,6 +302,8 @@ void invoke_svm_internal(int input_wfd, int output_rfd, const char* fin, char* f
     if (read(output_rfd, fout, len) != len) {
         err("error: failed to read input (error %d)\n", errno);
     }
+
+    dbg("[invoke_svm_internal] received output: %s (len = %d)\n", fout, len);
 }
 
 void invoke_svm(svm_sandbox_t* sandbox, const char* fin, char* fout) {
@@ -597,6 +602,27 @@ forked_svm_sandbox_t* forked_restore_svm(
 
     int pid = fork();
     if (pid == 0) {
+
+        // Move pipe fds to the reserved range so that it doesn't clash with any restored fd.
+        p2c_pp[0] = move_to_reserved_fd(p2c_pp[0]);
+        c2p_pp[1] = move_to_reserved_fd(c2p_pp[1]);
+
+#ifdef PERF
+        struct timeval st, et;
+        gettimeofday(&st, NULL);
+#endif
+        signal(SIGTERM, SIG_DFL);
+        signal(SIGINT, SIG_DFL);
+        for (int i = STDERR_FILENO + 1; i < RESERVED_FDS; i++) {
+            if (i != p2c_pp[0] && i !=c2p_pp[1]) {
+                close(i);
+            }
+        }
+#ifdef PERF
+        gettimeofday(&et, NULL);
+        log("preparing child process took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
+#endif
+
         // If in the child, invoke restore and print output.
         svm_sandbox_t* sandbox = restore_svm_internal(fpath, meta_snap_path, mem_snap_path, seed);
 
@@ -612,9 +638,9 @@ forked_svm_sandbox_t* forked_restore_svm(
 
         for (;;) {
             char buffer[FOUT_LEN];
-            int len;
+            size_t len;
             // Write len and input into pipe.
-            if (read(p2c_pp[0], &len, sizeof(int)) != sizeof(int)) {
+            if (read(p2c_pp[0], &len, sizeof(size_t)) != sizeof(size_t)) {
                 err("error: failed to read command len (error %d)\n", errno);
                 continue;
             }
