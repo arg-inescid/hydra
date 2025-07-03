@@ -339,34 +339,36 @@ forked_svm_sandbox_t* forked_create_sandbox(int cpid, int ctl_wfd, int ctl_rfd) 
 
     // Receive streams for function invocation.
     if (read(ctl_rfd, &clone->inv_wfd, sizeof(int)) != sizeof(int)) {
-        err("failed to receive input stream to parent");
+        err("error: failed to receive input stream to parent");
         return NULL;
     }
     if (read(ctl_rfd, &clone->inv_rfd, sizeof(int)) != sizeof(int)) {
-        err("failed to receive output stream to parent");
+        err("error: failed to receive output stream to parent");
         return NULL;
     }
 
     // Clone file descrptors from the child into the parent.
     int cpidfd = syscall(SYS_pidfd_open, cpid, 0);
     if (cpidfd < 0) {
-        err("failed to create pid file descriptor for child process");
+        err("error: failed to create pid file descriptor for child process");
         return NULL;
     }
     clone->inv_wfd = syscall(SYS_pidfd_getfd, cpidfd, clone->inv_wfd, 0);
     if (clone->inv_wfd < 0) {
-        err("failed to copy istream from the child process");
+        err("error: failed to copy istream from the child process");
         return NULL;
     }
     clone->inv_rfd = syscall(SYS_pidfd_getfd, cpidfd, clone->inv_rfd, 0);
     if (clone->inv_wfd < 0) {
-        err("failed to copy ostream from the child process");
+        err("error: failed to copy ostream from the child process");
         return NULL;
     }
     if (close(cpidfd)) {
-        err("failed to clone child pid file descriptor");
+        err("error: failed to clone child pid file descriptor");
         return NULL;
     }
+    dbg("[forked_create_sandbox] cloned sandbox: cpid = %d, ctl_rfd = %d, ctl_wfd = %d, inv_rfd = %d, inv_wfg = %d\n",
+        clone->child_pid, clone->ctl_rfd, clone->ctl_wfd, clone->inv_rfd, clone->ctl_wfd);
     return clone;
 }
 
@@ -399,8 +401,8 @@ svm_sandbox_t* clone_svm(svm_sandbox_t* sandbox, int reuse_isolate) {
 
 forked_svm_sandbox_t* forked_clone_svm(forked_svm_sandbox_t* sandbox, int reuse_isolate) {
     const char* cmd = "clone";
-    size_t len = strlen(cmd);
-    if (write(sandbox->ctl_wfd, &len, sizeof(int)) != sizeof(int)) {
+    size_t len = strlen(cmd) + 1; // +1 to include the null terminator.
+    if (write(sandbox->ctl_wfd, &len, sizeof(size_t)) != sizeof(size_t)) {
         err("error: failed to send clone command len to child");
         return NULL;
     }
@@ -445,8 +447,9 @@ svm_sandbox_t* checkpoint_svm(
     wargs->requests = requests;
     wargs->seed = seed;
 
+    // TODO - this is for the entire process. We should reset this at some point because it will affect other sandboxes and the hydra.
     if (set_next_pid(1000*(seed+1)) == -1) {
-        err("set_next_pid");
+        err("error: failed to set next pid");
         return NULL;
     }
 
@@ -591,12 +594,12 @@ forked_svm_sandbox_t* forked_restore_svm(
     int c2p_pp[2];
     // Control pipe to send commands into the child.
     if (pipe(p2c_pp)) {
-        err("failed to create parent to child pipe for forked restore");
+        err("error: failed to create parent to child pipe for forked restore");
         return NULL;
     }
     // Control pipe to read command output from the child.
     if (pipe(c2p_pp)) {
-        err("failed to create child to parent pipe for forked restore");
+        err("error: failed to create child to parent pipe for forked restore");
         return NULL;
     }
 
@@ -628,11 +631,11 @@ forked_svm_sandbox_t* forked_restore_svm(
 
         // Send streams for function invocation.
         if (write(c2p_pp[1], &sandbox->istream[1], sizeof(int)) != sizeof(int)) {
-            err("failed to send invocation payload write stream to parent");
+            err("error: failed to send invocation payload write stream to parent");
             exit(EXIT_FAILURE);
         }
         if (write(c2p_pp[1], &sandbox->ostream[0], sizeof(int)) != sizeof(int)) {
-            err("failed to send invocation response read stream to parent");
+            err("error: failed to send invocation response read stream to parent");
             exit(EXIT_FAILURE);
         }
 
@@ -648,8 +651,8 @@ forked_svm_sandbox_t* forked_restore_svm(
                 err("error: failed to read command (error %d)\n", errno);
                 continue;
             }
-            if (!strncmp(buffer, "clone", strlen("clone"))) {
-                err("error: unkown command from parent: %s\n", buffer);
+            if (strncmp(buffer, "clone", strlen("clone"))) {
+                err("error: unknown command from parent: %s\n", buffer);
                 continue;
             }
 
@@ -658,11 +661,11 @@ forked_svm_sandbox_t* forked_restore_svm(
 
             // Send cloned streams for function invocation.
             if (write(c2p_pp[1], &clone->istream[1], sizeof(int)) != sizeof(int)) {
-                err("failed to send cloned invocation payload write stream to parent");
+                err("error: failed to send cloned invocation payload write stream to parent");
                 continue;
             }
             if (write(c2p_pp[1], &clone->ostream[0], sizeof(int)) != sizeof(int)) {
-                err("failed to send cloned invocation response read stream to parent");
+                err("error: failed to send cloned invocation response read stream to parent");
                 continue;
             }
         }
