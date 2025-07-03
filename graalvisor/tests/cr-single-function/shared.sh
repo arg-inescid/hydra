@@ -17,11 +17,11 @@ BENCHMARK_REGISTER_QUERY[jvhw]="name=jvhw&language=java&entrypoint=com.hello_wor
 BENCHMARK_REGISTER_QUERY[jvfh]="name=jvfh&language=java&entrypoint=com.filehashing.FileHashing&sandbox=isolate&url=http://127.0.0.1:8000/apps/gv-jv-file-hashing.so"
 BENCHMARK_REGISTER_QUERY[jvcy]="name=jvcy&language=java&entrypoint=com.classify.Classify&sandbox=process&url=http://127.0.0.1:8000/apps/gv-jv-classify.zip"
 BENCHMARK_REGISTER_QUERY[jvhr]="name=jvhr&language=java&entrypoint=com.httprequest.HttpRequest&sandbox=isolate&url=http://127.0.0.1:8000/apps/gv-jv-httprequest.so"
-BENCHMARK_REGISTER_QUERY[jvvp]="name=jvvp&language=java&entrypoint=com.videoprocessing.VideoProcessing&sandbox=isolate&url=http://127.0.0.1:8000/apps/gv-jv-video-processing.so"
+BENCHMARK_REGISTER_QUERY[jvvp]="name=jvvp&language=java&entrypoint=com.videoprocessing.VideoProcessing&sandbox=process&url=http://127.0.0.1:8000/apps/gv-jv-video-processing.so"
 
 BENCHMARK_REGISTER_QUERY[jshw]="name=jshw&language=java&entrypoint=com.helloworld.HelloWorld&svmid=1&sandbox=snapshot&url=http://127.0.0.1:8000/apps/gv-js-hello-world.so"
 BENCHMARK_REGISTER_QUERY[jsdh]="name=jsdh&language=java&entrypoint=com.dynamichtml.DynamicHTML&svmid=2&sandbox=snapshot&url=http://127.0.0.1:8000/apps/gv-js-dynamic-html.so"
-BENCHMARK_REGISTER_QUERY[jsup]="name=jsup&language=java&entrypoint=com.uploader.Uploader&svmid=4&sandbox=snapshot&url=http://127.0.0.1:8000/apps/gv-js-uploader.so"
+BENCHMARK_REGISTER_QUERY[jsup]="name=jsup&language=java&entrypoint=com.uploader.Uploader&svmid=4&sandbox=context&url=http://127.0.0.1:8000/apps/gv-js-uploader.so"
 BENCHMARK_REGISTER_QUERY[jstn]="name=jstn&language=java&entrypoint=com.thumbnail.Thumbnail&sandbox=context&url=http://127.0.0.1:8000/apps/gv-js-thumbnail.zip"
 
 BENCHMARK_REGISTER_QUERY[pyhw]="name=pyhw&language=java&entrypoint=com.helloworld.HelloWorld&svmid=5&sandbox=snapshot&url=http://127.0.0.1:8000/apps/gv-py-hello-world.so"

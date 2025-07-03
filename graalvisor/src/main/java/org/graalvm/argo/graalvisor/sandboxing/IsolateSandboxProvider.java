@@ -23,9 +23,10 @@ public class IsolateSandboxProvider extends SandboxProvider {
     }
 
     @Override
-    public void destroySandbox(SandboxHandle shandle) {
+    public void destroySandbox(SandboxHandle shandle) throws IOException {
         IsolateSandboxHandle ishandle = (IsolateSandboxHandle) shandle;
         NativeSandboxInterface.destroySandbox(functionHandle, ishandle.getIThreadHandle());
+        ishandle.destroyHandle();
     }
 
     @Override

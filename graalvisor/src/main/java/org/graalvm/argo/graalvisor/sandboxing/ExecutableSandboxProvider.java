@@ -32,7 +32,7 @@ public class ExecutableSandboxProvider extends SandboxProvider {
 
     @Override
     public void destroySandbox(SandboxHandle shandle) throws IOException {
-
+        shandle.destroyHandle();
     }
 
     @Override

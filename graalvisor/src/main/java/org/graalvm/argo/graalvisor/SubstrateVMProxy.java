@@ -11,6 +11,7 @@ import org.graalvm.argo.graalvisor.function.PolyglotFunction;
 import org.graalvm.argo.graalvisor.sandboxing.SandboxHandle;
 
 import com.sun.net.httpserver.HttpExchange;
+import org.graalvm.argo.graalvisor.utils.JsonUtils;
 
 /**
  * A runtime proxy that runs requests on Native image-based sandboxes.
@@ -70,7 +71,9 @@ public class SubstrateVMProxy extends RuntimeProxy {
 
         private void processRequest(SandboxHandle shandle, Request req) {
             try {
-                req.setOutput(shandle.invokeSandbox(req.getInput()));
+                // Extending the arguments JSON object to include sandbox-specific tmp directory.
+                String arguments = JsonUtils.appendTmpDirectoryKey(req.getInput(), shandle.initSandboxTmpDirectory());
+                req.setOutput(shandle.invokeSandbox(arguments));
             } catch (Exception e) {
                 e.printStackTrace(System.err);
                 req.setOutput(getName());
@@ -271,6 +274,8 @@ public class SubstrateVMProxy extends RuntimeProxy {
                 output = req.getOutput();
             } else {
                 SandboxHandle shandle = prepareSandbox(function);
+                // Extending the arguments JSON object to include sandbox-specific tmp directory.
+                arguments = JsonUtils.appendTmpDirectoryKey(arguments, shandle.initSandboxTmpDirectory());
                 output = shandle.invokeSandbox(arguments);
                 destroySandbox(function, shandle);
             }

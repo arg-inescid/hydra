@@ -117,6 +117,7 @@ public class ProcessSandboxHandle extends SandboxHandle {
 
     @Override
     public void destroyHandle() throws IOException {
+        super.destroyHandle();
         this.sender.close();
         this.receiver.close();
         destroyChild(childPid);
