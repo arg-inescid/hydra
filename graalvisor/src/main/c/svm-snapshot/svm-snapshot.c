@@ -52,13 +52,13 @@ struct svm_sandbox_t {
 struct forked_svm_sandbox_t {
     // PID of the child process;
     int child_pid;
-    // File descriptor to write commands to the child process.
+    // File descriptor to read commands.
     int ctl_rfd;
-    // File descriptor to read command output from the child process.
+    // File descriptor to write command.
     int ctl_wfd;
-    // File descriptor used to write invocation payloads.
+    // File descriptor used to read invocation payloads.
     int inv_rfd;
-    // File descriptor used to read invocation responses.
+    // File descriptor used to write invocation responses.
     int inv_wfd;
 };
 
@@ -230,7 +230,7 @@ void* notif_worker(void* args) {
         // Read function input length.
         ret = read(svm->istream[0], &len, sizeof(size_t));
         if (ret == 0) {
-            dbg("[notif_worker tid=%d] receiving input with 0 bytes, exiting...\n");
+            dbg("[notif_worker tid=%d] receiving input with 0 bytes, exiting...\n", gettid());
             break;
         } else if (ret != sizeof(size_t)) {
             err("error: failed to read input len (error %d)\n", errno);

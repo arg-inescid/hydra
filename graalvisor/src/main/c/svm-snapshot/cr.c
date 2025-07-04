@@ -634,7 +634,7 @@ void restore_dup(int meta_snap_fd) {
     print_dup(&s);
 
     if (fd_is_valid(s.ret)) {
-        err("error: restoring an fd with dup2 will overwrite fd %d", s.ret);
+        err("error: restoring an fd with dup will overwrite fd %d", s.ret);
     }
 
     ret = syscall(__NR_dup2, s.oldfd, s.ret);
