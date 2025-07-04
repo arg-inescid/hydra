@@ -230,7 +230,7 @@ void* notif_worker(void* args) {
         // Read function input length.
         ret = read(svm->istream[0], &len, sizeof(size_t));
         if (ret == 0) {
-            err("[notif_worker] receiving input with 0 bytes, exiting...\n");
+            dbg("[notif_worker tid=%d] receiving input with 0 bytes, exiting...\n");
             break;
         } else if (ret != sizeof(size_t)) {
             err("error: failed to read input len (error %d)\n", errno);
@@ -250,7 +250,7 @@ void* notif_worker(void* args) {
         // Force null termination.
         fin[len == 0 ? 0 : len - 1] = '\0';
 
-        dbg("[notif_worker] received input: %s (len = %d)\n", fin, len);
+        dbg("[notif_worker tid=%d] received input: %s (len = %d)\n", gettid(), fin, len);
 
         // Call the function.
         run_entrypoint(&svm->abi, svm->isolate, isolatethread, 1, 1, fin, fout);
@@ -265,7 +265,7 @@ void* notif_worker(void* args) {
         // Force null termination.
         fout[len == 0 ? 0 : len - 1] = '\0';
 
-        dbg("[notif_worker] sending output: %s (len = %d)\n", fout, len);
+        dbg("[notif_worker tid=%d] sending output: %s (len = %d)\n", gettid(), fout, len);
 
         // Write output len in bytes.
         if (write(svm->ostream[1], &len, sizeof(size_t)) != sizeof(size_t)) {
@@ -367,8 +367,9 @@ forked_svm_sandbox_t* forked_create_sandbox(int cpid, int ctl_wfd, int ctl_rfd) 
         err("error: failed to clone child pid file descriptor");
         return NULL;
     }
-    dbg("[forked_create_sandbox] cloned sandbox: cpid = %d, ctl_rfd = %d, ctl_wfd = %d, inv_rfd = %d, inv_wfg = %d\n",
-        clone->child_pid, clone->ctl_rfd, clone->ctl_wfd, clone->inv_rfd, clone->ctl_wfd);
+
+    log("[forked_create_sandbox] new forked sandbox: cpid = %d, ctl_rfd = %d, ctl_wfd = %d, inv_rfd = %d, inv_wfg = %d\n",
+        clone->child_pid, clone->ctl_rfd, clone->ctl_wfd, clone->inv_rfd, clone->inv_wfd);
     return clone;
 }
 
@@ -583,6 +584,40 @@ svm_sandbox_t* restore_svm(
     return svm_sandbox;
 }
 
+void redirect_child_io() {
+    char fpath[256];
+    mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
+
+    // Safe close of stdin.
+    int fd = open("/dev/null", O_WRONLY);
+    if (fd < 0) {
+        err("error: failed to redirect stdin (errno %d)", errno);
+        exit(EXIT_FAILURE);
+    }
+    if (dup2(fd, 0) < 0) {
+        err("error: failed to dup2 fd %d into stdin (errno %d)", fd, errno);
+        exit(EXIT_FAILURE);
+    }
+    close(fd);
+
+    // Redirecting stdout and stderr to graalvisor-<pid>.log.
+    snprintf(fpath, 256, "graalvisor-%d.log", getpid());
+    fd = open(fpath, O_WRONLY | O_CREAT, mode);
+    if (fd < 0) {
+        err("error: failed to redirect output to %s (errno %d)", fpath, errno);
+        exit(EXIT_FAILURE);
+    }
+    if (dup2(fd, 1) < 0) {
+        err("error: failed to dup2 fd %d into stdout (errno %d)", fd, errno);
+        exit(EXIT_FAILURE);
+    }
+    if(dup2(fd, 2) < 0) {
+        err("error: failed to dup2 fd %d into stderr (errno %d)", fd, errno);
+        exit(EXIT_FAILURE);
+    }
+    close(fd);
+}
+
 forked_svm_sandbox_t* forked_restore_svm(
         const char* fpath,
         const char* meta_snap_path,
@@ -609,6 +644,10 @@ forked_svm_sandbox_t* forked_restore_svm(
         // Move pipe fds to the reserved range so that it doesn't clash with any restored fd.
         p2c_pp[0] = move_to_reserved_fd(p2c_pp[0]);
         c2p_pp[1] = move_to_reserved_fd(c2p_pp[1]);
+
+        // Redirect child io to a log file.
+        redirect_child_io();
+
 
 #ifdef PERF
         struct timeval st, et;
