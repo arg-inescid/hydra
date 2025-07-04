@@ -25,6 +25,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/time.h>
+#include <sys/signal.h>
 #include <unistd.h>
 
 // Mutex to ensure only one thread minimizes syscalls / restores at a time.
@@ -37,19 +38,10 @@ struct svm_sandbox_t {
     graal_isolate_t*    isolate;
     // Pointer to thread running application.
     pthread_t          thread;
-    // Mutex to have exclusive access to invoke this sandbox.
-    pthread_mutex_t     invoke_mutex;
-    // Mutex to coordinate between invoker and worker threads.
-    pthread_mutex_t     worker_mutex;
-    // Condition variable to signal request status start/finished.
-    pthread_cond_t      completed_request;
-    // Predicative variable to avoid deadlocks from signal arriving before
-    // other thread started to wait for the signal.
-    int                 processing;
-    // Used to pass input to the worker thread.
-    const char*         fin;
-    // Used to receive output to the worker thread.
-    char*               fout;
+    // File descriptor of the input stream.
+    int                istream[2]; // read 0, write into 1.
+    // File descriptor of the output stream
+    int                 ostream[2];
     // The seed is used to control which virtual memory ranges the svm instance
     // will used. Each seed value represents a 16TB virtual memory range. When
     // calling restore, the user must make sure there is no restoredsvm instance
@@ -57,9 +49,28 @@ struct svm_sandbox_t {
     unsigned long       seed;
 };
 
+struct forked_svm_sandbox_t {
+    // PID of the child process;
+    int child_pid;
+    // File descriptor to read commands.
+    int ctl_rfd;
+    // File descriptor to write command.
+    int ctl_wfd;
+    // File descriptor used to read invocation payloads.
+    int inv_rfd;
+    // File descriptor used to write invocation responses.
+    int inv_wfd;
+};
+
 typedef struct {
-    // Sandbox for executing entrypoints and getting their results.
-    svm_sandbox_t* svm_sandbox;
+    // ABI to create, invoke, destroy isolates.
+    isolate_abi_t abi;
+    // Pointer to the isolate.
+    graal_isolate_t* isolate;
+    // Function arguments.
+    const char* fin;
+    // Return string from function invocation.
+    char* fout;
     // Path to the function library.
     const void* fpath;
     // File descriptor used when installing seccomp.
@@ -186,7 +197,6 @@ void run_svm(const char* fpath, unsigned int concurrency, unsigned int requests,
 
 void* checkpoint_worker(void* args) {
     checkpoint_worker_args_t* wargs = (checkpoint_worker_args_t*) args;
-    svm_sandbox_t* svm = wargs->svm_sandbox;
 
     // Install seccomp filter.
     wargs->seccomp_fd = install_seccomp_filter();
@@ -196,7 +206,7 @@ void* checkpoint_worker(void* args) {
     }
 
     // Prepare and run function.
-    run_svm_internal(wargs->fpath, wargs->concurrency, wargs->requests, svm->fin, svm->fout, &svm->abi, &(svm->isolate));
+    run_svm_internal(wargs->fpath, wargs->concurrency, wargs->requests, wargs->fin, wargs->fout, &wargs->abi, &(wargs->isolate));
     // Mark execution as finished (will alert the seccomp monitor to quit).
     wargs->finished = 1;
 
@@ -206,61 +216,168 @@ void* checkpoint_worker(void* args) {
 void* notif_worker(void* args) {
     svm_sandbox_t* svm = (svm_sandbox_t*) args;
     graal_isolatethread_t *isolatethread = NULL;
+    char fin[FOUT_LEN];
+    char fout[FOUT_LEN];
 
+    // Attach thread to the isolate.
     (svm->abi).graal_attach_thread(svm->isolate, &isolatethread);
-    // Prepare and run function.
+
+    // Handle requests received from the stream.
     for (;;) {
-        pthread_mutex_lock(&svm->worker_mutex);
-        // until state is processing or signal to start processing is received, wait.
-        while (svm->processing == 0) {
-            pthread_cond_wait(&svm->completed_request, &svm->worker_mutex);
+        size_t len;
+        int ret;
+
+        // Read function input length.
+        ret = read(svm->istream[0], &len, sizeof(size_t));
+        if (ret == 0) {
+            dbg("[notif_worker tid=%d] receiving input with 0 bytes, exiting...\n", gettid());
+            break;
+        } else if (ret != sizeof(size_t)) {
+            err("error: failed to read input len (error %d)\n", errno);
         }
-        run_entrypoint(&svm->abi, svm->isolate, isolatethread, 1, 1, svm->fin, svm->fout);
-        // set state to finished
-        svm->processing = 0;
-        pthread_cond_signal(&svm->completed_request);
-        pthread_mutex_unlock(&svm->worker_mutex);
+
+        // Force input size.
+        if (len >= FOUT_LEN) {
+            err("warning: input over maximum length (len = %d)\n", len);
+            len = FOUT_LEN;
+        }
+
+        // Read 'len' input bytes.
+        if (read(svm->istream[0], fin, len) != len) {
+            err("error: failed to read input (error %d)\n", errno);
+        }
+
+        // Force null termination.
+        fin[len == 0 ? 0 : len - 1] = '\0';
+
+        dbg("[notif_worker tid=%d] received input: %s (len = %d)\n", gettid(), fin, len);
+
+        // Call the function.
+        run_entrypoint(&svm->abi, svm->isolate, isolatethread, 1, 1, fin, fout);
+
+        // Write output to pipe (+1 to count with the null terminator).
+        len = strlen(fout) + 1;
+        if (len >= FOUT_LEN) {
+            err("warning: output over maximum length (len = %d)\n", len);
+            len = FOUT_LEN;
+        }
+
+        // Force null termination.
+        fout[len == 0 ? 0 : len - 1] = '\0';
+
+        dbg("[notif_worker tid=%d] sending output: %s (len = %d)\n", gettid(), fout, len);
+
+        // Write output len in bytes.
+        if (write(svm->ostream[1], &len, sizeof(size_t)) != sizeof(size_t)) {
+            err("error: failed to write output len (error %d)\n", errno);
+        }
+
+        // Write output.
+        if (write(svm->ostream[1], fout, len) != len) {
+            err("error: failed to write output (error %d)\n", errno);
+        }
     }
     return NULL;
 }
 
-void invoke_svm(svm_sandbox_t* svm_sandbox, const char* fin, char* fout) {
-    // First, we lock this sandbox.
-    pthread_mutex_lock(&svm_sandbox->invoke_mutex);
-    // Second, we acquire the lock used to fill fin and fout.
-    pthread_mutex_lock(&svm_sandbox->worker_mutex);
-    svm_sandbox->fin = fin;
-    svm_sandbox->fout = fout;
-    svm_sandbox->processing = 1;
-    pthread_cond_signal(&svm_sandbox->completed_request);
-    while (svm_sandbox->processing == 1) {
-        pthread_cond_wait(&svm_sandbox->completed_request, &svm_sandbox->worker_mutex);
+void invoke_svm_internal(int input_wfd, int output_rfd, const char* fin, char* fout) {
+    // Calculate the size of the string, including the null terminator.
+    size_t len = strlen(fin) + 1;
+
+    dbg("[invoke_svm_internal] sending input: %s (len = %d)\n", fin, len);
+
+    // Write len and input into pipe.
+    if (write(input_wfd, &len, sizeof(size_t)) != sizeof(size_t)) {
+        err("error: failed to write input len (error %d)\n", errno);
     }
-    // Release both locks.
-    pthread_mutex_unlock(&svm_sandbox->worker_mutex);
-    pthread_mutex_unlock(&svm_sandbox->invoke_mutex);
+    if (write(input_wfd, fin, len) != len) {
+        err("error: failed to write input (error %d)\n", errno);
+    }
+    // Read output len from pipe.
+    if(read(output_rfd, &len, sizeof(size_t)) != sizeof(size_t)) {
+        err("error: failed to read output len (error %d)\n", errno);
+    }
+
+    //  Read output from the pipe.
+    if (read(output_rfd, fout, len) != len) {
+        err("error: failed to read input (error %d)\n", errno);
+    }
+
+    dbg("[invoke_svm_internal] received output: %s (len = %d)\n", fout, len);
 }
 
-svm_sandbox_t* create_sandbox(unsigned long seed) {
+void invoke_svm(svm_sandbox_t* sandbox, const char* fin, char* fout) {
+    invoke_svm_internal(sandbox->istream[1], sandbox->ostream[0], fin, fout);
+}
+
+void forked_invoke_svm(forked_svm_sandbox_t* sandbox, const char* fin, char* fout) {
+    invoke_svm_internal(sandbox->inv_wfd, sandbox->inv_rfd, fin, fout);
+}
+
+svm_sandbox_t* create_sandbox(unsigned long seed, isolate_abi_t abi, graal_isolate_t* isolate) {
     svm_sandbox_t* svm_sandbox = malloc(sizeof(svm_sandbox_t));
     memset(svm_sandbox, 0, sizeof(svm_sandbox_t));
-    if (pthread_mutex_init(&svm_sandbox->invoke_mutex, NULL)) {
-        err("error: failed initialize sandbox mutext (invoke_mutex)\n");
-    }
-    if (pthread_mutex_init(&svm_sandbox->worker_mutex, NULL)) {
-        err("error: failed initialize sandbox mutext (worker_mutex)\n");
-    }
     svm_sandbox->seed = seed;
-    svm_sandbox->processing = 0;
+    svm_sandbox->abi = abi;
+    svm_sandbox->isolate = isolate;
+    if (pipe(svm_sandbox->istream) != 0) {
+        err("error: failed to create input stream pipe (error %d)\n", errno);
+        return NULL;
+    }
+    if (pipe(svm_sandbox->ostream) != 0) {
+        err("error: failed to create output stream pipe (error %d)\n", errno);
+        return NULL;
+    }
     return svm_sandbox;
 }
 
+forked_svm_sandbox_t* forked_create_sandbox(int cpid, int ctl_wfd, int ctl_rfd) {
+    forked_svm_sandbox_t* clone = (forked_svm_sandbox_t*) malloc(sizeof(forked_svm_sandbox_t));
+    clone->child_pid = cpid;
+    clone->ctl_wfd = ctl_wfd;
+    clone->ctl_rfd = ctl_rfd;
+
+    // Receive streams for function invocation.
+    if (read(ctl_rfd, &clone->inv_wfd, sizeof(int)) != sizeof(int)) {
+        err("error: failed to receive input stream to parent");
+        return NULL;
+    }
+    if (read(ctl_rfd, &clone->inv_rfd, sizeof(int)) != sizeof(int)) {
+        err("error: failed to receive output stream to parent");
+        return NULL;
+    }
+
+    // Clone file descrptors from the child into the parent.
+    int cpidfd = syscall(SYS_pidfd_open, cpid, 0);
+    if (cpidfd < 0) {
+        err("error: failed to create pid file descriptor for child process");
+        return NULL;
+    }
+    clone->inv_wfd = syscall(SYS_pidfd_getfd, cpidfd, clone->inv_wfd, 0);
+    if (clone->inv_wfd < 0) {
+        err("error: failed to copy istream from the child process");
+        return NULL;
+    }
+    clone->inv_rfd = syscall(SYS_pidfd_getfd, cpidfd, clone->inv_rfd, 0);
+    if (clone->inv_wfd < 0) {
+        err("error: failed to copy ostream from the child process");
+        return NULL;
+    }
+    if (close(cpidfd)) {
+        err("error: failed to clone child pid file descriptor");
+        return NULL;
+    }
+
+    log("[forked_create_sandbox] new forked sandbox: cpid = %d, ctl_rfd = %d, ctl_wfd = %d, inv_rfd = %d, inv_wfg = %d\n",
+        clone->child_pid, clone->ctl_rfd, clone->ctl_wfd, clone->inv_rfd, clone->inv_wfd);
+    return clone;
+}
+
 svm_sandbox_t* clone_svm(svm_sandbox_t* sandbox, int reuse_isolate) {
-    svm_sandbox_t* clone = create_sandbox(sandbox->seed);
-    clone->abi = sandbox->abi;
+    graal_isolate_t* clone_isolate;
 
     if (reuse_isolate) {
-        clone->isolate = sandbox->isolate;
+        clone_isolate = sandbox->isolate;
     } else {
         // Create isolate with no limit (use 256*1024*1024 for 256MB).
         graal_create_isolate_params_t params;
@@ -268,18 +385,33 @@ svm_sandbox_t* clone_svm(svm_sandbox_t* sandbox, int reuse_isolate) {
         memset(&params, 0, sizeof(graal_create_isolate_params_t));
         params.version = 1;
         params.reserved_address_space_size = 0;
-        if (clone->abi.graal_create_isolate(&params, &clone->isolate, &isolatethread) != 0) {
+        if (sandbox->abi.graal_create_isolate(&params, &clone_isolate, &isolatethread) != 0) {
             err("error: failed to create isolate for cloned svm\n");
             return NULL;
         }
 
         // Detach thread function isolate and quit.
-        clone->abi.graal_detach_thread(isolatethread);
+        sandbox->abi.graal_detach_thread(isolatethread);
     }
 
     // Launch thread that will be handling requests for this svm sandbox.
+    svm_sandbox_t* clone = create_sandbox(sandbox->seed, sandbox->abi, clone_isolate);
     pthread_create(&clone->thread, NULL, notif_worker, clone);
     return clone;
+}
+
+forked_svm_sandbox_t* forked_clone_svm(forked_svm_sandbox_t* sandbox, int reuse_isolate) {
+    const char* cmd = "clone";
+    size_t len = strlen(cmd) + 1; // +1 to include the null terminator.
+    if (write(sandbox->ctl_wfd, &len, sizeof(size_t)) != sizeof(size_t)) {
+        err("error: failed to send clone command len to child");
+        return NULL;
+    }
+    if (write(sandbox->ctl_wfd, cmd, len) != len) {
+        err("error: failed to send clone command to child");
+        return NULL;
+    }
+    return forked_create_sandbox(sandbox->child_pid, sandbox->ctl_wfd, sandbox->ctl_rfd);
 }
 
 svm_sandbox_t* checkpoint_svm(
@@ -309,17 +441,16 @@ svm_sandbox_t* checkpoint_svm(
     memset(wargs, 0, sizeof(checkpoint_worker_args_t));
 
     pthread_mutex_lock(&cr_mutex);
-    svm_sandbox_t* svm_sandbox = create_sandbox(seed);
-    svm_sandbox->fin = fin;
-    svm_sandbox->fout = fout;
-    wargs->svm_sandbox = svm_sandbox;
+    wargs->fin = fin;
+    wargs->fout = fout;
     wargs->fpath = fpath;
     wargs->concurrency = concurrency;
     wargs->requests = requests;
     wargs->seed = seed;
 
+    // TODO - this is for the entire process. We should reset this at some point because it will affect other sandboxes and the hydra.
     if (set_next_pid(1000*(seed+1)) == -1) {
-        err("set_next_pid");
+        err("error: failed to set next pid");
         return NULL;
     }
 
@@ -362,7 +493,7 @@ svm_sandbox_t* checkpoint_svm(
     struct timeval st, et;
     gettimeofday(&st, NULL);
 #endif
-    checkpoint(meta_snap_fd, mem_snap_fd, &mappings, &threads, &svm_sandbox->abi, svm_sandbox->isolate);
+    checkpoint(meta_snap_fd, mem_snap_fd, &mappings, &threads, &wargs->abi, wargs->isolate);
 #ifdef PERF
     gettimeofday(&et, NULL);
     log("checkpoint took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
@@ -382,24 +513,23 @@ svm_sandbox_t* checkpoint_svm(
         resume_background_threads(&threads);
     }
 
-    pthread_create(&svm_sandbox->thread, NULL, notif_worker, svm_sandbox);
-
     // Close meta and mem fds.
     close(meta_snap_fd);
     close(mem_snap_fd);
     pthread_mutex_unlock(&cr_mutex);
 
+    svm_sandbox_t* svm_sandbox = create_sandbox(seed, wargs->abi, wargs->isolate);
+    pthread_create(&svm_sandbox->thread, NULL, notif_worker, svm_sandbox);
     return svm_sandbox;
 }
 
-svm_sandbox_t* restore_svm(
+svm_sandbox_t* restore_svm_internal(
         const char* fpath,
         const char* meta_snap_path,
         const char* mem_snap_path,
-        size_t seed,
-        const char* fin,
-        char* fout) {
-    svm_sandbox_t* svm_sandbox = create_sandbox(seed);
+        size_t seed) {
+    isolate_abi_t abi;
+    graal_isolate_t* isolate;
     int last_pid;
 
 #ifdef PERF
@@ -407,7 +537,7 @@ svm_sandbox_t* restore_svm(
     gettimeofday(&st, NULL);
 #endif
     pthread_mutex_lock(&cr_mutex);
-    restore(meta_snap_path, mem_snap_path, &svm_sandbox->abi, &svm_sandbox->isolate);
+    restore(meta_snap_path, mem_snap_path, &abi, &isolate);
     pthread_mutex_unlock(&cr_mutex);
 #ifdef PERF
     gettimeofday(&et, NULL);
@@ -429,6 +559,7 @@ svm_sandbox_t* restore_svm(
     }
 
     // Launch worker thread and wait for it to finish.
+    svm_sandbox_t* svm_sandbox = create_sandbox(seed, abi, isolate);
     pthread_create(&svm_sandbox->thread, NULL, notif_worker, svm_sandbox);
     // After launching original application, restore last next_pid for future threads
     if (last_pid != 1) {
@@ -438,7 +569,149 @@ svm_sandbox_t* restore_svm(
             return NULL;
         }
     }
-    invoke_svm(svm_sandbox, fin, fout);
-
     return svm_sandbox;
+}
+
+svm_sandbox_t* restore_svm(
+        const char* fpath,
+        const char* meta_snap_path,
+        const char* mem_snap_path,
+        size_t seed,
+        const char* fin,
+        char* fout) {
+    svm_sandbox_t* svm_sandbox = restore_svm_internal(fpath, meta_snap_path, mem_snap_path, seed);
+    invoke_svm(svm_sandbox, fin, fout);
+    return svm_sandbox;
+}
+
+void redirect_child_io() {
+    char fpath[256];
+    mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
+
+    // Safe close of stdin.
+    int fd = open("/dev/null", O_WRONLY);
+    if (fd < 0) {
+        err("error: failed to redirect stdin (errno %d)", errno);
+        exit(EXIT_FAILURE);
+    }
+    if (dup2(fd, 0) < 0) {
+        err("error: failed to dup2 fd %d into stdin (errno %d)", fd, errno);
+        exit(EXIT_FAILURE);
+    }
+    close(fd);
+
+    // Redirecting stdout and stderr to graalvisor-<pid>.log.
+    snprintf(fpath, 256, "graalvisor-%d.log", getpid());
+    fd = open(fpath, O_WRONLY | O_CREAT, mode);
+    if (fd < 0) {
+        err("error: failed to redirect output to %s (errno %d)", fpath, errno);
+        exit(EXIT_FAILURE);
+    }
+    if (dup2(fd, 1) < 0) {
+        err("error: failed to dup2 fd %d into stdout (errno %d)", fd, errno);
+        exit(EXIT_FAILURE);
+    }
+    if(dup2(fd, 2) < 0) {
+        err("error: failed to dup2 fd %d into stderr (errno %d)", fd, errno);
+        exit(EXIT_FAILURE);
+    }
+    close(fd);
+}
+
+forked_svm_sandbox_t* forked_restore_svm(
+        const char* fpath,
+        const char* meta_snap_path,
+        const char* mem_snap_path,
+        unsigned long seed,
+        const char* fin,
+        char* fout) {
+    int p2c_pp[2];
+    int c2p_pp[2];
+    // Control pipe to send commands into the child.
+    if (pipe(p2c_pp)) {
+        err("error: failed to create parent to child pipe for forked restore");
+        return NULL;
+    }
+    // Control pipe to read command output from the child.
+    if (pipe(c2p_pp)) {
+        err("error: failed to create child to parent pipe for forked restore");
+        return NULL;
+    }
+
+    int pid = fork();
+    if (pid == 0) {
+
+        // Move pipe fds to the reserved range so that it doesn't clash with any restored fd.
+        p2c_pp[0] = move_to_reserved_fd(p2c_pp[0]);
+        c2p_pp[1] = move_to_reserved_fd(c2p_pp[1]);
+
+        // Redirect child io to a log file.
+        redirect_child_io();
+
+
+#ifdef PERF
+        struct timeval st, et;
+        gettimeofday(&st, NULL);
+#endif
+        signal(SIGTERM, SIG_DFL);
+        signal(SIGINT, SIG_DFL);
+        for (int i = STDERR_FILENO + 1; i < RESERVED_FDS; i++) {
+            if (i != p2c_pp[0] && i !=c2p_pp[1]) {
+                close(i);
+            }
+        }
+#ifdef PERF
+        gettimeofday(&et, NULL);
+        log("preparing child process took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
+#endif
+
+        // If in the child, invoke restore and print output.
+        svm_sandbox_t* sandbox = restore_svm_internal(fpath, meta_snap_path, mem_snap_path, seed);
+
+        // Send streams for function invocation.
+        if (write(c2p_pp[1], &sandbox->istream[1], sizeof(int)) != sizeof(int)) {
+            err("error: failed to send invocation payload write stream to parent");
+            exit(EXIT_FAILURE);
+        }
+        if (write(c2p_pp[1], &sandbox->ostream[0], sizeof(int)) != sizeof(int)) {
+            err("error: failed to send invocation response read stream to parent");
+            exit(EXIT_FAILURE);
+        }
+
+        for (;;) {
+            char buffer[FOUT_LEN];
+            size_t len;
+            // Write len and input into pipe.
+            if (read(p2c_pp[0], &len, sizeof(size_t)) != sizeof(size_t)) {
+                err("error: failed to read command len (error %d)\n", errno);
+                continue;
+            }
+            if (read(p2c_pp[0], buffer, len) != len) {
+                err("error: failed to read command (error %d)\n", errno);
+                continue;
+            }
+            if (strncmp(buffer, "clone", strlen("clone"))) {
+                err("error: unknown command from parent: %s\n", buffer);
+                continue;
+            }
+
+            // Clone sandbox.
+            svm_sandbox_t* clone = clone_svm(sandbox, 1); // TODO - allow the parent to decide.
+
+            // Send cloned streams for function invocation.
+            if (write(c2p_pp[1], &clone->istream[1], sizeof(int)) != sizeof(int)) {
+                err("error: failed to send cloned invocation payload write stream to parent");
+                continue;
+            }
+            if (write(c2p_pp[1], &clone->ostream[0], sizeof(int)) != sizeof(int)) {
+                err("error: failed to send cloned invocation response read stream to parent");
+                continue;
+            }
+        }
+    } else {
+        // If in the parent, setup the sandbox and invoke.
+        forked_svm_sandbox_t* sandbox = forked_create_sandbox(pid, p2c_pp[1], c2p_pp[0]);
+        forked_invoke_svm(sandbox, fin, fout);
+        return sandbox;
+    }
 }

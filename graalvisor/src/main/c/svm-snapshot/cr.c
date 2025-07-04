@@ -102,6 +102,10 @@ int move_to_reserved_fd(int oldfd) {
     return move_fd(oldfd, __atomic_fetch_add(&next_reserved_fd, 1, __ATOMIC_SEQ_CST));
 }
 
+int fd_is_valid(int fd) {
+    return fcntl(fd, F_GETFD) != -1 || errno != EBADF;
+}
+
 size_t popcount(char* buffer, size_t count) {
     size_t result = 0;
     for (int i = 0; i < count / sizeof(unsigned int); i++) {
@@ -583,7 +587,7 @@ void restore_mmap(int meta_snap_fd) {
     // We use the previously returned address and MAP_FIXED to ensure that we recover the correct address.
     ret = (void*) syscall(__NR_mmap, s.ret, s.length, s.prot, s.flags | MAP_FIXED, s.fd, s.offset);
     if (s.ret != ret) {
-        err("error: failed to replay mmap:\t original ret = %16p got ret = %16p\n",  s.ret, ret);
+        err("error: failed to replay mmap:\t original ret = %16p got ret = %16p (errno = %d)\n",  s.ret, ret, errno);
     }
 }
 
@@ -629,6 +633,10 @@ void restore_dup(int meta_snap_fd) {
 
     print_dup(&s);
 
+    if (fd_is_valid(s.ret)) {
+        err("error: restoring an fd with dup will overwrite fd %d", s.ret);
+    }
+
     ret = syscall(__NR_dup2, s.oldfd, s.ret);
     if (s.ret != ret) {
         err("error: failed to replay dup:\t original ret = %d got ret = %d\n",  s.ret, ret);
@@ -644,6 +652,10 @@ void restore_dup2(int meta_snap_fd) {
     }
 
     print_dup2(&s);
+
+    if (fd_is_valid(s.newfd)) {
+        err("error: restoring an fd with dup2 will overwrite fd %d", s.newfd);
+    }
 
     ret = syscall(__NR_dup2, s.oldfd, s.newfd);
     if (s.ret != ret) {
@@ -664,7 +676,12 @@ void restore_open(int meta_snap_fd) {
     ret = syscall(__NR_open, s.pathname, s.flags, s.mode);
     if (s.ret != ret) {
         // If the file descriptor picked by open is not the expected, try to move it.
-        ret = move_fd(ret, s.ret);
+        if (ret >= 0) {
+            if (fd_is_valid(s.ret)) {
+                err("error: restoring an fd for open with dup2 will overwrite fd %d\n", s.ret);
+            }
+            ret = move_fd(ret, s.ret);
+        }
         if (s.ret != ret) {
             err("error: failed to replay open:\t original ret = %d got ret = %d\n",  s.ret, ret);
         }
@@ -685,6 +702,9 @@ void restore_openat(int meta_snap_fd) {
     if (s.ret != ret) {
         // If the return does not match but was not an error, try to save it by moving the fd.
         if (ret >= 0) {
+            if (fd_is_valid(s.ret)) {
+                err("error: restoring an fd for openat with dup2 will overwrite fd %d\n", s.ret);
+            }
             ret = move_fd(ret, s.ret);
         }
         if (s.ret != ret) {
