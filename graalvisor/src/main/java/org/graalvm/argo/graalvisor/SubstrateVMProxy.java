@@ -69,14 +69,14 @@ public class SubstrateVMProxy extends RuntimeProxy {
             this.pipeline = pipeline;
         }
 
-        private void processRequest(SandboxHandle shandle, Request req) {
+        private void processRequest(SandboxHandle shandle, Request req) throws Exception {
             try {
                 // Extending the arguments JSON object to include sandbox-specific tmp directory.
                 String arguments = JsonUtils.appendTmpDirectoryKey(req.getInput(), shandle.initSandboxTmpDirectory());
                 req.setOutput(shandle.invokeSandbox(arguments));
             } catch (Exception e) {
-                e.printStackTrace(System.err);
                 req.setOutput(getName());
+                throw e;
             } finally {
                 // If the request is async, send reply. Otherwise, notify the frontend thread.
                 if (req.async) {
@@ -115,14 +115,14 @@ public class SubstrateVMProxy extends RuntimeProxy {
                         }
                     }
                 }
-            } catch (InterruptedException e) {
+            } catch (Exception e) {
                 e.printStackTrace(System.err);
+            } finally {
+                // Worker is terminating. Decrement worker count.
+                pipeline.workers.decrementAndGet();
+                // Also destroy the sandbox.
+                destroySandbox(pipeline.getFunction(), shandle);
             }
-
-            // Worker is terminating. Decrement worker count.
-            pipeline.workers.decrementAndGet();
-            // Also destroy the sandbox.
-            destroySandbox(pipeline.getFunction(), shandle);
         }
 
         @Override
