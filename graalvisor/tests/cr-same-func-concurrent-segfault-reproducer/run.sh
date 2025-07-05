@@ -6,8 +6,6 @@ function DIR {
 
 source $(DIR)/shared.sh
 
-BENCH_ARRAY=(pyco pydh)
-
 function run_benchmark {
     # Clean logs but not snapshots.
     bash $(DIR)/cleanup.sh
