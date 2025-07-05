@@ -8,7 +8,7 @@ public class SnapshotSandboxHandle extends SandboxHandle {
      * Native sandbox handle (pointer casted to long).
      * This value is set from JNI (see checkpoint and restore svm).
      */
-    private final long sandboxHandle = 0;
+    private volatile long sandboxHandle = 0;
 
     @Override
     public String invokeSandbox(String jsonArguments) throws IOException {

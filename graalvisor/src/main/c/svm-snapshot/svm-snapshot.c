@@ -100,12 +100,12 @@ typedef struct {
 
 void run_serial_entrypoint(isolate_abi_t* abi, graal_isolatethread_t *isolatethread, int requests, const char* fin, char* fout) {
      for (int i = 0; i < requests; i++) {
-#ifdef PERF
+#ifdef PERF_DEBUG
         struct timeval st, et;
         gettimeofday(&st, NULL);
 #endif
         abi->entrypoint(isolatethread, fin, fout, FOUT_LEN);
-#ifdef PERF
+#ifdef PERF_DEBUG
         gettimeofday(&et, NULL);
         log("entrypoint took %lu us\n", ((et.tv_sec - st.tv_sec) * 1000000) + (et.tv_usec - st.tv_usec));
 #endif
