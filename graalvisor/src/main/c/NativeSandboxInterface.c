@@ -160,6 +160,17 @@ JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSand
     return (*env)->NewStringUTF(env, fout);
 }
 
+JNIEXPORT jstring JNICALL java_org_graalvm_argo_graalvisor_sandboxing_nativesandboxinterface_svmDestroy(
+        JNIEnv *env,
+        jobject thisObj,
+        jobject sandboxHandle,
+        jboolean reuseIsolate) {
+    jclass cls = (*env)->GetObjectClass(env, sandboxHandle);
+    jlong sandbox_handle = (*env)->GetLongField(env, sandboxHandle, (*env)->GetFieldID(env, cls, "sandboxHandle", "J"));
+    forked_destroy_svm((forked_svm_sandbox_t*)sandbox_handle, reuseIsolate);
+    return;
+}
+
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmClone(
         JNIEnv *env,
         jobject thisObj,
@@ -222,6 +233,16 @@ JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSand
     (*env)->ReleaseStringUTFChars(env, meta_snap_path, meta_snap_path_str);
     (*env)->ReleaseStringUTFChars(env, fin, fin_str);
     return (*env)->NewStringUTF(env, fout);
+}
+
+JNIEXPORT jstring JNICALL java_org_graalvm_argo_graalvisor_sandboxing_nativesandboxinterface_svmUnload(
+        JNIEnv *env,
+        jobject thisObj,
+        jobject sandboxHandle) {
+    jclass cls = (*env)->GetObjectClass(env, sandboxHandle);
+    jlong sandbox_handle = (*env)->GetLongField(env, sandboxHandle, (*env)->GetFieldID(env, cls, "sandboxHandle", "J"));
+    forked_unload_svm((forked_svm_sandbox_t*)sandbox_handle);
+    return;
 }
 
 typedef struct {
@@ -371,7 +392,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     function_abi_t* fabi = (function_abi_t*) fabiPtr;
     graal_isolatethread_t* ithread = (graal_isolatethread_t*) ithreadPtr;
     if (fabi->sabi.graal_tear_down_isolate(ithread) != 0) {
-        fprintf(stderr, "error: failed to create isolate\n");
+        fprintf(stderr, "error: failed to destroy isolate\n");
     }
 }
 

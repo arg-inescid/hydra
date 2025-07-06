@@ -28,6 +28,19 @@ void forked_invoke_svm(
     const char* fin,
     char* fout);
 
+/* Destroys an svm sandbox. If `rease_isolate` is non-zero, then the isolate used
+   in this sandbox is deleted and the thread handling requests for this sandbox is
+   terminated. Otherwise, the isolate is kept alive and the thread terminates.
+*/
+void destroy_svm(
+    // Sandbox to be destroyed.
+    svm_sandbox_t* sandbox,
+    // If zero, the isolate used in this sandbox will be terminated.
+    int reuse_isolate);
+
+/* Similar to non-forked version. */
+void forked_destroy_svm(forked_svm_sandbox_t* sandbox, int reuse_isolate);
+
 /* Creates a new svm_sandbox_t pointing to the same underlying sandbox. A cloned
    sandbox can be invoked concurrently with other clones and the original. */
 svm_sandbox_t* clone_svm(
@@ -101,6 +114,11 @@ forked_svm_sandbox_t* forked_restore_svm(
     unsigned long seed,
     const char* fin,
     char* fout);
+
+/* Unloads a function/snapshot. */
+void forked_unload_svm(
+    // Sandbox to be destroyed.
+    forked_svm_sandbox_t* sandbox);
 
 /*  Loads and runs a substrate vm instance. */
 void run_svm(
