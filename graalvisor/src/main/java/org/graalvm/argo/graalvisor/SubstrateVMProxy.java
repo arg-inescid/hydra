@@ -69,14 +69,20 @@ public class SubstrateVMProxy extends RuntimeProxy {
             this.pipeline = pipeline;
         }
 
-        private void processRequest(SandboxHandle shandle, Request req) throws Exception {
+        /**
+         * Process the request in the given sandbox.
+         * @return true if the request was processed without exceptions; false otherwise.
+         */
+        private boolean processRequest(SandboxHandle shandle, Request req) {
             try {
                 // Extending the arguments JSON object to include sandbox-specific tmp directory.
                 String arguments = JsonUtils.appendTmpDirectoryKey(req.getInput(), shandle.initSandboxTmpDirectory());
                 req.setOutput(shandle.invokeSandbox(arguments));
+                return true;
             } catch (Exception e) {
+                e.printStackTrace();
                 req.setOutput(getName());
-                throw e;
+                return false;
             } finally {
                 // If the request is async, send reply. Otherwise, notify the frontend thread.
                 if (req.async) {
@@ -101,7 +107,10 @@ public class SubstrateVMProxy extends RuntimeProxy {
                     if (req != null) {
                         try {
                             // Processes a single request in the pipeline.
-                            processRequest(shandle, req);
+                            if (!processRequest(shandle, req)) {
+                                // If failed, break from the loop and destroy sandbox.
+                                break;
+                            }
                         } finally {
                             // Decrement active requests in the pipeline.
                             pipeline.active.getAndDecrement();
@@ -118,14 +127,13 @@ public class SubstrateVMProxy extends RuntimeProxy {
                         }
                     }
                 }
-            } catch (Exception e) {
+            } catch (InterruptedException e) {
                 e.printStackTrace(System.err);
-            } finally {
-                // Worker is terminating. Decrement worker count.
-                pipeline.workers.decrementAndGet();
-                // Also destroy the sandbox.
-                destroySandbox(pipeline.getFunction(), shandle);
             }
+            // Worker is terminating. Decrement worker count.
+            pipeline.workers.decrementAndGet();
+            // Also destroy the sandbox.
+            destroySandbox(pipeline.getFunction(), shandle);
         }
 
         @Override
