@@ -80,7 +80,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
                 req.setOutput(shandle.invokeSandbox(arguments));
                 return true;
             } catch (Exception e) {
-                e.printStackTrace();
+                e.printStackTrace(System.err);
                 req.setOutput(getName());
                 return false;
             } finally {
@@ -129,6 +129,7 @@ public class SubstrateVMProxy extends RuntimeProxy {
             } catch (InterruptedException e) {
                 e.printStackTrace(System.err);
             }
+
             // Worker is terminating. Decrement worker count.
             pipeline.workers.decrementAndGet();
             // Also destroy the sandbox.
