@@ -132,7 +132,7 @@ public class SnapshotSandboxProvider extends SandboxProvider {
 
     @Override
     public void unloadProvider() throws IOException {
-        NativeSandboxInterface.unloadFunction(this.functionHandle);
+        NativeSandboxInterface.svmUnload(this.sandboxHandle);
         this.warmedUp.set(false);
     }
 

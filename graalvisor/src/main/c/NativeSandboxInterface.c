@@ -234,7 +234,7 @@ JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSand
     return (*env)->NewStringUTF(env, fout);
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_nativesandboxinterface_svmUnload(
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmUnload(
         JNIEnv *env,
         jobject thisObj,
         jobject sandboxHandle) {
