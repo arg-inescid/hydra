@@ -755,7 +755,7 @@ void forked_unload_svm(forked_svm_sandbox_t* sandbox) {
     if (close(sandbox->ctl_wfd)) {
         err("error: failed to close control write stream for forked sandbox with pid %d (errno %d)\n", sandbox->child_pid, errno);
     }
-    if (kill(sandbox->child_pid)) {
+    if (kill(sandbox->child_pid, SIGKILL)) {
         err("error: failed to kill forked sandbox with pid %d (errno %d)\n", sandbox->child_pid, errno);
     }
 }

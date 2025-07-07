@@ -160,7 +160,7 @@ JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSand
     return (*env)->NewStringUTF(env, fout);
 }
 
-JNIEXPORT jstring JNICALL java_org_graalvm_argo_graalvisor_sandboxing_nativesandboxinterface_svmDestroy(
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmDestroy(
         JNIEnv *env,
         jobject thisObj,
         jobject sandboxHandle,
@@ -168,7 +168,6 @@ JNIEXPORT jstring JNICALL java_org_graalvm_argo_graalvisor_sandboxing_nativesand
     jclass cls = (*env)->GetObjectClass(env, sandboxHandle);
     jlong sandbox_handle = (*env)->GetLongField(env, sandboxHandle, (*env)->GetFieldID(env, cls, "sandboxHandle", "J"));
     forked_destroy_svm((forked_svm_sandbox_t*)sandbox_handle, reuseIsolate);
-    return;
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmClone(
@@ -235,14 +234,13 @@ JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSand
     return (*env)->NewStringUTF(env, fout);
 }
 
-JNIEXPORT jstring JNICALL java_org_graalvm_argo_graalvisor_sandboxing_nativesandboxinterface_svmUnload(
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_nativesandboxinterface_svmUnload(
         JNIEnv *env,
         jobject thisObj,
         jobject sandboxHandle) {
     jclass cls = (*env)->GetObjectClass(env, sandboxHandle);
     jlong sandbox_handle = (*env)->GetLongField(env, sandboxHandle, (*env)->GetFieldID(env, cls, "sandboxHandle", "J"));
     forked_unload_svm((forked_svm_sandbox_t*)sandbox_handle);
-    return;
 }
 
 typedef struct {
