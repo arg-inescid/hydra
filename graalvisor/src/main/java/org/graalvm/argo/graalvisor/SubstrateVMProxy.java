@@ -105,17 +105,16 @@ public class SubstrateVMProxy extends RuntimeProxy {
                     req = pipeline.queue.poll();
 
                     if (req != null) {
-                        try {
-                            // Processes a single request in the pipeline.
-                            if (!processRequest(shandle, req)) {
-                                // If failed, break from the loop and destroy sandbox.
-                                break;
-                            }
-                        } finally {
-                            // Decrement active requests in the pipeline.
-                            pipeline.active.getAndDecrement();
-                            // Reset the counter since we successfully processed a request, or it failed.
-                            numberAttempts = 0;
+                        // Processes a single request in the pipeline.
+                        boolean success = processRequest(shandle, req);
+                        // Decrement active requests in the pipeline.
+                        pipeline.active.getAndDecrement();
+                        // Reset the counter since we successfully processed a request, or it failed.
+                        numberAttempts = 0;
+
+                        if (!success) {
+                            // If the request failed, break from the loop and destroy sandbox.
+                            break;
                         }
                     } else {
                         // Sleep for 1 millisecond before trying again
