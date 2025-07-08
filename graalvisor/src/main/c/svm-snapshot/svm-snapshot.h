@@ -95,25 +95,14 @@ svm_sandbox_t* restore_svm(
     // will used. Each seed value represents a 16TB virtual memory range. When
     // calling restore, the user must make sure there is no restoredsvm instance
     // using the same range.
-    unsigned long seed,
-    // Arguments passed to the function upon each invocation.
-    // Expects null-terminated string with max len FOUT_LEN
-    const char* fin,
-    // Output buffer where the output of the invocation will be placed.
-    // Note that if multiple invocations are performed (as a result of concurrency
-    // or requests), only the output of the first request will be saved.
-    // If the output string is larger than FOUT_LEN, a warning
-    // is printed to stdout and a '\0' is placed at outbuf[outbuf_len - 1].
-    char* fout);
+    unsigned long seed);
 
 /* Similar to the non-forked version. */
 forked_svm_sandbox_t* forked_restore_svm(
     const char* fpath,
     const char* meta_snap_path,
     const char* mem_snap_path,
-    unsigned long seed,
-    const char* fin,
-    char* fout);
+    unsigned long seed);
 
 /* Unloads a function/snapshot. */
 void forked_unload_svm(

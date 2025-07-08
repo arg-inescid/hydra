@@ -210,28 +210,24 @@ JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSand
     return (*env)->NewStringUTF(env, fout);
 }
 
-JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmRestore(
+JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmRestore(
         JNIEnv *env,
         jobject thisObj,
         jint svmid,
         jobject sandboxHandle,
-        jstring fin,
         jstring fpath,
         jstring meta_snap_path,
         jstring mem_snap_path) {
     const char* fpath_str = (*env)->GetStringUTFChars(env, fpath, 0);
     const char* meta_snap_path_str = (*env)->GetStringUTFChars(env, meta_snap_path, 0);
     const char* mem_snap_path_str = (*env)->GetStringUTFChars(env, mem_snap_path, 0);
-    const char* fin_str = (*env)->GetStringUTFChars(env, fin, 0);
-    char fout[FOUT_LEN];
-    jlong sandbox_handle = (jlong) forked_restore_svm(fpath_str, meta_snap_path_str, mem_snap_path_str, svmid, fin_str, fout);
+    jlong sandbox_handle = (jlong) forked_restore_svm(fpath_str, meta_snap_path_str, mem_snap_path_str, svmid);
     jclass cls = (*env)->GetObjectClass(env, sandboxHandle);
     (*env)->SetLongField(env, sandboxHandle, (*env)->GetFieldID(env, cls, "sandboxHandle", "J"), sandbox_handle);
     (*env)->ReleaseStringUTFChars(env, fpath, fpath_str);
     (*env)->ReleaseStringUTFChars(env, mem_snap_path, mem_snap_path_str);
     (*env)->ReleaseStringUTFChars(env, meta_snap_path, meta_snap_path_str);
-    (*env)->ReleaseStringUTFChars(env, fin, fin_str);
-    return (*env)->NewStringUTF(env, fout);
+    return;
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmUnload(
