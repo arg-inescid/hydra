@@ -608,12 +608,8 @@ svm_sandbox_t* restore_svm(
         const char* fpath,
         const char* meta_snap_path,
         const char* mem_snap_path,
-        size_t seed,
-        const char* fin,
-        char* fout) {
-    svm_sandbox_t* svm_sandbox = restore_svm_internal(fpath, meta_snap_path, mem_snap_path, seed);
-    invoke_svm(svm_sandbox, fin, fout);
-    return svm_sandbox;
+        size_t seed) {
+    return restore_svm_internal(fpath, meta_snap_path, mem_snap_path, seed);
 }
 
 void redirect_child_io() {
@@ -654,9 +650,7 @@ forked_svm_sandbox_t* forked_restore_svm(
         const char* fpath,
         const char* meta_snap_path,
         const char* mem_snap_path,
-        unsigned long seed,
-        const char* fin,
-        char* fout) {
+        unsigned long seed) {
     int p2c_pp[2];
     int c2p_pp[2];
     // Control pipe to send commands into the child.
@@ -742,9 +736,7 @@ forked_svm_sandbox_t* forked_restore_svm(
         }
     } else {
         // If in the parent, setup the sandbox and invoke.
-        forked_svm_sandbox_t* sandbox = forked_create_sandbox(pid, p2c_pp[1], c2p_pp[0]);
-        forked_invoke_svm(sandbox, fin, fout);
-        return sandbox;
+        return forked_create_sandbox(pid, p2c_pp[1], c2p_pp[0]);
     }
 }
 
@@ -755,7 +747,8 @@ void forked_unload_svm(forked_svm_sandbox_t* sandbox) {
     if (close(sandbox->ctl_wfd)) {
         err("error: failed to close control write stream for forked sandbox with pid %d (errno %d)\n", sandbox->child_pid, errno);
     }
-    if (kill(sandbox->child_pid, SIGKILL)) {
+    if (kill(sandbox->child_pid, SIGTERM)) {
         err("error: failed to kill forked sandbox with pid %d (errno %d)\n", sandbox->child_pid, errno);
     }
+    log("[forked_unload_svm] kill forked sandbox: cpid = %d\n", sandbox->child_pid);
 }

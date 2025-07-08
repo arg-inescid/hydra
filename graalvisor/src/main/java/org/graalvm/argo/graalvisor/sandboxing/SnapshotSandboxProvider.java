@@ -13,33 +13,33 @@ import com.oracle.svm.graalvisor.polyglot.PolyglotLanguage;
 
 public class SnapshotSandboxProvider extends SandboxProvider {
 
-    private AtomicBoolean warmedUp = new AtomicBoolean(false);
+    protected AtomicBoolean warmedUp = new AtomicBoolean(false);
     /**
      * This number is used to identify a memory range where the svm instance will be restored.
      * Note 1: the same id should be used when checkpointing and restoring.
      * Note 2: we cannot host two functions with the same svmID at the same time.
      */
-    private int svmID = 0;
+    protected int svmID = 0;
     /**
      * Path to function library file.
      */
-    private final String functionPath;
+    protected final String functionPath;
     /**
      * Paths where checkpoint saves svm instace state.
      */
-    private final String metaSnapPath;
-    private final String memSnapPath;
+    protected final String metaSnapPath;
+    protected final String memSnapPath;
 
     /**
      * In snapshotted sandboxes, we have a 'base' sandbox that is created on restore.
      * This sandbox is used to create additional sandboxes, should not be destroyed but
      * can be used for normal invocations.
      */
-    private final SnapshotSandboxHandle sandboxHandle = new SnapshotSandboxHandle();
+    protected final SnapshotSandboxHandle sandboxHandle = new SnapshotSandboxHandle();
     /**
      * Number of sandboxes handles returned from createSandbox.
      */
-    private AtomicInteger sandboxHandleCounter = new AtomicInteger(0);
+    protected AtomicInteger sandboxHandleCounter = new AtomicInteger(0);
     /**
      * For non-Java functions, we rely on Truffle contexts to isolate function code. This
      * means that for this provider, N sandboxes we will have a single isolate and N contexts.
@@ -80,10 +80,9 @@ public class SnapshotSandboxProvider extends SandboxProvider {
             } else if (new File(this.metaSnapPath).exists()) {
                 // A snapshot was found, we are restoring.
                 System.out.println(String.format("Found %s, restoring svm.", this.metaSnapPath));
-                String output = NativeSandboxInterface.svmRestore(
-                    svmID, sandboxHandle, jsonArguments, functionPath, metaSnapPath, memSnapPath);
+                NativeSandboxInterface.svmRestore(svmID, sandboxHandle, functionPath, metaSnapPath, memSnapPath);
                 warmedUp.set(true);
-                return output;
+                return NativeSandboxInterface.svmInvoke(sandboxHandle, jsonArguments);
             } else {
                 // A snapshot was NOT found, we are checkpointing.
                 System.out.println(String.format("No snapshot found (%s), checkpointing svm after %d requests on %d concurrent threads.",
@@ -124,10 +123,10 @@ public class SnapshotSandboxProvider extends SandboxProvider {
     @Override
     public synchronized void destroySandbox(SandboxHandle shandle) throws IOException {
         NativeSandboxInterface.svmDestroy((SnapshotSandboxHandle) shandle, useContextIsolation);
-        shandle.destroyHandle();
         if (sandboxHandleCounter.decrementAndGet() == 0) {
             unloadProvider();
         }
+        shandle.destroyHandle();
     }
 
     @Override

@@ -99,9 +99,11 @@ int main(int argc, char** argv) {
     setvbuf(stdout, NULL, _IONBF, 0);
 
     if (CURRENT_MODE == RESTORE) {
-        restore_svm(FPATH, "metadata.snap", "memory.snap", SEED, fin, fout);
+        svm_sandbox_t* sandbox = restore_svm(FPATH, "metadata.snap", "memory.snap", SEED);
+        invoke_svm(sandbox, fin, fout);
     } else if (CURRENT_MODE == FRESTORE) {
-        forked_restore_svm(FPATH, "metadata.snap", "memory.snap", SEED, fin, fout);
+        forked_svm_sandbox_t* sandbox = forked_restore_svm(FPATH, "metadata.snap", "memory.snap", SEED);
+        forked_invoke_svm(sandbox, fin, fout);
     } else if (CURRENT_MODE == CHECKPOINT) {
         checkpoint_svm(FPATH, "metadata.snap", "memory.snap", SEED, CONC, ITERS, fin, fout);
     } else {

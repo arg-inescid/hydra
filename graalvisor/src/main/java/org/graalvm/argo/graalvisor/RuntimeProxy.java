@@ -26,6 +26,7 @@ import org.graalvm.argo.graalvisor.sandboxing.IsolateSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.ExecutableSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.ProcessSandboxProvider;
 import org.graalvm.argo.graalvisor.sandboxing.SandboxProvider;
+import org.graalvm.argo.graalvisor.sandboxing.SnapshotProcessSandboxProvider;
 import org.graalvm.argo.graalvisor.utils.HttpUtils;
 import org.graalvm.argo.graalvisor.utils.ZipUtils;
 
@@ -252,6 +253,8 @@ public abstract class RuntimeProxy {
                 return new ContextSandboxProvider(function);
             } else if (sandboxName.equals("snapshot")) {
                 return new SnapshotSandboxProvider(function);
+            } else if (sandboxName.equals("snapshot-process")) {
+                return new SnapshotProcessSandboxProvider(function);
             } else if (sandboxName.equals("isolate")) {
                 return new IsolateSandboxProvider(function);
             } else if (sandboxName.equals("process")) {
