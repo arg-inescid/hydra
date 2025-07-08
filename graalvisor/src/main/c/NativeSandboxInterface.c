@@ -181,7 +181,6 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     jlong original_handle = (*env)->GetLongField(env, original, field);
     jlong clone_handle = (jlong) forked_clone_svm((forked_svm_sandbox_t*)original_handle, reuseIsolate);
     (*env)->SetLongField(env, clone, field, clone_handle);
-    return;
 }
 
 JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmCheckpoint(
@@ -227,7 +226,6 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     (*env)->ReleaseStringUTFChars(env, fpath, fpath_str);
     (*env)->ReleaseStringUTFChars(env, mem_snap_path, mem_snap_path_str);
     (*env)->ReleaseStringUTFChars(env, meta_snap_path, meta_snap_path_str);
-    return;
 }
 
 JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmUnload(
