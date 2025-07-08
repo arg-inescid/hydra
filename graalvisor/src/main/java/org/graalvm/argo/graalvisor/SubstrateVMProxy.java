@@ -69,14 +69,20 @@ public class SubstrateVMProxy extends RuntimeProxy {
             this.pipeline = pipeline;
         }
 
-        private void processRequest(SandboxHandle shandle, Request req) {
+        /**
+         * Process the request in the given sandbox.
+         * @return true if the request was processed without exceptions; false otherwise.
+         */
+        private boolean processRequest(SandboxHandle shandle, Request req) {
             try {
                 // Extending the arguments JSON object to include sandbox-specific tmp directory.
                 String arguments = JsonUtils.appendTmpDirectoryKey(req.getInput(), shandle.initSandboxTmpDirectory());
                 req.setOutput(shandle.invokeSandbox(arguments));
+                return true;
             } catch (Exception e) {
                 e.printStackTrace(System.err);
                 req.setOutput(getName());
+                return false;
             } finally {
                 // If the request is async, send reply. Otherwise, notify the frontend thread.
                 if (req.async) {
@@ -100,11 +106,16 @@ public class SubstrateVMProxy extends RuntimeProxy {
 
                     if (req != null) {
                         // Processes a single request in the pipeline.
-                        processRequest(shandle, req);
+                        boolean success = processRequest(shandle, req);
                         // Decrement active requests in the pipeline.
                         pipeline.active.getAndDecrement();
-                        // Reset the counter since we successfully processed a request
+                        // Reset the counter since we successfully processed a request, or it failed.
                         numberAttempts = 0;
+
+                        if (!success) {
+                            // If the request failed, break from the loop and destroy sandbox.
+                            break;
+                        }
                     } else {
                         // Sleep for 1 millisecond before trying again
                         Thread.sleep(10);
