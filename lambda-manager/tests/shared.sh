@@ -43,7 +43,17 @@ function register_gv {
         INVOCATION_COLLOCATION=true
     fi
 
-    lang=java
+    lang=
+    if [[ $bench == "gv_jv"* ]]; then
+        lang=java
+    elif [[ $bench == "gv_py"* ]]; then
+        lang=python
+    elif [[ $bench == "gv_js"* ]]; then
+        lang=javascript
+    else
+        echo "Cannot determine language of the benchmark: $bench"
+    fi
+
     runtime=graalvisor
 
     entrypoint=${BENCHMARK_ENTRYPOINTS["$bench"]}
