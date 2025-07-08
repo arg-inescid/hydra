@@ -229,10 +229,7 @@ void* notif_worker(void* args) {
 
         // Read function input length.
         ret = read(svm->istream[0], &len, sizeof(size_t));
-        if (ret == 0) {
-            dbg("[notif_worker tid=%d] receiving input with 0 bytes, exiting...\n", gettid());
-            break;
-        } else if (ret != sizeof(size_t)) {
+        if (ret != sizeof(size_t)) {
             err("error: failed to read input len (error %d)\n", errno);
         }
 
@@ -251,6 +248,21 @@ void* notif_worker(void* args) {
         fin[len == 0 ? 0 : len - 1] = '\0';
 
         dbg("[notif_worker tid=%d] received input: %s (len = %d)\n", gettid(), fin, len);
+
+        // Check if we should quit.
+        if (!strncmp(fin, "stop", 4)) {
+            ret = svm->abi.graal_detach_thread(isolatethread);
+            if (ret) {
+                err("error: failed to detach thread from isolate (error %d)", ret);
+            }
+            break;
+        } else if (!strncmp(fin, "destroy", 7)) {
+            ret = svm->abi.graal_tear_down_isolate(isolatethread);
+            if (ret) {
+                err("error: failed to destroy isolate (error %d)", ret);
+            }
+            break;
+        }
 
         // Call the function.
         run_entrypoint(&svm->abi, svm->isolate, isolatethread, 1, 1, fin, fout);
@@ -277,6 +289,12 @@ void* notif_worker(void* args) {
             err("error: failed to write output (error %d)\n", errno);
         }
     }
+
+    // Close all streams and quit.
+    close(svm->istream[0]);
+    close(svm->istream[1]);
+    close(svm->ostream[0]);
+    close(svm->ostream[1]);
     return NULL;
 }
 
@@ -292,6 +310,10 @@ void invoke_svm_internal(int input_wfd, int output_rfd, const char* fin, char* f
     }
     if (write(input_wfd, fin, len) != len) {
         err("error: failed to write input (error %d)\n", errno);
+    }
+    // Early return if fout is null (i.e., no answer is expected.)
+    if (fout == NULL) {
+        return;
     }
     // Read output len from pipe.
     if(read(output_rfd, &len, sizeof(size_t)) != sizeof(size_t)) {
@@ -312,6 +334,16 @@ void invoke_svm(svm_sandbox_t* sandbox, const char* fin, char* fout) {
 
 void forked_invoke_svm(forked_svm_sandbox_t* sandbox, const char* fin, char* fout) {
     invoke_svm_internal(sandbox->inv_wfd, sandbox->inv_rfd, fin, fout);
+}
+
+void destroy_svm(svm_sandbox_t* sandbox, int reuse_isolate) {
+    invoke_svm_internal(sandbox->istream[1], sandbox->ostream[0], reuse_isolate ? "stop" : "destroy", NULL);
+}
+
+void forked_destroy_svm(forked_svm_sandbox_t* sandbox, int reuse_isolate) {
+    invoke_svm_internal(sandbox->inv_wfd, sandbox->inv_rfd, reuse_isolate ? "stop" : "destroy", NULL);
+    close(sandbox->inv_rfd);
+    close(sandbox->inv_wfd);
 }
 
 svm_sandbox_t* create_sandbox(unsigned long seed, isolate_abi_t abi, graal_isolate_t* isolate) {
@@ -401,7 +433,7 @@ svm_sandbox_t* clone_svm(svm_sandbox_t* sandbox, int reuse_isolate) {
 }
 
 forked_svm_sandbox_t* forked_clone_svm(forked_svm_sandbox_t* sandbox, int reuse_isolate) {
-    const char* cmd = "clone";
+    const char* cmd = "clone"; // TODO - this needs to be parametrized w/ reuse.
     size_t len = strlen(cmd) + 1; // +1 to include the null terminator.
     if (write(sandbox->ctl_wfd, &len, sizeof(size_t)) != sizeof(size_t)) {
         err("error: failed to send clone command len to child");
@@ -681,7 +713,7 @@ forked_svm_sandbox_t* forked_restore_svm(
         for (;;) {
             char buffer[FOUT_LEN];
             size_t len;
-            // Write len and input into pipe.
+            // Read len and input into pipe.
             if (read(p2c_pp[0], &len, sizeof(size_t)) != sizeof(size_t)) {
                 err("error: failed to read command len (error %d)\n", errno);
                 continue;
@@ -700,11 +732,11 @@ forked_svm_sandbox_t* forked_restore_svm(
 
             // Send cloned streams for function invocation.
             if (write(c2p_pp[1], &clone->istream[1], sizeof(int)) != sizeof(int)) {
-                err("error: failed to send cloned invocation payload write stream to parent");
+                err("error: failed to send cloned invocation payload write stream to parent\n");
                 continue;
             }
             if (write(c2p_pp[1], &clone->ostream[0], sizeof(int)) != sizeof(int)) {
-                err("error: failed to send cloned invocation response read stream to parent");
+                err("error: failed to send cloned invocation response read stream to parent\n");
                 continue;
             }
         }
@@ -713,5 +745,17 @@ forked_svm_sandbox_t* forked_restore_svm(
         forked_svm_sandbox_t* sandbox = forked_create_sandbox(pid, p2c_pp[1], c2p_pp[0]);
         forked_invoke_svm(sandbox, fin, fout);
         return sandbox;
+    }
+}
+
+void forked_unload_svm(forked_svm_sandbox_t* sandbox) {
+    if (close(sandbox->ctl_rfd)) {
+        err("error: failed to close control read stream for forked sandbox with pid %d (errno %d)\n", sandbox->child_pid, errno);
+    }
+    if (close(sandbox->ctl_wfd)) {
+        err("error: failed to close control write stream for forked sandbox with pid %d (errno %d)\n", sandbox->child_pid, errno);
+    }
+    if (kill(sandbox->child_pid, SIGKILL)) {
+        err("error: failed to kill forked sandbox with pid %d (errno %d)\n", sandbox->child_pid, errno);
     }
 }

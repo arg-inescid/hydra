@@ -9,6 +9,8 @@ import org.graalvm.argo.graalvisor.function.NativeFunction;
 import org.graalvm.argo.graalvisor.function.PolyglotFunction;
 import org.graalvm.argo.graalvisor.utils.JsonUtils;
 
+import com.oracle.svm.graalvisor.polyglot.PolyglotLanguage;
+
 public class SnapshotSandboxProvider extends SandboxProvider {
 
     private AtomicBoolean warmedUp = new AtomicBoolean(false);
@@ -38,12 +40,18 @@ public class SnapshotSandboxProvider extends SandboxProvider {
      * Number of sandboxes handles returned from createSandbox.
      */
     private AtomicInteger sandboxHandleCounter = new AtomicInteger(0);
+    /**
+     * For non-Java functions, we rely on Truffle contexts to isolate function code. This
+     * means that for this provider, N sandboxes we will have a single isolate and N contexts.
+     */
+    private final boolean useContextIsolation;
 
     public SnapshotSandboxProvider(PolyglotFunction function) {
         super(function);
         this.functionPath = ((NativeFunction) getFunction()).getPath();
         this.metaSnapPath = functionPath + ".metasnap";
         this.memSnapPath =  functionPath + ".memsnap";
+        this.useContextIsolation = function.getLanguage() != PolyglotLanguage.JAVA;
     }
 
     public void setSVMID(int svmID) throws IOException {
@@ -105,8 +113,7 @@ public class SnapshotSandboxProvider extends SandboxProvider {
                 return this.sandboxHandle;
             } else {
                 SnapshotSandboxHandle clone = new SnapshotSandboxHandle();
-                // TODO - for Java applications we may not want to reuse the isolate.
-                NativeSandboxInterface.svmClone(this.sandboxHandle, clone, true);
+                NativeSandboxInterface.svmClone(this.sandboxHandle, clone, this.useContextIsolation);
                 return clone;
             }
         } else {
@@ -115,19 +122,22 @@ public class SnapshotSandboxProvider extends SandboxProvider {
     }
 
     @Override
-    public void destroySandbox(SandboxHandle shandle) throws IOException {
-        sandboxHandleCounter.getAndDecrement();
-        System.out.println("Snapshot sandbox handle destroy has not been implemented yet. Ignoring..");
+    public synchronized void destroySandbox(SandboxHandle shandle) throws IOException {
+        NativeSandboxInterface.svmDestroy((SnapshotSandboxHandle) shandle, useContextIsolation);
         shandle.destroyHandle();
+        if (sandboxHandleCounter.decrementAndGet() == 0) {
+            unloadProvider();
+        }
     }
 
     @Override
     public void unloadProvider() throws IOException {
-        throw new IOException("Snapshot sandbox provider unloading is not supported yet...");
+        NativeSandboxInterface.svmUnload(this.sandboxHandle);
+        this.warmedUp.set(false);
     }
 
     @Override
     public String getName() {
-        return "context-snapshot";
+        return "snapshot";
     }
 }

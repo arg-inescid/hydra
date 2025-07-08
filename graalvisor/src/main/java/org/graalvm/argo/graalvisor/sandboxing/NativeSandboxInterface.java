@@ -16,6 +16,7 @@ public class NativeSandboxInterface {
 
     // Methods to access svm-snapshot module (see svm-snapshot.h).
     public static native String svmInvoke(SnapshotSandboxHandle sandboxHandle, String args);
+    public static native void svmDestroy(SnapshotSandboxHandle sandboxHandle, boolean reuseIsolate);
     public static native void svmClone(SnapshotSandboxHandle original, SnapshotSandboxHandle clone, boolean reuseIsolate);
     public static native String svmCheckpoint(
         int svmid,
@@ -33,6 +34,7 @@ public class NativeSandboxInterface {
         String functionPath,
         String metaSnapshotPath,
         String memSnapshotPath);
+    public static native void svmUnload(SnapshotSandboxHandle sandboxHandle);
 
     // TODO - define function_abi structs.
     public static native long loadFunction(String path);
