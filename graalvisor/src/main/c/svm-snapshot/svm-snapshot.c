@@ -750,4 +750,5 @@ void forked_unload_svm(forked_svm_sandbox_t* sandbox) {
     if (kill(sandbox->child_pid, SIGTERM)) {
         err("error: failed to kill forked sandbox with pid %d (errno %d)\n", sandbox->child_pid, errno);
     }
+    log("[forked_unload_svm] kill forked sandbox: cpid = %d\n", sandbox->child_pid);
 }

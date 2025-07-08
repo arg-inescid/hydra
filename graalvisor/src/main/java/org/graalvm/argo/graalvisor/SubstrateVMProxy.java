@@ -252,12 +252,21 @@ public class SubstrateVMProxy extends RuntimeProxy {
         long start = System.nanoTime();
         SandboxHandle worker = function.getSandboxProvider().createSandbox();
         long finish = System.nanoTime();
-        System.out.println(String.format("[thread %s] New %s sandbox %s in %s us", Thread.currentThread().getId(), function.getSandboxProvider().getName(), worker, (finish - start)/1000));
+        System.out.println(String.format("[thread %s] New %s sandbox for function %s (sandbox id = %s) in %s us",
+            Thread.currentThread().getId(),
+            function.getSandboxProvider().getName(),
+            function.getName(),
+            worker,
+            (finish - start)/1000));
         return worker;
     }
 
     private static void destroySandbox(PolyglotFunction function, SandboxHandle shandle) throws IOException {
-        System.out.println(String.format("[thread %s] Destroying %s sandbox %s", Thread.currentThread().getId(), function.getSandboxProvider().getName(), shandle));
+        System.out.println(String.format("[thread %s] Destroying %s sandbox for function %s (sandbox id = %s)",
+            Thread.currentThread().getId(),
+            function.getSandboxProvider().getName(),
+            function.getName(),
+            shandle));
         function.getSandboxProvider().destroySandbox(shandle);
     }
 
