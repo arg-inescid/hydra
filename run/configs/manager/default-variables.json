@@ -1,7 +1,7 @@
 {
     "firstLambdaPort": 30100,
 
-    "faultTolerance": 5,
+    "faultTolerance": 10,
     "lambdaFaultTolerance": 1,
 
     "reclamationInterval": 1000,

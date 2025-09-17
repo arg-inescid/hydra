@@ -29,6 +29,31 @@ cd "$ARGO_HOME/lambda-manager" || {
     exit 1
 }
 
+function log_resources {
+    PID=$1
+
+    OUTPUT_DIR=$ARGO_HOME/lambda-manager/manager_metrics
+
+    OFILE_CPU=$OUTPUT_DIR/lm.cpu
+    OFILE_RSS=$OUTPUT_DIR/lm.rss
+
+    rm $OFILE_CPU &> /dev/null
+    rm $OFILE_RSS &> /dev/null
+    while kill -0 $PID &> /dev/null; do
+        top -bn 1 | grep "Cpu(s)" >> $OFILE_CPU
+        # The idea for memory is that we traverse the entire pid subprocess tree
+        # and measure memory utilization. We sum all individual memory and return.
+        s_mem=0
+        for p in $(pstree -p $PID | grep -o '([0-9]\+)' | grep -o '[0-9]\+')
+        do
+            p_mem=$(ps -q $p -o rss=)
+            s_mem=$((s_mem + p_mem))
+        done
+        echo $s_mem >> $OFILE_RSS
+        sleep 1
+    done
+}
+
 # Initialize parameters with default values or leave empty.
 CONFIG_PATH="$ARGO_HOME/run/configs/manager/default-lambda-manager.json"
 VARIABLES_PATH="$ARGO_HOME/run/configs/manager/default-variables.json"
@@ -70,4 +95,9 @@ while :; do
     shift
 done
 
-$JAVA_HOME/bin/java -jar build/libs/lambda-manager-1.0-all.jar --config $CONFIG_PATH --variables $VARIABLES_PATH $SOCKET_SERVER_OPTION $HTTP_SERVER_OPTION
+$JAVA_HOME/bin/java -jar build/libs/lambda-manager-1.0-all.jar --config $CONFIG_PATH --variables $VARIABLES_PATH $SOCKET_SERVER_OPTION $HTTP_SERVER_OPTION &
+LM_PID=$!
+
+log_resources $LM_PID &
+
+wait
