@@ -49,7 +49,8 @@ public class Function {
     private final String svmId;
 
     /** If the function has the Graalvisor or HotSpot mode - URL of the function code to be downloaded by Graalvisor.
-     * If the function is Knative - name of the Docker image for this function. */
+     * If the function is Knative - name of the Docker image for this function.
+     * If the function is Faastion or OpenWhisk - path to the function code file. */
     private final String functionCode;
 
     /** Flag stating if this function can be re-built into native image in case of fallback (only for Graalvisor). */
@@ -150,6 +151,12 @@ public class Function {
                     return LambdaExecutionMode.GRAALOS;
                 } else if (getRuntime().equals(Environment.KNATIVE_RUNTIME)) {
                     return LambdaExecutionMode.KNATIVE;
+                } else if (getRuntime().equals(Environment.FAASTION_RUNTIME)) {
+                    return LambdaExecutionMode.FAASTION;
+                } else if (getRuntime().equals(Environment.FAASTLANE_RUNTIME)) {
+                    return LambdaExecutionMode.FAASTLANE;
+                } else if (getRuntime().equals(Environment.FAASTION_LPI_RUNTIME)) {
+                    return LambdaExecutionMode.FAASTION_LPI;
                 } else {
                     switch (getLanguage()) {
                         case JAVA:

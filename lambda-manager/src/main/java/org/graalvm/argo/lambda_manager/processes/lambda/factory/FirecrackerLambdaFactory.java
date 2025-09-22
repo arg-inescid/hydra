@@ -49,4 +49,8 @@ public class FirecrackerLambdaFactory extends AbstractLambdaFactory {
         throw new IllegalStateException("Knative is not yet supported in Firecracker mode.");
     }
 
+    @Override
+    public StartLambda createFaastion(Lambda lambda, Function function) {
+        throw new IllegalStateException("Faastion is not yet supported in Firecracker mode.");
+    }
 }

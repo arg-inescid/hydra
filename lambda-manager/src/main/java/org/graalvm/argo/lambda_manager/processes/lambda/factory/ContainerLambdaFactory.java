@@ -45,4 +45,8 @@ public class ContainerLambdaFactory extends AbstractLambdaFactory {
         return new StartKnativeContainer(lambda, function);
     }
 
+    @Override
+    public StartLambda createFaastion(Lambda lambda, Function function) {
+        return new StartFaastionContainer(lambda, function);
+    }
 }

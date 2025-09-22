@@ -45,4 +45,9 @@ public class NativeLambdaFactory extends AbstractLambdaFactory {
     public StartLambda createKnative(Lambda lambda, Function function) {
         throw new IllegalStateException("Knative is not yet supported in native mode.");
     }
+
+    @Override
+    public StartLambda createFaastion(Lambda lambda, Function function) {
+        throw new IllegalStateException("Faastion is not yet supported in native mode.");
+    }
 }

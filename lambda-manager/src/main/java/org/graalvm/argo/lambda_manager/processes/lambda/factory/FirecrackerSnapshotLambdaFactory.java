@@ -49,4 +49,8 @@ public class FirecrackerSnapshotLambdaFactory extends AbstractLambdaFactory {
         throw new IllegalStateException("Knative not available with Firecracker snapshots.");
     }
 
+    @Override
+    public StartLambda createFaastion(Lambda lambda, Function function) {
+        throw new IllegalStateException("Faastion not available with Firecracker snapshots.");
+    }
 }

@@ -78,6 +78,16 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
                 String svmId = function.snapshotSandbox() ? String.format("&svmid=%s", function.getSvmId()) : "";
                 final boolean binaryFunctionExecution = isBinaryFunctionExecution(lambda);
                 path = String.format("/register?name=%s&url=%s&language=%s&entryPoint=%s&isBinary=%s%s%s", function.getName(), function.getFunctionCode(), function.getLanguage().toString(), function.getEntryPoint(), binaryFunctionExecution, sandbox, svmId);
+            } else if (lambda.getExecutionMode().isFaastion()) {
+                // TODO: optimization: read chunks of file and send it in parts.
+                try (InputStream sourceFile = Files.newInputStream(function.buildFunctionSourceCodePath())) {
+                    payload = sourceFile.readAllBytes();
+                } catch (IOException e) {
+                    Logger.log(Level.WARNING, String.format("Failed load function %s source file %s", function.getName(), function.buildFunctionSourceCodePath()));
+                    return Messages.ERROR_FUNCTION_UPLOAD;
+                }
+                String sandbox = function.getGraalvisorSandbox() != null ? String.format("&sandbox=%s", function.getGraalvisorSandbox()) : "";
+                path = String.format("/register?name=%s&language=%s&entryPoint=%s&%s", function.getName(), function.getLanguage().toString(), function.getEntryPoint(), sandbox);
             } else if (lambda.getExecutionMode().isCustom()) {
                 // TODO: optimization: read chunks of file and send it in parts.
                 try (InputStream sourceFile = Files.newInputStream(function.buildFunctionSourceCodePath())) {
@@ -128,6 +138,8 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
 
         if (lambda.getExecutionMode().isGraalvisor()) {
             // Both canRebuild and readily-provided GV functions go here.
+            payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getName(), Configuration.argumentStorage.isDebugMode());
+        } else if (lambda.getExecutionMode().isFaastion()) {
             payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getName(), Configuration.argumentStorage.isDebugMode());
         } else if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT || lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT) {
             payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getName());
