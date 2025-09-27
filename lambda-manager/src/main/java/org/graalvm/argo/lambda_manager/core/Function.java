@@ -48,6 +48,9 @@ public class Function {
     /** SVM ID used for sandbox checkpoint/restore for this function. Should be a valid small integer. Can only be used with Graalvisor. Can be null. */
     private final String svmId;
 
+    /** Some benchmarks require specific settings. This optional field keeps the benchmark identifier for such purposes. */
+    private final String benchmarkName;
+
     /** If the function has the Graalvisor or HotSpot mode - URL of the function code to be downloaded by Graalvisor.
      * If the function is Knative - name of the Docker image for this function.
      * If the function is Faastion or OpenWhisk - path to the function code file. */
@@ -67,7 +70,7 @@ public class Function {
      */
     private long lastAgentPID;
 
-    public Function(String name, String language, String entryPoint, String memory, String runtime, String functionCode, boolean functionIsolation, boolean invocationCollocation, String gvSandbox, String svmId) throws Exception {
+    public Function(String name, String language, String entryPoint, String memory, String runtime, String functionCode, boolean functionIsolation, boolean invocationCollocation, String gvSandbox, String svmId, String benchmarkName) throws Exception {
         this.name = name;
         this.language = FunctionLanguage.fromString(language);
         this.entryPoint = entryPoint;
@@ -84,6 +87,7 @@ public class Function {
         this.invocationCollocation = invocationCollocation;
         this.gvSandbox = gvSandbox;
         this.svmId = svmId;
+        this.benchmarkName = benchmarkName;
         this.window = new ColdStartSlidingWindow(Environment.AOT_OPTIMIZATION_THRESHOLD, Environment.SLIDING_WINDOW_PERIOD);
     }
 
@@ -215,6 +219,10 @@ public class Function {
 
     public String getSvmId() {
         return svmId;
+    }
+
+    public String getBenchmarkName() {
+        return benchmarkName;
     }
 
     /**

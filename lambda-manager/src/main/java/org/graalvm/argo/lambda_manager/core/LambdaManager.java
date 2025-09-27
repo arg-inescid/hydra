@@ -118,7 +118,8 @@ public class LambdaManager {
                                                 boolean functionIsolation,
                                                 boolean invocationCollocation,
                                                 String gvSandbox,
-                                                String svmId) {
+                                                String svmId,
+                                                String benchmarkName) {
         String responseString;
 
         if (!Configuration.isInitialized()) {
@@ -129,7 +130,7 @@ public class LambdaManager {
         String encodedFunctionName = Configuration.coder.encodeFunctionName(username, functionName);
         registrationInProgress.add(encodedFunctionName);
         try {
-            Function function = new Function(encodedFunctionName, functionLanguage, functionEntryPoint, functionMemory, functionRuntime, functionCode, functionIsolation, invocationCollocation, gvSandbox, svmId);
+            Function function = new Function(encodedFunctionName, functionLanguage, functionEntryPoint, functionMemory, functionRuntime, functionCode, functionIsolation, invocationCollocation, gvSandbox, svmId, benchmarkName);
             Configuration.storage.register(encodedFunctionName, function, functionCode.getBytes());
             Logger.log(Level.INFO, String.format(Messages.SUCCESS_FUNCTION_UPLOAD, functionName));
             responseString = String.format(Messages.SUCCESS_FUNCTION_UPLOAD, functionName);

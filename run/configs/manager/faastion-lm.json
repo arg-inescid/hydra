@@ -1,0 +1,27 @@
+{
+  "gateway": "172.18.0.1/16",
+  "maxMemory": 2048,
+  "maxTaps": 416,
+  "timeout": 300,
+  "healthCheck": 50,
+  "lambdaPort": 8080,
+  "lambdaType": "container",
+  "optimizationPipeline": false,
+  "lambdaConsole": true,
+  "managerConsole": {
+    "turnOn": true,
+    "redirectToFile": true,
+    "fineGrain": true
+  },
+  "lambdaPool": {
+    "hotspotWithAgent": 0,
+    "hotspot": 0,
+    "graalvisor": 0,
+    "graalos": 0,
+    "customJava": 0,
+    "customJavaScript": 0,
+    "customPython": 0,
+    "graalvisorPgo": 0,
+    "graalvisorPgoOptimized": 0
+  }
+}

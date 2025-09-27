@@ -13,7 +13,11 @@ BENCHMARK_HOME_DIR="$ARGO_HOME/../faastion/benchmarks/src/java/SeBS"
 
 FAASTION_BENCHMARKS=(fa_cl  fa_dn  fa_dh  fa_bf  fa_co  fa_ms  fa_pr  fa_th  fa_up  fa_vp) # full list
 FAASTION_BENCHMARKS=(fa_dn  fa_dh  fa_bf  fa_co  fa_ms  fa_pr  fa_up  fa_vp) # working
-FAASTION_BENCHMARKS=(fa_cl)
+FAASTION_BENCHMARKS=(fa_dn  fa_dh  fa_bf  fa_co  fa_ms  fa_pr  fa_up)
+
+
+FAASTION_KN_BENCHMARKS=(kn_jv_dn  kn_jv_dh  kn_jv_bf  kn_jv_co  kn_jv_ms  kn_jv_pr  kn_jv_up)
+
 
 declare -A BENCHMARK_CODE
 BENCHMARK_CODE[fa_cl]="$BENCHMARK_HOME_DIR/gv-classify/build/libclassify.so"
@@ -65,3 +69,26 @@ BENCHMARK_PAYLOADS[fa_pr]="{}"
 BENCHMARK_PAYLOADS[fa_th]="{}"
 BENCHMARK_PAYLOADS[fa_up]="{}"
 BENCHMARK_PAYLOADS[fa_vp]="{}"
+
+# Knative benchmarks.
+BENCHMARK_CODE[kn_jv_dn]="knative-jv/kn-dna"
+BENCHMARK_CODE[kn_jv_dh]="knative-jv/kn-dynamic-html"
+BENCHMARK_CODE[kn_jv_bf]="knative-jv/kn-bfs"
+BENCHMARK_CODE[kn_jv_co]="knative-jv/kn-compression"
+BENCHMARK_CODE[kn_jv_ms]="knative-jv/kn-mst"
+BENCHMARK_CODE[kn_jv_pr]="knative-jv/kn-pagerank"
+BENCHMARK_CODE[kn_jv_up]="knative-jv/kn-uploader"
+
+
+for bench in "${KN_BENCHMARKS[@]}"; do
+    BENCHMARK_ENTRYPOINTS["$bench"]="irrelevant"
+done
+
+
+BENCHMARK_PAYLOADS[kn_jv_dn]='{}'
+BENCHMARK_PAYLOADS[kn_jv_dh]='{"url":"'$DATA_ADDRESS'/template.html"}'
+BENCHMARK_PAYLOADS[kn_jv_bf]='{}'
+BENCHMARK_PAYLOADS[kn_jv_co]='{"url":"'$DATA_ADDRESS'/snap.png"}'
+BENCHMARK_PAYLOADS[kn_jv_ms]='{}'
+BENCHMARK_PAYLOADS[kn_jv_pr]='{}'
+BENCHMARK_PAYLOADS[kn_jv_up]='{"url":"'$DATA_ADDRESS'/snap.png","upload_url":"http://'$DATA_IP':9696/upload"}'

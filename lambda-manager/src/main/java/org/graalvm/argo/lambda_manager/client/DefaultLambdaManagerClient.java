@@ -3,6 +3,7 @@ package org.graalvm.argo.lambda_manager.client;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.SplittableRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -14,10 +15,7 @@ import io.micronaut.http.client.exceptions.HttpClientException;
 import io.micronaut.http.client.exceptions.HttpClientResponseException;
 import io.netty.handler.timeout.ReadTimeoutException;
 import io.reactivex.Flowable;
-import org.graalvm.argo.lambda_manager.core.Configuration;
-import org.graalvm.argo.lambda_manager.core.Function;
-import org.graalvm.argo.lambda_manager.core.FunctionLanguage;
-import org.graalvm.argo.lambda_manager.core.Lambda;
+import org.graalvm.argo.lambda_manager.core.*;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.utils.JsonUtils;
 import org.graalvm.argo.lambda_manager.utils.Messages;
@@ -79,15 +77,47 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
                 final boolean binaryFunctionExecution = isBinaryFunctionExecution(lambda);
                 path = String.format("/register?name=%s&url=%s&language=%s&entryPoint=%s&isBinary=%s%s%s", function.getName(), function.getFunctionCode(), function.getLanguage().toString(), function.getEntryPoint(), binaryFunctionExecution, sandbox, svmId);
             } else if (lambda.getExecutionMode().isFaastion()) {
-                // TODO: optimization: read chunks of file and send it in parts.
-                try (InputStream sourceFile = Files.newInputStream(function.buildFunctionSourceCodePath())) {
-                    payload = sourceFile.readAllBytes();
-                } catch (IOException e) {
-                    Logger.log(Level.WARNING, String.format("Failed load function %s source file %s", function.getName(), function.buildFunctionSourceCodePath()));
-                    return Messages.ERROR_FUNCTION_UPLOAD;
+                if (Environment.FAASTION_LPI_RUNTIME.equals(function.getRuntime())) {
+                    // Handling Faastion-LPI case where we need to have 2 registration requests.
+                    StringBuilder output = new StringBuilder();
+                    Path functionPath = function.buildFunctionSourceCodePath();
+                    String vanillaFilename = functionPath.getFileName().toString() + "_vanilla";
+                    Path vanillaFunctionPath = functionPath.getParent().resolve(vanillaFilename);
+
+                    // We first want to register the instrumented binary, and then vanilla.
+                    try (InputStream sourceFile = Files.newInputStream(functionPath)) {
+                        payload = sourceFile.readAllBytes();
+                    } catch (IOException e) {
+                        Logger.log(Level.WARNING, String.format("Failed load function %s instrumented source file %s", function.getName(), function.buildFunctionSourceCodePath()));
+                        return Messages.ERROR_FUNCTION_UPLOAD;
+                    }
+                    String sandbox = function.getGraalvisorSandbox() != null ? String.format("&sandbox=%s", function.getGraalvisorSandbox()) : "";
+                    path = String.format("/register?name=%s&language=%s&entryPoint=%s%s", function.getName(), function.getLanguage().toString(), function.getEntryPoint(), sandbox);
+                    output.append("instr: ").append(sendRequest(lambda.getConnection().post(path, payload), lambda));
+
+                    // And now proceeding with the vanilla one.
+                    try (InputStream sourceFile = Files.newInputStream(vanillaFunctionPath)) {
+                        payload = sourceFile.readAllBytes();
+                    } catch (IOException e) {
+                        Logger.log(Level.WARNING, String.format("Failed load function %s vanilla source file %s", function.getName(), function.buildFunctionSourceCodePath()));
+                        return Messages.ERROR_FUNCTION_UPLOAD;
+                    }
+                    sandbox = "&sandbox=process";
+                    path = String.format("/register?name=%s&language=%s&entryPoint=%s%s", function.getName() + "-proc", function.getLanguage().toString(), function.getEntryPoint(), sandbox);
+                    output.append("  vanilla: ").append(sendRequest(lambda.getConnection().post(path, payload), lambda));
+
+                    return output.toString();
+                } else {
+                    // TODO: optimization: read chunks of file and send it in parts.
+                    try (InputStream sourceFile = Files.newInputStream(function.buildFunctionSourceCodePath())) {
+                        payload = sourceFile.readAllBytes();
+                    } catch (IOException e) {
+                        Logger.log(Level.WARNING, String.format("Failed load function %s source file %s", function.getName(), function.buildFunctionSourceCodePath()));
+                        return Messages.ERROR_FUNCTION_UPLOAD;
+                    }
+                    String sandbox = function.getGraalvisorSandbox() != null ? String.format("&sandbox=%s", function.getGraalvisorSandbox()) : "";
+                    path = String.format("/register?name=%s&language=%s&entryPoint=%s%s", function.getName(), function.getLanguage().toString(), function.getEntryPoint(), sandbox);
                 }
-                String sandbox = function.getGraalvisorSandbox() != null ? String.format("&sandbox=%s", function.getGraalvisorSandbox()) : "";
-                path = String.format("/register?name=%s&language=%s&entryPoint=%s&%s", function.getName(), function.getLanguage().toString(), function.getEntryPoint(), sandbox);
             } else if (lambda.getExecutionMode().isCustom()) {
                 // TODO: optimization: read chunks of file and send it in parts.
                 try (InputStream sourceFile = Files.newInputStream(function.buildFunctionSourceCodePath())) {

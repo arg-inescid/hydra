@@ -39,14 +39,15 @@ function register {
   elif [[ $runtime == "faastlane" ]]; then
     code=${BENCHMARK_CODE_VANILLA["$bench"]}
   elif [[ $runtime == "faastion-lpi" ]]; then
-    code=${BENCHMARK_CODE["$bench"]}
+    code="${BENCHMARK_CODE["$bench"]}:${BENCHMARK_CODE_VANILLA["$bench"]}"
   else
     echo "Cannot determine faastion runtime: $runtime. The second parameter should be 'faastion', 'faastlane', or 'faastion-lpi'."
   fi
 
   entrypoint=${BENCHMARK_ENTRYPOINTS["$bench"]}
+  bench_id=${bench:(-2)}
 
-  curl -s -X POST $LAMBDA_MANAGER_HOST:$LAMBDA_MANAGER_PORT/upload_function?username=$USER\&function_name=$bench\&function_language=$lang\&function_entry_point=$entrypoint\&function_memory=$FUNCTION_MEMORY\&function_runtime=$runtime\&function_isolation=$function_isolation\&invocation_collocation=$invocation_collocation -H 'Content-Type: text/plain' --data $code
+  curl -s -X POST $LAMBDA_MANAGER_HOST:$LAMBDA_MANAGER_PORT/upload_function?username=$USER\&function_name=$bench\&function_language=$lang\&function_entry_point=$entrypoint\&function_memory=$FUNCTION_MEMORY\&function_runtime=$runtime\&function_isolation=$function_isolation\&invocation_collocation=$invocation_collocation\&benchmark_name=$bench_id -H 'Content-Type: text/plain' --data $code
 }
 
 
