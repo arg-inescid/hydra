@@ -34,10 +34,13 @@ public class Environment {
 
     public static final String MANAGER_METRICS_FILENAME = Paths.get(MANAGER_METRICS, "metrics.log").toString();
 
-    // Graalvisor runtime identifiers.
+    // Runtime identifiers.
     public static final String GRAALVISOR_RUNTIME = "graalvisor";
     public static final String KNATIVE_RUNTIME = "knative";
     public static final String GRAALOS_RUNTIME = "graalos";
+    public static final String FAASTION_RUNTIME = "faastion";
+    public static final String FAASTLANE_RUNTIME = "faastlane";
+    public static final String FAASTION_LPI_RUNTIME = "faastion-lpi";
 
     // Cold start sliding window parameters.
     /**

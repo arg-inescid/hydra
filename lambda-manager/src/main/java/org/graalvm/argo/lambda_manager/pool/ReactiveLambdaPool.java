@@ -37,7 +37,7 @@ public class ReactiveLambdaPool implements LambdaPool {
     private final ConcurrentLinkedQueue<LambdaConnection> connectionPool;
 
     /**
-     * Lambda pool used for amortization of OW/Knative lambda creation.
+     * Lambda pool used for amortization of lambda creation.
      */
     private final Map<String, ConcurrentLinkedQueue<Lambda>> lambdaPool;
 
@@ -82,10 +82,7 @@ public class ReactiveLambdaPool implements LambdaPool {
 
     @Override
     public Lambda getLambda(LambdaExecutionMode mode, Function function) {
-        if (mode.isCustom() || mode == LambdaExecutionMode.KNATIVE) {
-            return pollLambda(mode, function);
-        }
-        throw new IllegalArgumentException("With a reactive pool, you can only use OpenWhisk or Knative. Mode provided: " + mode);
+        return pollLambda(mode, function);
     }
 
     @Override

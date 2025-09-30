@@ -48,8 +48,12 @@ public class Function {
     /** SVM ID used for sandbox checkpoint/restore for this function. Should be a valid small integer. Can only be used with Graalvisor. Can be null. */
     private final String svmId;
 
+    /** Some benchmarks require specific settings. This optional field keeps the benchmark identifier for such purposes. */
+    private final String benchmarkName;
+
     /** If the function has the Graalvisor or HotSpot mode - URL of the function code to be downloaded by Graalvisor.
-     * If the function is Knative - name of the Docker image for this function. */
+     * If the function is Knative - name of the Docker image for this function.
+     * If the function is Faastion or OpenWhisk - path to the function code file. */
     private final String functionCode;
 
     /** Flag stating if this function can be re-built into native image in case of fallback (only for Graalvisor). */
@@ -66,7 +70,7 @@ public class Function {
      */
     private long lastAgentPID;
 
-    public Function(String name, String language, String entryPoint, String memory, String runtime, String functionCode, boolean functionIsolation, boolean invocationCollocation, String gvSandbox, String svmId) throws Exception {
+    public Function(String name, String language, String entryPoint, String memory, String runtime, String functionCode, boolean functionIsolation, boolean invocationCollocation, String gvSandbox, String svmId, String benchmarkName) throws Exception {
         this.name = name;
         this.language = FunctionLanguage.fromString(language);
         this.entryPoint = entryPoint;
@@ -83,6 +87,7 @@ public class Function {
         this.invocationCollocation = invocationCollocation;
         this.gvSandbox = gvSandbox;
         this.svmId = svmId;
+        this.benchmarkName = benchmarkName;
         this.window = new ColdStartSlidingWindow(Environment.AOT_OPTIMIZATION_THRESHOLD, Environment.SLIDING_WINDOW_PERIOD);
     }
 
@@ -150,6 +155,12 @@ public class Function {
                     return LambdaExecutionMode.GRAALOS;
                 } else if (getRuntime().equals(Environment.KNATIVE_RUNTIME)) {
                     return LambdaExecutionMode.KNATIVE;
+                } else if (getRuntime().equals(Environment.FAASTION_RUNTIME)) {
+                    return LambdaExecutionMode.FAASTION;
+                } else if (getRuntime().equals(Environment.FAASTLANE_RUNTIME)) {
+                    return LambdaExecutionMode.FAASTLANE;
+                } else if (getRuntime().equals(Environment.FAASTION_LPI_RUNTIME)) {
+                    return LambdaExecutionMode.FAASTION_LPI;
                 } else {
                     switch (getLanguage()) {
                         case JAVA:
@@ -208,6 +219,10 @@ public class Function {
 
     public String getSvmId() {
         return svmId;
+    }
+
+    public String getBenchmarkName() {
+        return benchmarkName;
     }
 
     /**

@@ -192,16 +192,15 @@ public class ArgumentStorage {
         initMetricsScraper();
 
         LambdaManagerPool poolConfiguration = lambdaManagerConfiguration.getLambdaPool();
-        boolean hasOpenWhiskLambdas = poolConfiguration.getCustomJava() != 0 || poolConfiguration.getCustomJavaScript() != 0 || poolConfiguration.getCustomPython() != 0;
-        boolean hasLambdaPoolConfig = hasOpenWhiskLambdas || poolConfiguration.getGraalOS() != 0 || poolConfiguration.getGraalvisor() != 0
+        boolean hasLambdaPoolConfig = poolConfiguration.getCustomJava() != 0 || poolConfiguration.getCustomJavaScript() != 0
+                || poolConfiguration.getCustomPython() != 0 || poolConfiguration.getGraalOS() != 0 || poolConfiguration.getGraalvisor() != 0
                 || poolConfiguration.getGraalvisorPgo() != 0 || poolConfiguration.getGraalvisorPgoOptimized() != 0
                 || poolConfiguration.getHotspot() != 0 || poolConfiguration.getHotspotWithAgent() != 0;
 
         Configuration.initFields(
             new RoundedRobinScheduler(),
             new DefaultCoder(),
-            // Use local function storage
-            hasOpenWhiskLambdas || !hasLambdaPoolConfig ? new LocalFunctionStorage() : new SimpleFunctionStorage(),
+            new LocalFunctionStorage(),
             new DefaultLambdaManagerClient(),
             this);
 
