@@ -2,8 +2,8 @@ package com.compression;
 
 import java.util.Map;
 
-import com.oracle.svm.graalvisor.polyglot.PolyglotEngine;
-import com.oracle.svm.graalvisor.polyglot.PolyglotHostAccess;
+import com.oracle.svm.hydra.polyglot.PolyglotEngine;
+import com.oracle.svm.hydra.polyglot.PolyglotHostAccess;
 
 import org.graalvm.word.UnsignedWord;
 import org.graalvm.nativeimage.c.type.CCharPointer;
@@ -25,9 +25,9 @@ public class Compression extends PolyglotHostAccess {
 
     static {
         try {
-            language = System.getProperty("com.oracle.svm.graalvisor.polyglotengine.language");
-            source = Files.readString(Paths.get(System.getProperty("com.oracle.svm.graalvisor.polyglotengine.source")));
-            entrypoint = System.getProperty("com.oracle.svm.graalvisor.polyglotengine.entrypoint");
+            language = System.getProperty("com.oracle.svm.hydra.polyglotengine.language");
+            source = Files.readString(Paths.get(System.getProperty("com.oracle.svm.hydra.polyglotengine.source")));
+            entrypoint = System.getProperty("com.oracle.svm.hydra.polyglotengine.entrypoint");
         } catch (IOException e) {
             e.printStackTrace();
         }

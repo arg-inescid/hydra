@@ -1,4 +1,4 @@
-package com.oracle.svm.graalvisor.polyglot;
+package com.oracle.svm.hydra.polyglot;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -49,7 +49,7 @@ public class PolyglotEngine {
             // Necessary to allow python imports.
             options.put("python.ForceImportSite", "true");
             // Loading the virtual env with installed packages
-            options.put("python.Executable", javaHome + "/graalvisor-python-venv/bin/python");
+            options.put("python.Executable", javaHome + "/hydra-python-venv/bin/python");
         }
 
         // Build context.

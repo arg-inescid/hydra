@@ -1,4 +1,4 @@
-package com.oracle.svm.graalvisor.polyglot;
+package com.oracle.svm.hydra.polyglot;
 
 public enum PolyglotLanguage {
     JAVASCRIPT("js"),
