@@ -6,15 +6,15 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 
 DISK=$DIR/disk
 
-GRAALVISOR_JAR=$DIR/../../graalvisor/build/libs/graalvisor-1.0-all.jar
+HYDRA_JAR=$DIR/../../hydra/build/libs/hydra-1.0-all.jar
 
 docker image rm argo-hotspot:latest
 
 rm -rf $DISK &> /dev/null
 mkdir -p $DISK
 
-# Copy Graalvisor proxy JAR.
-cp $GRAALVISOR_JAR $DISK
+# Copy Hydra proxy JAR.
+cp $HYDRA_JAR $DISK
 # Copy GraalVM.
 cp -r $JAVA_HOME $DISK/jvm
 # Copy caller filter configuration for agent.
@@ -29,9 +29,9 @@ printf "[\n]\n" > $DISK/config/reflect-config.json
 printf "{\n}\n" > $DISK/config/resource-config.json
 printf "[\n]\n" > $DISK/config/serialization-config.json
 
-GRAALVISOR_JAR_FILENAME="$(basename -- $GRAALVISOR_JAR)"
-GRAALVISOR_ENTRYPOINT="org.graalvm.argo.graalvisor.Main"
-ENTRYPOINT_COMMAND="/jvm/bin/java -cp $GRAALVISOR_JAR_FILENAME $GRAALVISOR_ENTRYPOINT"
+HYDRA_JAR_FILENAME="$(basename -- $HYDRA_JAR)"
+HYDRA_ENTRYPOINT="org.graalvm.argo.hydra.Main"
+ENTRYPOINT_COMMAND="/jvm/bin/java -cp $HYDRA_JAR_FILENAME $HYDRA_ENTRYPOINT"
 
 docker build \
     --build-arg ENTRYPOINT_COMMAND="$ENTRYPOINT_COMMAND" \

@@ -17,19 +17,19 @@ function build_container_image {
     cd "$DIR"
 }
 
-read -p "Graalvisor container (y or Y, everything else as no)? " -n 1 -r
+read -p "Hydra container (y or Y, everything else as no)? " -n 1 -r
 echo    # move to a new line
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    build_container_image graalvisor
+    build_container_image hydra
 fi
 
-read -p "Graalvisor VM (y or Y, everything else as no)? " -n 1 -r
+read -p "Hydra VM (y or Y, everything else as no)? " -n 1 -r
 echo    # move to a new line
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    build_container_image graalvisor
-    build_vm_image graalvisor
+    build_container_image hydra
+    build_vm_image hydra
 fi
 
 read -p "HotSpot container (y or Y, everything else as no)? " -n 1 -r

@@ -34,6 +34,6 @@ RUN rm -f /jvm/hydra-venv/bin/graalpy && \
     ln -s /jvm/languages/python/bin/graalpy /jvm/hydra-venv/bin/graalpy
 
 # Make the entrypoint script executable.
-RUN chmod +x /graalvisor
+RUN chmod +x /hydra
 
-ENTRYPOINT /graalvisor
+ENTRYPOINT /hydra

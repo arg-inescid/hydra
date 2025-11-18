@@ -19,7 +19,7 @@ fi
 echo "Checking if you have a linux kernel image... done!"
 
 echo "Checking if you have a base rootfs..."
-for image_name in graalvisor hotspot hotspot-agent java-openwhisk; do
+for image_name in hydra hotspot hotspot-agent java-openwhisk; do
     if [ ! -f $DIR/$image_name/$image_name.img ];
     then
         # Ensure we have directory created.

@@ -6,7 +6,7 @@ source $DIR/build_shared.sh
 
 DISK=$DIR/disk
 
-GRAALVISOR_BINARY=$DIR/../../graalvisor/build/native-image/polyglot-proxy
+HYDRA_BINARY=$DIR/../../hydra/build/native-image/polyglot-proxy
 gvdisk=$1
 
 if [ "$#" -ne 1 ]; then
@@ -33,7 +33,7 @@ then
     sudo mount $DIR/base.ext4 $DISK
     sudo chown -R $(id -u -n):$(id -g -n) $DISK
     # Use a debian docker to copy the entire image to the mounted dir.
-    docker export $(docker create graalvisor) | tar -xC $DISK
+    docker export $(docker create hydra) | tar -xC $DISK
     # Revert permissions and unmount.
     sudo chown -R root:root $DISK
     sudo umount $DISK
@@ -44,7 +44,7 @@ cp $DIR/base.ext4 $gvdisk
 sudo mount $gvdisk $DISK
 sudo chown -R $(id -u -n):$(id -g -n) $DISK
 
-# Copy graalvisor and init.
+# Copy hydra and init.
 cp $DIR/init $DISK
 
 # Unmount image and remove directory used for the mount.
