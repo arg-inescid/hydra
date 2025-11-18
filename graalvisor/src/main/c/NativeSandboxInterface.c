@@ -11,7 +11,7 @@
 #endif
 #include "network-isolation.h"
 #include "svm-snapshot.h"
-#include "org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface.h"
+#include "org_graalvm_argo_hydra_sandboxing_NativeSandboxInterface.h"
 
 #define PIPE_READ_END  0
 #define PIPE_WRITE_END 1
@@ -43,7 +43,7 @@ void reset_parent_signal_handlers() {
     signal(SIGINT, SIG_DFL);
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_initialize(JNIEnv *env, jobject thisObj) {
+JNIEXPORT void JNICALL Java_org_graalvm_argo_hydra_sandboxing_NativeSandboxInterface_initialize(JNIEnv *env, jobject thisObj) {
     setbuf(stdout, NULL);
     // Note: for some reason that we should track down, the first call to dup2 takes 10s of ms.
     // We do it now to avoid further latency later.
@@ -59,13 +59,13 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     }
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_teardown(JNIEnv *env, jobject thisObj) {
+JNIEXPORT void JNICALL Java_org_graalvm_argo_hydra_sandboxing_NativeSandboxInterface_teardown(JNIEnv *env, jobject thisObj) {
     if (network_isolation_enabled()) {
         teardown_network_isolation();
     }
 }
 
-JNIEXPORT int JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createNativeProcessSandbox(JNIEnv *env, jobject thisObj, jintArray childPipeFD, jintArray parentPipeFD) {
+JNIEXPORT int JNICALL Java_org_graalvm_argo_hydra_sandboxing_NativeSandboxInterface_createNativeProcessSandbox(JNIEnv *env, jobject thisObj, jintArray childPipeFD, jintArray parentPipeFD) {
     int parentRead, parentWrite, childRead, childWrite;
 
     // Preparing child pipe (where the child writes and the parent reads).
@@ -109,7 +109,7 @@ JNIEXPORT int JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxI
     return pid;
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createNativeIsolateSandbox(JNIEnv *env, jobject thisObj) {
+JNIEXPORT void JNICALL Java_org_graalvm_argo_hydra_sandboxing_NativeSandboxInterface_createNativeIsolateSandbox(JNIEnv *env, jobject thisObj) {
 #ifdef LAZY_ISOLATION
     install_thread_filter();
 #endif
@@ -118,7 +118,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     }
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createNativeRuntimeSandbox(JNIEnv *env, jobject thisObj) {
+JNIEXPORT void JNICALL Java_org_graalvm_argo_hydra_sandboxing_NativeSandboxInterface_createNativeRuntimeSandbox(JNIEnv *env, jobject thisObj) {
 #ifdef LAZY_ISOLATION
     install_thread_filter();
 #endif
@@ -128,25 +128,25 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
 }
 
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_teardownNativeProcessSandbox(JNIEnv *env, jobject thisObj) {
+JNIEXPORT void JNICALL Java_org_graalvm_argo_hydra_sandboxing_NativeSandboxInterface_teardownNativeProcessSandbox(JNIEnv *env, jobject thisObj) {
     if (network_isolation_enabled()) {
         delete_network_namespace();
     }
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_teardownNativeIsolateSandbox(JNIEnv *env, jobject thisObj) {
+JNIEXPORT void JNICALL Java_org_graalvm_argo_hydra_sandboxing_NativeSandboxInterface_teardownNativeIsolateSandbox(JNIEnv *env, jobject thisObj) {
     if (network_isolation_enabled()) {
         delete_network_namespace();
     }
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_teardownNativeRuntimeSandbox(JNIEnv *env, jobject thisObj) {
+JNIEXPORT void JNICALL Java_org_graalvm_argo_hydra_sandboxing_NativeSandboxInterface_teardownNativeRuntimeSandbox(JNIEnv *env, jobject thisObj) {
     if (network_isolation_enabled()) {
         delete_network_namespace();
     }
 }
 
-JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmInvoke(
+JNIEXPORT jstring JNICALL Java_org_graalvm_argo_hydra_sandboxing_NativeSandboxInterface_svmInvoke(
         JNIEnv *env,
         jobject thisObj,
         jobject sandboxHandle,
@@ -160,7 +160,7 @@ JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSand
     return (*env)->NewStringUTF(env, fout);
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmDestroy(
+JNIEXPORT void JNICALL Java_org_graalvm_argo_hydra_sandboxing_NativeSandboxInterface_svmDestroy(
         JNIEnv *env,
         jobject thisObj,
         jobject sandboxHandle,
@@ -170,7 +170,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     forked_destroy_svm((forked_svm_sandbox_t*)sandbox_handle, reuseIsolate);
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmClone(
+JNIEXPORT void JNICALL Java_org_graalvm_argo_hydra_sandboxing_NativeSandboxInterface_svmClone(
         JNIEnv *env,
         jobject thisObj,
         jobject original,
@@ -183,7 +183,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     (*env)->SetLongField(env, clone, field, clone_handle);
 }
 
-JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmCheckpoint(
+JNIEXPORT jstring JNICALL Java_org_graalvm_argo_hydra_sandboxing_NativeSandboxInterface_svmCheckpoint(
         JNIEnv *env,
         jobject thisObj,
         jint svmid,
@@ -209,7 +209,7 @@ JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSand
     return (*env)->NewStringUTF(env, fout);
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmRestore(
+JNIEXPORT void JNICALL Java_org_graalvm_argo_hydra_sandboxing_NativeSandboxInterface_svmRestore(
         JNIEnv *env,
         jobject thisObj,
         jint svmid,
@@ -228,7 +228,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     (*env)->ReleaseStringUTFChars(env, meta_snap_path, meta_snap_path_str);
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_svmUnload(
+JNIEXPORT void JNICALL Java_org_graalvm_argo_hydra_sandboxing_NativeSandboxInterface_svmUnload(
         JNIEnv *env,
         jobject thisObj,
         jobject sandboxHandle) {
@@ -244,7 +244,7 @@ typedef struct {
     isolate_abi_t sabi;
 } function_abi_t;
 
-JNIEXPORT long JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_loadFunction(
+JNIEXPORT long JNICALL Java_org_graalvm_argo_hydra_sandboxing_NativeSandboxInterface_loadFunction(
         JNIEnv *env,
         jobject thisObj,
         jstring pathStr) {
@@ -301,7 +301,7 @@ JNIEXPORT long JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     return (long) fabi;
 }
 
-JNIEXPORT long JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_createSandbox(
+JNIEXPORT long JNICALL Java_org_graalvm_argo_hydra_sandboxing_NativeSandboxInterface_createSandbox(
         JNIEnv *env,
         jobject thisObj,
         long fabiPtr) {
@@ -323,7 +323,7 @@ JNIEXPORT long JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     return (long) ithread;
 }
 
-JNIEXPORT long JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_getSandbox(
+JNIEXPORT long JNICALL Java_org_graalvm_argo_hydra_sandboxing_NativeSandboxInterface_getSandbox(
         JNIEnv *env,
         jobject thisObj,
         long fabiPtr,
@@ -333,7 +333,7 @@ JNIEXPORT long JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     return (long) fabi->sabi.graal_get_isolate(ithread);
 }
 
-JNIEXPORT long JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_attachThread(
+JNIEXPORT long JNICALL Java_org_graalvm_argo_hydra_sandboxing_NativeSandboxInterface_attachThread(
         JNIEnv *env,
         jobject thisObj,
         long fabiPtr,
@@ -350,7 +350,7 @@ JNIEXPORT long JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     return (long) ithread;
 }
 
-JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_invokeSandbox(
+JNIEXPORT jstring JNICALL Java_org_graalvm_argo_hydra_sandboxing_NativeSandboxInterface_invokeSandbox(
         JNIEnv *env,
         jobject thisObj,
         long fabiPtr,
@@ -365,7 +365,7 @@ JNIEXPORT jstring JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSand
     return (*env)->NewStringUTF(env, fout);
 }
 
-JNIEXPORT int JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_detachThread(
+JNIEXPORT int JNICALL Java_org_graalvm_argo_hydra_sandboxing_NativeSandboxInterface_detachThread(
         JNIEnv *env,
         jobject thisObj,
         long fabiPtr,
@@ -376,7 +376,7 @@ JNIEXPORT int JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxI
     return fabi->sabi.graal_detach_thread(ithread);
 }
 
-JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_destroySandbox(
+JNIEXPORT void JNICALL Java_org_graalvm_argo_hydra_sandboxing_NativeSandboxInterface_destroySandbox(
         JNIEnv *env,
         jobject thisObj,
         long fabiPtr,
@@ -388,7 +388,7 @@ JNIEXPORT void JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandbox
     }
 }
 
-JNIEXPORT int JNICALL Java_org_graalvm_argo_graalvisor_sandboxing_NativeSandboxInterface_unloadFunction(
+JNIEXPORT int JNICALL Java_org_graalvm_argo_hydra_sandboxing_NativeSandboxInterface_unloadFunction(
         JNIEnv *env,
         jobject thisObj,
         long fabi) {

@@ -1,4 +1,4 @@
-package org.graalvm.argo.graalvisor.function;
+package org.graalvm.argo.hydra.function;
 
 public class NativeFunction extends PolyglotFunction {
 

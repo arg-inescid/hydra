@@ -1,10 +1,10 @@
-package org.graalvm.argo.graalvisor.function;
+package org.graalvm.argo.hydra.function;
 
 import java.util.Locale;
 
-import org.graalvm.argo.graalvisor.sandboxing.SandboxProvider;
+import org.graalvm.argo.hydra.sandboxing.SandboxProvider;
 
-import com.oracle.svm.graalvisor.polyglot.PolyglotLanguage;
+import com.oracle.svm.hydra.polyglot.PolyglotLanguage;
 
 public class PolyglotFunction {
     private final String name;

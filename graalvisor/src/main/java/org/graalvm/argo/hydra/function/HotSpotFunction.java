@@ -1,7 +1,7 @@
-package org.graalvm.argo.graalvisor.function;
+package org.graalvm.argo.hydra.function;
 
 import java.lang.reflect.Method;
-import com.oracle.svm.graalvisor.polyglot.PolyglotLanguage;
+import com.oracle.svm.hydra.polyglot.PolyglotLanguage;
 
 public class HotSpotFunction extends PolyglotFunction {
 
