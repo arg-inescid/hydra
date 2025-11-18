@@ -1,4 +1,4 @@
-package com.oracle.svm.graalvisor.polyglot;
+package com.oracle.svm.hydra.polyglot;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.HashMap;

@@ -1,4 +1,4 @@
-package com.oracle.svm.graalvisor.utils;
+package com.oracle.svm.hydra.utils;
 
 import com.fasterxml.jackson.jr.ob.JSON;
 
