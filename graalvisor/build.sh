@@ -1,8 +1,8 @@
 #!/bin/bash
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
-GRAALVISOR_HOME=$DIR/build/native-image
-GRAALVISOR_JAR=$DIR/build/libs/hydra-1.0-all.jar
+HYDRA_HOME=$DIR/build/native-image
+HYDRA_JAR=$DIR/build/libs/hydra-1.0-all.jar
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
@@ -70,8 +70,8 @@ function build_nsi {
 }
 
 function build_ni {
-    mkdir -p $GRAALVISOR_HOME &> /dev/null
-    cd $GRAALVISOR_HOME
+    mkdir -p $HYDRA_HOME &> /dev/null
+    cd $HYDRA_HOME
     JAVA_OPTS="$JAVA_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.os=ALL-UNNAMED"
     JAVA_OPTS="$JAVA_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.jni=ALL-UNNAMED"
     JAVA_OPTS="$JAVA_OPTS --add-exports org.graalvm.nativeimage.builder/com.oracle.svm.core.posix=ALL-UNNAMED"
@@ -94,7 +94,7 @@ function build_ni {
         -H:CLibraryPath=$LIB_DIR \
         $JAVA_OPTS \
         --features=org.graalvm.argo.hydra.sandboxing.NativeSandboxInterfaceFeature \
-        -cp $GRAALVISOR_JAR \
+        -cp $HYDRA_JAR \
         org.graalvm.argo.hydra.Main \
         polyglot-proxy \
         -H:+ReportExceptionStackTraces

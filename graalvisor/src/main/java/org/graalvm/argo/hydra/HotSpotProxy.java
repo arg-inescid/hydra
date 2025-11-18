@@ -22,7 +22,7 @@ import com.oracle.svm.hydra.polyglot.PolyglotEngine;
 
 /**
  * Runtime proxy that runs on HotSpot JVM. Right now we only support truffle
- * code in HotSpot but it can be extended by running Graalvisor runtimes
+ * code in HotSpot but it can be extended by running Hydra runtimes
  * through JNI.
  *
  * The HotSpot proxy serves requests in a sequential manner, i.e., no requests will be

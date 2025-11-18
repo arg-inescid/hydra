@@ -16,7 +16,7 @@ public abstract class Main {
         String app_dir = System.getenv("app_dir");
 
         if (lambda_timestamp != null) {
-            System.out.println(String.format("Graalvisor boot time: %s ms.", (System.currentTimeMillis() - Long.parseLong(lambda_timestamp))));
+            System.out.println(String.format("Hydra boot time: %s ms.", (System.currentTimeMillis() - Long.parseLong(lambda_timestamp))));
         }
 
         if (lambda_port == null) {
@@ -39,7 +39,7 @@ public abstract class Main {
             MINIO_PASSWORD = "CHANGEME123";
         }
 
-        System.out.println(String.format("Graalvisor listening on port %s.", lambda_port));
+        System.out.println(String.format("Hydra listening on port %s.", lambda_port));
 
         // Create the directory where function code will be placed.
         new File(app_dir).mkdirs();
