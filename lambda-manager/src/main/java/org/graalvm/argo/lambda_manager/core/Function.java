@@ -28,7 +28,7 @@ public class Function {
     private final long memory;
 
     /** The runtime where this function should be executed. Accepted values include:
-     * - graalvisor (any truffle language, java)
+     * - hydra (any truffle language, java)
      * - <docker image> (e.g., docker.io/openwhisk/action-python-v3.9:latest)
      * */
     private final String runtime;
@@ -42,17 +42,17 @@ public class Function {
     /** Flag stating if instances of this function can be co-located in the same lambda. */
     private final boolean invocationCollocation;
 
-    /** Desired sandbox for Graalvisor runtime. Can only be used with Graalvisor. */
+    /** Desired sandbox for Hydra runtime. Can only be used with Hydra. */
     private final String gvSandbox;
 
-    /** SVM ID used for sandbox checkpoint/restore for this function. Should be a valid small integer. Can only be used with Graalvisor. Can be null. */
+    /** SVM ID used for sandbox checkpoint/restore for this function. Should be a valid small integer. Can only be used with Hydra. Can be null. */
     private final String svmId;
 
-    /** If the function has the Graalvisor or HotSpot mode - URL of the function code to be downloaded by Graalvisor.
+    /** If the function has the Hydra or HotSpot mode - URL of the function code to be downloaded by Hydra.
      * If the function is Knative - name of the Docker image for this function. */
     private final String functionCode;
 
-    /** Flag stating if this function can be re-built into native image in case of fallback (only for Graalvisor). */
+    /** Flag stating if this function can be re-built into native image in case of fallback (only for Hydra). */
     private final boolean canRebuild;
 
     /** Sliding window for determining if this function is worth optimizing. Counts number of cold starts per period. */
@@ -73,7 +73,7 @@ public class Function {
         this.memory = Long.parseLong(memory);
         this.runtime = runtime;
         this.functionCode = functionCode;
-        this.canRebuild = runtime.equals(Environment.GRAALVISOR_RUNTIME) && this.isJar(functionCode);
+        this.canRebuild = runtime.equals(Environment.HYDRA_RUNTIME) && this.isJar(functionCode);
         if (this.canRebuild) {
             this.status = FunctionStatus.NOT_BUILT_NOT_CONFIGURED;
         } else {
@@ -119,14 +119,14 @@ public class Function {
     }
 
     public Path buildFunctionSourceCodePath() {
-        if (canRebuild && getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
+        if (canRebuild && getLambdaExecutionMode() == LambdaExecutionMode.HYDRA) {
             // The function was uploaded for GV target and its .so is built
             return Paths.get(Environment.CODEBASE, name, "build_so", "lib" + name + ".so");
-        } else if (canRebuild && getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO) {
+        } else if (canRebuild && getLambdaExecutionMode() == LambdaExecutionMode.HYDRA_PGO) {
             return Paths.get(Environment.CODEBASE, name, "pgo-enable", name );
-        } else if (canRebuild && getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZING) {
+        } else if (canRebuild && getLambdaExecutionMode() == LambdaExecutionMode.HYDRA_PGO_OPTIMIZING) {
             return Paths.get(Environment.CODEBASE, name, "pgo-enable-optimizing", name );
-        } else if (canRebuild && getLambdaExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED) {
+        } else if (canRebuild && getLambdaExecutionMode() == LambdaExecutionMode.HYDRA_PGO_OPTIMIZED) {
             return Paths.get(Environment.CODEBASE, name, "pgo-optimized", name );
         }
         return Paths.get(Environment.CODEBASE, name, name);
@@ -144,8 +144,8 @@ public class Function {
             case CONFIGURING_OR_BUILDING:
                 return LambdaExecutionMode.HOTSPOT;
             case READY:
-                if (getRuntime().equals(Environment.GRAALVISOR_RUNTIME)) {
-                    return LambdaExecutionMode.GRAALVISOR;
+                if (getRuntime().equals(Environment.HYDRA_RUNTIME)) {
+                    return LambdaExecutionMode.HYDRA;
                 } else if (getRuntime().equals(Environment.GRAALOS_RUNTIME)) {
                     return LambdaExecutionMode.GRAALOS;
                 } else if (getRuntime().equals(Environment.KNATIVE_RUNTIME)) {
@@ -163,13 +163,13 @@ public class Function {
                     }
                 }
             case PGO_BUILDING:
-                return LambdaExecutionMode.GRAALVISOR;
+                return LambdaExecutionMode.HYDRA;
             case PGO_READY:
             case PGO_OPTIMIZED_BUILDING:
             case PGO_PROFILING_DONE:
-                return LambdaExecutionMode.GRAALVISOR_PGO;
+                return LambdaExecutionMode.HYDRA_PGO;
             case PGO_OPTIMIZED_READY:
-                return LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED;
+                return LambdaExecutionMode.HYDRA_PGO_OPTIMIZED;
             default:
                 throw new IllegalStateException("Unexpected value: " + getStatus());
         }
@@ -190,7 +190,7 @@ public class Function {
         return !Configuration.argumentStorage.isSnapshotEnabled() && this.invocationCollocation;
     }
 
-    public String getGraalvisorSandbox() {
+    public String getHydraSandbox() {
         return this.gvSandbox;
     }
 
@@ -227,14 +227,14 @@ public class Function {
                     Logger.log(Level.INFO, "Starting new .so build for function " + name);
                 }
                 break;
-            case GRAALVISOR:
+            case HYDRA:
                 if (status == FunctionStatus.READY) {
                     status = FunctionStatus.PGO_BUILDING;
                     new BuildNativeImagePgo(this).build().start();
                     Logger.log(Level.INFO, "Starting new native image with PGO enabled " + name);
                 }
                 break;
-            case GRAALVISOR_PGO:
+            case HYDRA_PGO:
                 MinioUtils minioUtils = new MinioUtils();
                 if (status == FunctionStatus.PGO_PROFILING_DONE && minioUtils.containsAnyProfile(name)) {
                     minioUtils.downloadProfiles(name);

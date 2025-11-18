@@ -21,11 +21,11 @@ function start_container {
         --memory "$LAMBDA_MEMORY" \
         --cpu-period="$CGROUPS_CPU_PERIOD" \
         --cpu-quota="$LAMBDA_CPU_QUOTA" \
-        graalvisor:latest &> $(DIR)/lambda.log &
+        hydra:latest &> $(DIR)/lambda.log &
 }
 
 function start_native {
-    app_dir=/tmp/apps "$ARGO_HOME"/graalvisor/build/native-image/polyglot-proxy &> $(DIR)/lambda.log &
+    app_dir=/tmp/apps "$ARGO_HOME"/hydra/build/native-image/polyglot-proxy &> $(DIR)/lambda.log &
     PID="$!"
 }
 

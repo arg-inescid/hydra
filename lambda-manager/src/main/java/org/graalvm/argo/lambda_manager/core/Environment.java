@@ -34,8 +34,8 @@ public class Environment {
 
     public static final String MANAGER_METRICS_FILENAME = Paths.get(MANAGER_METRICS, "metrics.log").toString();
 
-    // Graalvisor runtime identifiers.
-    public static final String GRAALVISOR_RUNTIME = "graalvisor";
+    // Hydra runtime identifiers.
+    public static final String HYDRA_RUNTIME = "hydra";
     public static final String KNATIVE_RUNTIME = "knative";
     public static final String GRAALOS_RUNTIME = "graalos";
 

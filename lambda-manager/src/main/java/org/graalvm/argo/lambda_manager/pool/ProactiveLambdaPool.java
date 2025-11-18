@@ -43,13 +43,13 @@ public class ProactiveLambdaPool implements LambdaPool {
     private final Map<LambdaExecutionMode, ConcurrentLinkedQueue<Lambda>> lambdaPool = Map.ofEntries(
             Map.entry(LambdaExecutionMode.HOTSPOT_W_AGENT, new ConcurrentLinkedQueue<>()),
             Map.entry(LambdaExecutionMode.HOTSPOT, new ConcurrentLinkedQueue<>()),
-            Map.entry(LambdaExecutionMode.GRAALVISOR, new ConcurrentLinkedQueue<>()),
+            Map.entry(LambdaExecutionMode.HYDRA, new ConcurrentLinkedQueue<>()),
             Map.entry(LambdaExecutionMode.GRAALOS, new ConcurrentLinkedQueue<>()),
             Map.entry(LambdaExecutionMode.CUSTOM_JAVA, new ConcurrentLinkedQueue<>()),
             Map.entry(LambdaExecutionMode.CUSTOM_JAVASCRIPT, new ConcurrentLinkedQueue<>()),
             Map.entry(LambdaExecutionMode.CUSTOM_PYTHON, new ConcurrentLinkedQueue<>()),
-            Map.entry(LambdaExecutionMode.GRAALVISOR_PGO, new ConcurrentLinkedQueue<>()),
-            Map.entry(LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED, new ConcurrentLinkedQueue<>()));
+            Map.entry(LambdaExecutionMode.HYDRA_PGO, new ConcurrentLinkedQueue<>()),
+            Map.entry(LambdaExecutionMode.HYDRA_PGO_OPTIMIZED, new ConcurrentLinkedQueue<>()));
 
     public ProactiveLambdaPool(LambdaType lambdaType, int maxTaps, String gatewayWithMask, LambdaManagerPool poolConfiguration) {
         this.lambdaType = lambdaType;

@@ -5,15 +5,15 @@ import java.util.List;
 import org.graalvm.argo.lambda_manager.core.Configuration;
 import org.graalvm.argo.lambda_manager.core.Lambda;
 
-public class StartGraalvisorFirecracker extends StartFirecracker {
+public class StartHydraFirecracker extends StartFirecracker {
 
-    public StartGraalvisorFirecracker(Lambda lambda) {
+    public StartHydraFirecracker(Lambda lambda) {
         super(lambda);
     }
 
     @Override
     protected List<String> makeCommand() {
-        List<String> command = prepareCommand("graalvisor");
+        List<String> command = prepareCommand("hydra");
         command.add(TIMESTAMP_TAG + System.currentTimeMillis());
         command.add(PORT_TAG + Configuration.argumentStorage.getLambdaPort());
         command.add("LD_LIBRARY_PATH=/lib:/lib64:/tmp/apps:/usr/local/lib");

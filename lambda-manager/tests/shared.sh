@@ -54,7 +54,7 @@ function register_gv {
         echo "Cannot determine language of the benchmark: $bench"
     fi
 
-    runtime=graalvisor
+    runtime=hydra
 
     entrypoint=${BENCHMARK_ENTRYPOINTS["$bench"]}
     code=${BENCHMARK_CODE["$bench"]}

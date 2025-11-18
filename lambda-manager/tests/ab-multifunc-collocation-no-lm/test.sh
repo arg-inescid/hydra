@@ -42,7 +42,7 @@ BENCHMARK_RUN_ENDPOINT[jvhr]=""
 function start_hydra {
     bench=$1
     export app_dir=$(DIR)/apps
-    setarch -R  $ARGO_HOME/graalvisor/build/native-image/polyglot-proxy -Xmx32g &> $(DIR)/$bench-hydra.log &
+    setarch -R  $ARGO_HOME/hydra/build/native-image/polyglot-proxy -Xmx32g &> $(DIR)/$bench-hydra.log &
     echo $! > $(DIR)/hydra.pid
     sleep 1
     #sudo strace -o $(DIR)/$bench-hydra.strace -p $(cat $(DIR)/hydra.pid) -f &

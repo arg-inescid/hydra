@@ -76,7 +76,7 @@ public class LambdaManager {
                 // TODO: Change message returned from GuestAPI, check for this new message. Remember to keep HTTP_TIMEOUT branch.
                 // This message should suggest that the Native Image runtime encountered unconfigured call.
                 if (response.equals(Messages.HTTP_TIMEOUT)) {
-                    if (function.canRebuild() && lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR) {
+                    if (function.canRebuild() && lambda.getExecutionMode() == LambdaExecutionMode.HYDRA) {
                         // TODO: test fallback for GV once isolates do not terminate entire runtime
                         function.setStatus(FunctionStatus.NOT_BUILT_NOT_CONFIGURED);
                         targetMode = LambdaExecutionMode.HOTSPOT_W_AGENT;

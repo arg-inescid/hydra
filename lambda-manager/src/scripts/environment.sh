@@ -14,8 +14,8 @@ fi
 export RES_HOME=$ARGO_HOME/resources
 export MANAGER_HOME=$ARGO_HOME/lambda-manager
 export BENCHMARKS_HOME=$ARGO_HOME/benchmarks
-export PROXY_HOME=$ARGO_HOME/graalvisor
-export PROXY_JAR=$PROXY_HOME/build/libs/graalvisor-1.0-all.jar
+export PROXY_HOME=$ARGO_HOME/hydra
+export PROXY_JAR=$PROXY_HOME/build/libs/hydra-1.0-all.jar
 export CODEBASE_HOME=$MANAGER_HOME/codebase
-export GRAALVISOR_HOME=$PROXY_HOME/build/native-image
+export HYDRA_HOME=$PROXY_HOME/build/native-image
 export GRAALOS_SDK_DIR=$ARGO_HOME/../graalos

@@ -120,11 +120,11 @@ public class Lambda {
         if (username == null) {
             return true;
         }
-        if (executionMode == LambdaExecutionMode.GRAALVISOR) {
+        if (executionMode == LambdaExecutionMode.HYDRA) {
             if (function.isFunctionIsolated()) {
                 return (registeredFunctions.contains(function)) && username.equals(Configuration.coder.decodeUsername(function.getName()));
             } else {
-                // In Graalvisor, functions can be collocated only if they come from the same user. Debug mode allows collocating all functions from all users.
+                // In Hydra, functions can be collocated only if they come from the same user. Debug mode allows collocating all functions from all users.
                 return Configuration.argumentStorage.isDebugMode() || username.equals(Configuration.coder.decodeUsername(function.getName()));
             }
         } else {

@@ -4,15 +4,15 @@ import java.util.List;
 
 import org.graalvm.argo.lambda_manager.core.Lambda;
 
-public class StartGraalvisorContainer extends StartContainer {
+public class StartHydraContainer extends StartContainer {
 
-    public StartGraalvisorContainer(Lambda lambda) {
+    public StartHydraContainer(Lambda lambda) {
         super(lambda);
     }
 
     @Override
     protected List<String> makeCommand() {
-        List<String> command = prepareCommand("graalvisor:latest");
+        List<String> command = prepareCommand("hydra:latest");
         command.add(TIMESTAMP_TAG + System.currentTimeMillis());
         return command;
     }

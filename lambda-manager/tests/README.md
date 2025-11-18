@@ -41,7 +41,7 @@ The socket client accepts the same parameters as the HTTP controller with its qu
 Upload and run Java HelloWorld in Hydra:
 
 ```
-> u username=user function_name=jvhw function_language=java function_entry_point=com.hello_world.HelloWorld function_memory=256 function_runtime=graalvisor function_isolation=false invocation_collocation=true gv_sandbox=isolate '/full/path/to/benchmarks/src/java/gv-hello-world/build/libhelloworld.so'
+> u username=user function_name=jvhw function_language=java function_entry_point=com.hello_world.HelloWorld function_memory=256 function_runtime=hydra function_isolation=false invocation_collocation=true gv_sandbox=isolate '/full/path/to/benchmarks/src/java/gv-hello-world/build/libhelloworld.so'
 
 > i username=user function_name=jvhw '{}'
 ```
@@ -49,7 +49,7 @@ Upload and run Java HelloWorld in Hydra:
 Upload and run Java Sleep in Hydra:
 
 ```
-> u username=user function_name=jvsl function_language=java function_entry_point=com.sleep.Sleep function_memory=256 function_runtime=graalvisor function_isolation=false invocation_collocation=true gv_sandbox=isolate '/full/path/to/benchmarks/src/java/gv-sleep/build/libsleep.so'
+> u username=user function_name=jvsl function_language=java function_entry_point=com.sleep.Sleep function_memory=256 function_runtime=hydra function_isolation=false invocation_collocation=true gv_sandbox=isolate '/full/path/to/benchmarks/src/java/gv-sleep/build/libsleep.so'
 
 > i username=user function_name=jvsl '{"sleep":"9000","memory":"128"}'
 ```

@@ -12,7 +12,7 @@ public enum LambdaType {
     VM_FIRECRACKER_SNAPSHOT("VM_FIRECRACKER_SNAPSHOT"),
     // Lambda to be deployed as container.
     CONTAINER("CONTAINER"),
-    // Lambda to be deployed as container; in Graalvisor mode users will be collocated.
+    // Lambda to be deployed as container; in Hydra mode users will be collocated.
     CONTAINER_DEBUG("CONTAINER_DEBUG"),
     // Lambda to be deployed as a normal process. Exclusive to GraalOS. Uses the same networking scheme as containers (see NetworkConfigurationUtils#prepareContainerConnectionPool).
     GRAALOS_NATIVE("GRAALOS_NATIVE");

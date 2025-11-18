@@ -3,7 +3,7 @@ package org.graalvm.argo.lambda_manager.core;
 import org.graalvm.argo.lambda_manager.utils.Messages;
 
 public enum FunctionLanguage {
-    // App deployed as a Jar or Java Native Image Library. Exclusive to GraalVisor.
+    // App deployed as a Jar or Java Native Image Library. Exclusive to Hydra.
     JAVA("JAVA"),
     // App deployed as a Python script.
     PYTHON("PYTHON"),

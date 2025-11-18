@@ -2,7 +2,7 @@ package org.graalvm.argo.lambda_manager.processes.lambda.factory;
 
 import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.core.Lambda;
-import org.graalvm.argo.lambda_manager.processes.lambda.StartGraalvisorFirecracker;
+import org.graalvm.argo.lambda_manager.processes.lambda.StartHydraFirecracker;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotFirecracker;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartHotspotWithAgentFirecracker;
 import org.graalvm.argo.lambda_manager.processes.lambda.StartLambda;
@@ -21,8 +21,8 @@ public class FirecrackerLambdaFactory extends AbstractLambdaFactory {
     }
 
     @Override
-    public StartLambda createGraalvisor(Lambda lambda) {
-        return new StartGraalvisorFirecracker(lambda);
+    public StartLambda createHydra(Lambda lambda) {
+        return new StartHydraFirecracker(lambda);
     }
 
     @Override
@@ -31,13 +31,13 @@ public class FirecrackerLambdaFactory extends AbstractLambdaFactory {
     }
 
     @Override
-    public StartLambda createGraalvisorPgo(Lambda lambda) {
-        throw new IllegalStateException("Graalvisor PGO is not yet supported in Firecracker mode.");
+    public StartLambda createHydraPgo(Lambda lambda) {
+        throw new IllegalStateException("Hydra PGO is not yet supported in Firecracker mode.");
     }
 
     @Override
-    public StartLambda createGraalvisorPgoOptimized(Lambda lambda) {
-        throw new IllegalStateException("Graalvisor PGO Optimized is not yet supported in Firecracker mode.");
+    public StartLambda createHydraPgoOptimized(Lambda lambda) {
+        throw new IllegalStateException("Hydra PGO Optimized is not yet supported in Firecracker mode.");
     }
 
     public StartLambda createGraalOS(Lambda lambda) {

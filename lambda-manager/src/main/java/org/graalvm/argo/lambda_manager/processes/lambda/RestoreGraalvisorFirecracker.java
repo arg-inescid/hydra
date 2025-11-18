@@ -4,15 +4,15 @@ import java.util.List;
 
 import org.graalvm.argo.lambda_manager.core.Lambda;
 
-public class RestoreGraalvisorFirecracker extends RestoreFirecracker {
+public class RestoreHydraFirecracker extends RestoreFirecracker {
 
-    public RestoreGraalvisorFirecracker(Lambda lambda) {
+    public RestoreHydraFirecracker(Lambda lambda) {
         super(lambda);
     }
 
     @Override
     protected List<String> makeCommand() {
-        return prepareCommand("graalvisor");
+        return prepareCommand("hydra");
     }
 
 }

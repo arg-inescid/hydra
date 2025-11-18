@@ -41,13 +41,13 @@ public class LambdaPoolUtils {
 
         startLambdasPerMode(lambdaPool, LambdaExecutionMode.HOTSPOT_W_AGENT, poolConfiguration.getHotspotWithAgent(), executor);
         startLambdasPerMode(lambdaPool, LambdaExecutionMode.HOTSPOT, poolConfiguration.getHotspot(), executor);
-        startLambdasPerMode(lambdaPool, LambdaExecutionMode.GRAALVISOR, poolConfiguration.getGraalvisor(), executor);
+        startLambdasPerMode(lambdaPool, LambdaExecutionMode.HYDRA, poolConfiguration.getHydra(), executor);
         startLambdasPerMode(lambdaPool, LambdaExecutionMode.GRAALOS, poolConfiguration.getGraalOS(), executor);
         startLambdasPerMode(lambdaPool, LambdaExecutionMode.CUSTOM_JAVA, poolConfiguration.getCustomJava(), executor);
         startLambdasPerMode(lambdaPool, LambdaExecutionMode.CUSTOM_JAVASCRIPT, poolConfiguration.getCustomJavaScript(), executor);
         startLambdasPerMode(lambdaPool, LambdaExecutionMode.CUSTOM_PYTHON, poolConfiguration.getCustomPython(), executor);
-        startLambdasPerMode(lambdaPool, LambdaExecutionMode.GRAALVISOR_PGO, poolConfiguration.getGraalvisorPgo(), executor);
-        startLambdasPerMode(lambdaPool, LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED, poolConfiguration.getGraalvisorPgoOptimized(), executor);
+        startLambdasPerMode(lambdaPool, LambdaExecutionMode.HYDRA_PGO, poolConfiguration.getHydraPgo(), executor);
+        startLambdasPerMode(lambdaPool, LambdaExecutionMode.HYDRA_PGO_OPTIMIZED, poolConfiguration.getHydraPgoOptimized(), executor);
         executor.shutdown();
         try {
             if (!executor.awaitTermination(600, TimeUnit.SECONDS)) {
@@ -103,12 +103,12 @@ public class LambdaPoolUtils {
                 return Configuration.argumentStorage.getLambdaFactory().createHotspotWithAgent(lambda);
             case HOTSPOT:
                 return Configuration.argumentStorage.getLambdaFactory().createHotspot(lambda);
-            case GRAALVISOR:
-                return Configuration.argumentStorage.getLambdaFactory().createGraalvisor(lambda);
-            case GRAALVISOR_PGO:
-                return Configuration.argumentStorage.getLambdaFactory().createGraalvisorPgo(lambda);
-            case GRAALVISOR_PGO_OPTIMIZED:
-                return Configuration.argumentStorage.getLambdaFactory().createGraalvisorPgoOptimized(lambda);
+            case HYDRA:
+                return Configuration.argumentStorage.getLambdaFactory().createHydra(lambda);
+            case HYDRA_PGO:
+                return Configuration.argumentStorage.getLambdaFactory().createHydraPgo(lambda);
+            case HYDRA_PGO_OPTIMIZED:
+                return Configuration.argumentStorage.getLambdaFactory().createHydraPgoOptimized(lambda);
             case GRAALOS:
                 return Configuration.argumentStorage.getLambdaFactory().createGraalOS(lambda);
             case CUSTOM_JAVA:
@@ -238,13 +238,13 @@ public class LambdaPoolUtils {
             this.maxLambdas = new HashMap<>();
             this.maxLambdas.put(LambdaExecutionMode.HOTSPOT_W_AGENT, poolConfiguration.getHotspotWithAgent());
             this.maxLambdas.put(LambdaExecutionMode.HOTSPOT, poolConfiguration.getHotspot());
-            this.maxLambdas.put(LambdaExecutionMode.GRAALVISOR, poolConfiguration.getGraalvisor());
-            this.maxLambdas.put(LambdaExecutionMode.GRAALOS, poolConfiguration.getGraalvisor());
+            this.maxLambdas.put(LambdaExecutionMode.HYDRA, poolConfiguration.getHydra());
+            this.maxLambdas.put(LambdaExecutionMode.GRAALOS, poolConfiguration.getHydra());
             this.maxLambdas.put(LambdaExecutionMode.CUSTOM_JAVA, poolConfiguration.getCustomJava());
             this.maxLambdas.put(LambdaExecutionMode.CUSTOM_JAVASCRIPT, poolConfiguration.getCustomJavaScript());
             this.maxLambdas.put(LambdaExecutionMode.CUSTOM_PYTHON, poolConfiguration.getCustomPython());
-            this.maxLambdas.put(LambdaExecutionMode.GRAALVISOR_PGO, poolConfiguration.getGraalvisorPgo());
-            this.maxLambdas.put(LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED, poolConfiguration.getGraalvisorPgoOptimized());
+            this.maxLambdas.put(LambdaExecutionMode.HYDRA_PGO, poolConfiguration.getHydraPgo());
+            this.maxLambdas.put(LambdaExecutionMode.HYDRA_PGO_OPTIMIZED, poolConfiguration.getHydraPgoOptimized());
             this.lambdaPool = lambdaPool;
         }
 

@@ -10,11 +10,11 @@ public abstract class AbstractLambdaFactory {
 
     public abstract StartLambda createHotspot(Lambda lambda);
 
-    public abstract StartLambda createGraalvisor(Lambda lambda);
+    public abstract StartLambda createHydra(Lambda lambda);
 
-    public abstract StartLambda createGraalvisorPgo(Lambda lambda);
+    public abstract StartLambda createHydraPgo(Lambda lambda);
 
-    public abstract StartLambda createGraalvisorPgoOptimized(Lambda lambda);
+    public abstract StartLambda createHydraPgoOptimized(Lambda lambda);
 
     public abstract StartLambda createOpenWhisk(Lambda lambda, Function function);
 

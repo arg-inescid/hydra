@@ -11,24 +11,24 @@ import java.io.Serializable;
 @JsonPropertyOrder({
                 "hotspotWithAgent",
                 "hotspot",
-                "graalvisor",
+                "hydra",
                 "graalos",
                 "customJava",
                 "customJavaScript",
                 "customPython",
-                "graalvisorPgo",
-                "graalvisorPgoOptimized"
+                "hydraPgo",
+                "hydraPgoOptimized"
 })
 public class LambdaManagerPool implements Serializable {
     @JsonProperty("hotspotWithAgent") private int hotspotWithAgent;
     @JsonProperty("hotspot") private int hotspot;
-    @JsonProperty("graalvisor") private int graalvisor;
+    @JsonProperty("hydra") private int hydra;
     @JsonProperty("graalos") private int graalos;
     @JsonProperty("customJava") private int customJava;
     @JsonProperty("customJavaScript") private int customJavaScript;
     @JsonProperty("customPython") private int customPython;
-    @JsonProperty("graalvisorPgo") private int graalvisorPgo;
-    @JsonProperty("graalvisorPgoOptimized") private int graalvisorPgoOptimized;
+    @JsonProperty("hydraPgo") private int hydraPgo;
+    @JsonProperty("hydraPgoOptimized") private int hydraPgoOptimized;
     private final static long serialVersionUID = -620888442421704577L;
 
     /**
@@ -41,20 +41,20 @@ public class LambdaManagerPool implements Serializable {
     /**
      * @param hotspotWithAgent - Maximum number of HotSpot with Agent lambdas in the pool.
      * @param hotspot - Maximum number of HotSpot lambdas in the pool.
-     * @param graalvisor - Maximum number of Graalvisor lambdas in the pool.
+     * @param hydra - Maximum number of Hydra lambdas in the pool.
      * @param custom - Maximum number of custom (OpenWhisk) lambdas in the pool.
      */
-    public LambdaManagerPool(int hotspotWithAgent, int hotspot, int graalvisor, int graalos, int customJava, int customJavaScript, int customPython, int graalvisorPgo, int graalvisorPgoOptimized) {
+    public LambdaManagerPool(int hotspotWithAgent, int hotspot, int hydra, int graalos, int customJava, int customJavaScript, int customPython, int hydraPgo, int hydraPgoOptimized) {
         super();
         this.hotspotWithAgent = hotspotWithAgent;
         this.hotspot = hotspot;
-        this.graalvisor = graalvisor;
+        this.hydra = hydra;
         this.graalos = graalos;
         this.customJava = customJava;
         this.customJavaScript = customJavaScript;
         this.customPython = customPython;
-        this.graalvisorPgo = graalvisorPgo;
-        this.graalvisorPgoOptimized = graalvisorPgoOptimized;
+        this.hydraPgo = hydraPgo;
+        this.hydraPgoOptimized = hydraPgoOptimized;
     }
 
     @JsonProperty("hotspotWithAgent")
@@ -77,14 +77,14 @@ public class LambdaManagerPool implements Serializable {
         this.hotspot = hotspot;
     }
 
-    @JsonProperty("graalvisor")
-    public int getGraalvisor() {
-        return graalvisor;
+    @JsonProperty("hydra")
+    public int getHydra() {
+        return hydra;
     }
 
-    @JsonProperty("graalvisor")
-    public void setGraalvisor(int graalvisor) {
-        this.graalvisor = graalvisor;
+    @JsonProperty("hydra")
+    public void setHydra(int hydra) {
+        this.hydra = hydra;
     }
 
     @JsonProperty("graalos")
@@ -127,23 +127,23 @@ public class LambdaManagerPool implements Serializable {
         this.customPython = customPython;
     }
 
-    @JsonProperty("graalvisorPgo")
-    public int getGraalvisorPgo() {
-        return graalvisorPgo;
+    @JsonProperty("hydraPgo")
+    public int getHydraPgo() {
+        return hydraPgo;
     }
 
-    @JsonProperty("graalvisorPgo")
-    public void setGraalvisorPgo(int graalvisorPgo) {
-        this.graalvisorPgo = graalvisorPgo;
+    @JsonProperty("hydraPgo")
+    public void setHydraPgo(int hydraPgo) {
+        this.hydraPgo = hydraPgo;
     }
 
-    @JsonProperty("graalvisorPgoOptimized")
-    public int getGraalvisorPgoOptimized() {
-        return graalvisorPgoOptimized;
+    @JsonProperty("hydraPgoOptimized")
+    public int getHydraPgoOptimized() {
+        return hydraPgoOptimized;
     }
 
-    @JsonProperty("graalvisorPgoOptimized")
-    public void setGraalvisorPgoOptimized(int graalvisorPgoOptimized) {
-        this.graalvisorPgoOptimized = graalvisorPgoOptimized;
+    @JsonProperty("hydraPgoOptimized")
+    public void setHydraPgoOptimized(int hydraPgoOptimized) {
+        this.hydraPgoOptimized = hydraPgoOptimized;
     }
 }
