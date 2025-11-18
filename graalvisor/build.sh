@@ -2,7 +2,7 @@
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 GRAALVISOR_HOME=$DIR/build/native-image
-GRAALVISOR_JAR=$DIR/build/libs/graalvisor-1.0-all.jar
+GRAALVISOR_JAR=$DIR/build/libs/hydra-1.0-all.jar
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
@@ -88,14 +88,14 @@ function build_ni {
         --no-fallback \
         --install-exit-handlers \
         --enable-url-protocols=http \
-        --initialize-at-run-time=com.oracle.svm.graalvisor.utils.JsonUtils \
+        --initialize-at-run-time=com.oracle.svm.hydra.utils.JsonUtils \
         -g \
         $LINKER_OPTIONS \
         -H:CLibraryPath=$LIB_DIR \
         $JAVA_OPTS \
-        --features=org.graalvm.argo.graalvisor.sandboxing.NativeSandboxInterfaceFeature \
+        --features=org.graalvm.argo.hydra.sandboxing.NativeSandboxInterfaceFeature \
         -cp $GRAALVISOR_JAR \
-        org.graalvm.argo.graalvisor.Main \
+        org.graalvm.argo.hydra.Main \
         polyglot-proxy \
         -H:+ReportExceptionStackTraces
 }
@@ -123,21 +123,21 @@ cd "$DIR" || {
 EXECUTION_ENVIRONMENT=$1
 if [[ "$EXECUTION_ENVIRONMENT" != "local" ]]
 then  # Build native image inside Docker container.
-    docker run -it -v $JAVA_HOME:/jvm -v $ARGO_HOME:/argo --rm argo-builder /argo/graalvisor/build.sh "local"
-    sudo chown -R $(id -u -n):$(id -g -n) $ARGO_HOME/graalvisor/build
+    docker run -it -v $JAVA_HOME:/jvm -v $ARGO_HOME:/argo --rm argo-builder /argo/hydra/build.sh "local"
+    sudo chown -R $(id -u -n):$(id -g -n) $ARGO_HOME/hydra/build
 else  # Build native image locally (inside container or directly on host).
-    echo -e "${GREEN}Building graalvisor lib jar...${NC}"
-    bash $ARGO_HOME/graalvisor-lib/build.sh
-    echo -e "${GREEN}Building graalvisor jar... done!${NC}"
-    echo -e "${GREEN}Building graalvisor jar...${NC}"
+    echo -e "${GREEN}Building hydra lib jar...${NC}"
+    bash $ARGO_HOME/hydra-lib/build.sh
+    echo -e "${GREEN}Building hydra jar... done!${NC}"
+    echo -e "${GREEN}Building hydra jar...${NC}"
     ./gradlew clean shadowJar
-    echo -e "${GREEN}Building graalvisor jar... done!${NC}"
+    echo -e "${GREEN}Building hydra jar... done!${NC}"
 
-    echo -e "${GREEN}Building graalvisor native sandbox interface...${NC}"
+    echo -e "${GREEN}Building hydra native sandbox interface...${NC}"
     build_nsi
-    echo -e "${GREEN}Building graalvisor native sandbox interface... done!${NC}"
+    echo -e "${GREEN}Building hydra native sandbox interface... done!${NC}"
 
-    echo -e "${GREEN}Building graalvisor Native Image...${NC}"
+    echo -e "${GREEN}Building hydra Native Image...${NC}"
     build_ni
-    echo -e "${GREEN}Building graalvisor Native Image... done!${NC}"
+    echo -e "${GREEN}Building hydra Native Image... done!${NC}"
 fi

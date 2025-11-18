@@ -37,10 +37,10 @@ Note that `PolyglotProxy` is pre-built and only deployed in Native Image UniKern
 
 ### Code Structure
 
-[`base`](src/main/java/org/graalvm/argo/graalvisor/base): Helper classes to wrap function, language(enum), isolate. Isolate Factory that registers isolate into threadLocal. TruffleExecutor.
+[`base`](src/main/java/org/graalvm/argo/hydra/base): Helper classes to wrap function, language(enum), isolate. Isolate Factory that registers isolate into threadLocal. TruffleExecutor.
 
-[`engine`](src/main/java/org/graalvm/argo/graalvisor/engine): Language engines
+[`engine`](src/main/java/org/graalvm/argo/hydra/engine): Language engines
 
-[`runtime`](src/main/java/org/graalvm/argo/graalvisor/runtime): Runtime proxies: HotSpotProxy and IsolateProxy
+[`runtime`](src/main/java/org/graalvm/argo/hydra/runtime): Runtime proxies: HotSpotProxy and IsolateProxy
 
-[`utils`](src/main/java/org/graalvm/argo/graalvisor/utils): utilties classes
+[`utils`](src/main/java/org/graalvm/argo/hydra/utils): utilties classes

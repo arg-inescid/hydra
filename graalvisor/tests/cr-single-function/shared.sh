@@ -88,7 +88,7 @@ BENCH_ARRAY=(jshw jsdh jsup jstn pyhw pymst pybfs pypr pydna pydh pyco pytn pyup
 function start_hydra {
     export app_dir=$(pwd)/apps
     mkdir -p $app_dir
-    bash $(DIR)/../../../graalvisor/graalvisor graalvisor.pid &>> graalvisor.log &
+    bash $(DIR)/../../../hydra/hydra hydra.pid &>> hydra.log &
 
     # Wait for hydra to launch.
     timeout 1s bash -c "while ! nc -z $HYDRA_HOST $HYDRA_PORT; do sleep 0.1; done"
@@ -101,15 +101,15 @@ function start_hydra {
 
 function stop_hydra {
     # Note: wait until pid file is filled.
-    timeout 1s bash -c "while [ ! -s graalvisor.pid ]; do sleep 0.1; done"
+    timeout 1s bash -c "while [ ! -s hydra.pid ]; do sleep 0.1; done"
 
     # Kill hydra.
-    if [ -f graalvisor.pid ]; then
-        echo "killing graalvisor running with pid $(cat graalvisor.pid)"
-        kill $(cat graalvisor.pid)
-        rm graalvisor.pid
+    if [ -f hydra.pid ]; then
+        echo "killing hydra running with pid $(cat hydra.pid)"
+        kill $(cat hydra.pid)
+        rm hydra.pid
     else
-        echo "error: graalvisor.pid not found."
+        echo "error: hydra.pid not found."
     fi
 }
 
