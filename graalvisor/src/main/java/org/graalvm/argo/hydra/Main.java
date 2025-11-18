@@ -1,8 +1,8 @@
-package org.graalvm.argo.graalvisor;
+package org.graalvm.argo.hydra;
 
 import java.io.File;
 
-import org.graalvm.argo.graalvisor.sandboxing.NativeSandboxInterface;
+import org.graalvm.argo.hydra.sandboxing.NativeSandboxInterface;
 
 public abstract class Main {
     public static String MINIO_URL = System.getenv("minio-url");

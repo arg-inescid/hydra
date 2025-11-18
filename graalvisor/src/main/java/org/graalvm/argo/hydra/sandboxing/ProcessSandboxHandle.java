@@ -1,4 +1,4 @@
-package org.graalvm.argo.graalvisor.sandboxing;
+package org.graalvm.argo.hydra.sandboxing;
 
 import java.io.BufferedReader;
 import java.io.FileDescriptor;

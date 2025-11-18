@@ -1,4 +1,4 @@
-package org.graalvm.argo.graalvisor;
+package org.graalvm.argo.hydra;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -7,11 +7,11 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.graalvm.argo.graalvisor.function.PolyglotFunction;
-import org.graalvm.argo.graalvisor.sandboxing.SandboxHandle;
+import org.graalvm.argo.hydra.function.PolyglotFunction;
+import org.graalvm.argo.hydra.sandboxing.SandboxHandle;
 
 import com.sun.net.httpserver.HttpExchange;
-import org.graalvm.argo.graalvisor.utils.JsonUtils;
+import org.graalvm.argo.hydra.utils.JsonUtils;
 
 /**
  * A runtime proxy that runs requests on Native image-based sandboxes.

@@ -1,15 +1,15 @@
-package org.graalvm.argo.graalvisor.sandboxing;
+package org.graalvm.argo.hydra.sandboxing;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.graalvm.argo.graalvisor.function.NativeFunction;
-import org.graalvm.argo.graalvisor.function.PolyglotFunction;
-import org.graalvm.argo.graalvisor.utils.JsonUtils;
+import org.graalvm.argo.hydra.function.NativeFunction;
+import org.graalvm.argo.hydra.function.PolyglotFunction;
+import org.graalvm.argo.hydra.utils.JsonUtils;
 
-import com.oracle.svm.graalvisor.polyglot.PolyglotLanguage;
+import com.oracle.svm.hydra.polyglot.PolyglotLanguage;
 
 public class SnapshotSandboxProvider extends SandboxProvider {
 

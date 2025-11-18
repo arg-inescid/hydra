@@ -1,6 +1,6 @@
-package org.graalvm.argo.graalvisor.sandboxing;
+package org.graalvm.argo.hydra.sandboxing;
 
-import org.graalvm.argo.graalvisor.function.PolyglotFunction;
+import org.graalvm.argo.hydra.function.PolyglotFunction;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -23,10 +23,10 @@ import static java.nio.file.attribute.PosixFilePermission.OTHERS_EXECUTE;
 import static java.nio.file.attribute.PosixFilePermission.OTHERS_WRITE;
 import static java.nio.file.attribute.PosixFilePermission.OTHERS_READ;
 import static java.util.Arrays.asList;
-import static org.graalvm.argo.graalvisor.Main.MINIO_PASSWORD;
-import static org.graalvm.argo.graalvisor.Main.MINIO_SERVER;
-import static org.graalvm.argo.graalvisor.Main.MINIO_URL;
-import static org.graalvm.argo.graalvisor.Main.MINIO_USER;
+import static org.graalvm.argo.hydra.Main.MINIO_PASSWORD;
+import static org.graalvm.argo.hydra.Main.MINIO_SERVER;
+import static org.graalvm.argo.hydra.Main.MINIO_URL;
+import static org.graalvm.argo.hydra.Main.MINIO_USER;
 
 public class ExecutableSandboxHandle extends SandboxHandle {
     public static final String DEFAULT_IPROF_FILE_NAME = "/default.iprof";

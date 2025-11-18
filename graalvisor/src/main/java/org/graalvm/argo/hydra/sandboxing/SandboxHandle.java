@@ -1,6 +1,6 @@
-package org.graalvm.argo.graalvisor.sandboxing;
+package org.graalvm.argo.hydra.sandboxing;
 
-import org.graalvm.argo.graalvisor.utils.FileUtils;
+import org.graalvm.argo.hydra.utils.FileUtils;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;

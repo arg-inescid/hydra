@@ -1,4 +1,4 @@
-package org.graalvm.argo.graalvisor.utils;
+package org.graalvm.argo.hydra.utils;
 
 import java.io.File;
 import java.io.IOException;

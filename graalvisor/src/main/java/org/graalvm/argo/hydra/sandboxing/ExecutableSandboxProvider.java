@@ -1,6 +1,6 @@
-package org.graalvm.argo.graalvisor.sandboxing;
+package org.graalvm.argo.hydra.sandboxing;
 
-import org.graalvm.argo.graalvisor.function.PolyglotFunction;
+import org.graalvm.argo.hydra.function.PolyglotFunction;
 
 import java.io.IOException;
 

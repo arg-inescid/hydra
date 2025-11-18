@@ -1,9 +1,9 @@
-package org.graalvm.argo.graalvisor;
+package org.graalvm.argo.hydra;
 
-import static org.graalvm.argo.graalvisor.utils.JsonUtils.jsonToMap;
-import static org.graalvm.argo.graalvisor.utils.HttpUtils.errorResponse;
-import static org.graalvm.argo.graalvisor.utils.HttpUtils.extractRequestBody;
-import static org.graalvm.argo.graalvisor.utils.HttpUtils.writeResponse;
+import static org.graalvm.argo.hydra.utils.JsonUtils.jsonToMap;
+import static org.graalvm.argo.hydra.utils.HttpUtils.errorResponse;
+import static org.graalvm.argo.hydra.utils.HttpUtils.extractRequestBody;
+import static org.graalvm.argo.hydra.utils.HttpUtils.writeResponse;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,18 +17,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.graalvm.argo.graalvisor.function.HotSpotFunction;
-import org.graalvm.argo.graalvisor.function.NativeFunction;
-import org.graalvm.argo.graalvisor.function.PolyglotFunction;
-import org.graalvm.argo.graalvisor.sandboxing.ContextSandboxProvider;
-import org.graalvm.argo.graalvisor.sandboxing.SnapshotSandboxProvider;
-import org.graalvm.argo.graalvisor.sandboxing.IsolateSandboxProvider;
-import org.graalvm.argo.graalvisor.sandboxing.ExecutableSandboxProvider;
-import org.graalvm.argo.graalvisor.sandboxing.ProcessSandboxProvider;
-import org.graalvm.argo.graalvisor.sandboxing.SandboxProvider;
-import org.graalvm.argo.graalvisor.sandboxing.SnapshotProcessSandboxProvider;
-import org.graalvm.argo.graalvisor.utils.HttpUtils;
-import org.graalvm.argo.graalvisor.utils.ZipUtils;
+import org.graalvm.argo.hydra.function.HotSpotFunction;
+import org.graalvm.argo.hydra.function.NativeFunction;
+import org.graalvm.argo.hydra.function.PolyglotFunction;
+import org.graalvm.argo.hydra.sandboxing.ContextSandboxProvider;
+import org.graalvm.argo.hydra.sandboxing.SnapshotSandboxProvider;
+import org.graalvm.argo.hydra.sandboxing.IsolateSandboxProvider;
+import org.graalvm.argo.hydra.sandboxing.ExecutableSandboxProvider;
+import org.graalvm.argo.hydra.sandboxing.ProcessSandboxProvider;
+import org.graalvm.argo.hydra.sandboxing.SandboxProvider;
+import org.graalvm.argo.hydra.sandboxing.SnapshotProcessSandboxProvider;
+import org.graalvm.argo.hydra.utils.HttpUtils;
+import org.graalvm.argo.hydra.utils.ZipUtils;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -291,12 +291,12 @@ public abstract class RuntimeProxy {
                     // Note: we rely on file extensions here.
                     if (functionPath.endsWith(".zip")) {
                         ZipUtils.unzip(functionPath, appDir);
-                        // Note: this is a convention shared between the function registry and graalvisor.
+                        // Note: this is a convention shared between the function registry and hydra.
                         functionPath = functionPath.replace(".zip", ".so");
                     }
                 } else {
                     if (functionPath.endsWith(".zip")) {
-                        // Note: this is a convention shared between the function registry and graalvisor.
+                        // Note: this is a convention shared between the function registry and hydra.
                         functionPath = functionPath.replace(".zip", ".so");
 
                         // If .so with the same name is not present already, then unzip.

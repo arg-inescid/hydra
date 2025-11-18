@@ -1,8 +1,8 @@
-package org.graalvm.argo.graalvisor.sandboxing;
+package org.graalvm.argo.hydra.sandboxing;
 
 import java.io.IOException;
-import org.graalvm.argo.graalvisor.function.NativeFunction;
-import org.graalvm.argo.graalvisor.function.PolyglotFunction;
+import org.graalvm.argo.hydra.function.NativeFunction;
+import org.graalvm.argo.hydra.function.PolyglotFunction;
 
 public class ContextSandboxProvider extends SandboxProvider {
 

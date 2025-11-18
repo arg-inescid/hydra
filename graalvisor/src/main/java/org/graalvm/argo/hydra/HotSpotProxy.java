@@ -1,8 +1,8 @@
-package org.graalvm.argo.graalvisor;
+package org.graalvm.argo.hydra;
 
-import static org.graalvm.argo.graalvisor.utils.JsonUtils.json;
-import static org.graalvm.argo.graalvisor.utils.JsonUtils.jsonToMap;
-import static org.graalvm.argo.graalvisor.utils.HttpUtils.errorResponse;
+import static org.graalvm.argo.hydra.utils.JsonUtils.json;
+import static org.graalvm.argo.hydra.utils.JsonUtils.jsonToMap;
+import static org.graalvm.argo.hydra.utils.HttpUtils.errorResponse;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -11,14 +11,14 @@ import java.nio.file.Paths;
 import java.util.Map;
 import java.util.concurrent.Executors;
 
-import org.graalvm.argo.graalvisor.function.HotSpotFunction;
-import org.graalvm.argo.graalvisor.function.PolyglotFunction;
-import org.graalvm.argo.graalvisor.function.TruffleFunction;
-import org.graalvm.argo.graalvisor.utils.HttpUtils;
+import org.graalvm.argo.hydra.function.HotSpotFunction;
+import org.graalvm.argo.hydra.function.PolyglotFunction;
+import org.graalvm.argo.hydra.function.TruffleFunction;
+import org.graalvm.argo.hydra.utils.HttpUtils;
 
 import com.sun.net.httpserver.HttpExchange;
-import com.oracle.svm.graalvisor.polyglot.PolyglotLanguage;
-import com.oracle.svm.graalvisor.polyglot.PolyglotEngine;
+import com.oracle.svm.hydra.polyglot.PolyglotLanguage;
+import com.oracle.svm.hydra.polyglot.PolyglotEngine;
 
 /**
  * Runtime proxy that runs on HotSpot JVM. Right now we only support truffle
@@ -40,7 +40,7 @@ public class HotSpotProxy extends RuntimeProxy {
         try {
             engine = new PolyglotEngine();
         } catch (Throwable e) {
-            System.out.println("Warning: graalvisor compiled with no truffle language support.");
+            System.out.println("Warning: hydra compiled with no truffle language support.");
         } finally {
             LANGUAGE_ENGINE = engine;
         }
