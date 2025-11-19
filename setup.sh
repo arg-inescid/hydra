@@ -111,8 +111,8 @@ fi
 if ! command -v docker &> /dev/null
 then
     echo "WARNING: docker could not be found!"
-    echo "If you plan on experimenting with Graalvisor's container backend then you should install Docker."
-    GRAALVISOR_BUILD_MODE="local"
+    echo "If you plan on experimenting with Hydra's container backend then you should install Docker."
+    HYDRA_BUILD_MODE="local"
 fi
 
 if [ ! -e $ARGO_HOME/benchmarks/.git ];
@@ -143,21 +143,21 @@ then
     bash $ARGO_HOME/builder/build.sh
 fi
 
-read -p "Build graalvisor? (y or Y, everything else as no)? " -n 1 -r
+read -p "Build Hydra? (y or Y, everything else as no)? " -n 1 -r
 echo    # move to a new line
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    bash $ARGO_HOME/graalvisor/build.sh $GRAALVISOR_BUILD_MODE
+    bash $ARGO_HOME/hydra/build.sh $HYDRA_BUILD_MODE
 fi
 
-read -p "Build graalvisor test (y or Y, everything else as no)? " -n 1 -r
+read -p "Build Hydra test (y or Y, everything else as no)? " -n 1 -r
 echo    # move to a new line
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    bash $ARGO_HOME/benchmarks/src/java/gv-hello-world/build_script.sh build_ni_sharedlibrary
-    echo "Now you can try running a graalvisor hello world by running:"
+    bash $ARGO_HOME/benchmarks/src/java/hy-hello-world/build_script.sh build_ni_sharedlibrary
+    echo "Now you can try running a Hydra hello world by running:"
     echo "> export WORK_DIR=$ARGO_HOME/tmp"
-    echo "> sudo -E $ARGO_HOME/benchmarks/scripts/benchmark-graalvisor.sh svm gv_java_hw test 1"
+    echo "> sudo -E $ARGO_HOME/benchmarks/scripts/benchmark-hydra.sh svm hy_java_hw test 1"
 fi
 
 bash $ARGO_HOME/images/build.sh

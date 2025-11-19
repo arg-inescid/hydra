@@ -1,46 +1,29 @@
-## Lambda Proxies
+# Hydra Runtime
 
-Lambda proxy is the entry point for function invocations and resides in each deployed VM instance (Native Image UniKernel or VMM). It receives the function invocation (or necessary registration beforehand), makes executions and responds to Worker Manager.
+This directory contains the Hydra runtime's codebase.
 
-In general, Lambda-proxy works as a HTTP server that handles function invocation requests from Worker Manager.
+### Build and deploy
 
----
+**IMPORTANT**: make sure to go to the [`builder`](../builder) directory and run the `build.sh` script there to obtain a builder Docker image. It will be used to build the Hydra runtime.
 
-### System Architecture
+Run the `build.sh` script to build the Hydra runtime binary. After running this script, you can use the [`hydra`](./hydra) script to launch Hydra runtime locally.
 
-The following is the architecture diagram of the different versions of Lambda proxy being deployed:
+If you want to run Hydra in a containerized environment, go to [`images`](../images) and run the `build.sh` script - answer "y" when it prompts about "Hydra container". After this, you can run Hydra in a container. **IMPORTANT**: Hydra requires the `--privileged` flag if running an instance as a Docker container due to system call tracking for sandbox Checkpoint/Restore mechanism.
 
-![](docs/ProxyArchitecture.svg "Lambda-proxy Architecture")
+### Usage
 
----
+Once started up, Hydra runtime exposes HTTP endpoints to register and invoke functions. The code of the register/invoke handlers is available in [`RuntimeProxy.java`](src/main/java/org/graalvm/argo/hydra/RuntimeProxy.java).
 
-### Design Philosophy
+Register endpoint only accepts HTTP query parameters (i.e., no body). The main parameters for the register endpoint are:
 
-There are two design dimensions of the proxy need to be considered:
+- `name` - name of the function;
+- `url` - URL to the function code, usually an *.so or a *.zip. Hydra expects function code to be hosted on some web server;
+- `entryPoint` - Java entrypoint (fully-qualified class name, including the package name);
+- `language` - language of the function (suppored languages are `java`, `javascript`, and `python`);
+- `sandbox` - sandboxing type to use for the function. Defaults to `isolate`. The other supported sandboxes are `process`, `snapshot` (for sandbox C/R), and `snapshot-process` (also for sandbox C/R, but restore takes place in a subprocess);
+- `svmid` - numeric value that needs to be unique for each function and needs to be the same for checkpoint and restore process. Only to be used with `snapshot` and `snapshot-process` sandboxing types.
 
-|     Runtime        |   Languange Engine  |
-| ----------- | ----------- |
-|  HotSpot | Java Engine |
-|  Native Image (Isolate) | Polyglot Engine|
+Register endpoint only accepts a JSON body (i.e., only the body, without query parameters). The main JSON keys for the invoke endpoint are:
 
-We are using different classes to implement these two design dimensions.
-
-`runtime.RuntimeProxy` deals with different manner of invocation under HotSpot and Native Image Isolate runtime. Each `runtime.RuntimeProxy` possesses a language execution engine `engine.LanguageEngine`, to which the invocation would be delegated.
-
-`engine.PolyglotEngine` is using Truffle as its polyglot runtime. The invocation and caching mechanisms are implemented inside `base.TruffleExecutor`
-
-Two build script examples are also listed under src/scripts. The `languageEngine` would be assigned while building (registered as Feature into ImageHeap) and shared among different isolates while running.
-
-Note that `PolyglotProxy` is pre-built and only deployed in Native Image UniKernel, while JavaProxy would be running in form of *HotSpot*, *HotSpot with Tracing Agent* and *Native Image UniKernel*.
-
----
-
-### Code Structure
-
-[`base`](src/main/java/org/graalvm/argo/hydra/base): Helper classes to wrap function, language(enum), isolate. Isolate Factory that registers isolate into threadLocal. TruffleExecutor.
-
-[`engine`](src/main/java/org/graalvm/argo/hydra/engine): Language engines
-
-[`runtime`](src/main/java/org/graalvm/argo/hydra/runtime): Runtime proxies: HotSpotProxy and IsolateProxy
-
-[`utils`](src/main/java/org/graalvm/argo/hydra/utils): utilties classes
+- `name` - JSON string with the name of the function;
+- `arguments` - JSON string with the arguments passed to the function, commonly another JSON.
