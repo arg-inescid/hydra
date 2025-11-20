@@ -42,7 +42,7 @@ start_container
 sleep 5
 
 # Upload JavaScript function.
-curl -X POST $HYDRA_ADDRESS/register?name=test\&language=java\&entrypoint=com.uploader.Uploader\&isBinary=true\&svmid=2\&sandbox=snapshot\&url=http://172.18.0.1:8000/apps/gv-js-uploader.so
+curl -X POST $HYDRA_ADDRESS/register?name=test\&language=java\&entrypoint=com.uploader.Uploader\&isBinary=true\&svmid=2\&sandbox=snapshot\&url=http://172.18.0.1:8000/apps/hy-js-uploader.so
 
 # Run the experiment.
 APP_POST=/tmp/app-post

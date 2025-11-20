@@ -77,7 +77,7 @@ public class LambdaManager {
                 // This message should suggest that the Native Image runtime encountered unconfigured call.
                 if (response.equals(Messages.HTTP_TIMEOUT)) {
                     if (function.canRebuild() && lambda.getExecutionMode() == LambdaExecutionMode.HYDRA) {
-                        // TODO: test fallback for GV once isolates do not terminate entire runtime
+                        // TODO: test fallback for Hydra once isolates do not terminate entire runtime
                         function.setStatus(FunctionStatus.NOT_BUILT_NOT_CONFIGURED);
                         targetMode = LambdaExecutionMode.HOTSPOT_W_AGENT;
                         Logger.log(Level.INFO, "Decommissioning (failed requests) lambda " + lambda.getLambdaID());
@@ -117,7 +117,7 @@ public class LambdaManager {
                                                 String functionCode,
                                                 boolean functionIsolation,
                                                 boolean invocationCollocation,
-                                                String gvSandbox,
+                                                String hydraSandbox,
                                                 String svmId) {
         String responseString;
 
@@ -129,7 +129,7 @@ public class LambdaManager {
         String encodedFunctionName = Configuration.coder.encodeFunctionName(username, functionName);
         registrationInProgress.add(encodedFunctionName);
         try {
-            Function function = new Function(encodedFunctionName, functionLanguage, functionEntryPoint, functionMemory, functionRuntime, functionCode, functionIsolation, invocationCollocation, gvSandbox, svmId);
+            Function function = new Function(encodedFunctionName, functionLanguage, functionEntryPoint, functionMemory, functionRuntime, functionCode, functionIsolation, invocationCollocation, hydraSandbox, svmId);
             Configuration.storage.register(encodedFunctionName, function, functionCode.getBytes());
             Logger.log(Level.INFO, String.format(Messages.SUCCESS_FUNCTION_UPLOAD, functionName));
             responseString = String.format(Messages.SUCCESS_FUNCTION_UPLOAD, functionName);

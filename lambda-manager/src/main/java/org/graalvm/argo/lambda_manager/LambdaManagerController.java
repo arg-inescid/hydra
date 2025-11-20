@@ -47,12 +47,12 @@ public class LambdaManagerController {
                                          @Nullable @QueryValue("function_runtime") String functionRuntime,
                                          @Nullable @QueryValue("function_isolation") Boolean functionIsolation,
                                          @Nullable @QueryValue("invocation_collocation") Boolean invocationCollocation,
-                                         @Nullable @QueryValue("gv_sandbox") String gvSandbox,
+                                         @Nullable @QueryValue("hydra_sandbox") String hydraSandbox,
                                          @Nullable @QueryValue("svm_id") String svmId,
                                          @Body String functionCode) {
         return LambdaManager.uploadFunction(username, functionName, functionLanguage, functionEntryPoint,
                 functionMemory, functionRuntime, functionCode, Boolean.TRUE.equals(functionIsolation),
-                Boolean.TRUE.equals(invocationCollocation), gvSandbox, svmId);
+                Boolean.TRUE.equals(invocationCollocation), hydraSandbox, svmId);
     }
 
     @Post("/remove_function")

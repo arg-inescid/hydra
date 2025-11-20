@@ -43,7 +43,7 @@ public class Function {
     private final boolean invocationCollocation;
 
     /** Desired sandbox for Hydra runtime. Can only be used with Hydra. */
-    private final String gvSandbox;
+    private final String hydraSandbox;
 
     /** SVM ID used for sandbox checkpoint/restore for this function. Should be a valid small integer. Can only be used with Hydra. Can be null. */
     private final String svmId;
@@ -66,7 +66,7 @@ public class Function {
      */
     private long lastAgentPID;
 
-    public Function(String name, String language, String entryPoint, String memory, String runtime, String functionCode, boolean functionIsolation, boolean invocationCollocation, String gvSandbox, String svmId) throws Exception {
+    public Function(String name, String language, String entryPoint, String memory, String runtime, String functionCode, boolean functionIsolation, boolean invocationCollocation, String hydraSandbox, String svmId) throws Exception {
         this.name = name;
         this.language = FunctionLanguage.fromString(language);
         this.entryPoint = entryPoint;
@@ -81,7 +81,7 @@ public class Function {
         }
         this.functionIsolation = functionIsolation;
         this.invocationCollocation = invocationCollocation;
-        this.gvSandbox = gvSandbox;
+        this.hydraSandbox = hydraSandbox;
         this.svmId = svmId;
         this.window = new ColdStartSlidingWindow(Environment.AOT_OPTIMIZATION_THRESHOLD, Environment.SLIDING_WINDOW_PERIOD);
     }
@@ -120,7 +120,7 @@ public class Function {
 
     public Path buildFunctionSourceCodePath() {
         if (canRebuild && getLambdaExecutionMode() == LambdaExecutionMode.HYDRA) {
-            // The function was uploaded for GV target and its .so is built
+            // The function was uploaded for Hydra target and its .so is built
             return Paths.get(Environment.CODEBASE, name, "build_so", "lib" + name + ".so");
         } else if (canRebuild && getLambdaExecutionMode() == LambdaExecutionMode.HYDRA_PGO) {
             return Paths.get(Environment.CODEBASE, name, "pgo-enable", name );
@@ -191,7 +191,7 @@ public class Function {
     }
 
     public String getHydraSandbox() {
-        return this.gvSandbox;
+        return this.hydraSandbox;
     }
 
     public boolean canRebuild() {
@@ -203,7 +203,7 @@ public class Function {
     }
 
     public boolean snapshotSandbox() {
-        return svmId != null && "snapshot".equals(gvSandbox);
+        return svmId != null && "snapshot".equals(hydraSandbox);
     }
 
     public String getSvmId() {

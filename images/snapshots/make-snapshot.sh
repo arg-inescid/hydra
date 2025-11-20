@@ -14,7 +14,7 @@ function make_snapshot {
     if [ "$image_name" == "hydra" ] && [ -n "$FUNCTION_ENTRYPOINT" ] && [ -n "$FUNCTION_BINARY" ]; then
         response=$(curl -X POST "$IP":8080/register?name=function\&entryPoint="$FUNCTION_ENTRYPOINT"\&language=java\&sandbox=isolate -H 'Content-Type: application/json' --data-binary @"$FUNCTION_BINARY")
         echo $response  # To ensure that VM is up and the function is registered.
-        # curl -X POST "$IP":8080 -H 'Content-Type: application/json' -d '{"name":"function","async":"false","arguments":"{\"memory\":\"128\",\"duration\":\"1\"}"}'  # Example invocation for gv-genericapp.
+        # curl -X POST "$IP":8080 -H 'Content-Type: application/json' -d '{"name":"function","async":"false","arguments":"{\"memory\":\"128\",\"duration\":\"1\"}"}'  # Example invocation for hy-genericapp.
     fi
 
     echo "($ID) Snapshotting vm..."

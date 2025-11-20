@@ -7,7 +7,7 @@ source $DIR/build_shared.sh
 DISK=$DIR/disk
 
 HYDRA_BINARY=$DIR/../../hydra/build/native-image/polyglot-proxy
-gvdisk=$1
+hydra_disk=$1
 
 if [ "$#" -ne 1 ]; then
     echo "Illegal number of parameters."
@@ -40,8 +40,8 @@ then
 fi
 
 # Copy the base filesystem into a new one, mount, and setup permissions.
-cp $DIR/base.ext4 $gvdisk
-sudo mount $gvdisk $DISK
+cp $DIR/base.ext4 $hydra_disk
+sudo mount $hydra_disk $DISK
 sudo chown -R $(id -u -n):$(id -g -n) $DISK
 
 # Copy hydra and init.

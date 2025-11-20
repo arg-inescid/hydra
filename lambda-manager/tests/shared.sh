@@ -30,7 +30,7 @@ function register {
     "$register_func" "$bench"
 }
 
-function register_gv {
+function register_hy {
     bench=$1
 
     if [ -z "$FUNCTION_MEMORY" ]; then
@@ -44,11 +44,11 @@ function register_gv {
     fi
 
     lang=
-    if [[ $bench == "gv_jv"* ]]; then
+    if [[ $bench == "hy_jv"* ]]; then
         lang=java
-    elif [[ $bench == "gv_py"* ]]; then
+    elif [[ $bench == "hy_py"* ]]; then
         lang=python
-    elif [[ $bench == "gv_js"* ]]; then
+    elif [[ $bench == "hy_js"* ]]; then
         lang=javascript
     else
         echo "Cannot determine language of the benchmark: $bench"
@@ -61,12 +61,12 @@ function register_gv {
     sandbox=${BENCHMARK_SANDBOXES["$bench"]}
     svm_id=${BENCHMARK_SVMIDS["$bench"]}
 
-    gv_parameters="gv_sandbox=$sandbox"
+    hy_parameters="hydra_sandbox=$sandbox"
     if [ -n "$svm_id" ]; then
-        gv_parameters="$gv_parameters&svm_id=$svm_id"
+        hy_parameters="$hy_parameters&svm_id=$svm_id"
     fi
 
-    curl -s -X POST $LAMBDA_MANAGER_HOST:$LAMBDA_MANAGER_PORT/upload_function?username=$USER\&function_name=$bench\&function_language=$lang\&function_entry_point=$entrypoint\&function_memory=$FUNCTION_MEMORY\&function_runtime=$runtime\&function_isolation=$FUNCTION_ISOLATION\&invocation_collocation=$INVOCATION_COLLOCATION\&$gv_parameters -H 'Content-Type: text/plain' --data $code
+    curl -s -X POST $LAMBDA_MANAGER_HOST:$LAMBDA_MANAGER_PORT/upload_function?username=$USER\&function_name=$bench\&function_language=$lang\&function_entry_point=$entrypoint\&function_memory=$FUNCTION_MEMORY\&function_runtime=$runtime\&function_isolation=$FUNCTION_ISOLATION\&invocation_collocation=$INVOCATION_COLLOCATION\&$hy_parameters -H 'Content-Type: text/plain' --data $code
 }
 
 function register_ow {

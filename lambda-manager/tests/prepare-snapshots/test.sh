@@ -22,7 +22,7 @@ function prepare_snapshots {
     export INVOCATION_COLLOCATION=false
 
     # Register, invoke, and save a snapshot of each function.
-    for bench in "${GV_BENCHMARKS[@]}"; do
+    for bench in "${HY_BENCHMARKS[@]}"; do
         # Define bench-specific variables.
         bench_filename=$(basename ${BENCHMARK_CODE["$bench"]})
 

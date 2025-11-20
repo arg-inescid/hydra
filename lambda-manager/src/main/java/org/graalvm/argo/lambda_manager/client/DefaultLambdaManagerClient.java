@@ -73,7 +73,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
             String path = null;
             byte[] payload = null;
             if (lambda.getExecutionMode().isHydra()) {
-                // The two optional parameters - GV sandbox and SVM ID.
+                // The two optional parameters - Hydra sandbox and SVM ID.
                 String sandbox = function.getHydraSandbox() != null ? String.format("&sandbox=%s", function.getHydraSandbox()) : "";
                 String svmId = function.snapshotSandbox() ? String.format("&svmid=%s", function.getSvmId()) : "";
                 final boolean binaryFunctionExecution = isBinaryFunctionExecution(lambda);
@@ -127,7 +127,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         String payload = "";
 
         if (lambda.getExecutionMode().isHydra()) {
-            // Both canRebuild and readily-provided GV functions go here.
+            // Both canRebuild and readily-provided Hydra functions go here.
             payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getName(), Configuration.argumentStorage.isDebugMode());
         } else if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT || lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT) {
             payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getName());
