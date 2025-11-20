@@ -32,7 +32,7 @@ The Run helps you with building, testing, plotting, installing dependencies...
                       collect latency and startup time metrics.
     monitoring
                       run grafana, influxdb and monitoring server.
-    build [ lb ] | [ lp ] | [ cm ] | [ lm ] | [ gv-lib ]
+    build [ lb ] | [ lp ] | [ cm ] | [ lm ] | [ hy-lib ]
                       build load balancer, lambda proxy, cluster manager, lambda manager and graalvisor library (separately or together).
     deploy [ lb ] | [ cm ] | [ lm ]
                       deploy load balancer, cluster manager and lambda manager (separately or together).

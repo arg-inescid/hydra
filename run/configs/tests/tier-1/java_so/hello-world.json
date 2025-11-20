@@ -24,7 +24,7 @@
           "function_entry_point": "com.hello_world.HelloWorld",
           "function_memory": "512",
           "function_runtime": "graalvisor",
-          "source": "../../../../../../graalvm-argo-benchmarks/src/java/gv-hello-world/build/libhelloworld.so"
+          "source": "../../../../../../graalvm-argo-benchmarks/src/java/hy-hello-world/build/libhelloworld.so"
         },
         {
           "command": "send",
@@ -35,7 +35,7 @@
               "num_clients": 1,
               "function_name": "hello-world-so",
               "parameters": {},
-              "output": "../../../../../../graalvm-argo-benchmarks/results/java/gv-hello-world/hello-world.dat"
+              "output": "../../../../../../graalvm-argo-benchmarks/results/java/hy-hello-world/hello-world.dat"
             }
           ]
         }

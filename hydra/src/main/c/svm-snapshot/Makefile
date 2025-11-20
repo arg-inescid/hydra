@@ -15,11 +15,11 @@
 #app = "$(shell pwd)/test10-malloc/libhello.so"
 #app = "$(shell pwd)/test11-cthreads-mmap/libhello.so"
 #app = "$(shell pwd)/test12-svm-http/libhello.so"
-#app="${ARGO_HOME}/benchmarks/src/java/gv-hello-world/build/libhelloworld.so"
-#app="${ARGO_HOME}/benchmarks/src/javascript/gv-hello-world/build/libhelloworld.so"
-#app="${ARGO_HOME}/benchmarks/src/python/gv-hello-world/build/libhelloworld.so"
-#app="${ARGO_HOME}/benchmarks/src/python/gv-dynamic-html/build/libdynamichtml.so"
-app="${ARGO_HOME}/benchmarks/src/python/gv-thumbnail/build/libthumbnail.so"
+#app="${ARGO_HOME}/benchmarks/src/java/hy-hello-world/build/libhelloworld.so"
+#app="${ARGO_HOME}/benchmarks/src/javascript/hy-hello-world/build/libhelloworld.so"
+#app="${ARGO_HOME}/benchmarks/src/python/hy-hello-world/build/libhelloworld.so"
+#app="${ARGO_HOME}/benchmarks/src/python/hy-dynamic-html/build/libdynamichtml.so"
+app="${ARGO_HOME}/benchmarks/src/python/hy-thumbnail/build/libthumbnail.so"
 
 ifndef ARGO_HOME
 $(error ARGO_HOME is not set (needed to run benchmarks)!)
@@ -64,26 +64,26 @@ tests: all
 	make -C test12-svm-http test
 
 benchmarks: all
-	$(MAKE) app="${ARGO_HOME}/benchmarks/src/java/gv-hello-world/build/libhelloworld.so" run
-	$(MAKE) app="${ARGO_HOME}/benchmarks/src/java/gv-file-hashing/build/libfilehashing.so" run
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/java/hy-hello-world/build/libhelloworld.so" run
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/java/hy-file-hashing/build/libfilehashing.so" run
 # TODO - classify (process)
-	$(MAKE) app="${ARGO_HOME}/benchmarks/src/java/gv-httprequest/build/libhttprequest.so" run
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/java/hy-httprequest/build/libhttprequest.so" run
 # TODO - videoprocessing (process)
-	$(MAKE) app="${ARGO_HOME}/benchmarks/src/javascript/gv-hello-world/build/libhelloworld.so" run
-	$(MAKE) app="${ARGO_HOME}/benchmarks/src/javascript/gv-dynamic-html/build/libdynamichtml.so" run
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/javascript/hy-hello-world/build/libhelloworld.so" run
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/javascript/hy-dynamic-html/build/libdynamichtml.so" run
 # TODO - thumbnail calls native code and it also leaves files behind. We do not support that.
-	$(MAKE) app="${ARGO_HOME}/benchmarks/src/javascript/gv-thumbnail/build/libthumbnail.so" run
-	$(MAKE) app="${ARGO_HOME}/benchmarks/src/javascript/gv-uploader/build/libuploader.so" run
-	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-hello-world/build/libhelloworld.so" run
-	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-compression/build/libcompression.so" run
-	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-uploader/build/libuploader.so" run
-	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-mst/build/libmst.so" run
-	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-pagerank/build/libpr.so" run
-	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-bfs/build/libbfs.so" run
-	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-dna/build/libdna.so" run
-	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-dynamic-html/build/libdynamichtml.so" run
-	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/gv-thumbnail/build/libthumbnail.so" run
-# TODO - gv_python_videoprocessing (process)
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/javascript/hy-thumbnail/build/libthumbnail.so" run
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/javascript/hy-uploader/build/libuploader.so" run
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/hy-hello-world/build/libhelloworld.so" run
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/hy-compression/build/libcompression.so" run
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/hy-uploader/build/libuploader.so" run
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/hy-mst/build/libmst.so" run
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/hy-pagerank/build/libpr.so" run
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/hy-bfs/build/libbfs.so" run
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/hy-dna/build/libdna.so" run
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/hy-dynamic-html/build/libdynamichtml.so" run
+	$(MAKE) app="${ARGO_HOME}/benchmarks/src/python/hy-thumbnail/build/libthumbnail.so" run
+# TODO - hy_python_videoprocessing (process)
 
 run-normal: all
 	$(CURDIR)/run-env.sh ./main normal $(app) 2>&1 | tee normal.log
