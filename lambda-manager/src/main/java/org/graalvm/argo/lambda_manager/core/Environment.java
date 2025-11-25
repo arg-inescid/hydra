@@ -39,8 +39,8 @@ public class Environment {
     public static final String KNATIVE_RUNTIME = "knative";
     public static final String GRAALOS_RUNTIME = "graalos";
     public static final String FAASTION_RUNTIME = "faastion";
-    public static final String FAASTLANE_RUNTIME = "faastlane";
-    public static final String FAASTION_LPI_RUNTIME = "faastion-lpi";
+    public static final String FAASTION_OW_RUNTIME = "faastion-openwhisk";
+    public static final String FAASTION_KN_RUNTIME = "faastion-knative";
 
     // Cold start sliding window parameters.
     /**

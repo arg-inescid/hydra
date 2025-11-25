@@ -50,6 +50,8 @@ if [[ $CONTAINER_IMAGE == openwhisk* ]]; then
   CONTAINER_SIZE_OPTIONS="$CONTAINER_SIZE_OPTIONS --cpu-period=$CGROUPS_CPU_PERIOD"
   CONTAINER_SIZE_OPTIONS="$CONTAINER_SIZE_OPTIONS --cpu-quota=$CGROUPS_CPU_PERIOD"
 elif [[ $CONTAINER_IMAGE == faastion* ]]; then
+  CONTAINER_SHARED_VOLUME_OPTIONS="-v $ARGO_HOME/../faastion/graalvisor/shared:/faastion/graalvisor/shared"
+
   FAASTION_MODE_FLAG=$4
   if [ -z "$FAASTION_MODE_FLAG" ]; then
     # No flags passed, using normal Faastion.
@@ -62,14 +64,6 @@ elif [[ $CONTAINER_IMAGE == faastion* ]]; then
 elif [[ $CONTAINER_IMAGE == graalvisor* ]]; then
   CONTAINER_PRIVILEGED_OPTION="--privileged"
   CONTAINER_SHARED_VOLUME_OPTIONS="-v $ARGO_HOME/benchmarks/data/apps:/tmp/apps"
-elif [[ "$CONTAINER_IMAGE" = "knative-jv/kn-bfs" ]]; then
-  CONTAINER_SHARED_VOLUME_OPTIONS="-v $ARGO_HOME/../faastion-knative/src/java/kn-native-bfs/src/main/resources/native-image:/native-image -v /lib:/lib -v /etc/alternatives/libopenblas.so-x86_64-linux-gnu:/etc/alternatives/libopenblas.so-x86_64-linux-gnu -v /etc/alternatives/libopenblas.so.0-x86_64-linux-gnu:/etc/alternatives/libopenblas.so.0-x86_64-linux-gnu"
-elif [[ "$CONTAINER_IMAGE" = "knative-jv/kn-compression" ]]; then
-  CONTAINER_SHARED_VOLUME_OPTIONS="-v $ARGO_HOME/../faastion-knative/src/java/kn-native-compression/src/main/resources/native-image:/native-image -v /lib:/lib -v /etc/alternatives/libopenblas.so-x86_64-linux-gnu:/etc/alternatives/libopenblas.so-x86_64-linux-gnu -v /etc/alternatives/libopenblas.so.0-x86_64-linux-gnu:/etc/alternatives/libopenblas.so.0-x86_64-linux-gnu"
-elif [[ "$CONTAINER_IMAGE" = "knative-jv/kn-mst" ]]; then
-  CONTAINER_SHARED_VOLUME_OPTIONS="-v $ARGO_HOME/../faastion-knative/src/java/kn-native-mst/src/main/resources/native-image:/native-image -v /lib:/lib -v /etc/alternatives/libopenblas.so-x86_64-linux-gnu:/etc/alternatives/libopenblas.so-x86_64-linux-gnu -v /etc/alternatives/libopenblas.so.0-x86_64-linux-gnu:/etc/alternatives/libopenblas.so.0-x86_64-linux-gnu"
-elif [[ "$CONTAINER_IMAGE" = "knative-jv/kn-pagerank" ]]; then
-  CONTAINER_SHARED_VOLUME_OPTIONS="-v $ARGO_HOME/../faastion-knative/src/java/kn-native-pagerank/src/main/resources/native-image:/native-image -v /lib:/lib -v /etc/alternatives/libopenblas.so-x86_64-linux-gnu:/etc/alternatives/libopenblas.so-x86_64-linux-gnu -v /etc/alternatives/libopenblas.so.0-x86_64-linux-gnu:/etc/alternatives/libopenblas.so.0-x86_64-linux-gnu"
 else
   TAGS=( "${@:4}" )
 fi

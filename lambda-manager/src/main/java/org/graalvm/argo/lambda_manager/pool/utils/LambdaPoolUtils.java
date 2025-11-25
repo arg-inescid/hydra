@@ -112,8 +112,6 @@ public class LambdaPoolUtils {
             case GRAALOS:
                 return Configuration.argumentStorage.getLambdaFactory().createGraalOS(lambda);
             case FAASTION:
-            case FAASTLANE:
-            case FAASTION_LPI:
                 return Configuration.argumentStorage.getLambdaFactory().createFaastion(lambda, function);
             case CUSTOM_JAVA:
             case CUSTOM_JAVASCRIPT:

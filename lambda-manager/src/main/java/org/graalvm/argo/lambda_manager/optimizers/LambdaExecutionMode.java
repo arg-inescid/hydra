@@ -27,10 +27,6 @@ public enum LambdaExecutionMode {
 
     // Based on Graalvisor but with reinforced isolation. Runs instrumented function binaries.
     FAASTION,
-    // Based on Faaction, runs 'vanilla' (uninstrumented) function binaries.
-    FAASTLANE,
-    // Uses MPK domains and forks a process when we reach max domains. I still honestly don't understand which binaries it should use.
-    FAASTION_LPI,
 
     // Experimental support for GraalOS.
     GRAALOS;
@@ -44,7 +40,7 @@ public enum LambdaExecutionMode {
     }
 
     public boolean isFaastion() {
-        return this == LambdaExecutionMode.FAASTION || this == LambdaExecutionMode.FAASTLANE || this == LambdaExecutionMode.FAASTION_LPI;
+        return this == LambdaExecutionMode.FAASTION;
     }
 
     public String getOpenWhiskVMImage() {

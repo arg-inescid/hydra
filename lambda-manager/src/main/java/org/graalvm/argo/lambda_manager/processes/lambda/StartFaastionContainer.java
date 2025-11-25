@@ -21,9 +21,7 @@ public class StartFaastionContainer extends StartContainer {
         List<String> command = prepareCommand("faastion:latest");
 
         String runtime = function.getRuntime();
-        if (Environment.FAASTLANE_RUNTIME.equals(runtime)) {
-            command.add("--enable-early-booking");
-        } else if (Environment.FAASTION_LPI_RUNTIME.equals(runtime)) {
+        if (Environment.FAASTION_RUNTIME.equals(runtime)) {
             command.add("--enable-lpi");
         }
 

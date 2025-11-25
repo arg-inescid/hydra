@@ -155,12 +155,10 @@ public class Function {
                     return LambdaExecutionMode.GRAALOS;
                 } else if (getRuntime().equals(Environment.KNATIVE_RUNTIME)) {
                     return LambdaExecutionMode.KNATIVE;
-                } else if (getRuntime().equals(Environment.FAASTION_RUNTIME)) {
+                } else if (getRuntime().equals(Environment.FAASTION_RUNTIME) ||
+                           getRuntime().equals(Environment.FAASTION_OW_RUNTIME) ||
+                           getRuntime().equals(Environment.FAASTION_KN_RUNTIME)) {
                     return LambdaExecutionMode.FAASTION;
-                } else if (getRuntime().equals(Environment.FAASTLANE_RUNTIME)) {
-                    return LambdaExecutionMode.FAASTLANE;
-                } else if (getRuntime().equals(Environment.FAASTION_LPI_RUNTIME)) {
-                    return LambdaExecutionMode.FAASTION_LPI;
                 } else {
                     switch (getLanguage()) {
                         case JAVA:

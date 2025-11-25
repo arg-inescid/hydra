@@ -20,24 +20,9 @@ function run_faastion_benchmarks {
     export CONCURRENCY=50
     export WORKLOAD=10000
     for bench in "${FAASTION_BENCHMARKS[@]}"; do
-        register $bench faastion-lpi
+        register $bench faastion
         request $bench
-        benchmark $bench
-    done
-    unset CONCURRENCY
-    unset WORKLOAD
-    unset RESULTS_DIR
-}
-
-function run_faastion_knative_benchmarks {
-    export RESULTS_DIR="$(DIR)/ab-results"
-    rm -r $RESULTS_DIR
-    mkdir -p $RESULTS_DIR
-    export CONCURRENCY=50
-    export WORKLOAD=10000
-    for bench in "${FAASTION_KN_BENCHMARKS[@]}"; do
-        register_kn $bench
-        request $bench
+#        benchmark $bench
     done
     unset CONCURRENCY
     unset WORKLOAD
@@ -52,7 +37,6 @@ function run {
     sleep 5
 
     run_faastion_benchmarks
-#    run_faastion_knative_benchmarks
 
     stop_lambda_manager
     unset FUNCTION_MEMORY
