@@ -54,12 +54,15 @@ elif [[ $CONTAINER_IMAGE == faastion* ]]; then
 
   FAASTION_MODE_FLAG=$4
   if [ -z "$FAASTION_MODE_FLAG" ]; then
-    # No flags passed, using normal Faastion.
+    # No flags passed, using normal image.
     TAGS=( "${@:4}" )
-  else
+  elif [[ "$FAASTION_MODE_FLAG" == --* ]]; then
     # Flag specified, using it as an argument to the Faastion entrypoint command.
     CONTAINER_ARGUMENTS="$FAASTION_MODE_FLAG"
     TAGS=( "${@:5}" )
+  else
+    # The argument is not a flag, treat as a tag.
+    TAGS=( "${@:4}" )
   fi
 elif [[ $CONTAINER_IMAGE == graalvisor* ]]; then
   CONTAINER_PRIVILEGED_OPTION="--privileged"

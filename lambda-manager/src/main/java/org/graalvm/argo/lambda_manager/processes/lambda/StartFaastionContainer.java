@@ -23,11 +23,11 @@ public class StartFaastionContainer extends StartContainer {
         String runtime = function.getRuntime();
         if (Environment.FAASTION_RUNTIME.equals(runtime)) {
             command.add("--enable-lpi");
-        }
 
-        String capValue = getActiveWaitCapValue();
-        if (capValue != null) {
-            command.add(ACTIVE_WAIT_CAP_TAG + capValue);
+            String capValue = getActiveWaitCapValue();
+            if (capValue != null) {
+                command.add(ACTIVE_WAIT_CAP_TAG + capValue);
+            }
         }
 
         return command;

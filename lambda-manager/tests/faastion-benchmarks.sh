@@ -12,9 +12,7 @@ DATA_ADDRESS="http://$DATA_IP:$DATA_PORT"
 BENCHMARK_HOME_DIR="$ARGO_HOME/../faastion/benchmarks/src/java/SeBS"
 
 FAASTION_BENCHMARKS=(fa_cl  fa_dn  fa_dh  fa_bf  fa_co  fa_ms  fa_pr  fa_th  fa_up  fa_vp) # full list
-FAASTION_BENCHMARKS=(fa_dn  fa_dh  fa_bf  fa_co  fa_ms  fa_pr  fa_up  fa_vp) # working
-FAASTION_BENCHMARKS=(fa_dn  fa_dh  fa_bf  fa_co  fa_ms  fa_pr  fa_up)
-FAASTION_BENCHMARKS=(fa_dn  fa_dh  fa_bf  fa_co  fa_ms  fa_pr  fa_th  fa_up) # 25.11 working?
+FAASTION_BENCHMARKS=(fa_dn  fa_dh  fa_bf  fa_co  fa_ms  fa_pr  fa_th  fa_up) # working
 
 
 declare -A BENCHMARK_CODE
