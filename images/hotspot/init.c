@@ -16,8 +16,8 @@ int main(int argc, char** argv, char** envp) {
     }
 
     char *newargv[] = { "/jvm/bin/java",
-                            "-cp", "graalvisor-1.0-all.jar",
-                            "org.graalvm.argo.graalvisor.Main", NULL };
+                            "-cp", "hydra-1.0-all.jar",
+                            "org.graalvm.argo.hydra.Main", NULL };
     char *newenvp[] = { "JAVA_HOME=/jvm", NULL };
     execve("/jvm/bin/java", newargv, newenvp);
     perror("execve");

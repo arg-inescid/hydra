@@ -11,10 +11,10 @@ function make_snapshot {
     echo "($ID) Configuring vm..."
     $DIR/config-vm.sh $ID $IP $image_name &> $DIR/$image_name/config-vm-$ID.log
 
-    if [ "$image_name" == "graalvisor" ] && [ -n "$FUNCTION_ENTRYPOINT" ] && [ -n "$FUNCTION_BINARY" ]; then
+    if [ "$image_name" == "hydra" ] && [ -n "$FUNCTION_ENTRYPOINT" ] && [ -n "$FUNCTION_BINARY" ]; then
         response=$(curl -X POST "$IP":8080/register?name=function\&entryPoint="$FUNCTION_ENTRYPOINT"\&language=java\&sandbox=isolate -H 'Content-Type: application/json' --data-binary @"$FUNCTION_BINARY")
         echo $response  # To ensure that VM is up and the function is registered.
-        # curl -X POST "$IP":8080 -H 'Content-Type: application/json' -d '{"name":"function","async":"false","arguments":"{\"memory\":\"128\",\"duration\":\"1\"}"}'  # Example invocation for gv-genericapp.
+        # curl -X POST "$IP":8080 -H 'Content-Type: application/json' -d '{"name":"function","async":"false","arguments":"{\"memory\":\"128\",\"duration\":\"1\"}"}'  # Example invocation for hy-genericapp.
     fi
 
     echo "($ID) Snapshotting vm..."
@@ -32,7 +32,7 @@ ID=3
 IP=172.18.0.3
 
 if [ -z "$IMAGE" ]; then
-    for image_name in graalvisor hotspot hotspot-agent java-openwhisk; do
+    for image_name in hydra hotspot hotspot-agent java-openwhisk; do
         make_snapshot $image_name
     done
 else

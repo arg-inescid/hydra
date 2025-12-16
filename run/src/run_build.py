@@ -53,7 +53,7 @@ def do(filter_list):
         build_cluster_manager()
     if "lm" in filter_set or filter_list_empty:
         build_lambda_manager()
-    if "gv-lib" in filter_set or filter_list_empty:
+    if "hy-lib" in filter_set or filter_list_empty:
         build_graalvisor_library()
 
 

@@ -77,7 +77,7 @@ public class LambdaMetricsUtils {
             String line;
             while ((line = reader.readLine()) != null) {
                 // The inner try/catch is needed to skip lambdas for which we cannot collect memory.
-                // Structure of the line: "lambda_228_GRAALVISOR 73.84MiB / 256MiB"
+                // Structure of the line: "lambda_228_HYDRA 73.84MiB / 256MiB"
                 try {
                     String lambdaName = line.substring(0, line.indexOf(' '));
                     String rssString = line.substring(line.indexOf(' ') + 1, line.indexOf("MiB"));

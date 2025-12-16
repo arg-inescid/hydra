@@ -72,9 +72,9 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
     public String registerFunction(Lambda lambda, Function function) {
             String path = null;
             byte[] payload = null;
-            if (lambda.getExecutionMode().isGraalvisor()) {
-                // The two optional parameters - GV sandbox and SVM ID.
-                String sandbox = function.getGraalvisorSandbox() != null ? String.format("&sandbox=%s", function.getGraalvisorSandbox()) : "";
+            if (lambda.getExecutionMode().isHydra()) {
+                // The two optional parameters - Hydra sandbox and SVM ID.
+                String sandbox = function.getHydraSandbox() != null ? String.format("&sandbox=%s", function.getHydraSandbox()) : "";
                 String svmId = function.snapshotSandbox() ? String.format("&svmid=%s", function.getSvmId()) : "";
                 final boolean binaryFunctionExecution = isBinaryFunctionExecution(lambda);
                 path = String.format("/register?name=%s&url=%s&language=%s&entryPoint=%s&isBinary=%s%s%s", function.getName(), function.getFunctionCode(), function.getLanguage().toString(), function.getEntryPoint(), binaryFunctionExecution, sandbox, svmId);
@@ -108,7 +108,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         String path = null;
         String payload = null;
 
-        if (lambda.getExecutionMode().isGraalvisor()) {
+        if (lambda.getExecutionMode().isHydra()) {
             path ="/deregister";
             payload = JsonUtils.convertParametersIntoJsonObject(null, null, function.getName());
         } else if (lambda.getExecutionMode().isCustom()) {
@@ -126,8 +126,8 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         String path = function.snapshotSandbox() ? "/warmup?concurrency=1&requests=1" : "/";
         String payload = "";
 
-        if (lambda.getExecutionMode().isGraalvisor()) {
-            // Both canRebuild and readily-provided GV functions go here.
+        if (lambda.getExecutionMode().isHydra()) {
+            // Both canRebuild and readily-provided Hydra functions go here.
             payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getName(), Configuration.argumentStorage.isDebugMode());
         } else if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT || lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT) {
             payload = JsonUtils.convertParametersIntoJsonObject(arguments, null, function.getName());
@@ -145,7 +145,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
     }
 
     private static boolean isBinaryFunctionExecution(Lambda lambda){
-        return lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED || lambda.getExecutionMode() == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZING;
+        return lambda.getExecutionMode() == LambdaExecutionMode.HYDRA_PGO || lambda.getExecutionMode() == LambdaExecutionMode.HYDRA_PGO_OPTIMIZED || lambda.getExecutionMode() == LambdaExecutionMode.HYDRA_PGO_OPTIMIZING;
     }
 
     private void exponentialBackoff(int failures) {

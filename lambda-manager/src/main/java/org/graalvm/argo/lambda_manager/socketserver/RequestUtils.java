@@ -32,12 +32,12 @@ public class RequestUtils {
             String functionCode = parameters.get("payload");
             boolean functionIsolation = Boolean.parseBoolean(parameters.get("function_isolation"));
             boolean invocationCollocation = Boolean.parseBoolean(parameters.get("invocation_collocation"));
-            String gvSandbox = parameters.get("gv_sandbox");
+            String hydraSandbox = parameters.get("hydra_sandbox");
             String svmId = parameters.get("svm_id");
 
             result = LambdaManager.uploadFunction(username, functionName, functionLanguage, functionEntryPoint,
                     functionMemory, functionRuntime, functionCode, Boolean.TRUE.equals(functionIsolation),
-                    Boolean.TRUE.equals(invocationCollocation), gvSandbox, svmId);
+                    Boolean.TRUE.equals(invocationCollocation), hydraSandbox, svmId);
         } else if (REQUEST_TYPE_INVOCATION.equals(parameters.get("type"))) {
             String username = parameters.get("username");
             String functionName = parameters.get("function_name");

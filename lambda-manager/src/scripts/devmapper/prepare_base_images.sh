@@ -16,7 +16,7 @@ function prepare_base {
 
 MODE=$1
 
-declare -a image_names=("graalvisor" "hotspot" "hotspot-agent" "java-openwhisk" "javascript-openwhisk" "python-openwhisk")
+declare -a image_names=("hydra" "hotspot" "hotspot-agent" "java-openwhisk" "javascript-openwhisk" "python-openwhisk")
 
 if [ "$MODE" == "snapshot" ]; then
   # Prepare devmapper for snapshotted images.

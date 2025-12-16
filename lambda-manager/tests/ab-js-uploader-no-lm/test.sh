@@ -21,11 +21,11 @@ function start_container {
         --memory "$LAMBDA_MEMORY" \
         --cpu-period="$CGROUPS_CPU_PERIOD" \
         --cpu-quota="$LAMBDA_CPU_QUOTA" \
-        graalvisor:latest &> $(DIR)/lambda.log &
+        hydra:latest &> $(DIR)/lambda.log &
 }
 
 function start_native {
-    app_dir=/tmp/apps "$ARGO_HOME"/graalvisor/build/native-image/polyglot-proxy &> $(DIR)/lambda.log &
+    app_dir=/tmp/apps "$ARGO_HOME"/hydra/build/native-image/polyglot-proxy &> $(DIR)/lambda.log &
     PID="$!"
 }
 
@@ -42,7 +42,7 @@ start_container
 sleep 5
 
 # Upload JavaScript function.
-curl -X POST $HYDRA_ADDRESS/register?name=test\&language=java\&entrypoint=com.uploader.Uploader\&isBinary=true\&svmid=2\&sandbox=snapshot\&url=http://172.18.0.1:8000/apps/gv-js-uploader.so
+curl -X POST $HYDRA_ADDRESS/register?name=test\&language=java\&entrypoint=com.uploader.Uploader\&isBinary=true\&svmid=2\&sandbox=snapshot\&url=http://172.18.0.1:8000/apps/hy-js-uploader.so
 
 # Run the experiment.
 APP_POST=/tmp/app-post

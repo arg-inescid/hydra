@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This is a smoke-test for Lambda Manager and GV/OW/KN runtimes for different languages.
+# This is a smoke-test for Lambda Manager and HY/OW/KN runtimes for different languages.
 # It uploads functions with different runtimes and languages, and performs a single invocation to every registered function.
 # The functions in this script are the typical functions from the benchmark suite we use for evaluation.
 # NOTE: this script requires the "web" container to be started (see benchmarks/data/start-webserver.sh).
@@ -13,11 +13,11 @@ source $(DIR)/../benchmarks.sh
 source $(DIR)/../shared.sh
 
 
-function run_gv_benchmarks {
+function run_hy_benchmarks {
     export FUNCTION_ISOLATION=false
     export INVOCATION_COLLOCATION=true
 
-    for bench in "${GV_BENCHMARKS[@]}"; do
+    for bench in "${HY_BENCHMARKS[@]}"; do
         register $bench
         request $bench
     done
@@ -47,7 +47,7 @@ function run {
     start_lambda_manager $(DIR)/config.json $(DIR)/variables.json
     sleep 5
 
-    run_gv_benchmarks
+    run_hy_benchmarks
     run_ow_benchmarks
     # run_kn_benchmarks
 

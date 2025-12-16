@@ -17,7 +17,7 @@ CLONE_ID=$1
 # VM ip accessible to the outside (unique).
 PUBLIC_VM_IP=$2
 
-# Image to be used (graalvisor, hotspot, hotspot-agent).
+# Image to be used (hydra, hotspot, hotspot-agent).
 IMAGE_NAME=$3
 
 # ID of the vm (based on the public ip).

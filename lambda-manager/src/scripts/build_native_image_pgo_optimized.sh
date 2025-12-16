@@ -53,8 +53,8 @@ file_names=$(echo "$file_names" | sed 's/.$//')
 ARGO_HOME="$MANAGER_HOME"/../
 BUILD_OUTPUT_HOME_CONTAINER=/argo/lambda-manager/codebase/"$FUNCTION_NAME"/pgo-optimized
 FUNCTION_CODE_CONTAINER=/argo/lambda-manager/codebase/"$FUNCTION_NAME"/"$FUNCTION_NAME"
-GRAALVISOR_GUEST_JAR_CONTAINER=/argo/graalvisor-lib/build/libs/graalvisor-lib-1.0-guest.jar
-HEADERS_PATH_CONTAINER=/argo/graalvisor/build/resources/main/com.oracle.svm.graalvisor.headers
+HYDRA_GUEST_JAR_CONTAINER=/argo/hydra-lib/build/libs/hydra-lib-1.0-guest.jar
+HEADERS_PATH_CONTAINER=/argo/hydra/build/resources/main/com.oracle.svm.hydra.headers
 LAMBDA_HOME_CONTAINER=/argo/lambda-manager/codebase/lambda_"$LAMBDA_ID"_HOTSPOT_W_AGENT
 
 docker run --rm \
@@ -66,10 +66,10 @@ docker run --rm \
     /jvm/bin/native-image \
       --no-fallback \
       -H:IncludeResources="logback.xml|application.yml" \
-      -cp "$FUNCTION_CODE_CONTAINER":"$GRAALVISOR_GUEST_JAR_CONTAINER" \
-      -DGraalVisorGuest=true \
-      -Dcom.oracle.svm.graalvisor.libraryPath="$HEADERS_PATH_CONTAINER" \
-      --initialize-at-run-time=com.oracle.svm.graalvisor.utils.JsonUtils \
+      -cp "$FUNCTION_CODE_CONTAINER":"$HYDRA_GUEST_JAR_CONTAINER" \
+      -DHydraGuest=true \
+      -Dcom.oracle.svm.hydra.libraryPath="$HEADERS_PATH_CONTAINER" \
+      --initialize-at-run-time=com.oracle.svm.hydra.utils.JsonUtils \
       -H:ConfigurationFileDirectories="$LAMBDA_HOME_CONTAINER"/config \
       -H:+ReportExceptionStackTraces \
       "$ENTRY_POINT" \

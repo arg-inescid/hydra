@@ -193,8 +193,8 @@ public class ArgumentStorage {
 
         LambdaManagerPool poolConfiguration = lambdaManagerConfiguration.getLambdaPool();
         boolean hasOpenWhiskLambdas = poolConfiguration.getCustomJava() != 0 || poolConfiguration.getCustomJavaScript() != 0 || poolConfiguration.getCustomPython() != 0;
-        boolean hasLambdaPoolConfig = hasOpenWhiskLambdas || poolConfiguration.getGraalOS() != 0 || poolConfiguration.getGraalvisor() != 0
-                || poolConfiguration.getGraalvisorPgo() != 0 || poolConfiguration.getGraalvisorPgoOptimized() != 0
+        boolean hasLambdaPoolConfig = hasOpenWhiskLambdas || poolConfiguration.getGraalOS() != 0 || poolConfiguration.getHydra() != 0
+                || poolConfiguration.getHydraPgo() != 0 || poolConfiguration.getHydraPgoOptimized() != 0
                 || poolConfiguration.getHotspot() != 0 || poolConfiguration.getHotspotWithAgent() != 0;
 
         Configuration.initFields(

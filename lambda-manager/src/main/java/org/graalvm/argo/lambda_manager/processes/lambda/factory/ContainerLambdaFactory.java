@@ -17,8 +17,8 @@ public class ContainerLambdaFactory extends AbstractLambdaFactory {
     }
 
     @Override
-    public StartLambda createGraalvisor(Lambda lambda) {
-        return new StartGraalvisorContainer(lambda);
+    public StartLambda createHydra(Lambda lambda) {
+        return new StartHydraContainer(lambda);
     }
 
     @Override
@@ -27,13 +27,13 @@ public class ContainerLambdaFactory extends AbstractLambdaFactory {
     }
 
     @Override
-    public StartLambda createGraalvisorPgo(Lambda lambda) {
-        return new StartGraalvisorPgoContainer(lambda);
+    public StartLambda createHydraPgo(Lambda lambda) {
+        return new StartHydraPgoContainer(lambda);
     }
 
     @Override
-    public StartLambda createGraalvisorPgoOptimized(Lambda lambda) {
-        return new StartGraalvisorPgoOptimizedContainer(lambda);
+    public StartLambda createHydraPgoOptimized(Lambda lambda) {
+        return new StartHydraPgoOptimizedContainer(lambda);
     }
 
     public StartLambda createGraalOS(Lambda lambda) {

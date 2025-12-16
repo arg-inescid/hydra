@@ -18,15 +18,15 @@ CONTAINER_NAME="lambda_test"
 BENCH_ARRAY=(jshw jsup jsdh pyhw pyup jvhw jvfh)
 
 declare -A BENCHMARK_REGISTER_QUERY
-BENCHMARK_REGISTER_QUERY[jshw]="name=jshw&language=java&entrypoint=com.helloworld.HelloWorld&isBinary=true&svmid=1&sandbox=snapshot&url=http://127.0.0.1:8000/apps/gv-js-hello-world.so"
-BENCHMARK_REGISTER_QUERY[jsup]="name=jsup&language=java&entrypoint=com.uploader.Uploader&isBinary=true&svmid=2&sandbox=snapshot&url=http://127.0.0.1:8000/apps/gv-js-uploader.so"
-BENCHMARK_REGISTER_QUERY[jsdh]="name=jsdh&language=java&entrypoint=com.dynamichtml.DynamicHTML&isBinary=true&svmid=3&sandbox=snapshot&url=http://127.0.0.1:8000/apps/gv-js-dynamic-html.so"
-BENCHMARK_REGISTER_QUERY[pyhw]="name=pyhw&language=java&entrypoint=com.helloworld.HelloWorld&isBinary=true&svmid=4&sandbox=snapshot&url=http://127.0.0.1:8000/apps/gv-py-hello-world.so"
-BENCHMARK_REGISTER_QUERY[pyup]="name=pyup&language=java&entrypoint=com.uploader.Uploader&isBinary=true&svmid=5&sandbox=snapshot&url=http://127.0.0.1:8000/apps/gv-py-uploader.so"
-BENCHMARK_REGISTER_QUERY[pyco]="name=pyco&language=java&entrypoint=com.compression.Compression&isBinary=true&svmid=6&sandbox=snapshot&url=http://127.0.0.1:8000/apps/gv-py-compression.so"
-BENCHMARK_REGISTER_QUERY[jvhw]="name=jvhw&language=java&entrypoint=com.hello_world.HelloWorld&isBinary=true&sandbox=isolate&url=http://127.0.0.1:8000/apps/gv-jv-hello-world.so"
-BENCHMARK_REGISTER_QUERY[jvfh]="name=jvfh&language=java&entrypoint=com.filehashing.FileHashing&isBinary=true&sandbox=isolate&url=http://127.0.0.1:8000/apps/gv-jv-file-hashing.so"
-BENCHMARK_REGISTER_QUERY[jvhr]="name=jvhr&language=java&entrypoint=com.httprequest.HttpRequest&isBinary=true&sandbox=isolate&url=http://127.0.0.1:8000/apps/gv-jv-httprequest.so"
+BENCHMARK_REGISTER_QUERY[jshw]="name=jshw&language=java&entrypoint=com.helloworld.HelloWorld&isBinary=true&svmid=1&sandbox=snapshot&url=http://127.0.0.1:8000/apps/hy-js-hello-world.so"
+BENCHMARK_REGISTER_QUERY[jsup]="name=jsup&language=java&entrypoint=com.uploader.Uploader&isBinary=true&svmid=2&sandbox=snapshot&url=http://127.0.0.1:8000/apps/hy-js-uploader.so"
+BENCHMARK_REGISTER_QUERY[jsdh]="name=jsdh&language=java&entrypoint=com.dynamichtml.DynamicHTML&isBinary=true&svmid=3&sandbox=snapshot&url=http://127.0.0.1:8000/apps/hy-js-dynamic-html.so"
+BENCHMARK_REGISTER_QUERY[pyhw]="name=pyhw&language=java&entrypoint=com.helloworld.HelloWorld&isBinary=true&svmid=4&sandbox=snapshot&url=http://127.0.0.1:8000/apps/hy-py-hello-world.so"
+BENCHMARK_REGISTER_QUERY[pyup]="name=pyup&language=java&entrypoint=com.uploader.Uploader&isBinary=true&svmid=5&sandbox=snapshot&url=http://127.0.0.1:8000/apps/hy-py-uploader.so"
+BENCHMARK_REGISTER_QUERY[pyco]="name=pyco&language=java&entrypoint=com.compression.Compression&isBinary=true&svmid=6&sandbox=snapshot&url=http://127.0.0.1:8000/apps/hy-py-compression.so"
+BENCHMARK_REGISTER_QUERY[jvhw]="name=jvhw&language=java&entrypoint=com.hello_world.HelloWorld&isBinary=true&sandbox=isolate&url=http://127.0.0.1:8000/apps/hy-jv-hello-world.so"
+BENCHMARK_REGISTER_QUERY[jvfh]="name=jvfh&language=java&entrypoint=com.filehashing.FileHashing&isBinary=true&sandbox=isolate&url=http://127.0.0.1:8000/apps/hy-jv-file-hashing.so"
+BENCHMARK_REGISTER_QUERY[jvhr]="name=jvhr&language=java&entrypoint=com.httprequest.HttpRequest&isBinary=true&sandbox=isolate&url=http://127.0.0.1:8000/apps/hy-jv-httprequest.so"
 
 declare -A BENCHMARK_RUN_ENDPOINT
 BENCHMARK_RUN_ENDPOINT[jshw]="warmup?concurrency=1&requests=1"
@@ -42,7 +42,7 @@ BENCHMARK_RUN_ENDPOINT[jvhr]=""
 function start_hydra {
     bench=$1
     export app_dir=$(DIR)/apps
-    setarch -R  $ARGO_HOME/graalvisor/build/native-image/polyglot-proxy -Xmx32g &> $(DIR)/$bench-hydra.log &
+    setarch -R  $ARGO_HOME/hydra/build/native-image/polyglot-proxy -Xmx32g &> $(DIR)/$bench-hydra.log &
     echo $! > $(DIR)/hydra.pid
     sleep 1
     #sudo strace -o $(DIR)/$bench-hydra.strace -p $(cat $(DIR)/hydra.pid) -f &

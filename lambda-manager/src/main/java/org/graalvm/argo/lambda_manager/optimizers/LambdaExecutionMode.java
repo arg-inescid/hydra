@@ -8,8 +8,8 @@ public enum LambdaExecutionMode {
     HOTSPOT_W_AGENT,
     // HotSpot JVM without Native Image Agent (single function).
     HOTSPOT,
-    // Graalvisor (multiple functions).
-    GRAALVISOR,
+    // Hydra (multiple functions).
+    HYDRA,
     // OpenWhisk VM (single function).
     CUSTOM_JAVA,
     CUSTOM_JAVASCRIPT,
@@ -19,11 +19,11 @@ public enum LambdaExecutionMode {
     KNATIVE,
 
     // With profile-guided optimizations enabled.
-    GRAALVISOR_PGO,
+    HYDRA_PGO,
     // Optimizing with the iprof files.
-    GRAALVISOR_PGO_OPTIMIZING,
+    HYDRA_PGO_OPTIMIZING,
     // Optimized with PGO.
-    GRAALVISOR_PGO_OPTIMIZED,
+    HYDRA_PGO_OPTIMIZED,
 
     // Experimental support for GraalOS.
     GRAALOS;
@@ -32,8 +32,8 @@ public enum LambdaExecutionMode {
         return this == LambdaExecutionMode.CUSTOM_JAVA || this == LambdaExecutionMode.CUSTOM_JAVASCRIPT || this == LambdaExecutionMode.CUSTOM_PYTHON;
     }
 
-    public boolean isGraalvisor() {
-        return this == LambdaExecutionMode.GRAALVISOR || this == LambdaExecutionMode.GRAALVISOR_PGO || this == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZED || this == LambdaExecutionMode.GRAALVISOR_PGO_OPTIMIZING;
+    public boolean isHydra() {
+        return this == LambdaExecutionMode.HYDRA || this == LambdaExecutionMode.HYDRA_PGO || this == LambdaExecutionMode.HYDRA_PGO_OPTIMIZED || this == LambdaExecutionMode.HYDRA_PGO_OPTIMIZING;
     }
 
     public String getOpenWhiskVMImage() {

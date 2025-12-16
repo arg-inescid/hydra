@@ -17,18 +17,18 @@ public class NativeLambdaFactory extends AbstractLambdaFactory {
     }
 
     @Override
-    public StartLambda createGraalvisor(Lambda lambda) {
-        throw new IllegalStateException("Graalvisor is not yet supported in native mode.");
+    public StartLambda createHydra(Lambda lambda) {
+        throw new IllegalStateException("Hydra is not yet supported in native mode.");
     }
 
     @Override
-    public StartLambda createGraalvisorPgo(Lambda lambda) {
-        throw new IllegalStateException("Graalvisor PGO is not yet supported in native mode.");
+    public StartLambda createHydraPgo(Lambda lambda) {
+        throw new IllegalStateException("Hydra PGO is not yet supported in native mode.");
     }
 
     @Override
-    public StartLambda createGraalvisorPgoOptimized(Lambda lambda) {
-        throw new IllegalStateException("Graalvisor PGO Optimized is not yet supported in native mode.");
+    public StartLambda createHydraPgoOptimized(Lambda lambda) {
+        throw new IllegalStateException("Hydra PGO Optimized is not yet supported in native mode.");
     }
 
     @Override

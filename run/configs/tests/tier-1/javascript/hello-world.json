@@ -24,7 +24,7 @@
           "function_entry_point": "main",
           "function_memory": "512",
           "function_runtime": "graalvisor",
-          "source": "../../../../../../graalvm-argo-benchmarks/src/javascript/gv-hello-world/hello-world.js"
+          "source": "../../../../../../graalvm-argo-benchmarks/src/javascript/hy-hello-world/hello-world.js"
         },
         {
           "command": "send",
@@ -35,7 +35,7 @@
               "num_clients": 1,
               "function_name": "hello-world-js",
               "parameters": {},
-              "output": "../../../../../../graalvm-argo-benchmarks/results/javascript/gv-hello-world/hello-world.dat"
+              "output": "../../../../../../graalvm-argo-benchmarks/results/javascript/hy-hello-world/hello-world.dat"
             }
           ]
         }
