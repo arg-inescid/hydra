@@ -72,6 +72,8 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
     public String registerFunction(Lambda lambda, Function function) {
             String path = null;
             byte[] payload = null;
+            // Intentionally triggering 404 as a way to ensure that the webserver is up.
+            sendRequest(lambda.getConnection().post("/ping", payload), lambda, 1);
             if (lambda.getExecutionMode().isHydra()) {
                 // The two optional parameters - Hydra sandbox and SVM ID.
                 String sandbox = function.getHydraSandbox() != null ? String.format("&sandbox=%s", function.getHydraSandbox()) : "";
@@ -90,10 +92,6 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
             } else if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT || lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT) {
                 path = String.format("/register?name=%s&url=%s&language=%s&entryPoint=%s", function.getName(), function.getFunctionCode(), function.getLanguage().toString(), function.getEntryPoint());
             } else if (lambda.getExecutionMode() == LambdaExecutionMode.KNATIVE) {
-                if (function.getLanguage() == FunctionLanguage.PYTHON) {
-                    // Intentionally triggering 404 as a way to ensure the Python server has been started.
-                    sendRequest(lambda.getConnection().post("/ping", payload), lambda, 1);
-                }
                 return "No registration needed in a Knative lambda.";
             } else if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALOS) {
                 return "No registration needed in a GraalOS lambda.";
