@@ -52,7 +52,7 @@ public class ReactiveLambdaPool extends LambdaPool {
 
     @Override
     public Lambda getLambda(LambdaExecutionMode mode, Function function) {
-        if (mode.isCustom() || mode == LambdaExecutionMode.KNATIVE) {
+        if (mode.isCustom() || mode == LambdaExecutionMode.KNATIVE || mode == LambdaExecutionMode.GRAALOS) {
             return pollLambda(mode, function);
         }
         throw new IllegalArgumentException("With a reactive pool, you can only use OpenWhisk or Knative. Mode provided: " + mode);

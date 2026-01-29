@@ -5,21 +5,29 @@ DATA_PORT=8000
 DATA_ADDRESS="http://$DATA_IP:$DATA_PORT"
 
 HY_JV_BENCHMARKS=(hy_jv_hw  hy_jv_fh  hy_jv_cl  hy_jv_hr  hy_jv_vp)
+HY_JV_BENCHMARKS=(hy_jv_hw)
 HY_PY_BENCHMARKS=(hy_py_hw  hy_py_ms  hy_py_bf  hy_py_pr  hy_py_dn  hy_py_dh  hy_py_co  hy_py_th  hy_py_vp  hy_py_up)
-# HY_JS_BENCHMARKS=(hy_js_hw  hy_js_dh  hy_js_th  hy_js_up)
+HY_JS_BENCHMARKS=(hy_js_hw  hy_js_dh  hy_js_th  hy_js_up)
 HY_JS_BENCHMARKS=(hy_js_hw  hy_js_dh  hy_js_up)
 HY_BENCHMARKS=("${HY_JV_BENCHMARKS[@]}" "${HY_PY_BENCHMARKS[@]}" "${HY_JS_BENCHMARKS[@]}")
+HY_BENCHMARKS=("${HY_JV_BENCHMARKS[@]}")
 
-OW_JV_BENCHMARKS=(ow_jv_hw  ow_jv_fh  ow_jv_cl  ow_jv_hr  ow_jv_vp)
+#OW_JV_BENCHMARKS=(ow_jv_hw  ow_jv_fh  ow_jv_cl  ow_jv_hr  ow_jv_vp)
+OW_JV_BENCHMARKS=(ow_jv_hw)
 OW_PY_BENCHMARKS=(ow_py_hw  ow_py_ms  ow_py_bf  ow_py_pr  ow_py_dn  ow_py_dh  ow_py_co  ow_py_th  ow_py_vp  ow_py_up)
 OW_JS_BENCHMARKS=(ow_js_hw  ow_js_dh  ow_js_th  ow_js_up)
-OW_BENCHMARKS=("${OW_JV_BENCHMARKS[@]}" "${OW_PY_BENCHMARKS[@]}" "${OW_JS_BENCHMARKS[@]}")
+#OW_BENCHMARKS=("${OW_JV_BENCHMARKS[@]}" "${OW_PY_BENCHMARKS[@]}" "${OW_JS_BENCHMARKS[@]}")
+OW_BENCHMARKS=("${OW_JV_BENCHMARKS[@]}")
 
-KN_JV_BENCHMARKS=(kn_jv_hw  kn_jv_fh  kn_jv_cl  kn_jv_hr  kn_jv_vp)
+#KN_JV_BENCHMARKS=(kn_jv_hw  kn_jv_fh  kn_jv_cl  kn_jv_hr  kn_jv_vp)
+KN_JV_BENCHMARKS=(kn_jv_hw)
 KN_PY_BENCHMARKS=(kn_py_hw  kn_py_ms  kn_py_bf  kn_py_pr  kn_py_dn  kn_py_dh  kn_py_co  kn_py_th  kn_py_vp  kn_py_up)
 KN_JS_BENCHMARKS=(kn_js_hw  kn_js_dh  kn_js_th  kn_js_up)
-KN_BENCHMARKS=("${KN_JV_BENCHMARKS[@]}" "${KN_PY_BENCHMARKS[@]}" "${KN_JS_BENCHMARKS[@]}")
+#KN_BENCHMARKS=("${KN_JV_BENCHMARKS[@]}" "${KN_PY_BENCHMARKS[@]}" "${KN_JS_BENCHMARKS[@]}")
+KN_BENCHMARKS=("${KN_JV_BENCHMARKS[@]}")
 
+GH_JV_BENCHMARKS=(gh_jv_hw)
+GH_BENCHMARKS=("${GH_JV_BENCHMARKS[@]}")
 
 # Hydra benchmarks.
 declare -A BENCHMARK_CODE
@@ -244,3 +252,13 @@ BENCHMARK_PAYLOADS[kn_py_co]='{"url":"'$DATA_ADDRESS'/video.mp4"}'
 BENCHMARK_PAYLOADS[kn_py_th]='{"url":"'$DATA_ADDRESS'/snap.png"}'
 BENCHMARK_PAYLOADS[kn_py_vp]='{"video":"'$DATA_ADDRESS'/video.mp4","ffmpeg":"'$DATA_ADDRESS'/ffmpeg"}'
 BENCHMARK_PAYLOADS[kn_py_up]='{"url":"'$DATA_ADDRESS'/snap.png"}'
+
+
+# GraalOS (GraalHost) benchmarks.
+BENCHMARK_CODE[gh_jv_hw]="$GRAALOS_SEBS/serverless-benchmarks-java/hello-world/app"
+
+for bench in "${GH_BENCHMARKS[@]}"; do
+    BENCHMARK_ENTRYPOINTS["$bench"]="irrelevant"
+done
+
+BENCHMARK_PAYLOADS[gh_jv_hw]='{}'
