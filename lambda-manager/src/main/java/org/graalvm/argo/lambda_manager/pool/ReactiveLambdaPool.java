@@ -17,35 +17,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ReactiveLambdaPool implements LambdaPool {
-
-    /**
-     * Type of lambdas that will be created.
-     */
-    private final LambdaType lambdaType;
-
-    /**
-     * Maximum number of network taps that will be setup by the Lambda Manager.
-     */
-    private final int maxLambdas;
-
-    private final String gatewayWithMask;
-
-    /**
-     * Concurrent queue where the connections are pooled from.
-     */
-    private final ConcurrentLinkedQueue<LambdaConnection> connectionPool;
-
-    /**
-     * Lambda pool used for amortization of OW/Knative lambda creation.
-     */
-    private final Map<String, ConcurrentLinkedQueue<Lambda>> lambdaPool;
+public class ReactiveLambdaPool extends LambdaPool {
 
     /**
      * Locks used to throttle lambda creation - 1 at a time for each function.
      */
     private final Map<String, AtomicBoolean> lambdaCreationLocks;
 
+    // TODO - add documentation.
     private final AtomicInteger totalLambdas;
 
     /**
@@ -53,12 +32,8 @@ public class ReactiveLambdaPool implements LambdaPool {
      */
     private final ExecutorService executor;
 
-    public ReactiveLambdaPool(LambdaType lambdaType, int maxTaps, String gatewayWithMask) {
-        this.lambdaType = lambdaType;
-        this.maxLambdas = maxTaps;
-        this.gatewayWithMask = gatewayWithMask;
-        this.connectionPool = new ConcurrentLinkedQueue<>();
-        this.lambdaPool = new ConcurrentHashMap<>();
+    public ReactiveLambdaPool(LambdaType lambdaType, int maxTaps) {
+        super(lambdaType, maxTaps);
         this.totalLambdas = new AtomicInteger(0);
         this.executor = Executors.newFixedThreadPool(LambdaPoolUtils.EXECUTOR_THREAD_COUNT);
         this.lambdaCreationLocks = new ConcurrentHashMap<>();
@@ -66,18 +41,13 @@ public class ReactiveLambdaPool implements LambdaPool {
 
     @Override
     public void setUp() {
-        int lambdaPort = Configuration.argumentStorage.getLambdaPort();
-
         if (lambdaType.isVM()) {
+            int lambdaPort = Configuration.argumentStorage.getLambdaPort();
+            String gatewayWithMask = Configuration.argumentStorage.getGatewayWithMask();
             NetworkConfigurationUtils.prepareVmConnectionPool(connectionPool, maxLambdas, gatewayWithMask, lambdaPort);
         } else {
             NetworkConfigurationUtils.prepareContainerConnectionPool(connectionPool, maxLambdas);
         }
-    }
-
-    @Override
-    public LambdaConnection nextLambdaConnection() {
-        return connectionPool.poll();
     }
 
     @Override

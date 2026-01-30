@@ -42,7 +42,7 @@ public class NetworkUtils {
      * @param timeout - timeout in milliseconds.
      * @return True if the port is open. False otherwise.
      */
-    public static boolean isPortOpen(String node, int port) {
+    private static boolean isPortOpen(String node, int port) {
         Socket s = null;
         boolean isOpen = false;
         try {
