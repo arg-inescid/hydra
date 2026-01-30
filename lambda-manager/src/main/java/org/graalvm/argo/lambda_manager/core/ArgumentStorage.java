@@ -57,6 +57,7 @@ public class ArgumentStorage {
 
     // TODO - add comments to the rest of these fields.
     private String gateway;
+    private String gatewayWithMask;
     private String mask;
     private int timeout;
     private int healthCheck;
@@ -89,6 +90,7 @@ public class ArgumentStorage {
 
     private void initClassFields(LambdaManagerConfiguration lambdaManagerConfiguration, VariablesConfiguration variablesConfiguration) {
         this.gateway = lambdaManagerConfiguration.getGateway().split("/")[0];
+        this.gatewayWithMask = lambdaManagerConfiguration.getGateway();
         this.mask = IPv4Subnet.of(lambdaManagerConfiguration.getGateway()).getNetworkMask().toString();
         this.lambdaType = LambdaType.fromString(lambdaManagerConfiguration.getLambdaType());
         this.maxMemory = lambdaManagerConfiguration.getMaxMemory();
@@ -213,10 +215,10 @@ public class ArgumentStorage {
 
         // Initialize the lambda pool and start the reclaiming task.
         if (hasLambdaPoolConfig) {
-            this.lambdaPool = new ProactiveLambdaPool(lambdaType, lambdaManagerConfiguration.getMaxTaps(), lambdaManagerConfiguration.getGateway(), poolConfiguration);
+            this.lambdaPool = new ProactiveLambdaPool(lambdaType, lambdaManagerConfiguration.getMaxTaps(), poolConfiguration);
         } else {
             // For OpenWhisk and Knative only.
-            this.lambdaPool = new ReactiveLambdaPool(lambdaType, lambdaManagerConfiguration.getMaxTaps(), lambdaManagerConfiguration.getGateway());
+            this.lambdaPool = new ReactiveLambdaPool(lambdaType, lambdaManagerConfiguration.getMaxTaps());
         }
         this.lambdaPool.setUp();
 
@@ -270,6 +272,10 @@ public class ArgumentStorage {
 
     public String getGateway() {
         return gateway;
+    }
+
+    public String getGatewayWithMask() {
+        return gatewayWithMask;
     }
 
     public LambdaPool getLambdaPool() {

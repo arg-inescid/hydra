@@ -26,17 +26,17 @@ import org.graalvm.argo.lambda_manager.processes.lambda.StartLambda;
 import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
 import org.graalvm.argo.lambda_manager.utils.Messages;
 import org.graalvm.argo.lambda_manager.utils.NetworkConfigurationUtils;
-import org.graalvm.argo.lambda_manager.utils.NetworkUtils;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 import org.graalvm.argo.lambda_manager.utils.parser.LambdaManagerPool;
 
+// TODO (rbruno): this class should be merged with LambdaPool.
 public class LambdaPoolUtils {
 
     private static final Set<Lambda> startingLambdas = Collections.newSetFromMap(new ConcurrentHashMap<Lambda, Boolean>());
 
     public static final int EXECUTOR_THREAD_COUNT = Runtime.getRuntime().availableProcessors() / 2;
 
-    public static void prepareLambdaPool(Map<LambdaExecutionMode, ConcurrentLinkedQueue<Lambda>> lambdaPool, LambdaManagerPool poolConfiguration) {
+    public static void prepareLambdaPool(Map<String, ConcurrentLinkedQueue<Lambda>> lambdaPool, LambdaManagerPool poolConfiguration) {
         ExecutorService executor = Executors.newFixedThreadPool(EXECUTOR_THREAD_COUNT);
 
         startLambdasPerMode(lambdaPool, LambdaExecutionMode.HOTSPOT_W_AGENT, poolConfiguration.getHotspotWithAgent(), executor);
@@ -58,12 +58,12 @@ public class LambdaPoolUtils {
         }
     }
 
-    private static void startLambdasPerMode(Map<LambdaExecutionMode, ConcurrentLinkedQueue<Lambda>> lambdaPool, LambdaExecutionMode mode, int amount, ExecutorService executor) {
+    private static void startLambdasPerMode(Map<String, ConcurrentLinkedQueue<Lambda>> lambdaPool, LambdaExecutionMode mode, int amount, ExecutorService executor) {
         for (int i = 0; i < amount; ++i) {
             executor.execute(() -> {
                 Lambda lambda = new Lambda(mode);
                 // This is a blocking call that waits until the lambda is created.
-                startLambda(lambdaPool.get(mode), lambda, mode, null, null);
+                startLambda(lambdaPool.get(mode.name()), lambda, mode, null, null);
             });
         }
     }
@@ -80,7 +80,7 @@ public class LambdaPoolUtils {
             Logger.log(Level.INFO, "Starting new " + targetMode + " lambda.");
             ProcessBuilder process = whomToSpawn(lambda, targetMode, function).build();
             process.start();
-            if (NetworkUtils.waitForOpenPort(lambda.getConnection().ip, lambda.getConnection().port, 500)) {
+            if (connection.waitUntilReady()) {
                 lambdaPool.add(lambda);
                 Logger.log(Level.INFO, "Added new lambda with mode " + targetMode + ". It took " + (System.currentTimeMillis() - timeBefore) + " ms.");
             } else {
@@ -223,7 +223,7 @@ public class LambdaPoolUtils {
         return true;
     }
 
-    public static void startLambdaReclaimingDaemon(Map<LambdaExecutionMode, ConcurrentLinkedQueue<Lambda>> lambdaPool, LambdaManagerPool poolConfiguration) {
+    public static void startLambdaReclaimingDaemon(Map<String, ConcurrentLinkedQueue<Lambda>> lambdaPool, LambdaManagerPool poolConfiguration) {
         Runnable task = new LambdaReclaimingDaemon(poolConfiguration, lambdaPool);
         Thread daemon = new Thread(task);
         daemon.start();
@@ -231,20 +231,20 @@ public class LambdaPoolUtils {
 
     private static class LambdaReclaimingDaemon implements Runnable {
 
-        private final Map<LambdaExecutionMode, Integer> maxLambdas;
-        private final Map<LambdaExecutionMode, ConcurrentLinkedQueue<Lambda>> lambdaPool;
+        private final Map<String, Integer> maxLambdas;
+        private final Map<String, ConcurrentLinkedQueue<Lambda>> lambdaPool;
 
-        private LambdaReclaimingDaemon(LambdaManagerPool poolConfiguration, Map<LambdaExecutionMode, ConcurrentLinkedQueue<Lambda>> lambdaPool) {
+        private LambdaReclaimingDaemon(LambdaManagerPool poolConfiguration, Map<String, ConcurrentLinkedQueue<Lambda>> lambdaPool) {
             this.maxLambdas = new HashMap<>();
-            this.maxLambdas.put(LambdaExecutionMode.HOTSPOT_W_AGENT, poolConfiguration.getHotspotWithAgent());
-            this.maxLambdas.put(LambdaExecutionMode.HOTSPOT, poolConfiguration.getHotspot());
-            this.maxLambdas.put(LambdaExecutionMode.HYDRA, poolConfiguration.getHydra());
-            this.maxLambdas.put(LambdaExecutionMode.GRAALOS, poolConfiguration.getHydra());
-            this.maxLambdas.put(LambdaExecutionMode.CUSTOM_JAVA, poolConfiguration.getCustomJava());
-            this.maxLambdas.put(LambdaExecutionMode.CUSTOM_JAVASCRIPT, poolConfiguration.getCustomJavaScript());
-            this.maxLambdas.put(LambdaExecutionMode.CUSTOM_PYTHON, poolConfiguration.getCustomPython());
-            this.maxLambdas.put(LambdaExecutionMode.HYDRA_PGO, poolConfiguration.getHydraPgo());
-            this.maxLambdas.put(LambdaExecutionMode.HYDRA_PGO_OPTIMIZED, poolConfiguration.getHydraPgoOptimized());
+            this.maxLambdas.put(LambdaExecutionMode.HOTSPOT_W_AGENT.name(), poolConfiguration.getHotspotWithAgent());
+            this.maxLambdas.put(LambdaExecutionMode.HOTSPOT.name(), poolConfiguration.getHotspot());
+            this.maxLambdas.put(LambdaExecutionMode.HYDRA.name(), poolConfiguration.getHydra());
+            this.maxLambdas.put(LambdaExecutionMode.GRAALOS.name(), poolConfiguration.getHydra());
+            this.maxLambdas.put(LambdaExecutionMode.CUSTOM_JAVA.name(), poolConfiguration.getCustomJava());
+            this.maxLambdas.put(LambdaExecutionMode.CUSTOM_JAVASCRIPT.name(), poolConfiguration.getCustomJavaScript());
+            this.maxLambdas.put(LambdaExecutionMode.CUSTOM_PYTHON.name(), poolConfiguration.getCustomPython());
+            this.maxLambdas.put(LambdaExecutionMode.HYDRA_PGO.name(), poolConfiguration.getHydraPgo());
+            this.maxLambdas.put(LambdaExecutionMode.HYDRA_PGO_OPTIMIZED.name(), poolConfiguration.getHydraPgoOptimized());
             this.lambdaPool = lambdaPool;
         }
 
@@ -262,7 +262,7 @@ public class LambdaPoolUtils {
             }
         }
 
-        private void reclaim(LambdaExecutionMode mode, ConcurrentLinkedQueue<Lambda> lambdas) {
+        private void reclaim(String mode, ConcurrentLinkedQueue<Lambda> lambdas) {
             int total = maxLambdas.get(mode);
             int minimalThreshold = (int) (total * Configuration.argumentStorage.getReclamationThreshold());
             int lambdasInPool = lambdas.size();
@@ -270,7 +270,7 @@ public class LambdaPoolUtils {
                 // Use Math.ceil to always reclaim at least one lambda.
                 int lambdasToReclaim = (int) Math.ceil(total * Configuration.argumentStorage.getReclamationPercentage());
                 long ts = System.currentTimeMillis();
-                LambdaManager.lambdas.stream().filter(l -> l.getExecutionMode() == mode && l.getOpenRequestCount() <= 0 && ts - l.getLastUsedTimestamp() > Configuration.argumentStorage.getLruReclamationPeriod()).sorted(LambdaPoolUtils::compare)
+                LambdaManager.lambdas.stream().filter(l -> l.getExecutionMode().name() == mode && l.getOpenRequestCount() <= 0 && ts - l.getLastUsedTimestamp() > Configuration.argumentStorage.getLruReclamationPeriod()).sorted(LambdaPoolUtils::compare)
                         .limit(lambdasToReclaim).parallel().forEach(l -> new DefaultLambdaShutdownHandler(l, "reclaiming").run());
             }
         }

@@ -16,70 +16,45 @@ import org.graalvm.argo.lambda_manager.pool.utils.LambdaPoolUtils;
 import org.graalvm.argo.lambda_manager.utils.NetworkConfigurationUtils;
 import org.graalvm.argo.lambda_manager.utils.parser.LambdaManagerPool;
 
-public class ProactiveLambdaPool implements LambdaPool {
+public class ProactiveLambdaPool extends LambdaPool {
 
-    /**
-     * Type of lambdas that will be created.
-     */
-    private final LambdaType lambdaType;
-
-    /**
-     * Maximum number of network taps that will be setup by the Lambda Manager.
-     */
-    private final int maxLambdas;
-
-    private final String gatewayWithMask;
-
+    // TODO - add documentation.
     private final LambdaManagerPool poolConfiguration;
 
-    /**
-     * Concurrent queue where the connections are pooled from.
-     */
-    private final ConcurrentLinkedQueue<LambdaConnection> connectionPool;
-
-    /**
-     * Concurrent queue where the lambdas are pooled from.
-     */
-    private final Map<LambdaExecutionMode, ConcurrentLinkedQueue<Lambda>> lambdaPool = Map.ofEntries(
-            Map.entry(LambdaExecutionMode.HOTSPOT_W_AGENT, new ConcurrentLinkedQueue<>()),
-            Map.entry(LambdaExecutionMode.HOTSPOT, new ConcurrentLinkedQueue<>()),
-            Map.entry(LambdaExecutionMode.HYDRA, new ConcurrentLinkedQueue<>()),
-            Map.entry(LambdaExecutionMode.GRAALOS, new ConcurrentLinkedQueue<>()),
-            Map.entry(LambdaExecutionMode.CUSTOM_JAVA, new ConcurrentLinkedQueue<>()),
-            Map.entry(LambdaExecutionMode.CUSTOM_JAVASCRIPT, new ConcurrentLinkedQueue<>()),
-            Map.entry(LambdaExecutionMode.CUSTOM_PYTHON, new ConcurrentLinkedQueue<>()),
-            Map.entry(LambdaExecutionMode.HYDRA_PGO, new ConcurrentLinkedQueue<>()),
-            Map.entry(LambdaExecutionMode.HYDRA_PGO_OPTIMIZED, new ConcurrentLinkedQueue<>()));
-
-    public ProactiveLambdaPool(LambdaType lambdaType, int maxTaps, String gatewayWithMask, LambdaManagerPool poolConfiguration) {
-        this.lambdaType = lambdaType;
-        this.maxLambdas = maxTaps;
-        this.gatewayWithMask = gatewayWithMask;
+    public ProactiveLambdaPool(LambdaType lambdaType, int maxTaps, LambdaManagerPool poolConfiguration) {
+        super(lambdaType, maxTaps);
         this.poolConfiguration = poolConfiguration;
-        this.connectionPool = new ConcurrentLinkedQueue<>();
     }
 
     @Override
     public void setUp() {
         int lambdaPort = Configuration.argumentStorage.getLambdaPort();
 
+        this.lambdaPool.putAll(Map.ofEntries(
+            Map.entry(LambdaExecutionMode.HOTSPOT_W_AGENT.name(), new ConcurrentLinkedQueue<>()),
+            Map.entry(LambdaExecutionMode.HOTSPOT.name(), new ConcurrentLinkedQueue<>()),
+            Map.entry(LambdaExecutionMode.HYDRA.name(), new ConcurrentLinkedQueue<>()),
+            Map.entry(LambdaExecutionMode.GRAALOS.name(), new ConcurrentLinkedQueue<>()),
+            Map.entry(LambdaExecutionMode.CUSTOM_JAVA.name(), new ConcurrentLinkedQueue<>()),
+            Map.entry(LambdaExecutionMode.CUSTOM_JAVASCRIPT.name(), new ConcurrentLinkedQueue<>()),
+            Map.entry(LambdaExecutionMode.CUSTOM_PYTHON.name(), new ConcurrentLinkedQueue<>()),
+            Map.entry(LambdaExecutionMode.HYDRA_PGO.name(), new ConcurrentLinkedQueue<>()),
+            Map.entry(LambdaExecutionMode.HYDRA_PGO_OPTIMIZED.name(), new ConcurrentLinkedQueue<>())));
+
         if (lambdaType.isVM()) {
+            String gatewayWithMask = Configuration.argumentStorage.getGatewayWithMask();
             NetworkConfigurationUtils.prepareVmConnectionPool(connectionPool, maxLambdas, gatewayWithMask, lambdaPort);
         } else {
             NetworkConfigurationUtils.prepareContainerConnectionPool(connectionPool, maxLambdas);
         }
+
         LambdaPoolUtils.prepareLambdaPool(lambdaPool, poolConfiguration);
         LambdaPoolUtils.startLambdaReclaimingDaemon(lambdaPool, poolConfiguration);
     }
 
     @Override
-    public LambdaConnection nextLambdaConnection() {
-        return connectionPool.poll();
-    }
-
-    @Override
     public Lambda getLambda(LambdaExecutionMode mode, Function function) {
-        return lambdaPool.get(mode).poll();
+        return lambdaPool.get(mode.name()).poll();
     }
 
     /**
@@ -89,7 +64,7 @@ public class ProactiveLambdaPool implements LambdaPool {
     public void disposeLambda(Lambda lambda) {
         if (lambda.isIntact() && Environment.notShutdownHookActive()) {
             // The lambda was not used, we can add it to the pool right away.
-            lambdaPool.get(lambda.getExecutionMode()).add(lambda);
+            lambdaPool.get(lambda.getExecutionMode().name()).add(lambda);
         } else {
             boolean success = LambdaPoolUtils.shutdownLambda(lambda, lambdaType);
             connectionPool.add(lambda.getConnection());
@@ -97,7 +72,7 @@ public class ProactiveLambdaPool implements LambdaPool {
             // Only replenish if managed to terminate the previous lambda successfully.
             if (success && Environment.notShutdownHookActive()) {
                 Lambda newLambda = new Lambda(lambda.getExecutionMode());
-                LambdaPoolUtils.startLambda(lambdaPool.get(lambda.getExecutionMode()), newLambda, lambda.getExecutionMode(), null, null);
+                LambdaPoolUtils.startLambda(lambdaPool.get(lambda.getExecutionMode().name()), newLambda, lambda.getExecutionMode(), null, null);
             }
         }
     }
