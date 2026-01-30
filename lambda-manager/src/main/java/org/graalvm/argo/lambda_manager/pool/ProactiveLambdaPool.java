@@ -84,7 +84,7 @@ public class ProactiveLambdaPool extends LambdaPool {
 
         // Close any lasting connection.
         for (LambdaConnection connection : connectionPool) {
-            connection.client.close();
+            connection.close();
         }
 
         // Delete os-level network interfaces.
