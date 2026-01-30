@@ -270,7 +270,7 @@ public class LambdaPoolUtils {
                 // Use Math.ceil to always reclaim at least one lambda.
                 int lambdasToReclaim = (int) Math.ceil(total * Configuration.argumentStorage.getReclamationPercentage());
                 long ts = System.currentTimeMillis();
-                LambdaManager.lambdas.stream().filter(l -> l.getExecutionMode().name() == mode && l.getOpenRequestCount() <= 0 && ts - l.getLastUsedTimestamp() > Configuration.argumentStorage.getLruReclamationPeriod()).sorted(LambdaPoolUtils::compare)
+                LambdaManager.lambdas.stream().filter(l -> l.getExecutionMode().name().equals(mode) && l.getOpenRequestCount() <= 0 && ts - l.getLastUsedTimestamp() > Configuration.argumentStorage.getLruReclamationPeriod()).sorted(LambdaPoolUtils::compare)
                         .limit(lambdasToReclaim).parallel().forEach(l -> new DefaultLambdaShutdownHandler(l, "reclaiming").run());
             }
         }
