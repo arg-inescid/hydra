@@ -28,8 +28,6 @@ public class ProactiveLambdaPool extends LambdaPool {
 
     @Override
     public void setUp() {
-        int lambdaPort = Configuration.argumentStorage.getLambdaPort();
-
         this.lambdaPool.putAll(Map.ofEntries(
             Map.entry(LambdaExecutionMode.HOTSPOT_W_AGENT.name(), new ConcurrentLinkedQueue<>()),
             Map.entry(LambdaExecutionMode.HOTSPOT.name(), new ConcurrentLinkedQueue<>()),
@@ -42,9 +40,10 @@ public class ProactiveLambdaPool extends LambdaPool {
             Map.entry(LambdaExecutionMode.HYDRA_PGO_OPTIMIZED.name(), new ConcurrentLinkedQueue<>())));
 
         if (lambdaType.isVM()) {
+            int lambdaPort = Configuration.argumentStorage.getLambdaPort();
             String gatewayWithMask = Configuration.argumentStorage.getGatewayWithMask();
             NetworkConfigurationUtils.prepareVmConnectionPool(connectionPool, maxLambdas, gatewayWithMask, lambdaPort);
-        } else {
+        } else if (lambdaType.isContainer()) {
             NetworkConfigurationUtils.prepareContainerConnectionPool(connectionPool, maxLambdas);
         }
 

@@ -73,7 +73,7 @@ public class LambdaPoolUtils {
         try {
             startingLambdas.add(lambda);
             long timeBefore = System.currentTimeMillis();
-            LambdaConnection connection = Configuration.argumentStorage.getLambdaPool().nextLambdaConnection();
+            LambdaConnection connection = Configuration.argumentStorage.getLambdaPool().nextLambdaConnection(lambda);
             lambda.setConnection(connection);
             if (Configuration.argumentStorage.getLambdaType().isVM()) {
                 NetworkConfigurationUtils.createTap(((NetworkConnection) connection).getTap());
@@ -153,8 +153,8 @@ public class LambdaPoolUtils {
                 success = shutdownContainerLambda(lambda, Environment.CODEBASE + "/" + lambda.getLambdaName());
             } else if (lambdaType == LambdaType.VM_FIRECRACKER || lambdaType == LambdaType.VM_FIRECRACKER_SNAPSHOT) {
                 success = shutdownFirecrackerLambda(lambda, Environment.CODEBASE + "/" + lambda.getLambdaName(), lambdaType);
-            } else if (lambdaType == LambdaType.GRAALOS_NATIVE) {
-                success = shutdownNativeLambda(lambda, Environment.CODEBASE + "/" + lambda.getLambdaName());
+            } else if (lambdaType == LambdaType.GRAALOS) {
+                success = shutdownGraalOSLambda(lambda, Environment.CODEBASE + "/" + lambda.getLambdaName());
             } else {
                 Logger.log(Level.WARNING, String.format("Lambda ID=%d has no known execution mode: %s", lambda.getLambdaID(), lambda.getExecutionMode()));
                 success = false;
@@ -214,11 +214,9 @@ public class LambdaPoolUtils {
         return true;
     }
 
-    // TODO - will have to fix.
-    private static boolean shutdownNativeLambda(Lambda lambda, String lambdaPath) throws Throwable {
+    private static boolean shutdownGraalOSLambda(Lambda lambda, String lambdaPath) throws Throwable {
         File f = new File(Environment.LAMBDA_LOGS + "/" + lambda.getLambdaName() + "/terminate.log");
-        NetworkConnection conn = (NetworkConnection) lambda.getConnection();
-        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_graalos_native.sh", lambdaPath, String.valueOf(conn.getPort())).redirectOutput(f).redirectError(f).start();
+        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_graalos_native.sh", lambdaPath).redirectOutput(f).redirectError(f).start();
         p.waitFor();
         if (p.exitValue() != 0) {
             Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", lambda.getLambdaID()));

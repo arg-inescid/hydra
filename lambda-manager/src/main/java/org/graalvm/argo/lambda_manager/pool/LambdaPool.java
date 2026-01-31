@@ -9,6 +9,7 @@ import org.graalvm.argo.lambda_manager.core.Lambda;
 import org.graalvm.argo.lambda_manager.core.LambdaType;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
+import org.graalvm.argo.lambda_manager.utils.LocalConnection;
 
 public abstract class LambdaPool {
 
@@ -41,8 +42,12 @@ public abstract class LambdaPool {
 
     public abstract void setUp();
 
-    public LambdaConnection nextLambdaConnection() {
-        return connectionPool.poll();
+    public LambdaConnection nextLambdaConnection(Lambda lambda) {
+        if (this.lambdaType.isGraalOS()) {
+            return new LocalConnection(lambda);
+        } else {
+            return connectionPool.poll();
+        }
     }
 
     public abstract Lambda getLambda(LambdaExecutionMode mode, Function function);

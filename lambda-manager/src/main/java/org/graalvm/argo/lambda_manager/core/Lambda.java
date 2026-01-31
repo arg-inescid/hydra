@@ -28,7 +28,11 @@ public class Lambda {
 	private String username;
 
 	private long lastUsedTimestamp;
-	private LambdaConnection connection;
+
+    /** Connection used to send invocation requests and receive responses. */
+    private LambdaConnection connection;
+
+    /** Type lambda execution (see LambdaExecutionMode for details). */
 	private final LambdaExecutionMode executionMode;
 
 	/** Indicates whether this lambda should be used for future requests. */

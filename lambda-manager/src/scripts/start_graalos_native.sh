@@ -10,14 +10,7 @@ then
     exit 1
 fi
 
-# TODO - do we need this lambda port?
-LAMBDA_PORT=$1
-if [ -z "$LAMBDA_PORT" ]; then
-  echo "Lambda port is not present."
-  exit 1
-fi
-
-LAMBDA_NAME=$2
+LAMBDA_NAME=$1
 if [ -z "$LAMBDA_NAME" ]; then
   echo "Lambda name is not present."
   exit 1

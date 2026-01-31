@@ -45,7 +45,7 @@ public class ReactiveLambdaPool extends LambdaPool {
             int lambdaPort = Configuration.argumentStorage.getLambdaPort();
             String gatewayWithMask = Configuration.argumentStorage.getGatewayWithMask();
             NetworkConfigurationUtils.prepareVmConnectionPool(connectionPool, maxLambdas, gatewayWithMask, lambdaPort);
-        } else {
+        } else if (lambdaType.isContainer()) {
             NetworkConfigurationUtils.prepareContainerConnectionPool(connectionPool, maxLambdas);
         }
     }

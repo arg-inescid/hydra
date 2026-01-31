@@ -89,9 +89,9 @@ public class ArgumentStorage {
     private ArgumentStorage() { }
 
     private void initClassFields(LambdaManagerConfiguration lambdaManagerConfiguration, VariablesConfiguration variablesConfiguration) {
-        this.gateway = lambdaManagerConfiguration.getGateway().split("/")[0];
         this.gatewayWithMask = lambdaManagerConfiguration.getGateway();
-        this.mask = IPv4Subnet.of(lambdaManagerConfiguration.getGateway()).getNetworkMask().toString();
+        this.gateway = this.gatewayWithMask.split("/")[0];
+        this.mask = IPv4Subnet.of(this.gatewayWithMask).getNetworkMask().toString();
         this.lambdaType = LambdaType.fromString(lambdaManagerConfiguration.getLambdaType());
         this.maxMemory = lambdaManagerConfiguration.getMaxMemory();
         this.cpuQuota = ((maxMemory * 1000 / 1024) / 2) * 100; // MiB to MB; divide by two due to ratio; multiply by 100 to get cgroups quota.
@@ -124,7 +124,7 @@ public class ArgumentStorage {
             case CONTAINER_DEBUG:
                 this.lambdaFactory = new ContainerLambdaFactory();
                 break;
-            case GRAALOS_NATIVE:
+            case GRAALOS:
                 this.lambdaFactory = new NativeLambdaFactory();
                 break;
             default:
