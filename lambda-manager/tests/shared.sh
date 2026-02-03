@@ -136,7 +136,7 @@ function register_gh {
     if [ -z "$FUNCTION_MEMORY" ]; then
         FUNCTION_MEMORY=512
     fi
-    FUNCTION_ISOLATION=true
+    FUNCTION_ISOLATION=false
     INVOCATION_COLLOCATION=true
 
     runtime=graalos
@@ -154,8 +154,9 @@ function register_gh {
 
     entrypoint=${BENCHMARK_ENTRYPOINTS["$bench"]}
     code=${BENCHMARK_CODE["$bench"]}
+    gh_id=${BENCHMARK_GHIDS["$bench"]}
 
-    curl -s -X POST $LAMBDA_MANAGER_HOST:$LAMBDA_MANAGER_PORT/upload_function?username=$USER\&function_name=$bench\&function_language=$lang\&function_entry_point=$entrypoint\&function_memory=$FUNCTION_MEMORY\&function_runtime=$runtime\&function_isolation=$FUNCTION_ISOLATION\&invocation_collocation=$INVOCATION_COLLOCATION -H 'Content-Type: text/plain' --data $code
+    curl -s -X POST $LAMBDA_MANAGER_HOST:$LAMBDA_MANAGER_PORT/upload_function?username=$USER\&function_name=$bench\&function_language=$lang\&function_entry_point=$entrypoint\&function_memory=$FUNCTION_MEMORY\&function_runtime=$runtime\&function_isolation=$FUNCTION_ISOLATION\&invocation_collocation=$INVOCATION_COLLOCATION\&svm_id=$gh_id -H 'Content-Type: text/plain' --data $code
 }
 
 function request {

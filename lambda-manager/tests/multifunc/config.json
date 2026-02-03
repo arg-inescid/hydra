@@ -5,7 +5,7 @@
   "timeout": 25000,
   "healthCheck": 50,
   "lambdaPort": 8080,
-  "lambdaType": "graalos_native",
+  "lambdaType": "graalos",
   "optimizationPipeline": false,
   "lambdaConsole": true,
   "managerConsole": {

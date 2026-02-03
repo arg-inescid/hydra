@@ -55,8 +55,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
                 return "No registration needed in a Knative lambda.";
             } else if (mode.isGraalOS()) {
                 path = "/command";
-                // TODO - we need to keep the ep number rotating.
-                payload = ("{ \"act\":\"add_ep\", \"ep\":9001, \"app\":\"" + function.getFunctionCode() + "\" }").getBytes();
+                payload = ("{ \"act\":\"add_ep\", \"ep\":" +  function.getSvmId() + ", \"app\":\"" + function.getFunctionCode() + "\" }").getBytes();
 
             } else {
                 Logger.log(Level.WARNING, String.format("Unexpected lambda mode (%s) when registering function %s!", lambda.getExecutionMode(), function.getName()));
@@ -77,6 +76,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         } else {
             Logger.log(Level.WARNING, String.format("Unexpected lambda mode (%s) when registering function %s!", lambda.getExecutionMode(), function.getName()));
         }
+        // TODO - add graalos?
 
         return sendRequest(path, payload.getBytes(), lambda);
     }
@@ -99,7 +99,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
             payload = arguments;
         } else if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALOS) {
             path = "/command";
-            payload = "{ \"act\":\"add_isolate\", \"ep\":9001 }";
+            payload = "{ \"act\":\"add_isolate\", \"ep\":" + function.getSvmId() + " }";
         } else {
             Logger.log(Level.WARNING, String.format("Unexpected lambda mode (%s) when invoking function %s!", lambda.getExecutionMode(), function.getName()));
         }

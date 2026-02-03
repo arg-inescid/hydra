@@ -124,7 +124,8 @@ public class Lambda {
         if (username == null) {
             return true;
         }
-        if (executionMode == LambdaExecutionMode.HYDRA) {
+
+        if (executionMode == LambdaExecutionMode.HYDRA || executionMode == LambdaExecutionMode.GRAALOS) {
             if (function.isFunctionIsolated()) {
                 return (registeredFunctions.contains(function)) && username.equals(Configuration.coder.decodeUsername(function.getName()));
             } else {
