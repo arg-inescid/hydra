@@ -26,6 +26,7 @@ import org.graalvm.argo.lambda_manager.processes.lambda.StartLambda;
 import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
 import org.graalvm.argo.lambda_manager.utils.Messages;
 import org.graalvm.argo.lambda_manager.utils.NetworkConfigurationUtils;
+import org.graalvm.argo.lambda_manager.utils.NetworkConnection;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 import org.graalvm.argo.lambda_manager.utils.parser.LambdaManagerPool;
 
@@ -72,10 +73,10 @@ public class LambdaPoolUtils {
         try {
             startingLambdas.add(lambda);
             long timeBefore = System.currentTimeMillis();
-            LambdaConnection connection = Configuration.argumentStorage.getLambdaPool().nextLambdaConnection();
+            LambdaConnection connection = Configuration.argumentStorage.getLambdaPool().nextLambdaConnection(lambda);
             lambda.setConnection(connection);
             if (Configuration.argumentStorage.getLambdaType().isVM()) {
-                NetworkConfigurationUtils.createTap(connection.tap);
+                NetworkConfigurationUtils.createTap(((NetworkConnection) connection).getTap());
             }
             Logger.log(Level.INFO, "Starting new " + targetMode + " lambda.");
             ProcessBuilder process = whomToSpawn(lambda, targetMode, function).build();
@@ -152,8 +153,8 @@ public class LambdaPoolUtils {
                 success = shutdownContainerLambda(lambda, Environment.CODEBASE + "/" + lambda.getLambdaName());
             } else if (lambdaType == LambdaType.VM_FIRECRACKER || lambdaType == LambdaType.VM_FIRECRACKER_SNAPSHOT) {
                 success = shutdownFirecrackerLambda(lambda, Environment.CODEBASE + "/" + lambda.getLambdaName(), lambdaType);
-            } else if (lambdaType == LambdaType.GRAALOS_NATIVE) {
-                success = shutdownNativeLambda(lambda, Environment.CODEBASE + "/" + lambda.getLambdaName());
+            } else if (lambdaType == LambdaType.GRAALOS) {
+                success = shutdownGraalOSLambda(lambda, Environment.CODEBASE + "/" + lambda.getLambdaName());
             } else {
                 Logger.log(Level.WARNING, String.format("Lambda ID=%d has no known execution mode: %s", lambda.getLambdaID(), lambda.getExecutionMode()));
                 success = false;
@@ -166,7 +167,7 @@ public class LambdaPoolUtils {
 
         if (lambdaType.isVM()) {
             try {
-                NetworkConfigurationUtils.removeTap(lambda.getConnection().tap);
+                NetworkConfigurationUtils.removeTap(((NetworkConnection)lambda.getConnection()).getTap());
             } catch (InterruptedException e) {
                 Logger.log(Level.WARNING, Messages.ERROR_TAP_REMOVAL, e);
             }
@@ -185,10 +186,11 @@ public class LambdaPoolUtils {
 
     private static boolean shutdownFirecrackerLambda(Lambda lambda, String lambdaPath, LambdaType lambdaType) throws Throwable {
         String lambdaMode = lambda.getExecutionMode().toString();
+        NetworkConnection conn = (NetworkConnection) lambda.getConnection();
         // Append lambda ID to command only if lambda was restored from snapshot (to terminate it properly).
         String lambdaId = lambdaType == LambdaType.VM_FIRECRACKER_SNAPSHOT ? String.valueOf(lambda.getLambdaID()) : "";
         Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_firecracker.sh", lambdaPath, lambda.getLambdaName(), lambdaMode,
-                lambda.getConnection().ip, String.valueOf(lambda.getConnection().port), lambdaId).start();
+                conn.getIp(), String.valueOf(conn.getPort()), lambdaId).start();
         p.waitFor();
         if (p.exitValue() != 0) {
             Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", lambda.getLambdaID()));
@@ -200,8 +202,9 @@ public class LambdaPoolUtils {
 
     private static boolean shutdownContainerLambda(Lambda lambda, String lambdaPath) throws Throwable {
         String lambdaMode = lambda.getExecutionMode().toString();
+        NetworkConnection conn = (NetworkConnection) lambda.getConnection();
         Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_container.sh", lambdaPath, lambdaMode,
-                lambda.getConnection().ip, String.valueOf(lambda.getConnection().port), lambda.getLambdaName()).start();
+                conn.getIp(), String.valueOf(conn.getPort()), lambda.getLambdaName()).start();
         p.waitFor();
         if (p.exitValue() != 0) {
             Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", lambda.getLambdaID()));
@@ -211,9 +214,9 @@ public class LambdaPoolUtils {
         return true;
     }
 
-    private static boolean shutdownNativeLambda(Lambda lambda, String lambdaPath) throws Throwable {
+    private static boolean shutdownGraalOSLambda(Lambda lambda, String lambdaPath) throws Throwable {
         File f = new File(Environment.LAMBDA_LOGS + "/" + lambda.getLambdaName() + "/terminate.log");
-        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_graalos_native.sh", lambdaPath, String.valueOf(lambda.getConnection().port)).redirectOutput(f).redirectError(f).start();
+        Process p = new java.lang.ProcessBuilder("bash", "src/scripts/stop_graalos_native.sh", lambdaPath).redirectOutput(f).redirectError(f).start();
         p.waitFor();
         if (p.exitValue() != 0) {
             Logger.log(Level.WARNING, String.format("Lambda ID=%d failed to terminate successfully", lambda.getLambdaID()));

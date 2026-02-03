@@ -4,53 +4,30 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 
 source "$DIR"/environment.sh
 
-if [ -z "$GRAALOS_SDK_DIR" ]
+if [ -z "$GRAALOS_HOME" ]
 then
-    echo "Please set GRAALOS_SDK_DIR first. It should point to directory containing an unzipped version of the GraalOS SDK."
+    echo "Please set GRAALOS_OME first. It should point to directory containing an unzipped version of GraalOS."
     exit 1
 fi
 
-LAMBDA_PORT=$1
-if [ -z "$LAMBDA_PORT" ]; then
-  echo "Lambda port is not present."
-  exit 1
-fi
-
-LAMBDA_NAME=$2
+LAMBDA_NAME=$1
 if [ -z "$LAMBDA_NAME" ]; then
   echo "Lambda name is not present."
   exit 1
 fi
 
-PORT_DISTANCE=10000
-GRAALOS_PORT=$(($LAMBDA_PORT + $PORT_DISTANCE))
-
 LAMBDA_HOME="$CODEBASE_HOME"/"$LAMBDA_NAME"
-mkdir "$LAMBDA_HOME" &> /dev/null
+rm -rf "$LAMBDA_HOME"
+mkdir "$LAMBDA_HOME" # TODO - make this the ephemeral dir?
+mkdir "$LAMBDA_HOME"/tmp
 
-# Launch the GraalOS process.
-"$GRAALOS_SDK_DIR"/benchmarks/graalos-client/run-graalhost-lm.sh $GRAALOS_PORT &
-echo "$!" > "$LAMBDA_HOME"/lambda.pid
-
-# Wait for GraalOS port open.
-while ! nc -z localhost ${GRAALOS_PORT}; do
-    sleep 0.1
-done
-
-http_code=""
-declare -i attempts=0
-while [[ ! ${http_code} == "201" ]]; do
-    res=$(curl --silent --show-error --write-out "%{http_code}" --data-binary '{ "act": "add_ep", "app": "'$GRAALOS_SDK_DIR'/benchmarks/graalos-client/apps/simple-http/build/native/nativeCompile/simple-http", "ep": 2001, "default_socket": { "port": '$LAMBDA_PORT' }, "listen_socket": { "port": '$LAMBDA_PORT' }, "fsroot": "/", "fsmappings": [ { "concrete": "/", "virt": "/" } ], "env": { "application_port": "'$LAMBDA_PORT'" }, "instances": 1 }' http://localhost:$GRAALOS_PORT/command)
-    http_code=$(echo $res | awk '{print $NF}')
-    echo "$res"
-    attempts=$((attempts+1))
-
-    if [ "$attempts" -gt "1000" ]; then
-        break
-    fi
-
-    sleep 0.1
-done
-echo $res
-
-wait
+"$GRAALOS_HOME"/build/graalhost/graalhost \
+  --hub \
+  --webserver \
+  --retry_ports \
+  --log_level=off \
+  --command_uds_path="$LAMBDA_HOME"/lambda.uds \
+  --seccomp 2 \
+  --write_pid "$LAMBDA_HOME"/lambda.pid \
+  --ephemeral_dir="$LAMBDA_HOME"/tmp \
+  --ephemeral_dir_cleanup=never

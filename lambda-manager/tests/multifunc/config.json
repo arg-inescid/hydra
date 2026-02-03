@@ -5,7 +5,7 @@
   "timeout": 25000,
   "healthCheck": 50,
   "lambdaPort": 8080,
-  "lambdaType": "container",
+  "lambdaType": "graalos",
   "optimizationPipeline": false,
   "lambdaConsole": true,
   "managerConsole": {
@@ -16,11 +16,11 @@
   "lambdaPool": {
     "hotspotWithAgent": 0,
     "hotspot": 0,
-    "hydra": 5,
+    "hydra": 0,
     "graalos": 0,
-    "customJava": 10,
-    "customJavaScript": 10,
-    "customPython": 10,
+    "customJava": 0,
+    "customJavaScript": 0,
+    "customPython": 0,
     "hydraPgo": 0,
     "hydraPgoOptimized": 0
   }

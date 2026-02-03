@@ -5,6 +5,11 @@ if [[ -z "${ARGO_HOME}" ]]; then
     exit 1
 fi
 
+if [[ -z "${GRAALOS_SEBS}" ]]; then
+    echo "GRAALOS_SEBS is not defined. Exiting..."
+    exit 1
+fi
+
 # Load benchmarks configs.
 source "$(dirname "${BASH_SOURCE[0]}")/benchmarks.sh"
 
@@ -123,6 +128,35 @@ function register_kn {
     code=${BENCHMARK_CODE["$bench"]}
 
     curl -s -X POST $LAMBDA_MANAGER_HOST:$LAMBDA_MANAGER_PORT/upload_function?username=$USER\&function_name=$bench\&function_language=$lang\&function_entry_point=$entrypoint\&function_memory=$FUNCTION_MEMORY\&function_runtime=$runtime\&function_isolation=$FUNCTION_ISOLATION\&invocation_collocation=$INVOCATION_COLLOCATION -H 'Content-Type: text/plain' --data $code
+}
+
+function register_gh {
+    bench=$1
+
+    if [ -z "$FUNCTION_MEMORY" ]; then
+        FUNCTION_MEMORY=512
+    fi
+    FUNCTION_ISOLATION=false
+    INVOCATION_COLLOCATION=true
+
+    runtime=graalos
+    lang=
+    if [[ $bench == *"_jv_"* ]]; then
+        lang=java
+    elif [[ $bench == *"_js_"* ]]; then
+        lang=javascript
+    elif [[ $bench == *"_py_"* ]]; then
+        lang=python
+    else
+        echo "Unknown benchmark language: $bench"
+        exit 1
+    fi
+
+    entrypoint=${BENCHMARK_ENTRYPOINTS["$bench"]}
+    code=${BENCHMARK_CODE["$bench"]}
+    gh_id=${BENCHMARK_GHIDS["$bench"]}
+
+    curl -s -X POST $LAMBDA_MANAGER_HOST:$LAMBDA_MANAGER_PORT/upload_function?username=$USER\&function_name=$bench\&function_language=$lang\&function_entry_point=$entrypoint\&function_memory=$FUNCTION_MEMORY\&function_runtime=$runtime\&function_isolation=$FUNCTION_ISOLATION\&invocation_collocation=$INVOCATION_COLLOCATION\&svm_id=$gh_id -H 'Content-Type: text/plain' --data $code
 }
 
 function request {

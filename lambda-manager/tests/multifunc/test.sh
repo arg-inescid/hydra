@@ -40,6 +40,12 @@ function run_kn_benchmarks {
     done
 }
 
+function run_gh_benchmarks {
+    for bench in "${GH_BENCHMARKS[@]}"; do
+        register $bench
+        request $bench
+    done
+}
 
 function run {
     export FUNCTION_MEMORY=2048
@@ -47,9 +53,9 @@ function run {
     start_lambda_manager $(DIR)/config.json $(DIR)/variables.json
     sleep 5
 
-    run_hy_benchmarks
-    run_ow_benchmarks
-    # run_kn_benchmarks
+    #run_ow_benchmarks
+    #run_kn_benchmarks
+    run_gh_benchmarks
 
     stop_lambda_manager
     unset FUNCTION_MEMORY

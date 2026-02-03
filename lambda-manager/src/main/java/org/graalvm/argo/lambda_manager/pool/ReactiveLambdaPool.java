@@ -45,14 +45,14 @@ public class ReactiveLambdaPool extends LambdaPool {
             int lambdaPort = Configuration.argumentStorage.getLambdaPort();
             String gatewayWithMask = Configuration.argumentStorage.getGatewayWithMask();
             NetworkConfigurationUtils.prepareVmConnectionPool(connectionPool, maxLambdas, gatewayWithMask, lambdaPort);
-        } else {
+        } else if (lambdaType.isContainer()) {
             NetworkConfigurationUtils.prepareContainerConnectionPool(connectionPool, maxLambdas);
         }
     }
 
     @Override
     public Lambda getLambda(LambdaExecutionMode mode, Function function) {
-        if (mode.isCustom() || mode == LambdaExecutionMode.KNATIVE) {
+        if (mode.isCustom() || mode == LambdaExecutionMode.KNATIVE || mode == LambdaExecutionMode.GRAALOS) {
             return pollLambda(mode, function);
         }
         throw new IllegalArgumentException("With a reactive pool, you can only use OpenWhisk or Knative. Mode provided: " + mode);
@@ -72,7 +72,7 @@ public class ReactiveLambdaPool extends LambdaPool {
 
         // Close any lasting connection.
         for (LambdaConnection connection : connectionPool) {
-            connection.client.close();
+            connection.close();
         }
 
         // Delete os-level network interfaces.

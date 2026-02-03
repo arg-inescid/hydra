@@ -36,6 +36,18 @@ public enum LambdaExecutionMode {
         return this == LambdaExecutionMode.HYDRA || this == LambdaExecutionMode.HYDRA_PGO || this == LambdaExecutionMode.HYDRA_PGO_OPTIMIZED || this == LambdaExecutionMode.HYDRA_PGO_OPTIMIZING;
     }
 
+    public boolean isGraalOS() {
+        return this == LambdaExecutionMode.GRAALOS;
+    }
+
+    public boolean isKnative() {
+        return this == LambdaExecutionMode.KNATIVE;
+    }
+
+    public boolean isHotSpot() {
+        return this == LambdaExecutionMode.HOTSPOT || this == LambdaExecutionMode.HOTSPOT_W_AGENT;
+    }
+
     public String getOpenWhiskVMImage() {
         switch (this) {
             case CUSTOM_JAVA:

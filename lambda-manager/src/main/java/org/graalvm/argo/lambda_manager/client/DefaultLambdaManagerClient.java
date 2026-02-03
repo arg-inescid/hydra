@@ -27,17 +27,20 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
 
     @Override
     public String registerFunction(Lambda lambda, Function function) {
+            LambdaExecutionMode mode = lambda.getExecutionMode();
             String path = null;
             byte[] payload = null;
-            // Intentionally triggering 404 as a way to ensure that the webserver is up.
-            sendRequest("/ping", payload, lambda, 1);
-            if (lambda.getExecutionMode().isHydra()) {
+            // For networked modes, intentionally triggering 404 as a way to ensure that the webserver is up.
+            if (!mode.isGraalOS()) {
+                sendRequest("/ping", payload, lambda, 1);
+            }
+            if (mode.isHydra()) {
                 // The two optional parameters - Hydra sandbox and SVM ID.
                 String sandbox = function.getHydraSandbox() != null ? String.format("&sandbox=%s", function.getHydraSandbox()) : "";
                 String svmId = function.snapshotSandbox() ? String.format("&svmid=%s", function.getSvmId()) : "";
                 final boolean binaryFunctionExecution = isBinaryFunctionExecution(lambda);
                 path = String.format("/register?name=%s&url=%s&language=%s&entryPoint=%s&isBinary=%s%s%s", function.getName(), function.getFunctionCode(), function.getLanguage().toString(), function.getEntryPoint(), binaryFunctionExecution, sandbox, svmId);
-            } else if (lambda.getExecutionMode().isCustom()) {
+            } else if (mode.isCustom()) {
                 // TODO: optimization: read chunks of file and send it in parts.
                 try (InputStream sourceFile = Files.newInputStream(function.buildFunctionSourceCodePath())) {
                     payload = sourceFile.readAllBytes();
@@ -46,12 +49,14 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
                     return Messages.ERROR_FUNCTION_UPLOAD;
                 }
                 path = "/init";
-            } else if (lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT || lambda.getExecutionMode() == LambdaExecutionMode.HOTSPOT_W_AGENT) {
+            } else if (mode.isHotSpot()) {
                 path = String.format("/register?name=%s&url=%s&language=%s&entryPoint=%s", function.getName(), function.getFunctionCode(), function.getLanguage().toString(), function.getEntryPoint());
             } else if (lambda.getExecutionMode() == LambdaExecutionMode.KNATIVE) {
                 return "No registration needed in a Knative lambda.";
-            } else if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALOS) {
-                return "No registration needed in a GraalOS lambda.";
+            } else if (mode.isGraalOS()) {
+                path = "/command";
+                payload = ("{ \"act\":\"add_ep\", \"ep\":" +  function.getSvmId() + ", \"app\":\"" + function.getFunctionCode() + "\" }").getBytes();
+
             } else {
                 Logger.log(Level.WARNING, String.format("Unexpected lambda mode (%s) when registering function %s!", lambda.getExecutionMode(), function.getName()));
             }
@@ -71,6 +76,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         } else {
             Logger.log(Level.WARNING, String.format("Unexpected lambda mode (%s) when registering function %s!", lambda.getExecutionMode(), function.getName()));
         }
+        // TODO - add graalos?
 
         return sendRequest(path, payload.getBytes(), lambda);
     }
@@ -92,7 +98,8 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         } else if (lambda.getExecutionMode() == LambdaExecutionMode.KNATIVE) {
             payload = arguments;
         } else if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALOS) {
-            path = "/helloworld";
+            path = "/command";
+            payload = "{ \"act\":\"add_isolate\", \"ep\":" + function.getSvmId() + " }";
         } else {
             Logger.log(Level.WARNING, String.format("Unexpected lambda mode (%s) when invoking function %s!", lambda.getExecutionMode(), function.getName()));
         }
