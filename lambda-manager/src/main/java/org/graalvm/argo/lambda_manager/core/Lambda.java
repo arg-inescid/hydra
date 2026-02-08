@@ -211,7 +211,18 @@ public class Lambda {
     // Booking a lambda primarily matters for non-collocatable modes.
     public boolean tryBookLambda(Function function) {
         // Increment the open request count (replaces incOpenRequests).
-        return function.canCollocateInvocation() ? openRequestCount.incrementAndGet() > 0 : openRequestCount.compareAndSet(0, 1);
+        if (function.canCollocateInvocation()) {
+            int newVal = openRequestCount.incrementAndGet();
+            // GraalOS has a limit of 15 concurrent invocations.
+            if (this.getExecutionMode().isGraalOS() && newVal > 15) {
+                openRequestCount.decrementAndGet();
+                return false;
+            } else {
+                return true;
+            }
+        } else {
+            return openRequestCount.compareAndSet(0, 1);
+        }
     }
 
     public boolean tryAcquireTerminationLock() {
