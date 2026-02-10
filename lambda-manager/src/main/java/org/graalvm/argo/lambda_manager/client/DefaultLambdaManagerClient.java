@@ -54,7 +54,7 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
             } else if (lambda.getExecutionMode() == LambdaExecutionMode.KNATIVE) {
                 return "No registration needed in a Knative lambda.";
             } else if (mode.isGraalOS()) {
-                path = "/command";
+                path = "command";
                 payload = ("{ \"act\":\"add_ep\", \"ep\":" +  function.getSvmId() + ", \"app\":\"" + function.getFunctionCode() + "\" }").getBytes();
 
             } else {
@@ -98,8 +98,8 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         } else if (lambda.getExecutionMode() == LambdaExecutionMode.KNATIVE) {
             payload = arguments;
         } else if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALOS) {
-            path = "/command";
-            payload = "{ \"act\":\"add_isolate\", \"ep\":" + function.getSvmId() + " }";
+            path = "command";
+            payload = "{ \"act\":\"add_isolate\", \"ep\":" + function.getSvmId() + ", \"args\":\"1\"}";
         } else {
             Logger.log(Level.WARNING, String.format("Unexpected lambda mode (%s) when invoking function %s!", lambda.getExecutionMode(), function.getName()));
         }
