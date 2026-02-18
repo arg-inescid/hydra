@@ -3,10 +3,13 @@ package org.graalvm.argo.lambda_manager.utils;
 import java.io.File;
 import java.net.SocketAddress;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 import org.graalvm.argo.lambda_manager.core.Environment;
@@ -26,23 +29,36 @@ import okhttp3.Response;
 public class LocalConnection implements LambdaConnection {
 
     // Lambda we are connecting from.
-    private final Lambda lambda;
+    protected final Lambda lambda;
 
     // Http client that uses unix domain sockets underneath.
-    private OkHttpClient client;
+    protected OkHttpClient ghClient;
+
+    // Http clients for specific endpoints (functions).
+    private Map<String, OkHttpClient> epClients;
 
     public LocalConnection(Lambda lambda) {
         this.lambda = lambda;
+        this.epClients = new ConcurrentHashMap<>();
     }
 
-    private String udsPath() {
+    private void printError(String path, String payload, String message) {
+        Logger.log(Level.WARNING, String.format("Lambda %s: request = %s payload = %s respose = %s",
+            lambda.getLambdaID(), path, payload, message));
+    }
+
+    public String udsPath(String ep) {
+        return "%s/%s/ep-%s.uds".formatted(Environment.CODEBASE, lambda.getLambdaName(), ep);
+    }
+
+    public String udsPath() {
         return Environment.CODEBASE + "/" + lambda.getLambdaName() + "/lambda.uds";
     }
 
-    private boolean waitForUDS() {
+    protected boolean waitForUDS(String path) {
         // Wait at least 20 times (100 ms), i.e., 2 seconds.
         for (int attempts = 0; attempts < 20; attempts++) {
-            if (Files.notExists(Path.of(udsPath()))) {
+            if (Files.notExists(Path.of(path))) {
                 try {
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
@@ -50,24 +66,31 @@ public class LocalConnection implements LambdaConnection {
                 }
             }
         }
-        return Files.exists(Path.of(udsPath()));
+        return Files.exists(Path.of(path));
     }
 
-    // TODO - this could be the uds existing. Then, we could have another (responsive/ping  that actually does this.)
-    public boolean waitUntilReady() {
-        // If the file does not exist, quit.
-        if (!waitForUDS()) {
-            return false;
-        }
-
+    protected OkHttpClient getClient(String path) {
         try {
-            SocketAddress addr = AFUNIXSocketAddress.of(new File(udsPath()));
-            client = new OkHttpClient.Builder()
+            SocketAddress addr = AFUNIXSocketAddress.of(new File(path));
+            return new OkHttpClient.Builder()
                 .socketFactory(new AFSocketFactory.FixedAddressSocketFactory(addr))
                 .callTimeout(Duration.ofMinutes(1))
                 .build();
         } catch (SocketException e) {
             e.printStackTrace();
+            return null;
+        }
+    }
+
+    // TODO - this could be the uds existing. Then, we could have another (responsive/ping  that actually does this.)
+    public boolean waitUntilReady() {
+        // If the file does not exist, quit.
+        if (!waitForUDS(udsPath())) {
+            return false;
+        }
+
+        this.ghClient = getClient(udsPath());
+        if (this.ghClient == null) {
             return false;
         }
 
@@ -76,7 +99,7 @@ public class LocalConnection implements LambdaConnection {
         return true;
      }
 
-    private HashMap<?, ?> parseJSON(String json) {
+    protected HashMap<?, ?> parseJSON(String json) {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             return objectMapper.readValue(json, HashMap.class);
@@ -86,50 +109,76 @@ public class LocalConnection implements LambdaConnection {
         }
     }
 
-    private void waitForIsolate(int isolate, long timeout) {
-        long sleepBetweenAttempts = 10;
-        long maxAttempts = timeout * 1000 / sleepBetweenAttempts;
-        Request request = new Request.Builder().url(String.format("http://localhost/exitcode?%d", isolate)).build();
-
-        for (int attempts = 0; attempts < maxAttempts; attempts++) {
-            try (Response response = client.newCall(request).execute()) {
-                if (response.code() == 404) {
-                    Thread.sleep(sleepBetweenAttempts);
-                } else {
-                    return;
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+    private void addEPClient(String path, String payload, String ep) {
+        if (!waitForUDS(udsPath(ep))) {
+            printError(path, payload, "Failed to find %s.".formatted(udsPath(ep)));
+            return;
         }
-        Logger.log(Level.WARNING, String.format("Waiting for isolate %d timedout (after %d attempts)!", isolate, maxAttempts));
+
+        OkHttpClient epClient = getClient(udsPath(ep));
+
+        if (epClient == null) {
+            printError(path, payload, "Failed to find endpoint client for ep %s.".formatted(ep));
+            return;
+        }
+
+        epClients.put(ep, epClient);
     }
 
-    private String sendRequest(String path, byte[] payload, long timeout) {
+    private boolean isInvocation(String path, String payload) {
+        return path.equals("invoke");
+    }
+
+    private boolean isRegistration(String path, String payload) {
+        return path.equals("command") && payload.contains("add_ep");
+    }
+
+    private String sendRequest(String path, String payload, long timeout) {
+        String port = "80";
+        OkHttpClient epClient = ghClient;
+        String ep = String.valueOf(parseJSON(payload).get("ep"));
+
+        // For invocations, we use the function-specific ep.
+        if (isInvocation(path, payload)) {
+            port = "8080";
+            epClient = epClients.get(ep);
+            if (epClient == null) {
+                String message = "Unknown endpoint.";
+                printError(path, payload, message);
+                return message;
+            }
+        }
+
         Request request = new Request.Builder()
-            .url(String.format("http://localhost/%s", path))
-            .post(RequestBody.create(new String(payload), MediaType.get("application/json; charset=utf-8")))
+            .url(String.format("http://localhost:%s/%s", port, path))
+            .post(RequestBody.create(payload, MediaType.get("application/json; charset=utf-8")))
             .build();
 
-        try (Response response = client.newCall(request).execute()) {
+        try (Response response = epClient.newCall(request).execute()) {
             String responseBody = response.body().string();
-            if (!response.isSuccessful()) {
-                Logger.log(Level.WARNING, String.format("Lambda %s: request = %s respose = %s",
-                    lambda.getLambdaID(), path, response.message()));
+            if (response.isSuccessful()) {
+                // When registering a new function, we need to add a new ep client for the function uds.
+                if (isRegistration(path, payload)) {
+                    addEPClient(path, payload, ep);
+                }
+                return responseBody;
+            } else {
+                printError(path, payload, response.message());
                 return response.message();
-            } else if (payload.length > 0 && parseJSON(new String(payload)).get("act").equals("add_isolate")) {
-                int isolate = (int) parseJSON(responseBody).get("isolate");
-                waitForIsolate(isolate, timeout);
             }
-            return responseBody;
+        } catch (SocketTimeoutException e) {
+            String message = "timeout exception";
+            printError(path, payload, message);
+            return message;
         } catch (Exception e) {
             e.printStackTrace();
-            return null;
+            return e.getLocalizedMessage();
         }
     }
 
+    @Override
     public String sendRequest(String path, byte[] payload, Lambda lambda, long timeout) {
-        return sendRequest(path, payload, timeout);
+        return sendRequest(path, new String(payload), timeout);
     }
 
     @Override

@@ -10,6 +10,7 @@ import org.graalvm.argo.lambda_manager.core.Function;
 import org.graalvm.argo.lambda_manager.core.Lambda;
 import org.graalvm.argo.lambda_manager.optimizers.LambdaExecutionMode;
 import org.graalvm.argo.lambda_manager.utils.JsonUtils;
+import org.graalvm.argo.lambda_manager.utils.LocalConnection;
 import org.graalvm.argo.lambda_manager.utils.Messages;
 import org.graalvm.argo.lambda_manager.utils.logger.Logger;
 
@@ -54,9 +55,19 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
             } else if (lambda.getExecutionMode() == LambdaExecutionMode.KNATIVE) {
                 return "No registration needed in a Knative lambda.";
             } else if (mode.isGraalOS()) {
+                LocalConnection lec = (LocalConnection) lambda.getConnection();
+                String ep = function.getSvmId();
+                String udsPath = lec.udsPath(ep);
                 path = "command";
-                payload = ("{ \"act\":\"add_ep\", \"ep\":" +  function.getSvmId() + ", \"app\":\"" + function.getFunctionCode() + "\" }").getBytes();
-
+                payload = new StringBuilder("{")
+                    .append("\"act\":\"add_ep\"")
+                    .append(", \"ep\":%s".formatted(ep))
+                    .append(", \"app\":\"%s\"".formatted(function.getFunctionCode()))
+                    .append(", \"listen_socket\":{ \"path\":\"%s\" }".formatted(udsPath))
+                    .append(", \"default_socket\":{ \"port\":8080 }")
+                    .append(", \"args\":\"web\"")
+                    .append("}")
+                    .toString().getBytes();
             } else {
                 Logger.log(Level.WARNING, String.format("Unexpected lambda mode (%s) when registering function %s!", lambda.getExecutionMode(), function.getName()));
             }
@@ -98,8 +109,8 @@ public class DefaultLambdaManagerClient implements LambdaManagerClient {
         } else if (lambda.getExecutionMode() == LambdaExecutionMode.KNATIVE) {
             payload = arguments;
         } else if (lambda.getExecutionMode() == LambdaExecutionMode.GRAALOS) {
-            path = "command";
-            payload = "{ \"act\":\"add_isolate\", \"ep\":" + function.getSvmId() + ", \"args\":\"1\"}";
+            path = "invoke";
+            payload = "{ \"ep\":" + function.getSvmId() + " }";
         } else {
             Logger.log(Level.WARNING, String.format("Unexpected lambda mode (%s) when invoking function %s!", lambda.getExecutionMode(), function.getName()));
         }
