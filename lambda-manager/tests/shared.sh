@@ -184,7 +184,7 @@ function benchmark {
 
     app_post=/tmp/app-post
     echo $payload > $app_post
-    results_file=$RESULTS_DIR/"$USER-$bench.log"
+    results_file=$RESULTS_DIR/"$USER-$bench-$CONCURRENCY.log"
 
     echo -e "${GREEN}Benchmarking $bench...${NC}"
     ab -p $app_post -T application/json -c $CONCURRENCY -n $WORKLOAD http://$LAMBDA_MANAGER_HOST:$LAMBDA_MANAGER_PORT/$USER/$bench &> $results_file

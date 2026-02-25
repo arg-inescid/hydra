@@ -121,11 +121,11 @@ public class Lambda {
     // TODO: check for all places (including this method) where we should add new modes
     // to configure "collocatability" and other things.
     public boolean canRegisterInLambda(Function function) {
-        if (username == null) {
+        if (username == null || executionMode == LambdaExecutionMode.GRAALOS) {
             return true;
         }
 
-        if (executionMode == LambdaExecutionMode.HYDRA || executionMode == LambdaExecutionMode.GRAALOS) {
+        if (executionMode == LambdaExecutionMode.HYDRA) {
             if (function.isFunctionIsolated()) {
                 return (registeredFunctions.contains(function)) && username.equals(Configuration.coder.decodeUsername(function.getName()));
             } else {
