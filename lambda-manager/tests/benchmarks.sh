@@ -6,7 +6,7 @@ DATA_ADDRESS="http://$DATA_IP:$DATA_PORT"
 
 HY_JV_BENCHMARKS=(hy_jv_hw  hy_jv_fh  hy_jv_cl  hy_jv_hr  hy_jv_vp)
 HY_PY_BENCHMARKS=(hy_py_hw  hy_py_ms  hy_py_bf  hy_py_pr  hy_py_dn  hy_py_dh  hy_py_co  hy_py_th  hy_py_vp  hy_py_up)
-#HY_JS_BENCHMARKS=(hy_js_hw  hy_js_dh  hy_js_th  hy_js_up)
+# HY_JS_BENCHMARKS=(hy_js_hw  hy_js_dh  hy_js_th  hy_js_up)
 HY_JS_BENCHMARKS=(hy_js_hw  hy_js_dh  hy_js_up)
 HY_BENCHMARKS=("${HY_JV_BENCHMARKS[@]}" "${HY_PY_BENCHMARKS[@]}" "${HY_JS_BENCHMARKS[@]}")
 
