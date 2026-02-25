@@ -9,6 +9,11 @@ function DIR {
     echo "$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 }
 
+if [[ -z "${GRAALOS_SEBS}" ]]; then
+    echo "GRAALOS_SEBS is not defined. Exiting..."
+    exit 1
+fi
+
 source $(DIR)/../benchmarks.sh
 source $(DIR)/../shared.sh
 

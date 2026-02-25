@@ -5,11 +5,6 @@ if [[ -z "${ARGO_HOME}" ]]; then
     exit 1
 fi
 
-if [[ -z "${GRAALOS_SEBS}" ]]; then
-    echo "GRAALOS_SEBS is not defined. Exiting..."
-    exit 1
-fi
-
 # Load benchmarks configs.
 source "$(dirname "${BASH_SOURCE[0]}")/benchmarks.sh"
 
