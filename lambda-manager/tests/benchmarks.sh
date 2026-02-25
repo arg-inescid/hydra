@@ -4,11 +4,11 @@ DATA_IP="172.18.0.1"
 DATA_PORT=8000
 DATA_ADDRESS="http://$DATA_IP:$DATA_PORT"
 
-HY_JV_BENCHMARKS=(hy_jv_hw)
+HY_JV_BENCHMARKS=(hy_jv_hw  hy_jv_fh  hy_jv_cl  hy_jv_hr  hy_jv_vp)
 HY_PY_BENCHMARKS=(hy_py_hw  hy_py_ms  hy_py_bf  hy_py_pr  hy_py_dn  hy_py_dh  hy_py_co  hy_py_th  hy_py_vp  hy_py_up)
-HY_JS_BENCHMARKS=(hy_js_hw  hy_js_dh  hy_js_th  hy_js_up)
+#HY_JS_BENCHMARKS=(hy_js_hw  hy_js_dh  hy_js_th  hy_js_up)
 HY_JS_BENCHMARKS=(hy_js_hw  hy_js_dh  hy_js_up)
-HY_BENCHMARKS=("${HY_JV_BENCHMARKS[@]}")
+HY_BENCHMARKS=("${HY_JV_BENCHMARKS[@]}" "${HY_PY_BENCHMARKS[@]}" "${HY_JS_BENCHMARKS[@]}")
 
 OW_JV_BENCHMARKS=(ow_jv_hw ow_jv_fh ow_jv_hr)
 OW_PY_BENCHMARKS=(ow_py_hw  ow_py_ms  ow_py_bf  ow_py_pr  ow_py_dn  ow_py_dh  ow_py_co  ow_py_th  ow_py_vp  ow_py_up)
