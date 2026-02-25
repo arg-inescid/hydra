@@ -20,8 +20,7 @@ KN_PY_BENCHMARKS=(kn_py_hw  kn_py_ms  kn_py_bf  kn_py_pr  kn_py_dn  kn_py_dh  kn
 KN_JS_BENCHMARKS=(kn_js_hw  kn_js_dh  kn_js_th  kn_js_up)
 KN_BENCHMARKS=("${KN_JV_BENCHMARKS[@]}")
 
-#GH_JV_BENCHMARKS=(gh_jv_hw gh_jv_fh gh_jv_hr)
-GH_JV_BENCHMARKS=(gh_jv_hw)
+GH_JV_BENCHMARKS=(gh_jv_hw gh_jv_fh gh_jv_hr)
 GH_BENCHMARKS=("${GH_JV_BENCHMARKS[@]}")
 
 # Hydra benchmarks.
