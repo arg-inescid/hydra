@@ -18,4 +18,4 @@ export PROXY_HOME=$ARGO_HOME/hydra
 export PROXY_JAR=$PROXY_HOME/build/libs/hydra-1.0-all.jar
 export CODEBASE_HOME=$MANAGER_HOME/codebase
 export HYDRA_HOME=$PROXY_HOME/build/native-image
-export GRAALOS_SDK_DIR=$ARGO_HOME/../graalos
+export GRAALOS_HOME=$ARGO_HOME/../graalos

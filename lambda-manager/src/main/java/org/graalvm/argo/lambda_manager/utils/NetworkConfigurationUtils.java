@@ -30,7 +30,7 @@ public class NetworkConfigurationUtils {
             for (int i = 0; i < connections; i++) {
                 String ip = getNextIPAddress(iPv4AddressIterator, gateway);
                 String tap = String.format("%s-%s", Environment.TAP_PREFIX, generateRandomString());
-                pool.add(new LambdaConnection(ip, tap, lambdaPort));
+                pool.add(new NetworkConnection(ip, tap, lambdaPort));
             }
         } catch (MalformedURLException e) {
             Logger.log(Level.INFO, "Failed to prepare lambda connection", e);
@@ -40,7 +40,7 @@ public class NetworkConfigurationUtils {
     public static void prepareContainerConnectionPool(Queue<LambdaConnection> pool, int connections) {
         try {
             for (int lambdaPort = Configuration.argumentStorage.getFirstLambdaPort(); lambdaPort < Configuration.argumentStorage.getFirstLambdaPort() + connections; lambdaPort++) {
-                pool.add(new LambdaConnection(LOCALHOST_IP, null, lambdaPort));
+                pool.add(new NetworkConnection(LOCALHOST_IP, null, lambdaPort));
             }
         } catch (MalformedURLException e) {
             Logger.log(Level.INFO, "Failed to prepare lambda connection", e);

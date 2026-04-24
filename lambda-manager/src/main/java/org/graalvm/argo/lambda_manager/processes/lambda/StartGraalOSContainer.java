@@ -1,7 +1,7 @@
 package org.graalvm.argo.lambda_manager.processes.lambda;
 
 import org.graalvm.argo.lambda_manager.core.Lambda;
-import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
+import org.graalvm.argo.lambda_manager.utils.NetworkConnection;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +15,7 @@ public class StartGraalOSContainer extends StartLambda {
     @Override
     protected List<String> makeCommand() {
         List<String> command = new ArrayList<>();
-        LambdaConnection connection = lambda.getConnection();
+        NetworkConnection connection = (NetworkConnection) lambda.getConnection();
 
         command.add("/usr/bin/time");
         command.add("--append");
@@ -23,7 +23,7 @@ public class StartGraalOSContainer extends StartLambda {
         command.add("-v");
         command.add("bash");
         command.add("src/scripts/start_graalos_container.sh");
-        command.add(String.valueOf(connection.port));
+        command.add(String.valueOf(connection.getPort()));
         command.add(lambda.getLambdaName());
         return command;
     }

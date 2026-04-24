@@ -45,14 +45,17 @@ public class ReactiveLambdaPool extends LambdaPool {
             int lambdaPort = Configuration.argumentStorage.getLambdaPort();
             String gatewayWithMask = Configuration.argumentStorage.getGatewayWithMask();
             NetworkConfigurationUtils.prepareVmConnectionPool(connectionPool, maxLambdas, gatewayWithMask, lambdaPort);
-        } else {
+        } else if (lambdaType.isContainer()) {
             NetworkConfigurationUtils.prepareContainerConnectionPool(connectionPool, maxLambdas);
         }
     }
 
     @Override
     public Lambda getLambda(LambdaExecutionMode mode, Function function) {
-        return pollLambda(mode, function);
+        if (mode.isCustom() || mode.isKnative() || mode.isGraalOS()) {
+            return pollLambda(mode, function);
+        }
+        throw new IllegalArgumentException("Invalid mode used in reactive pool: " + mode);
     }
 
     @Override
@@ -69,7 +72,7 @@ public class ReactiveLambdaPool extends LambdaPool {
 
         // Close any lasting connection.
         for (LambdaConnection connection : connectionPool) {
-            connection.client.close();
+            connection.close();
         }
 
         // Delete os-level network interfaces.

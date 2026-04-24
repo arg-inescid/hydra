@@ -45,7 +45,11 @@ public class Function {
     /** Desired sandbox for Hydra runtime. Can only be used with Hydra. */
     private final String hydraSandbox;
 
-    /** SVM ID used for sandbox checkpoint/restore for this function. Should be a valid small integer. Can only be used with Hydra. Can be null. */
+    /**
+     * SVM ID is used as a function identifier in the underlying runtime (currently Hydra or GraalOS).
+     * Hydra uses it for sandbox checkpoint/restore for this function. GraalOS uses it for end point creation.
+     * Should be a valid small integer. Can be null when the function runs in other runtimes.
+     */
     private final String svmId;
 
     /** If the function has the Hydra or HotSpot mode - URL of the function code to be downloaded by Hydra.

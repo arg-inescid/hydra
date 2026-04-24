@@ -28,7 +28,11 @@ public class Lambda {
 	private String username;
 
 	private long lastUsedTimestamp;
-	private LambdaConnection connection;
+
+    /** Connection used to send invocation requests and receive responses. */
+    private LambdaConnection connection;
+
+    /** Type lambda execution (see LambdaExecutionMode for details). */
 	private final LambdaExecutionMode executionMode;
 
 	/** Indicates whether this lambda should be used for future requests. */
@@ -117,9 +121,10 @@ public class Lambda {
     // TODO: check for all places (including this method) where we should add new modes
     // to configure "collocatability" and other things.
     public boolean canRegisterInLambda(Function function) {
-        if (username == null) {
+        if (username == null || executionMode == LambdaExecutionMode.GRAALOS) {
             return true;
         }
+
         if (executionMode == LambdaExecutionMode.HYDRA) {
             if (function.isFunctionIsolated()) {
                 return (registeredFunctions.contains(function)) && username.equals(Configuration.coder.decodeUsername(function.getName()));
@@ -206,7 +211,18 @@ public class Lambda {
     // Booking a lambda primarily matters for non-collocatable modes.
     public boolean tryBookLambda(Function function) {
         // Increment the open request count (replaces incOpenRequests).
-        return function.canCollocateInvocation() ? openRequestCount.incrementAndGet() > 0 : openRequestCount.compareAndSet(0, 1);
+        if (function.canCollocateInvocation()) {
+            int newVal = openRequestCount.incrementAndGet();
+            // GraalOS has a limit of 15 concurrent invocations.
+            if (this.getExecutionMode().isGraalOS() && newVal > 15) {
+                openRequestCount.decrementAndGet();
+                return false;
+            } else {
+                return true;
+            }
+        } else {
+            return openRequestCount.compareAndSet(0, 1);
+        }
     }
 
     public boolean tryAcquireTerminationLock() {

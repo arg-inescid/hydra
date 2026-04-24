@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.graalvm.argo.lambda_manager.core.Lambda;
-import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
+import org.graalvm.argo.lambda_manager.utils.NetworkConnection;
 
 public abstract class RestoreFirecracker extends StartLambda {
 
@@ -14,7 +14,7 @@ public abstract class RestoreFirecracker extends StartLambda {
 
     protected List<String> prepareCommand(String imageName) {
         List<String> command = new ArrayList<>();
-        LambdaConnection connection = lambda.getConnection();
+        NetworkConnection connection = (NetworkConnection) lambda.getConnection();
 
         command.add("/usr/bin/time");
         command.add("--append");
@@ -23,7 +23,7 @@ public abstract class RestoreFirecracker extends StartLambda {
         command.add("bash");
         command.add("src/scripts/restore_firecracker.sh");
         command.add(String.valueOf(pid));
-        command.add(connection.ip);
+        command.add(connection.getIp());
         command.add(lambda.getLambdaName());
         command.add(imageName);
         return command;

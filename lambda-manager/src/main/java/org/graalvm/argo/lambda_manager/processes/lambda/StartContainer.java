@@ -3,9 +3,8 @@ package org.graalvm.argo.lambda_manager.processes.lambda;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.graalvm.argo.lambda_manager.core.Configuration;
 import org.graalvm.argo.lambda_manager.core.Lambda;
-import org.graalvm.argo.lambda_manager.utils.LambdaConnection;
+import org.graalvm.argo.lambda_manager.utils.NetworkConnection;
 
 public abstract class StartContainer extends StartLambda {
 
@@ -15,7 +14,7 @@ public abstract class StartContainer extends StartLambda {
 
     protected List<String> prepareCommand(String imageName) {
         List<String> command = new ArrayList<>();
-        LambdaConnection connection = lambda.getConnection();
+        NetworkConnection connection = (NetworkConnection) lambda.getConnection();
 
         command.add("/usr/bin/time");
         command.add("--append");
@@ -23,7 +22,7 @@ public abstract class StartContainer extends StartLambda {
         command.add("-v");
         command.add("bash");
         command.add("src/scripts/start_container.sh");
-        command.add(String.valueOf(connection.port));
+        command.add(String.valueOf(connection.getPort()));
         command.add(lambda.getLambdaName());
         command.add(imageName);
         return command;

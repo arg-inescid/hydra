@@ -125,6 +125,35 @@ function register_kn {
     curl -s -X POST $LAMBDA_MANAGER_HOST:$LAMBDA_MANAGER_PORT/upload_function?username=$USER\&function_name=$bench\&function_language=$lang\&function_entry_point=$entrypoint\&function_memory=$FUNCTION_MEMORY\&function_runtime=$runtime\&function_isolation=$FUNCTION_ISOLATION\&invocation_collocation=$INVOCATION_COLLOCATION -H 'Content-Type: text/plain' --data $code
 }
 
+function register_gh {
+    bench=$1
+
+    if [ -z "$FUNCTION_MEMORY" ]; then
+        FUNCTION_MEMORY=512
+    fi
+    FUNCTION_ISOLATION=false
+    INVOCATION_COLLOCATION=true
+
+    runtime=graalos
+    lang=
+    if [[ $bench == *"_jv_"* ]]; then
+        lang=java
+    elif [[ $bench == *"_js_"* ]]; then
+        lang=javascript
+    elif [[ $bench == *"_py_"* ]]; then
+        lang=python
+    else
+        echo "Unknown benchmark language: $bench"
+        exit 1
+    fi
+
+    entrypoint=${BENCHMARK_ENTRYPOINTS["$bench"]}
+    code=${BENCHMARK_CODE["$bench"]}
+    gh_id=${BENCHMARK_GHIDS["$bench"]}
+
+    curl -s -X POST $LAMBDA_MANAGER_HOST:$LAMBDA_MANAGER_PORT/upload_function?username=$USER\&function_name=$bench\&function_language=$lang\&function_entry_point=$entrypoint\&function_memory=$FUNCTION_MEMORY\&function_runtime=$runtime\&function_isolation=$FUNCTION_ISOLATION\&invocation_collocation=$INVOCATION_COLLOCATION\&svm_id=$gh_id -H 'Content-Type: text/plain' --data $code
+}
+
 function request {
     bench=$1
 
@@ -150,7 +179,7 @@ function benchmark {
 
     app_post=/tmp/app-post
     echo $payload > $app_post
-    results_file=$RESULTS_DIR/"$USER-$bench.log"
+    results_file=$RESULTS_DIR/"$USER-$bench-$CONCURRENCY.log"
 
     echo -e "${GREEN}Benchmarking $bench...${NC}"
     ab -p $app_post -T application/json -c $CONCURRENCY -n $WORKLOAD http://$LAMBDA_MANAGER_HOST:$LAMBDA_MANAGER_PORT/$USER/$bench &> $results_file

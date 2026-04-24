@@ -14,8 +14,8 @@ public enum LambdaType {
     CONTAINER("CONTAINER"),
     // Lambda to be deployed as container; in Hydra mode users will be collocated.
     CONTAINER_DEBUG("CONTAINER_DEBUG"),
-    // Lambda to be deployed as a normal process. Exclusive to GraalOS. Uses the same networking scheme as containers (see NetworkConfigurationUtils#prepareContainerConnectionPool).
-    GRAALOS_NATIVE("GRAALOS_NATIVE");
+    // Lambda to be deployed as a normal process using Unix Domain Sockets to communicate.
+    GRAALOS("GRAALOS");
 
     private final String type;
 
@@ -28,7 +28,11 @@ public enum LambdaType {
     }
 
     public boolean isContainer() {
-        return !isVM() && !this.equals(GRAALOS_NATIVE);
+        return !isVM() && !this.equals(GRAALOS);
+    }
+
+    public boolean isGraalOS() {
+        return this.equals(GRAALOS);
     }
 
     public static LambdaType fromString(String text) throws RuntimeException {
