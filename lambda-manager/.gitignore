@@ -11,6 +11,8 @@ lambda_logs/*
 !lambda_logs/.gitkeep
 manager_logs/*
 !manager_logs/.gitkeep
+manager_metrics/*
+!manager_metrics/.gitkeep
 .idea
 *.iml
 *.ipr

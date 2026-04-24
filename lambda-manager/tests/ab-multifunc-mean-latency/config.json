@@ -18,9 +18,9 @@
     "hotspot": 0,
     "hydra": 0,
     "graalos": 0,
-    "customJava": 5,
-    "customJavaScript": 5,
-    "customPython": 10,
+    "customJava": 0,
+    "customJavaScript": 0,
+    "customPython": 0,
     "hydraPgo": 0,
     "hydraPgoOptimized": 0
   }
